@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  # Example service definitions for each student microservice set
+  student1-frontend:
+    build: ./student-1/frontend
+    ports:
+      - "5101:80"
+  # Add other services similarly for student-2..student-5 and shared components
+
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+
+# Add volumes, networks, and environment as needed by the team

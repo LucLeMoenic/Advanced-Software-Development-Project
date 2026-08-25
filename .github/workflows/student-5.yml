@@ -1,0 +1,12 @@
+name: Student 5 CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Student 5 services
+        run: |
+          echo "Build steps for student-5 services go here"
