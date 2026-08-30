@@ -4,11 +4,12 @@ Use this file as the shared handoff for any new AI chat about this feature.
 
 ## Scope
 
-- Build a single-page accommodation recommender.
-- Frontend: Vue 3 + TypeScript.
-- Backend: ASP.NET Core Web API for orchestration and AI calls.
+- Build one integrated student feature within the Release 0 group application.
+- Frontend: Vue 3 + TypeScript, integrated into the shared HTMX entry page.
+- Backend: ASP.NET Core Web API for orchestration, AI calls, and feature API access.
 - Database: ASP.NET Core Web API + EF Core over SQLite for CRUD only.
-- External services: Ollama for ranking, Amadeus for hotel data.
+- External services: Ollama for ranking and Amadeus for hotel data.
+- Evidence and documentation: prompt log, review record, prompt library, commit history, Docker Compose evidence, GitHub Actions evidence, and report-ready architecture notes.
 
 ## Folder Structure
 
@@ -29,11 +30,14 @@ Mitchell-Harris-Feature(Accomidation)/
 
 ## Architecture Rules
 
+- The feature must fit into the shared group repository and shared deployment.
+- The shared HTMX `index.html` is the single entry point for the integrated application.
 - `frontend` only talks to `backend`.
 - `backend` talks to `db`, Ollama, and Amadeus.
 - `db` owns SQLite and exposes CRUD over HTTP.
 - Never open the SQLite file directly from the backend.
 - Keep the frontend typed end-to-end with shared interfaces.
+- Keep the feature compatible with the shared CSS theme and the group Docker Compose stack.
 
 ## Data Model Summary
 
@@ -63,6 +67,18 @@ Mitchell-Harris-Feature(Accomidation)/
 - `GET /api/chats/{id}`
 - `PUT /api/chats/{id}`
 - `DELETE /api/chats/{id}`
+
+## Release 0 Evidence Targets
+
+- Individual feature plan and risk plan.
+- Functional and non-functional requirements for the sprint backlog.
+- Conceptual, ERD, logical, and later physical data design artefacts.
+- Prompt log entries for meaningful AI-assisted implementation.
+- Review record entries for AI-assisted reviews of code or infrastructure.
+- GitHub Actions workflow evidence for the student-specific pipeline.
+- Docker Compose evidence for the integrated multi-container application.
+- Commit history showing small, attributable contributions.
+- Report sections covering architecture, workflow, evidence, limitations, and demonstration.
 
 ## Conventions
 
