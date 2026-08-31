@@ -140,7 +140,7 @@ As of 2026-08-31:
 - Requirements and phases now distinguish the one-model application path from the two-model local development loop.
 - Chunk 1 is complete: the feature is in `student-1/` with Vue 3/TypeScript, ASP.NET Core backend, and ASP.NET Core/EF Core SQLite database API projects.
 - All three services have production Dockerfiles and health checks.
-- Root Compose defines the three services, service-DNS configuration, dependency health ordering, confirmed ports, and a named SQLite volume.
+- Root Compose defines the three services, service-DNS configuration, dependency health ordering, confirmed ports, and a repository-backed SQLite bind mount.
 - `student-1.yml` installs/builds the frontend, tests both .NET services, validates Compose, and builds all three feature images without requiring live Ollama.
 - Local frontend build and four focused .NET endpoint tests pass; Compose configuration validates.
 - Mitchell reports that the three containers build, start, and pass their runtime health checks.
@@ -148,12 +148,15 @@ As of 2026-08-31:
 - Catalogue behaviour includes validated create/list/filter/get/replace/delete endpoints, case-insensitive duplicate protection, exact integer-cent price storage, JSON amenities constraints, and isolated integration tests.
 - The database container starts healthy with an empty catalogue, and temporary runtime CRUD validation leaves the catalogue empty.
 - Automatic seed data is intentionally excluded by Mitchell's decision. FR-16 and the required minimum 10-record evidence remain open until Mitchell creates the records manually through the functional application.
+- Chunk 3 search history now has a constrained EF model and migration, scoped repository, validated create/newest-first list/get/rename/delete endpoints, immutable JSON snapshots, and snapshot independence from catalogue deletion.
+- `database/storage/accommodation.db` contains 10 representative search records created once through the HTTP API. Compose bind-mounts that tracked directory; no runtime seeder remains.
+- The complete database suite passes 19/19 tests, and EF reports no pending model changes.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
-- Manual catalogue data, search history, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
+- Manual catalogue data, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
 
-The current services prove the Chunk 1 boundaries and runtime health plus the Chunk 2 catalogue API. They do not yet implement traveller search, history, or recommendation behaviour.
+The current services prove the Chunk 1 boundaries and runtime health plus the catalogue and database search-history APIs. They do not yet implement the frontend-facing traveller search or recommendation workflow.
 
 ## Immediate Next Gate
 
-Create the manual catalogue records after the application entry flow exists; continue with Chunk 3 while tracking FR-16 as incomplete.
+Create the manual catalogue records after the application entry flow exists; continue with Chunk 4 while tracking FR-16 as incomplete.

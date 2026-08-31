@@ -3,14 +3,21 @@ using Accommodation.Database.Data.Configurations;
 
 namespace Accommodation.Database.Data;
 
-public sealed class DatabaseContext(DbContextOptions<DatabaseContext> options)
-    : DbContext(options)
+public class DatabaseContext : DbContext
 {
-    public DbSet<Accommodation> Accommodations => Set<Accommodation>();
+    public DatabaseContext(DbContextOptions<DatabaseContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<Accommodation> Accommodations { get; set; } = null!;
+
+    public DbSet<Search> Searches { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new AccommodationConfiguration());
+        modelBuilder.ApplyConfiguration(new SearchConfiguration());
         base.OnModelCreating(modelBuilder);
     }
 }
