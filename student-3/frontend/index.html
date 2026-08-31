@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Local Experience &amp; Attraction Recommender</title>
+  <link rel="stylesheet" href="/style.css">
+  <script
+    src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"
+    integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+    crossorigin="anonymous"></script>
+</head>
+<body>
+  <!--
+    Standalone Release 0 page for the student-3 slice. Structured so the
+    <main> content below can be dropped into shared/index.html later with
+    minimal rework: section markup is self-contained, and styling should
+    move to the shared CSS theme rather than living only in style.css.
+  -->
+  <header>
+    <h1>Local Experience &amp; Attraction Recommender</h1>
+    <p class="tagline">Browse attractions or ask the AI for a suggestion.</p>
+  </header>
+
+  <main>
+    <section id="browse" aria-labelledby="browse-heading">
+      <h2 id="browse-heading">Browse Attractions</h2>
+
+      <div class="filters" role="group" aria-label="Filter by category">
+        <button
+          type="button"
+          hx-get="/api/attractions"
+          hx-trigger="load, click"
+          hx-swap="none"
+          hx-on::after-request="renderAttractions(event)">
+          All
+        </button>
+        <button
+          type="button"
+          hx-get="/api/attractions?category=sight"
+          hx-swap="none"
+          hx-on::after-request="renderAttractions(event)">
+          Sights
+        </button>
+        <button
+          type="button"
+          hx-get="/api/attractions?category=restaurant"
+          hx-swap="none"
+          hx-on::after-request="renderAttractions(event)">
+          Restaurants
+        </button>
+        <button
+          type="button"
+          hx-get="/api/attractions?category=activity"
+          hx-swap="none"
+          hx-on::after-request="renderAttractions(event)">
+          Activities
+        </button>
+      </div>
+
+      <div id="attraction-list" class="card-grid" aria-live="polite">
+        <p class="loading">Loading attractions...</p>
+      </div>
+    </section>
+
+    <section id="recommend" aria-labelledby="recommend-heading">
+      <h2 id="recommend-heading">Ask the AI</h2>
+      <p>Tell us what you're interested in and we'll suggest something from the catalogue.</p>
+
+      <form
+        id="recommend-form"
+        hx-post="/api/recommend"
+        hx-swap="none"
+        hx-on::after-request="renderRecommendation(event)">
+        <label for="interest">Your interests</label>
+        <input
+          id="interest"
+          name="interest"
+          type="text"
+          placeholder="e.g. I like street art and casual Asian food"
+          required
+          minlength="3"
+          maxlength="200">
+        <button type="submit">Get Recommendation</button>
+      </form>
+
+      <div id="recommend-result" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
