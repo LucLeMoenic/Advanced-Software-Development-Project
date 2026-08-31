@@ -38,11 +38,40 @@ services:
 
   ollama:
     image: ollama/ollama:latest
+    restart: unless-stopped
     ports:
       - "11434:11434"
     volumes:
-      - ollama_data:/root/.ollama
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  agentic-loop:
+    build:
+      context: ./ai-services/agentic-loop
     restart: unless-stopped
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      IMPLEMENTER_MODEL: ${IMPLEMENTER_MODEL:-qwen2.5-coder:7b}
+      REVIEWER_MODEL: ${REVIEWER_MODEL:-llama3.2:3b}
+      ASPNETCORE_URLS: http://+:8080
+      AGENTIC_LOOP_HEALTH_URL: http://localhost:8080/health
+    ports:
+      - "5180:8080"
+    volumes:
+      - ./:/workspace:ro
+      - ./docs/agentic-loop-records:/workspace/docs/agentic-loop-records
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "dotnet", "/app/AgenticLoop.dll", "healthcheck"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
 volumes:
-  ollama_data:
+  ollama-data:
