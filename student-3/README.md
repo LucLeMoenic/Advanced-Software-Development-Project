@@ -53,3 +53,17 @@ cd student-3
 pip install -r backend/requirements.txt
 pytest tests
 ```
+
+## Docker Compose
+
+Wired into the root `docker-compose.yml`: `student3-db-init` (one-shot schema+seed) →
+`student3-database` → `student3-backend` (also depends on `ollama-student3-model`, which
+pulls `STUDENT3_MODEL`, default `qwen2.5:3b`) → `student3-frontend`. From the repo root:
+
+```bash
+docker compose up -d student3-frontend
+```
+
+brings up this whole slice plus its `ollama` dependency. See `docs/compose-snippet.yml` for
+a standalone copy of just these service blocks, and `.github/workflows/student-3.yml` for
+the CI job (installs deps, runs pytest, builds all three images).

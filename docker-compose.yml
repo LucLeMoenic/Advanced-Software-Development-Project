@@ -72,12 +72,79 @@ services:
     ports:
       - "5102:80"
 
+  student3-db-init:
+    build:
+      context: ./student-3/database
+      dockerfile: Dockerfile
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        python init_db.py
+        python seed.py
+    environment:
+      DATABASE_PATH: /data/attractions.db
+    volumes:
+      - ./student-3/database/storage:/data
+
+  student3-database:
+    build:
+      context: ./student-3/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/attractions.db
+    ports:
+      - "5303:8080"
+    volumes:
+      - ./student-3/database/storage:/data
+    depends_on:
+      student3-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student3-backend:
+    build:
+      context: ./student-3/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_API_URL: http://student3-database:8080
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
+    ports:
+      - "5203:8080"
+    depends_on:
+      student3-database:
+        condition: service_healthy
+      ollama-student3-model:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   student3-frontend:
     build:
       context: ./student-3/frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5103:80"
+    depends_on:
+      student3-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   student4-frontend:
     build:
@@ -112,6 +179,25 @@ services:
     environment:
       OLLAMA_HOST: http://ollama:11434
       MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        if ollama show "$$MODEL" > /dev/null 2>&1; then
+          echo "Ollama model already installed: $$MODEL"
+        else
+          ollama pull "$$MODEL"
+        fi
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ollama-student3-model:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
