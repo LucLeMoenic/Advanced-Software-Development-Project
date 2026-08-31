@@ -77,7 +77,7 @@ internal sealed record SearchValidationResult(
     ValidatedSearch? Value,
     IReadOnlyDictionary<string, string>? Errors);
 
-internal sealed record ValidatedSearch(
+public sealed record ValidatedSearch(
     string Destination,
     DateOnly CheckIn,
     DateOnly CheckOut,

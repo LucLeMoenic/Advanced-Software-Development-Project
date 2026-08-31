@@ -329,3 +329,22 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Evidence:** backend tests pass 29/29; database regressions pass 19/19; Docker rebuild succeeds; all 10 persisted searches list and reopen through the rebuilt backend; Compose configuration and diff checks pass.
 
 **Verdict:** accepted after corrections. Chunk 4 is complete without Ollama: valid searches rank and persist deterministically, empty searches persist with an empty snapshot, history CRUD is exposed through the backend, dependency failures use stable `502`/`503` envelopes, and persisted SQLite data survives service rebuilds.
+
+## 2026-08-31 - Chunk 5 Application AI Ranking Review
+
+**Review type:** Copilot adversarial diff review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** Application ranking prompt, Ollama HTTP client/configuration, request allow-list, output validation, trusted candidate mapping, search fallback/persistence, response notice, logging, and FR-06 to FR-10/NFR-01 to NFR-03/NFR-06/NFR-08 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Accepted | The model receives validated criteria and only ranking-relevant eligible candidate fields. Preferences and descriptions are explicitly labelled untrusted, and model output cannot replace trusted names, destinations, prices, or capacities. | Kept the bounded prompt/input contract and map accepted IDs/ranks/reasons back onto validated database candidates. |
+| Accepted | Whole-response validation rejects Markdown, malformed JSON, unknown/missing/duplicate/extra IDs, non-contiguous or duplicate ranks, empty/oversized/untrimmed reasons, and unexpected output properties. | Kept one rejection path that invokes deterministic fallback before persistence. |
+| Required | The initial tests did not exercise non-success Ollama HTTP status, `done: false`/empty generation responses, or endpoint fallback for an unavailable ranking client. | Added focused client and endpoint tests for all three paths and asserted structured failure categories plus persisted fallback mode/notice. |
+| Accepted | Empty candidate searches skip Ollama, while timeout, connection, HTTP, and invalid-response failures retain valid candidates and persist deterministic results. | Kept empty-result behavior separate from AI failure notices and preserved the existing deterministic ordering contract. |
+
+**Evidence:** `backend/Prompts/accommodation-ranking-v1.txt`, `backend/Clients/OllamaRankingClient.cs`, `backend/Api/SearchEndpoints.cs`, `backend/tests/OllamaRankingClientTests.cs`, and `backend/tests/SearchEndpointsTests.cs`.
+
+**Validation:** all 46 backend tests pass and `git diff --check` reports no whitespace errors.
+
+**Verdict:** implementation accepted. Live Ollama execution remains open evidence work; this review used deterministic test doubles and must not be cited as a genuine model run.

@@ -55,7 +55,8 @@ public sealed record SearchResponse(
     string RankingMode,
     IReadOnlyList<SearchResult> Results,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    string? Notice = null);
 
 public sealed record PersistSearchRequest(
     string Title,
