@@ -153,13 +153,14 @@ As of 2026-08-31:
 - The complete database suite passes 19/19 tests, and EF reports no pending model changes.
 - Chunk 4 backend orchestration now validates and normalises traveller searches before dependency calls, requests only eligible active candidates through the database API, ranks deterministically by budget-midpoint distance, price, and ID, persists completed searches, and exposes history list/reopen/rename/delete endpoints.
 - Database calls use a three-second timeout and distinguish unavailable dependencies (`503`) from unusable responses (`502`). Database payloads are validated before becoming public backend DTOs.
-- The backend suite passes 29/29 tests. All 10 tracked SQLite searches reopen through the backend after a container rebuild, confirming the bind-mounted database remains the persistence source and no startup seeder is required.
+- Chunk 5 application ranking now calls one configured Ollama model with a 12-second timeout and the versioned backend prompt, sends only validated criteria and eligible candidate fields, validates the complete ID/rank/reason response, restores display fields from trusted candidates, and falls back deterministically with a visible notice.
+- The backend suite passes 46/46 tests, including valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, prompt-injection-shaped data, timeout, connection, HTTP, and incomplete-response failures. All 10 tracked SQLite searches still reopen through the backend.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
-- Manual catalogue data, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
+- Live application-model execution evidence, manual catalogue data, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be produced.
 
-The current services prove the Chunk 1 boundaries and runtime health plus the catalogue and database search-history APIs. They do not yet implement the frontend-facing traveller search or recommendation workflow.
+The backend now implements the frontend-facing search, validated AI ranking, fallback, persistence, and history workflow. The browser interface is not yet implemented.
 
 ## Immediate Next Gate
 
-Continue with Chunk 5 application-model ranking. Create the manual catalogue records after the application entry flow exists and keep FR-16 tracked as incomplete.
+Continue with Chunk 6 traveller frontend. Create the manual catalogue records after the application entry flow exists and keep FR-16 and live-model evidence tracked as incomplete.

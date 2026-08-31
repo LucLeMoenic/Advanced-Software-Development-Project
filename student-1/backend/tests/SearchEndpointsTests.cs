@@ -17,7 +17,8 @@ public sealed class SearchEndpointsTests
     public async Task InvalidSearchDoesNotCallDatabase(SearchRequest request, string field)
     {
         var database = new FakeDatabaseApiClient();
-        using var factory = CreateFactory(database);
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/searches", request);
@@ -27,13 +28,15 @@ public sealed class SearchEndpointsTests
         Assert.NotNull(error);
         Assert.Contains(field, error.Error.Fields.Keys);
         Assert.Equal(0, database.CallCount);
+        Assert.Equal(0, ollama.CallCount);
     }
 
     [Fact]
     public async Task InvalidJsonDoesNotCallDatabase()
     {
         var database = new FakeDatabaseApiClient();
-        using var factory = CreateFactory(database);
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama);
         using var client = factory.CreateClient();
         using var content = new StringContent(
             """{"destination":""",
@@ -44,13 +47,15 @@ public sealed class SearchEndpointsTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(0, database.CallCount);
+        Assert.Equal(0, ollama.CallCount);
     }
 
     [Fact]
     public async Task NonJsonContentDoesNotCallDatabase()
     {
         var database = new FakeDatabaseApiClient();
-        using var factory = CreateFactory(database);
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama);
         using var client = factory.CreateClient();
         using var content = new StringContent("""{"destination":"Gold Coast"}""");
 
@@ -61,10 +66,11 @@ public sealed class SearchEndpointsTests
         Assert.NotNull(error);
         Assert.Contains("body", error.Error.Fields.Keys);
         Assert.Equal(0, database.CallCount);
+        Assert.Equal(0, ollama.CallCount);
     }
 
     [Fact]
-    public async Task ValidSearchBuildsCandidateQueryRanksAndPersists()
+    public async Task ValidSearchUsesAiRankingAndPersists()
     {
         var database = new FakeDatabaseApiClient
         {
@@ -76,7 +82,8 @@ public sealed class SearchEndpointsTests
                 Candidate(1, 100m)
             ]
         };
-        using var factory = CreateFactory(database);
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(
@@ -96,16 +103,54 @@ public sealed class SearchEndpointsTests
         Assert.NotNull(database.LastPersistRequest);
         Assert.Equal("Gold Coast", database.LastPersistRequest.Title);
         Assert.Equal("quiet room", database.LastPersistRequest.Preferences);
-        Assert.Equal("fallback", database.LastPersistRequest.RankingMode);
-        Assert.Equal([1, 4, 3, 2], saved.Results.Select(result => result.AccommodationId));
+        Assert.Equal("ai", database.LastPersistRequest.RankingMode);
+        Assert.Equal([2, 3, 4, 1], saved.Results.Select(result => result.AccommodationId));
         Assert.Equal([1, 2, 3, 4], saved.Results.Select(result => result.Rank));
+        Assert.Null(saved.Notice);
+        Assert.Equal(1, ollama.CallCount);
+    }
+
+    [Theory]
+    [InlineData(RankingFailure.InvalidResponse)]
+    [InlineData(RankingFailure.Unavailable)]
+    public async Task AiFailureUsesDeterministicFallbackAndPersistsNotice(
+        RankingFailure failure)
+    {
+        var database = new FakeDatabaseApiClient
+        {
+            Candidates =
+            [
+                Candidate(2, 110m),
+                Candidate(3, 90m),
+                Candidate(4, 100m),
+                Candidate(1, 100m)
+            ]
+        };
+        var ollama = new FakeOllamaRankingClient
+        {
+            Failure = failure
+        };
+        using var factory = CreateFactory(database, ollama);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
+        var saved = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(saved);
+        Assert.Equal("fallback", database.LastPersistRequest!.RankingMode);
+        Assert.Equal([1, 4, 3, 2], saved.Results.Select(result => result.AccommodationId));
+        Assert.Equal(
+            "AI ranking was unavailable, so deterministic fallback ranking was used.",
+            saved.Notice);
     }
 
     [Fact]
     public async Task EmptyCandidateSearchIsPersistedAndReturnsOk()
     {
         var database = new FakeDatabaseApiClient();
-        using var factory = CreateFactory(database);
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
@@ -115,6 +160,7 @@ public sealed class SearchEndpointsTests
         Assert.NotNull(saved);
         Assert.Empty(saved.Results);
         Assert.NotNull(database.LastPersistRequest);
+        Assert.Equal(0, ollama.CallCount);
     }
 
     [Theory]
@@ -126,7 +172,7 @@ public sealed class SearchEndpointsTests
         string expectedCode)
     {
         var database = new FakeDatabaseApiClient { Failure = failure };
-        using var factory = CreateFactory(database);
+        using var factory = CreateFactory(database, new FakeOllamaRankingClient());
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
@@ -155,7 +201,7 @@ public sealed class SearchEndpointsTests
                 string.Empty,
                 "fallback",
                 [Result(1, 1)])));
-        using var factory = CreateFactory(database);
+        using var factory = CreateFactory(database, new FakeOllamaRankingClient());
         using var client = factory.CreateClient();
 
         var listResponse = await client.GetAsync("/api/searches");
@@ -183,7 +229,7 @@ public sealed class SearchEndpointsTests
     public async Task InvalidRenameDoesNotCallDatabase()
     {
         var database = new FakeDatabaseApiClient();
-        using var factory = CreateFactory(database);
+        using var factory = CreateFactory(database, new FakeOllamaRankingClient());
         using var client = factory.CreateClient();
 
         var response = await client.PatchAsJsonAsync(
@@ -251,7 +297,8 @@ public sealed class SearchEndpointsTests
     }
 
     private static WebApplicationFactory<Program> CreateFactory(
-        FakeDatabaseApiClient database)
+        FakeDatabaseApiClient database,
+        FakeOllamaRankingClient ollama)
     {
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
@@ -259,7 +306,9 @@ public sealed class SearchEndpointsTests
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDatabaseApiClient>();
+                    services.RemoveAll<IOllamaRankingClient>();
                     services.AddSingleton<IDatabaseApiClient>(database);
+                    services.AddSingleton<IOllamaRankingClient>(ollama);
                 });
             });
     }
@@ -269,6 +318,48 @@ public sealed class SearchEndpointsTests
         None,
         Unavailable,
         MalformedResponse
+    }
+
+    public enum RankingFailure
+    {
+        None,
+        InvalidResponse,
+        Unavailable
+    }
+
+    private sealed class FakeOllamaRankingClient : IOllamaRankingClient
+    {
+        public RankingFailure Failure { get; init; }
+        public int CallCount { get; private set; }
+
+        public Task<IReadOnlyList<SearchResult>> RankAsync(
+            ValidatedSearch search,
+            IReadOnlyList<AccommodationCandidate> candidates,
+            CancellationToken cancellationToken)
+        {
+            CallCount++;
+            if (Failure == RankingFailure.InvalidResponse)
+            {
+                throw new OllamaResponseException();
+            }
+
+            if (Failure == RankingFailure.Unavailable)
+            {
+                throw new OllamaUnavailableException("connection");
+            }
+
+            IReadOnlyList<SearchResult> results = candidates
+                .Select((candidate, index) => new SearchResult(
+                    candidate.Id,
+                    candidate.Name,
+                    candidate.Destination,
+                    candidate.NightlyPrice,
+                    candidate.MaxGuests,
+                    index + 1,
+                    "AI-ranked from the supplied criteria."))
+                .ToArray();
+            return Task.FromResult(results);
+        }
     }
 
     private sealed class FakeDatabaseApiClient : IDatabaseApiClient

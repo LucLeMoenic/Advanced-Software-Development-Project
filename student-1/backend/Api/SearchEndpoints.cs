@@ -23,6 +23,7 @@ public static class SearchEndpoints
     private static async Task<IResult> CreateAsync(
         HttpContext context,
         IDatabaseApiClient database,
+        IOllamaRankingClient ollama,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -58,10 +59,41 @@ public static class SearchEndpoints
                 context.RequestAborted);
             candidateCount = candidates.Count;
 
-            var results = DeterministicRanker.Rank(
-                candidates,
-                search.MinimumPrice,
-                search.MaximumPrice);
+            var rankingMode = "fallback";
+            string? notice = null;
+            IReadOnlyList<SearchResult> results = [];
+
+            if (candidates.Count > 0)
+            {
+                stage = "ranking";
+                try
+                {
+                    results = await ollama.RankAsync(
+                        search,
+                        candidates,
+                        context.RequestAborted);
+                    rankingMode = "ai";
+                }
+                catch (OllamaRankingException exception)
+                {
+                    results = DeterministicRanker.Rank(
+                        candidates,
+                        search.MinimumPrice,
+                        search.MaximumPrice);
+                    notice = "AI ranking was unavailable, so deterministic fallback ranking was used.";
+
+                    logger.LogWarning(
+                        "Search {CorrelationId} stage {Stage} outcome {Outcome} continued in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}; failure category {FailureCategory}",
+                        context.TraceIdentifier,
+                        stage,
+                        "fallback",
+                        stopwatch.ElapsedMilliseconds,
+                        candidates.Count,
+                        rankingMode,
+                        exception.FailureCategory);
+                }
+            }
+
             stage = "persistence";
             var persisted = await database.CreateSearchAsync(
                 new PersistSearchRequest(
@@ -73,7 +105,7 @@ public static class SearchEndpoints
                     search.MinimumPrice,
                     search.MaximumPrice,
                     search.Preferences,
-                    "fallback",
+                    rankingMode,
                     results),
                 context.RequestAborted);
 
@@ -84,11 +116,13 @@ public static class SearchEndpoints
                 "success",
                 stopwatch.ElapsedMilliseconds,
                 candidates.Count,
-                "fallback");
+                rankingMode);
 
             return candidates.Count == 0
                 ? Results.Ok(persisted)
-                : Results.Created($"{Route}/{persisted.Id}", persisted);
+                : Results.Created(
+                    $"{Route}/{persisted.Id}",
+                    persisted with { Notice = notice });
         }
         catch (DatabaseUnavailableException)
         {
