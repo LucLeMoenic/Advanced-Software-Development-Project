@@ -2,7 +2,7 @@
 
 ## 1. Purpose and Scope
 
-The AI Accommodation Recommender helps a traveller rank accommodation options from a local catalogue according to destination, travel dates, guest count, nightly budget, and free-text preferences.
+The AI Accommodation Recommender helps a traveller rank accommodation options from a local SQLite catalogue according to destination, travel dates, guest count, nightly budget, and free-text preferences. When a destination has no cached catalogue records, the backend may populate that catalogue from LiteAPI sandbox rates before ranking.
 
 Release 0 must deliver one integrated, containerised feature through the required path:
 
@@ -19,6 +19,7 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 - Deterministic fallback ranking if Ollama is unavailable or invalid.
 - Persisted search history with create, read, rename, and delete actions.
 - Accommodation catalogue CRUD in the database API.
+- Backend-only LiteAPI sandbox import when a searched destination is not yet cached.
 - Three independently containerised student services.
 - Integration with the shared Ollama service, home page, theme, Compose stack, and `student-1.yml` workflow.
 - A terminal-runnable Plan -> Act -> Observe -> Adapt development loop using two distinct local Ollama models with separate implementation and review responsibilities.
@@ -27,7 +28,7 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 ### 1.2 Release 0 Out of Scope
 
 - Live booking, payments, accounts, authentication, maps, reviews, and price guarantees.
-- Live hotel providers such as Amadeus. A provider may be considered after Release 0; it is not needed to prove the recommender or satisfy the rubric.
+- Production hotel availability, date-specific price guarantees, and booking-provider service levels. LiteAPI data is a demonstration cache, not a production quote.
 - MCP, RAG, multi-agent systems, cloud deployment, and production-scale availability. These belong to later releases.
 - Scraping accommodation websites.
 
@@ -41,6 +42,7 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 | ASP.NET Core database API service | Owns EF Core and the SQLite file and exposes accommodation and search-history CRUD over HTTP. |
 | SQLite | Stores the accommodation catalogue and persisted search history. No other service may open its file. |
 | Shared Ollama service | Hosts the application ranking model and the two distinct development-loop model roles locally. |
+| LiteAPI sandbox | Optionally supplies accommodation rates to the backend when the requested destination has no local catalogue records. The browser never receives the provider credential. |
 | Shared .NET agentic-loop service | Runs inside the integrated Compose application, supplies versioned context and prompts to the implementer model, captures its proposal, supplies that proposal to the reviewer model, and records the final human-controlled adaptation. |
 | Shared home page | Provides the integrated entry point to this feature. |
 
@@ -56,6 +58,7 @@ Each requirement is mandatory for Release 0 unless marked otherwise.
 | FR-02 | The backend validates all search input before calling the database or Ollama. | Destination is 2-100 characters; check-in is not before the current local date; check-out is after check-in; guests is an integer from 1-20; prices are numbers from 0-100000; minimum price is not greater than maximum price; preferences is at most 500 characters. |
 | FR-03 | Invalid input produces field-specific feedback without creating history or calling Ollama. | The backend returns HTTP `400` with a stable error object; the frontend displays the message beside or above the form; database and Ollama test doubles receive no call. |
 | FR-04 | The backend retrieves eligible accommodation candidates only through the database API. | Candidates match the requested destination case-insensitively, support at least the requested guest count, fall within the nightly price range, and are active. The backend never opens SQLite directly. |
+| FR-04a | When the database API has no cached accommodation for a destination, the backend may import LiteAPI sandbox results before retrieving eligible candidates again. | The backend sends validated criteria using LiteAPI's `aiSearch` location method, requests at most 10 AUD results, validates provider IDs, metadata, occupancy, URLs, and price data, converts total-stay prices to nightly prices, and creates catalogue records only through the database API. Existing destination data skips LiteAPI. |
 | FR-05 | A valid search with no eligible candidates returns an explicit empty state. | The frontend displays that no matching accommodation is available; the backend returns HTTP `200` with an empty result list and does not call Ollama. |
 
 ### 3.2 AI Recommendation
@@ -199,7 +202,7 @@ At least 10 records must exist in every table used in the submitted demonstratio
 | ID | Category | Requirement and measurable acceptance target |
 |---|---|---|
 | NFR-01 | Performance | With local seeded data and a responsive local Ollama model, 95% of search requests complete within 15 seconds across 20 sequential manual/test requests. Non-AI history operations complete within 2 seconds. Record the device and model used with the evidence. |
-| NFR-02 | Timeout | Database API calls time out within 3 seconds and the Ollama call within 12 seconds. A timeout follows the explicit error or fallback behaviour in FR-09. |
+| NFR-02 | Timeout | Database API calls time out within 3 seconds, LiteAPI calls within 10 seconds, and the Ollama call within 12 seconds. A timeout follows the explicit provider-error or ranking-fallback behaviour. |
 | NFR-03 | Reliability | A malformed or unavailable Ollama response cannot crash the request process, create invalid ranks, or lose an otherwise valid search. |
 | NFR-04 | Accessibility | Search, history, dialogs, notices, and results are keyboard operable; controls have programmatic labels; focus is visible; status changes use an appropriate live region; images have meaningful or empty alt text. |
 | NFR-05 | Responsive UI | At viewport widths of 320px, 768px, and 1280px, all controls and results remain usable without horizontal page scrolling. |

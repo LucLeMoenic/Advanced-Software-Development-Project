@@ -56,7 +56,8 @@ public sealed record SearchResponse(
     IReadOnlyList<SearchResult> Results,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    string? Notice = null);
+    string? Notice = null,
+    bool ImportedProviderData = false);
 
 public sealed record PersistSearchRequest(
     string Title,
@@ -75,6 +76,17 @@ public sealed record CandidateQuery(
     int Guests,
     decimal MinimumPrice,
     decimal MaximumPrice);
+
+public sealed record AccommodationImportRequest(
+    string Name,
+    string Destination,
+    string Description,
+    decimal NightlyPrice,
+    int MaxGuests,
+    IReadOnlyList<string> Amenities,
+    string? ImageUrl,
+    string? BookingUrl,
+    bool IsActive);
 
 public sealed record ApiError(
     string Code,

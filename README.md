@@ -4,7 +4,7 @@ Template repository for the 2026 Advanced Software Development project. The proj
 
 ## Current Status
 
-The repository currently contains the initial project structure and a working Vue 3 + Vite frontend boilerplate. The remaining microservice, AI, testing, CI/CD, and deployment folders contain templates for team development.
+The integrated Compose application includes the shared Vue home page, the Student 1 accommodation feature, the shared Ollama runtime, and the bounded .NET agentic loop. Other student services remain independently owned.
 
 ## Repository Structure
 
@@ -24,52 +24,63 @@ The repository currently contains the initial project structure and a working Vu
 
 - Git
 - Docker Desktop
-- Node.js 18 or newer for the Vue frontend
-- Python 3.x for backend services
-- Ollama for local approved open-source LLM integration
+- Node.js 22 for local frontend builds and tests
+- .NET 8 SDK for local backend, database, and agentic-loop tests
 
-## Vue Frontend
+## Student 1 Accommodation Setup
 
-The shared frontend is located in `shared/vue-frontend/` and uses Vue 3 with Vite.
+Run these commands from the repository root in PowerShell.
 
-Install dependencies and start the development server:
+1. Configure the application and development model tags:
 
-```bash
-cd shared/vue-frontend
-npm install
-npm run dev
-```
+   ```powershell
+   Copy-Item .env.example .env
+   docker compose config --quiet
+   ```
 
-Open the URL shown by Vite, normally `http://localhost:5173`.
+2. Restore dependencies, run every Student 1 test, and build the integrated images:
 
-Create a production build:
+   ```powershell
+   npm ci --prefix student-1/frontend
+   npm test --prefix student-1/frontend
+   npm run build --prefix student-1/frontend
+   dotnet restore student-1/backend/tests/Backend.Tests.csproj
+   dotnet test student-1/backend/tests/Backend.Tests.csproj --configuration Release --no-restore
+   dotnet restore student-1/database/tests/Database.Tests.csproj
+   dotnet test student-1/database/tests/Database.Tests.csproj --configuration Release --no-restore
+   docker compose build shared-frontend student1-frontend student1-backend student1-database
+   ```
 
-```bash
-cd shared/vue-frontend
-npm run build
-```
+3. Start the shared page and Student 1 services. Compose starts Ollama and pulls the configured application model only when it is missing:
 
-## Docker
+   ```powershell
+   docker compose up -d --build --wait shared-frontend
+   ```
 
-Build and run the Vue frontend as an nginx container from the repository root:
+4. Open `http://localhost:5100` and select **Accommodation Recommender**, or open `http://localhost:5100/accommodation/` directly.
 
-```bash
-docker build -t asd-vue-frontend:latest \
-	-f shared/vue-frontend/Dockerfile shared/vue-frontend
-docker run --rm -p 5100:80 asd-vue-frontend:latest
-```
+5. Check service health:
 
-The current Compose file is a starting point for the integrated application. Services should be added as each student implements and integrates their microservice set.
+   ```powershell
+   Invoke-WebRequest http://localhost:5100/health
+   Invoke-WebRequest http://localhost:5101/health
+   Invoke-WebRequest http://localhost:5201/health
+   Invoke-WebRequest http://localhost:5301/health
+   docker compose ps shared-frontend student1-frontend student1-backend student1-database ollama
+   ```
 
-```bash
-docker compose up --build
-```
+6. The tracked SQLite file already contains the required search-history examples. Accommodation records are intentionally not automatically seeded; create the demonstration catalogue through the database API and confirm both tables through:
 
-Start only the Student 1 application and print its localhost URLs:
+   ```powershell
+   Invoke-RestMethod "http://localhost:5301/api/data/accommodations"
+   Invoke-RestMethod "http://localhost:5301/api/data/searches"
+   ```
 
-```powershell
-.\scripts\start-student1.ps1
-```
+7. Stop the integrated services without deleting the persistent SQLite file or Ollama models:
+
+   ```powershell
+   docker compose down
+   ```
 
 ## Shared Release 0 Agentic Loop
 

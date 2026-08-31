@@ -65,6 +65,37 @@ public sealed class DatabaseApiClientTests
     }
 
     [Theory]
+    [InlineData(HttpStatusCode.Created)]
+    [InlineData(HttpStatusCode.Conflict)]
+    public async Task AccommodationImportAcceptsCreatedOrExistingRecord(
+        HttpStatusCode statusCode)
+    {
+        var handler = new StubHandler(request =>
+        {
+            Assert.Equal(HttpMethod.Post, request.Method);
+            Assert.Equal("/api/data/accommodations", request.RequestUri!.AbsolutePath);
+            return new HttpResponseMessage(statusCode);
+        });
+        var client = new DatabaseApiClient(new HttpClient(handler)
+        {
+            BaseAddress = new Uri("http://database")
+        });
+
+        await client.ImportAccommodationAsync(
+            new AccommodationImportRequest(
+                "Stay",
+                "Gold Coast",
+                "Imported",
+                100m,
+                2,
+                [],
+                null,
+                null,
+                true),
+            CancellationToken.None);
+    }
+
+    [Theory]
     [InlineData("[null]")]
     [InlineData("[{}]")]
     [InlineData("""

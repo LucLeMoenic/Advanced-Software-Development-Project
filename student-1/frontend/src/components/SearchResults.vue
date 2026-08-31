@@ -57,6 +57,11 @@ defineExpose({ focusHeading })
       <span>{{ search.notice }}</span>
     </div>
 
+    <div v-if="search.importedProviderData" class="notice notice-information" role="status">
+      <strong>New LiteAPI accommodation data imported.</strong>
+      <span>The validated rates were cached in the local catalogue before ranking.</span>
+    </div>
+
     <div v-if="search.results.length === 0" class="empty-state">
       <span aria-hidden="true">0</span>
       <h3>No matching accommodation</h3>

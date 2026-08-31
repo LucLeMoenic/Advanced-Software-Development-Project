@@ -117,14 +117,13 @@ defineExpose({ focusFirstInvalid })
   <section class="panel search-panel" aria-labelledby="search-heading">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">New recommendation</p>
-        <h2 id="search-heading">Tell us about your trip</h2>
+        <p class="eyebrow">Search accommodation</p>
+        <h2 id="search-heading">Where are you going?</h2>
       </div>
-      <span class="step-badge">Step 1</span>
     </div>
 
     <form novalidate @submit.prevent="submitForm">
-      <div class="field field-wide">
+      <div class="field destination-field">
         <label for="destination">Destination</label>
         <input
           id="destination"
@@ -238,7 +237,7 @@ defineExpose({ focusFirstInvalid })
         </div>
       </div>
 
-      <div class="field field-wide">
+      <div class="field preferences-field">
         <div class="label-row">
           <label for="preferences">Preferences</label>
           <span>{{ form.preferences.length }}/500</span>

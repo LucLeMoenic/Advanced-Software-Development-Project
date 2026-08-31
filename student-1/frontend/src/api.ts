@@ -36,6 +36,7 @@ export interface SearchResponse extends SearchSummary {
   preferences: string
   results: SearchResult[]
   notice: string | null
+  importedProviderData?: boolean
 }
 
 interface ErrorEnvelope {

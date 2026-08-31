@@ -23,6 +23,7 @@ public static class SearchEndpoints
     private static async Task<IResult> CreateAsync(
         HttpContext context,
         IDatabaseApiClient database,
+        ILiteApiClient liteApi,
         IOllamaRankingClient ollama,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
@@ -58,6 +59,31 @@ public static class SearchEndpoints
                     search.MaximumPrice),
                 context.RequestAborted);
             candidateCount = candidates.Count;
+            var importedProviderData = false;
+
+            if (candidates.Count == 0)
+            {
+                stage = "liteapi_import";
+                var imports = await liteApi.SearchAsync(
+                    search,
+                    context.RequestAborted);
+                foreach (var accommodation in imports)
+                {
+                    await database.ImportAccommodationAsync(
+                        accommodation,
+                        context.RequestAborted);
+                }
+
+                candidates = await database.ListCandidatesAsync(
+                    new CandidateQuery(
+                        search.Destination,
+                        search.Guests,
+                        search.MinimumPrice,
+                        search.MaximumPrice),
+                    context.RequestAborted);
+                candidateCount = candidates.Count;
+                importedProviderData = imports.Count > 0;
+            }
 
             var rankingMode = "fallback";
             string? notice = null;
@@ -118,11 +144,17 @@ public static class SearchEndpoints
                 candidates.Count,
                 rankingMode);
 
+            var response = persisted with
+            {
+                Notice = notice,
+                ImportedProviderData = importedProviderData
+            };
+
             return candidates.Count == 0
-                ? Results.Ok(persisted)
+                ? Results.Ok(response)
                 : Results.Created(
                     $"{Route}/{persisted.Id}",
-                    persisted with { Notice = notice });
+                    response);
         }
         catch (DatabaseUnavailableException)
         {
@@ -149,6 +181,32 @@ public static class SearchEndpoints
                 "fallback",
                 "database_response");
             return DependencyResponseError(context);
+        }
+        catch (LiteApiUnavailableException exception)
+        {
+            logger.LogWarning(
+                "Search {CorrelationId} stage {Stage} outcome {Outcome} failed in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}; failure category {FailureCategory}",
+                context.TraceIdentifier,
+                stage,
+                "failure",
+                stopwatch.ElapsedMilliseconds,
+                candidateCount,
+                "none",
+                exception.FailureCategory);
+            return AccommodationProviderUnavailable(context);
+        }
+        catch (LiteApiResponseException exception)
+        {
+            logger.LogWarning(
+                "Search {CorrelationId} stage {Stage} outcome {Outcome} failed in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}; failure category {FailureCategory}",
+                context.TraceIdentifier,
+                stage,
+                "failure",
+                stopwatch.ElapsedMilliseconds,
+                candidateCount,
+                "none",
+                exception.FailureCategory);
+            return AccommodationProviderResponseError(context);
         }
     }
 
@@ -347,6 +405,24 @@ public static class SearchEndpoints
             StatusCodes.Status503ServiceUnavailable,
             "dependency_unavailable",
             "The database service is unavailable.");
+    }
+
+    private static IResult AccommodationProviderResponseError(HttpContext context)
+    {
+        return Error(
+            context,
+            StatusCodes.Status502BadGateway,
+            "accommodation_provider_response_error",
+            "The accommodation provider returned an unusable response.");
+    }
+
+    private static IResult AccommodationProviderUnavailable(HttpContext context)
+    {
+        return Error(
+            context,
+            StatusCodes.Status503ServiceUnavailable,
+            "accommodation_provider_unavailable",
+            "The accommodation provider is unavailable.");
     }
 
     private static IResult Error(

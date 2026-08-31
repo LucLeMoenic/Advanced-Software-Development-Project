@@ -123,7 +123,8 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 
 - Add explicit request, candidate, result, history, and error DTOs.
 - Validate and normalise every search field at the backend boundary.
-- Retrieve candidates only through the database API.
+- Retrieve cached candidates only through the database API.
+- If the destination has no cached records, request at most 10 LiteAPI sandbox rates, validate and import them through the database API, then repeat candidate filtering.
 - Implement deterministic ranking by budget-midpoint distance, nightly price, then accommodation ID.
 - Persist completed searches through the database API.
 - Expose frontend-facing search and history CRUD endpoints.
@@ -134,6 +135,7 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 - Every validation boundary in FR-02.
 - Invalid input causes no database or Ollama call.
 - Candidate-filter request construction.
+- LiteAPI request/response validation, import, cache hit, empty response, and dependency failures using test doubles.
 - Empty-candidate response.
 - Deterministic ordering.
 - Database timeout and malformed response.
@@ -142,7 +144,7 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 **Done when**
 
 - Search, results, persistence, reopen, rename, and delete work end to end without Ollama.
-- Empty results and dependency failures return the required response shapes.
+- Empty results and database, provider, and Ollama dependency failures return the required response shapes.
 
 ### Chunk 5 - Application AI Ranking
 

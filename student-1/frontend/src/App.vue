@@ -107,13 +107,8 @@ async function focusError() {
         <p class="eyebrow">Plan a stay that fits</p>
         <h1>Accommodation Recommender</h1>
         <p class="hero-copy">
-          Compare eligible stays against your dates, group, budget, and preferences.
-          Recommendations are saved so you can reopen them without rerunning the ranking.
+          Search by destination, dates, guests, and budget to find your best matches.
         </p>
-      </div>
-      <div class="hero-stat" aria-label="How recommendations work">
-        <strong>1 search</strong>
-        <span>AI ranking with a reliable fallback</span>
       </div>
     </header>
 
@@ -130,28 +125,27 @@ async function focusError() {
       <span>{{ pageError }}</span>
     </div>
 
-    <div class="content-grid">
-      <SearchForm
-        ref="searchForm"
-        :submitting="submitting"
-        :server-errors="serverErrors"
-        @submit="submitSearch"
-        @invalid="statusMessage = 'Check the highlighted search fields.'"
-      />
-      <SearchHistory
-        ref="searchHistory"
-        @opened="showSearch"
-        @renamed="updateRenamedSearch"
-        @deleted="clearDeletedSearch"
-        @error="showError"
-        @status="statusMessage = $event"
-      />
-    </div>
+    <SearchForm
+      ref="searchForm"
+      :submitting="submitting"
+      :server-errors="serverErrors"
+      @submit="submitSearch"
+      @invalid="statusMessage = 'Check the highlighted search fields.'"
+    />
 
     <SearchResults
       v-if="currentSearch"
       ref="searchResults"
       :search="currentSearch"
+    />
+
+    <SearchHistory
+      ref="searchHistory"
+      @opened="showSearch"
+      @renamed="updateRenamedSearch"
+      @deleted="clearDeletedSearch"
+      @error="showError"
+      @status="statusMessage = $event"
     />
   </main>
 </template>
