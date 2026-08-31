@@ -41,7 +41,7 @@ Review this register at the start and end of each feature-plan phase and before 
 
 | Priority | Action | Due phase | Status |
 |---:|---|---:|---|
-| 1 | Confirm assigned folder, spelling, shared contracts, application model, distinct loop model tags, and demo hardware capacity. | 0 | Open |
+| 1 | Confirm folder, route, ports, service names, theme, model tags, and shared-file ownership. | 0 | Complete |
 | 2 | Replace the three placeholder accommodation Dockerfiles and extend Student 1 CI to build and test the real services. | 2 / 10 | Open |
 | 3 | Implement idempotent seed data and 10-record assertions. | 3 / 4 | Open |
 | 4 | Implement deterministic application fallback before connecting Ollama. | 5 | Open |

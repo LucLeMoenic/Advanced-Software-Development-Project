@@ -154,3 +154,20 @@ Reviewed the conflicting `docker-compose.yml` and Student 1 workflow changes fro
 | Reviewer headings outside `[OBSERVE]`, contradictory ACCEPT findings, model aliases, and sensitive symbolic-link targets could bypass validation. | Bounded reviewer parsing to the Observe section, rejected ACCEPT with blocking/required findings, normalised model tags before comparison/use/recording, and revalidated resolved link targets. |
 
 No additional service, model, dependency, abstraction, or speculative Release 1 capability was added.
+
+## 2026-08-31 - Feature Plan Chunking Review
+
+**Goal:** provide a direct build sequence for the accommodation recommender without repeating the requirements, risk register, evidence checklist, or agentic-loop implementation details.
+
+| Chunk | Goal alignment | Complexity result |
+|---|---|---|
+| Contracts and boundaries | Directly prevents incompatible paths, ports, service calls, and model usage. | Kept as one compact table and boundary list. |
+| Runnable services | Required foundation for all feature behaviour. | Reduced to scaffold, health, images, and Compose. |
+| Catalogue and history | Required persistence and CRUD functionality. | Kept as two chunks because they have different schemas and acceptance tests. |
+| Deterministic backend and AI ranking | Required search flow and safe model integration. | Kept separate so basic integration works before Ollama failure modes are introduced. |
+| Traveller frontend | Required browser functionality, CRUD, accessibility, and responsive behaviour. | Proportionate to the marking criteria. |
+| Shared integration and CI | Required for non-zero integration and DevOps marks. | Combined into one final software-delivery chunk. |
+| Report and demonstration | Required submission evidence. | Reduced to one evidence chunk. |
+| Agentic-loop setup | Required demonstration setup but not application functionality. | Moved to the end instead of interrupting every implementation phase. |
+
+**Verdict:** the revised plan is implementation-focused and contains no speculative Release 1 or Release 2 work.

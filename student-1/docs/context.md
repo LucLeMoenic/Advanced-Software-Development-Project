@@ -23,6 +23,21 @@ Release 0 success means the feature works inside the integrated group applicatio
 
 The application model may reuse one of the two installed model tags to minimise hardware and storage cost, but the implementer and reviewer configuration values must identify different model tags.
 
+## Confirmed Integration Contracts
+
+- Final feature folder: `student-1/`; rename the current folder before Phase 2 implementation.
+- Shared route and label: `/accommodation`, displayed as `Accommodation Recommender`.
+- Compose services: `student1-frontend`, `student1-backend`, and `student1-database`.
+- Host ports: frontend `5101`, backend `5201`, database `5301`.
+- Container ports: frontend `80`; backend and database `8080`.
+- Theme: reuse the shared frontend's CSS variables and design tokens.
+- Application model: `llama3.2:3b`.
+- Development models: implementer `qwen2.5-coder:7b`; reviewer `llama3.2:3b`.
+- Mitchell may update root Compose, shared navigation/theme, and `student-1.yml` for this feature.
+- Sprint backlog: `docs/sprint-backlog.md`.
+
+Phase 0 contracts are confirmed.
+
 ## Minimal Architecture
 
 ```text
@@ -134,4 +149,4 @@ Do not represent the current scaffold as a working microservice application.
 
 ## Immediate Next Gate
 
-Complete Phase 0 of `feature-plan.md`: confirm the assigned student number/folder, shared route, ports, service names, stylesheet, application model, distinct implementer/reviewer model tags, demonstration-machine capacity, and ownership of shared-file edits.
+Rename this feature folder to `student-1/`, then begin Chunk 1 in `feature-plan.md`.

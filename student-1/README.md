@@ -39,11 +39,12 @@ Do not use the current containers as implementation evidence:
 
 1. [`docs/context.md`](docs/context.md) - compact architecture and current-state handoff.
 2. [`docs/requirements.md`](docs/requirements.md) - normative, testable Release 0 requirements.
-3. [`docs/feature-plan.md`](docs/feature-plan.md) - dependency-ordered implementation phases and gates.
-4. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
-5. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
-6. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
-7. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
+3. [`docs/sprint-backlog.md`](docs/sprint-backlog.md) - requirement-linked implementation work, ownership, status, and exit evidence.
+4. [`docs/feature-plan.md`](docs/feature-plan.md) - dependency-ordered implementation phases and gates.
+5. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
+6. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
+7. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
+8. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
 
 ## Release 0 Scope Guard
 

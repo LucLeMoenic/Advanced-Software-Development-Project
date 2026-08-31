@@ -46,7 +46,7 @@ If a feature is not integrated, the brief states that it receives 0 marks.
 
 | Criterion | Required Mitchell evidence | Status | Evidence location |
 |---|---|---|---|
-| 1. Project Setup | Standard folder; three services; populated tables; Dockerfiles; shared route/theme; model config; workflow; Compose entries. | In progress | Planning docs; implementation pending |
+| 1. Project Setup | Standard folder; three services; populated tables; Dockerfiles; shared route/theme; model config; workflow; Compose entries. | In progress | Contracts and requirement mapping: `docs/context.md`, `docs/sprint-backlog.md`; implementation pending |
 | 2. Service Implementation | Healthy Vue frontend, ASP.NET backend, and ASP.NET/EF Core database API containers communicating over HTTP. | Not started | Pending |
 | 3. AI-Mode Integration | Browser-triggered call through backend to exactly one configured application model, backend-owned ranking prompt, output validation, and visible result. | Not started | Pending |
 | 4. Agentic AI Workflow | Integrated .NET loop service, implementer Plan/Act, distinct reviewer Observe, bounded Adapt, pre/post evidence, human decision, exact local model tags, and records throughout development. | In progress | `ai-services/agentic-loop/` and Compose wiring exist; real model records pending |
