@@ -24,9 +24,9 @@ Only the database service may open SQLite. The frontend may call only the backen
 
 ## Current Status
 
-Chunks 1 and 3 are complete. The Vue frontend, ASP.NET backend, and ASP.NET/EF Core SQLite database API have production Dockerfiles, health endpoints, focused endpoint tests, root Compose wiring, and Student 1 CI coverage. The database API implements accommodation catalogue CRUD/filtering plus persisted search-history create/list/get/rename/delete through scoped repositories. The tracked SQLite database contains 10 representative search records and is bind-mounted by Compose without runtime seeding code.
+Chunks 1, 3, 4, and the implementation portions of Chunks 5 and 6 are complete. The Vue frontend, ASP.NET backend, and ASP.NET/EF Core SQLite database API have production Dockerfiles, health endpoints, focused tests, root Compose wiring, and Student 1 CI build coverage. The database API implements accommodation catalogue CRUD/filtering plus persisted search-history CRUD; the backend validates searches, ranks through one configured Ollama model with deterministic fallback, and persists immutable snapshots.
 
-Backend orchestration, application-model ranking, the complete traveller interface, shared navigation, and the required manually created accommodation records remain later work. Real local agentic-loop execution records are also still required.
+The componentised traveller frontend provides search, result states, fallback notices, and history reopen/rename/delete through the backend API. Its 7 component tests and production build pass. Live application-model execution, manual 320/768/1280px browser checks, shared navigation, required accommodation records, and real local agentic-loop records remain open evidence work.
 
 ## Documentation Order
 
@@ -36,8 +36,9 @@ Backend orchestration, application-model ranking, the complete traveller interfa
 4. [`docs/feature-plan.md`](docs/feature-plan.md) - dependency-ordered implementation phases and gates.
 5. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
 6. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
-7. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
-8. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
+7. [`docs/frontend-browser-checklist.md`](docs/frontend-browser-checklist.md) - repeatable manual Chunk 6 browser and viewport validation.
+8. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
+9. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
 
 ## Release 0 Scope Guard
 

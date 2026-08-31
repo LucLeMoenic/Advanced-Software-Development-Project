@@ -155,12 +155,15 @@ As of 2026-08-31:
 - Database calls use a three-second timeout and distinguish unavailable dependencies (`503`) from unusable responses (`502`). Database payloads are validated before becoming public backend DTOs.
 - Chunk 5 application ranking now calls one configured Ollama model with a 12-second timeout and the versioned backend prompt, sends only validated criteria and eligible candidate fields, validates the complete ID/rank/reason response, restores display fields from trusted candidates, and falls back deterministically with a visible notice.
 - The backend suite passes 46/46 tests, including valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, prompt-injection-shaped data, timeout, connection, HTTP, and incomplete-response failures. All 10 tracked SQLite searches still reopen through the backend.
+- Chunk 6 traveller frontend now provides the labelled search form, client/backend field feedback, duplicate-submit prevention, loading/empty/AI/fallback/dependency states, ranked cards, and newest-first history reopen/rename/confirmed-delete behavior.
+- `App.vue` coordinates three focused components for search input, history CRUD, and results. Live announcements, focus movement, visible focus, text-only interpolation, responsive breakpoints, and long-text containment are implemented.
+- The frontend suite passes 7/7 component tests and the strict TypeScript/Vite production build passes. Manual 320/768/1280px execution, integrated browser/API evidence, and screenshots remain open.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
-- Live application-model execution evidence, manual catalogue data, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be produced.
+- Live application-model execution evidence, manual catalogue data, shared navigation, diagrams, manual frontend viewport checks, and final execution evidence remain to be produced.
 
-The backend now implements the frontend-facing search, validated AI ranking, fallback, persistence, and history workflow. The browser interface is not yet implemented.
+The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
 
 ## Immediate Next Gate
 
-Continue with Chunk 6 traveller frontend. Create the manual catalogue records after the application entry flow exists and keep FR-16 and live-model evidence tracked as incomplete.
+Run the Chunk 6 browser checklist against the Compose application, then create the manual catalogue records when a functional application path for catalogue creation is available. Keep FR-16 and live-model evidence tracked as incomplete.

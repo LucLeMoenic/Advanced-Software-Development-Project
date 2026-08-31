@@ -1,0 +1,270 @@
+<script setup lang="ts">
+import { computed, nextTick, reactive, ref } from 'vue'
+import type { SearchRequest } from '../api'
+
+interface SearchFormValues {
+  destination: string
+  checkIn: string
+  checkOut: string
+  guests: string
+  minimumPrice: string
+  maximumPrice: string
+  preferences: string
+}
+
+const props = defineProps<{
+  submitting: boolean
+  serverErrors: Record<string, string>
+}>()
+
+const emit = defineEmits<{
+  submit: [search: SearchRequest]
+  invalid: []
+}>()
+
+const form = reactive<SearchFormValues>({
+  destination: '',
+  checkIn: '',
+  checkOut: '',
+  guests: '2',
+  minimumPrice: '',
+  maximumPrice: '',
+  preferences: '',
+})
+
+const clientErrors = ref<Record<string, string>>({})
+const errors = computed(() => ({ ...props.serverErrors, ...clientErrors.value }))
+const today = toDateInputValue(new Date())
+
+async function submitForm() {
+  if (props.submitting) {
+    return
+  }
+
+  clientErrors.value = validateForm()
+  if (Object.keys(clientErrors.value).length > 0) {
+    emit('invalid')
+    await focusFirstInvalid()
+    return
+  }
+
+  emit('submit', {
+    destination: form.destination.trim(),
+    checkIn: form.checkIn,
+    checkOut: form.checkOut,
+    guests: Number(form.guests),
+    minimumPrice: Number(form.minimumPrice),
+    maximumPrice: Number(form.maximumPrice),
+    preferences: form.preferences.trim(),
+  })
+}
+
+function validateForm(): Record<string, string> {
+  const validationErrors: Record<string, string> = {}
+  const destination = form.destination.trim()
+  const guests = Number(form.guests)
+  const minimumPrice = Number(form.minimumPrice)
+  const maximumPrice = Number(form.maximumPrice)
+
+  if (destination.length < 2 || destination.length > 100) {
+    validationErrors.destination = 'Use between 2 and 100 characters.'
+  }
+  if (!form.checkIn || form.checkIn < today) {
+    validationErrors.checkIn = 'Choose today or a future date.'
+  }
+  if (!form.checkOut || form.checkOut <= form.checkIn) {
+    validationErrors.checkOut = 'Choose a date after check-in.'
+  }
+  if (!Number.isInteger(guests) || guests < 1 || guests > 20) {
+    validationErrors.guests = 'Enter a whole number from 1 to 20.'
+  }
+  if (form.minimumPrice === '' || minimumPrice < 0 || minimumPrice > 100000) {
+    validationErrors.minimumPrice = 'Enter an amount from 0 to 100,000.'
+  }
+  if (form.maximumPrice === '' || maximumPrice < 0 || maximumPrice > 100000) {
+    validationErrors.maximumPrice = 'Enter an amount from 0 to 100,000.'
+  }
+  if (
+    !validationErrors.minimumPrice
+    && !validationErrors.maximumPrice
+    && minimumPrice > maximumPrice
+  ) {
+    validationErrors.minimumPrice = 'Minimum price cannot exceed maximum price.'
+  }
+  if (form.preferences.length > 500) {
+    validationErrors.preferences = 'Use 500 characters or fewer.'
+  }
+
+  return validationErrors
+}
+
+async function focusFirstInvalid() {
+  await nextTick()
+  document.querySelector<HTMLElement>('.search-panel [aria-invalid="true"]')?.focus()
+}
+
+function toDateInputValue(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+defineExpose({ focusFirstInvalid })
+</script>
+
+<template>
+  <section class="panel search-panel" aria-labelledby="search-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">New recommendation</p>
+        <h2 id="search-heading">Tell us about your trip</h2>
+      </div>
+      <span class="step-badge">Step 1</span>
+    </div>
+
+    <form novalidate @submit.prevent="submitForm">
+      <div class="field field-wide">
+        <label for="destination">Destination</label>
+        <input
+          id="destination"
+          v-model="form.destination"
+          name="destination"
+          autocomplete="address-level2"
+          maxlength="100"
+          placeholder="e.g. Sydney"
+          :aria-invalid="Boolean(errors.destination)"
+          :aria-describedby="errors.destination ? 'destination-error' : undefined"
+        >
+        <span v-if="errors.destination" id="destination-error" class="field-error">
+          {{ errors.destination }}
+        </span>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="check-in">Check-in</label>
+          <input
+            id="check-in"
+            v-model="form.checkIn"
+            name="checkIn"
+            type="date"
+            :min="today"
+            :aria-invalid="Boolean(errors.checkIn)"
+            :aria-describedby="errors.checkIn ? 'check-in-error' : undefined"
+          >
+          <span v-if="errors.checkIn" id="check-in-error" class="field-error">
+            {{ errors.checkIn }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="check-out">Check-out</label>
+          <input
+            id="check-out"
+            v-model="form.checkOut"
+            name="checkOut"
+            type="date"
+            :min="form.checkIn || today"
+            :aria-invalid="Boolean(errors.checkOut)"
+            :aria-describedby="errors.checkOut ? 'check-out-error' : undefined"
+          >
+          <span v-if="errors.checkOut" id="check-out-error" class="field-error">
+            {{ errors.checkOut }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="guests">Guests</label>
+          <input
+            id="guests"
+            v-model="form.guests"
+            name="guests"
+            type="number"
+            min="1"
+            max="20"
+            step="1"
+            inputmode="numeric"
+            :aria-invalid="Boolean(errors.guests)"
+            :aria-describedby="errors.guests ? 'guests-error' : undefined"
+          >
+          <span v-if="errors.guests" id="guests-error" class="field-error">
+            {{ errors.guests }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="minimum-price">Minimum nightly price</label>
+          <div class="money-input">
+            <span aria-hidden="true">$</span>
+            <input
+              id="minimum-price"
+              v-model="form.minimumPrice"
+              name="minimumPrice"
+              type="number"
+              min="0"
+              max="100000"
+              step="0.01"
+              inputmode="decimal"
+              :aria-invalid="Boolean(errors.minimumPrice)"
+              :aria-describedby="errors.minimumPrice ? 'minimum-price-error' : undefined"
+            >
+          </div>
+          <span v-if="errors.minimumPrice" id="minimum-price-error" class="field-error">
+            {{ errors.minimumPrice }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label for="maximum-price">Maximum nightly price</label>
+          <div class="money-input">
+            <span aria-hidden="true">$</span>
+            <input
+              id="maximum-price"
+              v-model="form.maximumPrice"
+              name="maximumPrice"
+              type="number"
+              min="0"
+              max="100000"
+              step="0.01"
+              inputmode="decimal"
+              :aria-invalid="Boolean(errors.maximumPrice)"
+              :aria-describedby="errors.maximumPrice ? 'maximum-price-error' : undefined"
+            >
+          </div>
+          <span v-if="errors.maximumPrice" id="maximum-price-error" class="field-error">
+            {{ errors.maximumPrice }}
+          </span>
+        </div>
+      </div>
+
+      <div class="field field-wide">
+        <div class="label-row">
+          <label for="preferences">Preferences</label>
+          <span>{{ form.preferences.length }}/500</span>
+        </div>
+        <textarea
+          id="preferences"
+          v-model="form.preferences"
+          name="preferences"
+          rows="4"
+          maxlength="500"
+          placeholder="e.g. Quiet room, accessible entrance, close to public transport"
+          :aria-invalid="Boolean(errors.preferences)"
+          :aria-describedby="errors.preferences ? 'preferences-error preferences-help' : 'preferences-help'"
+        />
+        <span id="preferences-help" class="field-help">
+          Preferences are saved with search history. Delete the search to remove them.
+        </span>
+        <span v-if="errors.preferences" id="preferences-error" class="field-error">
+          {{ errors.preferences }}
+        </span>
+      </div>
+
+      <button class="button button-primary submit-button" type="submit" :disabled="submitting">
+        <span v-if="submitting" class="spinner" aria-hidden="true"></span>
+        {{ submitting ? 'Finding stays...' : 'Find accommodation' }}
+      </button>
+    </form>
+  </section>
+</template>

@@ -348,3 +348,23 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** all 46 backend tests pass and `git diff --check` reports no whitespace errors.
 
 **Verdict:** implementation accepted. Live Ollama execution remains open evidence work; this review used deterministic test doubles and must not be cited as a genuine model run.
+
+## 2026-08-31 - Chunk 6 Traveller Frontend Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** `frontend/src/App.vue`, the typed frontend API boundary, search/history/results components, responsive styling, component tests, and FR-01/FR-03/FR-05/FR-10/FR-12 to FR-14/FR-20/NFR-04 to NFR-07 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Required | The first component split allowed the initial history request to overwrite a search completed while history was still loading. | Reconciled loaded and newly added summaries by ID and newest-first creation time; added a test that resolves the initial list after search creation. |
+| Required | Renaming a search updated history but left the currently displayed results heading stale. | Added a typed rename event to the coordinator and update the displayed snapshot when IDs match; the test now reopens, renames, and checks the result heading. |
+| Required | Entering, validating, saving, cancelling, and deleting history actions did not consistently move or restore keyboard focus. | Added focus movement into the rename input, local validation announcement/focus, restoration to Rename after save/cancel, and movement to the next action or history heading after deletion. |
+| Required | Valid long unbroken user/model text could overflow cards at the required 320px width. | Added minimum-width containment and `overflow-wrap: anywhere` to history and result text containers. |
+| Required | Initial tests did not cover the history race, rename synchronization, focus movement, or rename live announcements. | Expanded the suite from five to seven tests and added active-element and live-region assertions. Manual viewport execution remains an explicit evidence item because jsdom does not calculate layout. |
+| Accepted | `App.vue` now coordinates only global search state, errors, live status, and cross-component synchronization. | Kept `SearchForm`, `SearchHistory`, and `SearchResults` as the three component boundaries; no additional store, router, or UI dependency was introduced. |
+| Accepted | Browser data is rendered only through Vue interpolation and all network calls use relative backend `/api/searches` routes. | Kept the text-only rendering and frontend-to-backend boundary; no `v-html`, database URL, or Ollama URL exists in frontend source. |
+
+**Validation:** `npm --prefix student-1/frontend test` passes 7/7 tests; `npm --prefix student-1/frontend run build` passes strict TypeScript checking and the Vite production build; `git diff --check` passes.
+
+**Verdict:** implementation accepted after corrections. Manual keyboard walkthrough, 320/768/1280px layout execution, integrated API execution, and screenshots remain pending and are not claimed by this simulated review.
