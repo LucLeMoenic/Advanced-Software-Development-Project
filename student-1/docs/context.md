@@ -23,6 +23,21 @@ Release 0 success means the feature works inside the integrated group applicatio
 
 The application model may reuse one of the two installed model tags to minimise hardware and storage cost, but the implementer and reviewer configuration values must identify different model tags.
 
+## Confirmed Integration Contracts
+
+- Final feature folder: `student-1/`.
+- Shared route and label: `/accommodation`, displayed as `Accommodation Recommender`.
+- Compose services: `student1-frontend`, `student1-backend`, and `student1-database`.
+- Host ports: frontend `5101`, backend `5201`, database `5301`.
+- Container ports: frontend `80`; backend and database `8080`.
+- Theme: reuse the shared frontend's CSS variables and design tokens.
+- Application model: `llama3.2:3b`.
+- Development models: implementer `qwen2.5-coder:7b`; reviewer `llama3.2:3b`.
+- Mitchell may update root Compose, shared navigation/theme, and `student-1.yml` for this feature.
+- Sprint backlog: `docs/sprint-backlog.md`.
+
+Phase 0 contracts are confirmed.
+
 ## Minimal Architecture
 
 ```text
@@ -123,15 +138,18 @@ The implemented prompt must live beside backend code at `backend/Prompts/accommo
 As of 2026-08-31:
 
 - Requirements and phases now distinguish the one-model application path from the two-model local development loop.
-- Existing accommodation Dockerfiles remain placeholders.
-- `student-1.yml` validates the shared agentic loop but does not yet build or test the three accommodation services.
-- Shared Compose includes the common frontend, Ollama, and agentic loop but has no accommodation service entries; the home page has no accommodation route.
+- Chunk 1 is complete: the feature is in `student-1/` with Vue 3/TypeScript, ASP.NET Core backend, and ASP.NET Core/EF Core SQLite database API projects.
+- All three services have production Dockerfiles and health checks.
+- Root Compose defines the three services, service-DNS configuration, dependency health ordering, confirmed ports, and a named SQLite volume.
+- `student-1.yml` installs/builds the frontend, tests both .NET services, validates Compose, and builds all three feature images without requiring live Ollama.
+- Local frontend build and four focused .NET endpoint tests pass; Compose configuration validates.
+- Mitchell reports that the three containers build, start, and pass their runtime health checks.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
-- Application code, feature-service tests, complete Compose wiring, CI validation, diagrams, and execution evidence remain to be implemented.
+- Catalogue data, search history, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
 
-Do not represent the current scaffold as a working microservice application.
+The current services prove the Chunk 1 boundaries and runtime health only; they do not yet implement accommodation search or recommendation behaviour.
 
 ## Immediate Next Gate
 
-Complete Phase 0 of `feature-plan.md`: confirm the assigned student number/folder, shared route, ports, service names, stylesheet, application model, distinct implementer/reviewer model tags, demonstration-machine capacity, and ownership of shared-file edits.
+Begin Chunk 2, Accommodation Catalogue, in `feature-plan.md`.

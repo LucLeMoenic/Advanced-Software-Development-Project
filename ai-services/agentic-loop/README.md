@@ -31,7 +31,7 @@ Run the pre-test manually, then pass the real command and result:
 ```powershell
 docker compose exec agentic-loop dotnet /app/AgenticLoop.dll run `
   --task "Implement the selected bounded change" `
-  --context "Mitchell-Harris-Feature(Accomidation)/docs/context.md" `
+  --context "student-1/docs/context.md" `
   --context "path/to/relevant/source-file" `
   --pre-test-command "dotnet test path/to/tests" `
   --pre-test-result "All 12 tests passed before the change."

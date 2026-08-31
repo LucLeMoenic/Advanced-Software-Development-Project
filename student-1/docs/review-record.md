@@ -154,3 +154,38 @@ Reviewed the conflicting `docker-compose.yml` and Student 1 workflow changes fro
 | Reviewer headings outside `[OBSERVE]`, contradictory ACCEPT findings, model aliases, and sensitive symbolic-link targets could bypass validation. | Bounded reviewer parsing to the Observe section, rejected ACCEPT with blocking/required findings, normalised model tags before comparison/use/recording, and revalidated resolved link targets. |
 
 No additional service, model, dependency, abstraction, or speculative Release 1 capability was added.
+
+## 2026-08-31 - Feature Plan Chunking Review
+
+**Goal:** provide a direct build sequence for the accommodation recommender without repeating the requirements, risk register, evidence checklist, or agentic-loop implementation details.
+
+| Chunk | Goal alignment | Complexity result |
+|---|---|---|
+| Contracts and boundaries | Directly prevents incompatible paths, ports, service calls, and model usage. | Kept as one compact table and boundary list. |
+| Runnable services | Required foundation for all feature behaviour. | Reduced to scaffold, health, images, and Compose. |
+| Catalogue and history | Required persistence and CRUD functionality. | Kept as two chunks because they have different schemas and acceptance tests. |
+| Deterministic backend and AI ranking | Required search flow and safe model integration. | Kept separate so basic integration works before Ollama failure modes are introduced. |
+| Traveller frontend | Required browser functionality, CRUD, accessibility, and responsive behaviour. | Proportionate to the marking criteria. |
+| Shared integration and CI | Required for non-zero integration and DevOps marks. | Combined into one final software-delivery chunk. |
+| Report and demonstration | Required submission evidence. | Reduced to one evidence chunk. |
+| Agentic-loop setup | Required demonstration setup but not application functionality. | Moved to the end instead of interrupting every implementation phase. |
+
+**Verdict:** the revised plan is implementation-focused and contains no speculative Release 1 or Release 2 work.
+
+## 2026-08-31 - Chunk 1 Scaffold and Health Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run for this review.
+
+**Scope:** `student-1/frontend`, `student-1/backend`, `student-1/database`, root Compose, Student 1 CI, and active path/documentation references.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Required | The initial Vue build imported a stylesheet path that did not exist outside the Vite project. | Removed the invalid cross-project import and kept the frontend self-contained; the production build then passed. Shared theme integration remains a later frontend/integration task. |
+| Required | SQLite test cleanup initially failed because pooled connections retained the temporary database file. | Added explicit SQLite pool clearing after the test host is disposed; both database endpoint tests then passed. |
+| Required | Main ASP.NET projects could recursively compile source files placed under their `tests` folders. | Excluded `tests/**` from each main project's default items while retaining project references from the test projects. |
+| Required | Compose needed explicit runtime dependency ordering and persistent database ownership. | Added frontend -> backend -> database/Ollama health dependencies, service-DNS URLs, the confirmed ports, and the `student1-sqlite-data` volume. |
+| Required | Active instructions and examples still referenced the old misspelled folder after migration. | Updated active repository instructions, CI triggers, runner example, context, plan, backlog, README, checklist, and risk controls to `student-1/`; historical review evidence remains unchanged. |
+
+**Validation:** Vue type-check/production build passed; backend endpoint tests passed 2/2; database endpoint tests passed 2/2; Compose configuration validated. Mitchell separately reported that all three images build, the containers start, and their health checks pass.
+
+**Verdict:** Chunk 1 is complete. The implementation establishes healthy, containerised service boundaries only; it correctly does not claim catalogue CRUD, search history, recommendation AI, or the finished traveller interface.
