@@ -8,6 +8,62 @@ services:
     depends_on:
       - ollama
 
+  student1-frontend:
+    build:
+      context: ./student-1/frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5101:80"
+    depends_on:
+      student1-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student1-backend:
+    build:
+      context: ./student-1/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      Services__DatabaseUrl: http://student1-database:8080
+      Services__OllamaUrl: http://ollama:11434
+      ASPNETCORE_HTTP_PORTS: 8080
+    ports:
+      - "5201:8080"
+    depends_on:
+      student1-database:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student1-database:
+    build:
+      context: ./student-1/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__AccommodationDatabase: Data Source=/data/accommodation.db
+      ASPNETCORE_HTTP_PORTS: 8080
+    ports:
+      - "5301:8080"
+    volumes:
+      - student1-sqlite-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   student2-frontend:
     build:
       context: ./student-2/frontend
@@ -75,3 +131,4 @@ services:
 
 volumes:
   ollama-data:
+  student1-sqlite-data:

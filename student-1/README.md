@@ -24,16 +24,9 @@ Only the database service may open SQLite. The frontend may call only the backen
 
 ## Current Status
 
-Planning and AI-assistance documentation are established. A shared .NET two-model agentic-loop service, focused tests, prompts, and root Compose wiring now exist. Real local model execution records are still required.
+Chunk 1 is complete. The Vue frontend, ASP.NET backend, and ASP.NET/EF Core SQLite database API have production Dockerfiles, health endpoints, focused endpoint tests, root Compose wiring, and Student 1 CI coverage. Local frontend and .NET checks pass, Compose configuration validates, and Mitchell reports that all three containers build, start, and report healthy.
 
-The three accommodation feature Dockerfiles remain templates/placeholders, and no runnable accommodation application or real feature CI validation exists yet.
-
-Do not use the current containers as implementation evidence:
-
-- `backend/Dockerfile` is a Flask template that conflicts with the selected ASP.NET Core design and expects a missing `app.py`.
-- `database/Dockerfile` only sleeps and does not expose a database API.
-- `frontend/Dockerfile` has no Vue build stage or implemented application.
-- Root Compose and `student-1.yml` include the shared agentic loop, but they do not yet define or validate the three accommodation services; shared navigation has no accommodation route.
+This scaffold proves the service boundaries and runtime setup only. Catalogue CRUD, search history, backend orchestration, application-model ranking, the complete traveller interface, and shared navigation remain later chunks. Real local agentic-loop execution records are also still required.
 
 ## Documentation Order
 
@@ -50,4 +43,4 @@ Do not use the current containers as implementation evidence:
 
 Complete the seeded local catalogue path first. Live booking/payments, authentication, MCP, RAG, multi-agent servers, and cloud deployment are not Release 0 work.
 
-Implementation must not begin until Phase 0 contracts in `docs/feature-plan.md` are confirmed with the team.
+Phase 0 contracts are confirmed in `docs/context.md` and `docs/sprint-backlog.md`.

@@ -50,7 +50,7 @@ Complete each chunk before starting the next. Do not add Amadeus, authentication
 
 **Implement**
 
-- Rename `Mitchell-Harris-Feature(Accomidation)/` to `student-1/`.
+- Keep the feature in the standard `student-1/` folder.
 - Replace the three placeholder Dockerfiles.
 - Scaffold the Vue 3 and TypeScript frontend.
 - Scaffold the ASP.NET Core backend.
