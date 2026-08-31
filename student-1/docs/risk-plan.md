@@ -44,7 +44,7 @@ Review this register at the start and end of each feature-plan phase and before 
 | 1 | Confirm folder, route, ports, service names, theme, model tags, and shared-file ownership. | 0 | Complete |
 | 2 | Replace the three placeholder accommodation Dockerfiles and extend Student 1 CI to build and test the real services. | 2 / 10 | Complete; GitHub Actions run URL remains evidence work |
 | 3 | Create at least 10 valid records manually through the functional application and capture count evidence. | After traveller/admin flow | Blocked until the application can create records |
-| 4 | Implement deterministic application fallback before connecting Ollama. | 5 | Open |
+| 4 | Implement deterministic application fallback before connecting Ollama. | 5 | Complete |
 | 5 | Run the bounded two-model service with distinct installed models and finalise a genuine correction record. | 1 | Open |
 | 6 | Integrate from the shared page and full Compose stack before report work. | 9 | Open |
 

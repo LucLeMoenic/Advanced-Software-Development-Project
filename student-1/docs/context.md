@@ -151,6 +151,9 @@ As of 2026-08-31:
 - Chunk 3 search history now has a constrained EF model and migration, scoped repository, validated create/newest-first list/get/rename/delete endpoints, immutable JSON snapshots, and snapshot independence from catalogue deletion.
 - `database/storage/accommodation.db` contains 10 representative search records created once through the HTTP API. Compose bind-mounts that tracked directory; no runtime seeder remains.
 - The complete database suite passes 19/19 tests, and EF reports no pending model changes.
+- Chunk 4 backend orchestration now validates and normalises traveller searches before dependency calls, requests only eligible active candidates through the database API, ranks deterministically by budget-midpoint distance, price, and ID, persists completed searches, and exposes history list/reopen/rename/delete endpoints.
+- Database calls use a three-second timeout and distinguish unavailable dependencies (`503`) from unusable responses (`502`). Database payloads are validated before becoming public backend DTOs.
+- The backend suite passes 29/29 tests. All 10 tracked SQLite searches reopen through the backend after a container rebuild, confirming the bind-mounted database remains the persistence source and no startup seeder is required.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
 - Manual catalogue data, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
@@ -159,4 +162,4 @@ The current services prove the Chunk 1 boundaries and runtime health plus the ca
 
 ## Immediate Next Gate
 
-Create the manual catalogue records after the application entry flow exists; continue with Chunk 4 while tracking FR-16 as incomplete.
+Continue with Chunk 5 application-model ranking. Create the manual catalogue records after the application entry flow exists and keep FR-16 tracked as incomplete.
