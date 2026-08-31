@@ -8,6 +8,8 @@
 
   <ItemGroup>
     <Compile Remove="tests\**\*.cs" />
+    <Content Remove="tests\**\*" />
+    <None Remove="tests\**\*" />
     <InternalsVisibleTo Include="AgenticLoop.Tests" />
   </ItemGroup>
 </Project>

@@ -50,9 +50,9 @@ If a feature is not integrated, the brief states that it receives 0 marks.
 | 2. Service Implementation | Healthy Vue frontend, ASP.NET backend, and ASP.NET/EF Core database API containers communicating over HTTP. | Not started | Pending |
 | 3. AI-Mode Integration | Browser-triggered call through backend to exactly one configured application model, backend-owned ranking prompt, output validation, and visible result. | Not started | Pending |
 | 4. Agentic AI Workflow | Integrated .NET loop service, implementer Plan/Act, distinct reviewer Observe, bounded Adapt, pre/post evidence, human decision, exact local model tags, and records throughout development. | In progress | `ai-services/agentic-loop/` and Compose wiring exist; real model records pending |
-| 5. Prompt/Context Management | Implementer/reviewer prompts, prompt log, context, review record, allow-listed context, model outputs, and human decisions. | In progress | `docs/context.md`, `docs/prompt-log.md`, `docs/prompt-library/`, `docs/review-record.md` |
-| 6. DevOps/GitHub Actions | Passing assigned workflow runs frontend/.NET/runner checks and builds three images. | Not started | Current `student-1.yml` is echo-only |
-| 7. Docker Compose | One stack with service DNS, health, shared Ollama/model setup, and SQLite volume. | Not started | Current root Compose is a template |
+| 5. Prompt/Context Management | Implementer/reviewer prompts, prompt log, context, review record, allow-listed context, model outputs, and human decisions. | In progress | `ai-services/agentic-loop/prompts/`, `docs/context.md`, `docs/prompt-log.md`, `docs/review-record.md` |
+| 6. DevOps/GitHub Actions | Passing assigned workflow runs frontend/.NET/runner checks and builds three images. | In progress | Shared agentic-loop tests/builds are active in `student-1.yml`; accommodation frontend, backend, database, and three-image checks remain pending |
+| 7. Docker Compose | One stack with service DNS, health, shared Ollama/model setup, and SQLite volume. | In progress | Shared frontend, Ollama, and agentic-loop entries exist; three accommodation services and the SQLite volume remain pending |
 | 8. Working Software | Browser search create, history read/rename/delete, persisted restart, AI success and fallback. | Not started | Pending |
 | 9. Technical Report | Required diagrams, test/CI/Compose evidence, screenshots, logs, limitations, commits, contributions, attendance. | Not started | Pending |
 | 10. Demonstration | Mitchell's rehearsed segment and final published group video URL. | Not started | Pending |

@@ -398,6 +398,7 @@ Changes to public endpoints, table fields, service names, ports, model/tag, shar
 ### Shared Team Ownership
 
 - `ai-services/agentic-loop`, shared Ollama configuration, shared Compose wiring, and the common execution/record format are team infrastructure.
+- Until the team creates a root shared workflow, Mitchell owns the agentic-loop checks in `student-1.yml`; those checks should move to root CI when shared CI ownership is agreed.
 - Mitchell contributes accommodation-specific prompts/context, reviewed changes, finalised records, and report evidence.
 - Mitchell's personal feature documentation must not claim sole ownership of the shared team loop.
 

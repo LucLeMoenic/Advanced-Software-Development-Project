@@ -42,11 +42,11 @@ Review this register at the start and end of each feature-plan phase and before 
 | Priority | Action | Due phase | Status |
 |---:|---|---:|---|
 | 1 | Confirm assigned folder, spelling, shared contracts, application model, distinct loop model tags, and demo hardware capacity. | 0 | Open |
-| 2 | Replace three placeholder Dockerfiles and echo-only workflow with real stack-aligned builds/checks. | 1 / 9 | Open |
-| 3 | Implement idempotent seed data and 10-record assertions. | 2 / 3 | Open |
-| 4 | Implement deterministic application fallback before connecting Ollama. | 4 | Open |
-| 5 | Build the bounded two-model runner and capture an implement-review-correct record. | 7 | Open |
-| 6 | Integrate from the shared page and full Compose stack before report work. | 8 | Open |
+| 2 | Replace the three placeholder accommodation Dockerfiles and extend Student 1 CI to build and test the real services. | 2 / 10 | Open |
+| 3 | Implement idempotent seed data and 10-record assertions. | 3 / 4 | Open |
+| 4 | Implement deterministic application fallback before connecting Ollama. | 5 | Open |
+| 5 | Run the bounded two-model service with distinct installed models and finalise a genuine correction record. | 1 | Open |
+| 6 | Integrate from the shared page and full Compose stack before report work. | 9 | Open |
 
 ## 4. Accepted Constraints
 
