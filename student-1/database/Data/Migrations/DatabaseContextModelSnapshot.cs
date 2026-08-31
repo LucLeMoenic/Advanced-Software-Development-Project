@@ -9,8 +9,8 @@ using Accommodation.Database.Data;
 
 namespace Accommodation.Database.Data.Migrations
 {
-    [DbContext(typeof(AccommodationDbContext))]
-    partial class AccommodationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(DatabaseContext))]
+    partial class DatabaseContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {

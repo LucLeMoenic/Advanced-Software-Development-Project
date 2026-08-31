@@ -252,7 +252,7 @@ For each chunk:
 
 The .NET agentic-loop code is implemented. Complete this setup before the final report and video evidence.
 
-1. Install the models manually in the Ollama instance used by Compose. Project scripts must not download them.
+1. Compose checks the configured model tags and pulls only models missing from the persistent Ollama volume.
 2. Copy `.env.example` to `.env` and confirm:
 
    ```text
@@ -261,10 +261,9 @@ The .NET agentic-loop code is implemented. Complete this setup before the final 
    APPLICATION_MODEL=llama3.2:3b
    ```
 
-3. Verify existing models and start the services:
+3. Start the services. The one-shot model setup containers complete before their dependent application services start:
 
    ```powershell
-   .\scripts\verify-agentic-models.ps1
    docker compose build agentic-loop
    docker compose up -d ollama agentic-loop
    ```

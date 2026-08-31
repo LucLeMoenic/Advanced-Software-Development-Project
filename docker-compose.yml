@@ -19,7 +19,7 @@ services:
       student1-backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/health"]
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -32,14 +32,15 @@ services:
     environment:
       Services__DatabaseUrl: http://student1-database:8080
       Services__OllamaUrl: http://ollama:11434
+      APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
       ASPNETCORE_HTTP_PORTS: 8080
     ports:
       - "5201:8080"
     depends_on:
       student1-database:
         condition: service_healthy
-      ollama:
-        condition: service_healthy
+      ollama-application-model:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
       interval: 10s
@@ -105,6 +106,47 @@ services:
       timeout: 5s
       retries: 10
 
+  ollama-application-model:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        if ollama show "$$MODEL" > /dev/null 2>&1; then
+          echo "Ollama model already installed: $$MODEL"
+        else
+          ollama pull "$$MODEL"
+        fi
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+  ollama-agentic-models:
+    image: ollama/ollama:latest
+    restart: "no"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      IMPLEMENTER_MODEL: ${IMPLEMENTER_MODEL:-qwen2.5-coder:7b}
+      REVIEWER_MODEL: ${REVIEWER_MODEL:-llama3.2:3b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        for model in "$$IMPLEMENTER_MODEL" "$$REVIEWER_MODEL"; do
+          if ollama show "$$model" > /dev/null 2>&1; then
+            echo "Ollama model already installed: $$model"
+          else
+            ollama pull "$$model"
+          fi
+        done
+    depends_on:
+      ollama:
+        condition: service_healthy
+
   agentic-loop:
     build:
       context: ./ai-services/agentic-loop
@@ -121,8 +163,8 @@ services:
       - ./:/workspace:ro
       - ./docs/agentic-loop-records:/workspace/docs/agentic-loop-records
     depends_on:
-      ollama:
-        condition: service_healthy
+      ollama-agentic-models:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "dotnet", "/app/AgenticLoop.dll", "healthcheck"]
       interval: 10s

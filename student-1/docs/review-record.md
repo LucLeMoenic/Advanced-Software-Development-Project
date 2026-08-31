@@ -204,6 +204,22 @@ No additional service, model, dependency, abstraction, or speculative Release 1 
 
 **Verdict:** Continue with the existing feature-plan sequence. The minimum complete design remains three Student 1 services plus the already-shared Ollama runtime; current work should proceed catalogue -> history -> deterministic backend -> Ollama -> frontend -> shared integration.
 
+## 2026-08-31 - Conditional Ollama Model Setup Decision
+
+The earlier manual-only model installation decision was superseded by Mitchell's explicit instruction to let Compose pull a model when it is missing, without downloading it again when already installed.
+
+| Finding | Resolution |
+|---|---|
+| Starting only the traveller application should not force installation of the larger development implementer model. | Added a dedicated `ollama-application-model` setup service used by the backend. |
+| Starting the agentic loop requires both distinct development model tags. | Added a separate `ollama-agentic-models` setup service used by `agentic-loop`. |
+| Repeated startup must not redownload existing models. | Each setup service runs `ollama show` before `ollama pull` and uses the persistent `ollama-data` volume through the shared Ollama server. |
+
+**Verdict:** The conditional setup is scoped to required configured tags, preserves existing model data, and adds no new runtime application component.
+
+### Follow-up Reliability Review
+
+The setup-service pattern is proportionate for a local classroom deployment, but the initial agentic-model loop did not explicitly stop after a failed pull. Both setup scripts now use `set -eu`, so a missing variable or failed model download prevents the dependent backend or agentic-loop service from starting.
+
 ## 2026-08-31 - Post-Setup Parallel Work Review
 
 **Goal:** identify work after Chunk 1 that can proceed concurrently without textual merge conflicts while preserving the feature plan's dependency order.
@@ -236,3 +252,21 @@ No additional service, model, dependency, abstraction, or speculative Release 1 
 **Validation:** 12/12 tests pass, including CRUD, validation, case-insensitive conflicts, inclusive filters, not-found responses, SQL-injection-shaped data, price/capacity constraints, malformed amenities JSON, health, and empty startup. The Docker image builds, the existing volume advances through both migrations, the container reports healthy, and runtime create/delete leaves the catalogue empty.
 
 **Verdict:** the Chunk 2 catalogue code is functional and follows the requested WiseTech EF configuration pattern. Chunk 2 cannot be marked fully complete against the original requirements until at least 10 records exist; that gap is an explicit human decision rather than an implementation claim.
+
+## 2026-08-31 - EF Repository Refactor Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** Database context naming and registration, accommodation repository boundary, endpoint EF dependencies, migration metadata, database constraint tests, and the existing catalogue HTTP contract.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Required | Catalogue endpoints directly queried `AccommodationDbContext`, which left HTTP behavior coupled to EF Core and did not match the selected full WiseTech Academy pattern. | Added a scoped `IAccommodationRepository`/`AccommodationRepository`; all catalogue queries, tracking choices, duplicate checks, adds, removals, and saves now pass through it. |
+| Required | The context name was feature-specific even though it is the database service's shared unit of work and will also own search history. | Renamed it to `DatabaseContext` and updated DI, health checks, startup migration application, tests, migration designers, and the model snapshot metadata. |
+| Required | Copying WiseTech Academy's broad generic repository and SQL Server conventions would add unrelated operations and provider assumptions. | Kept only the catalogue methods used by current endpoints and retained SQLite-specific filtering and constraints. |
+| Required | A repository refactor could accidentally alter CRUD, filtering, duplicate, migration, or constraint behavior. | Reused the existing integration suite against fresh temporary SQLite files; all 12 tests pass without changing the public API contract or schema. |
+| Note | The optional `dotnet-ef` CLI is not installed, so `has-pending-model-changes` could not run. | Did not install a new tool for this refactor. Fresh-database startup in the integration suite still applies both checked-in migrations successfully, and the compiled migration metadata references `DatabaseContext`. |
+
+**Evidence:** `database/Repositories/IAccommodationRepository.cs`, `database/Repositories/AccommodationRepository.cs`, `database/Data/DatabaseContext.cs`, `database/Api/AccommodationEndpoints.cs`, `database/Program.cs`, migration designer/snapshot metadata, and `dotnet test student-1\database\tests\Database.Tests.csproj --no-restore` with 12/12 passing.
+
+**Verdict:** accepted. The database API now follows the selected context/configuration/repository pattern while preserving the existing SQLite schema and catalogue API behavior. FR-16 remains open because the catalogue still intentionally lacks the required manually created records.

@@ -1,22 +1,24 @@
 using Microsoft.EntityFrameworkCore;
 using Accommodation.Database.Api;
 using Accommodation.Database.Data;
+using Accommodation.Database.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("AccommodationDatabase")
     ?? "Data Source=accommodation.db";
 
-builder.Services.AddDbContext<AccommodationDbContext>(options =>
+builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlite(connectionString));
+builder.Services.AddScoped<IAccommodationRepository, AccommodationRepository>();
 builder.Services
     .AddHealthChecks()
-    .AddDbContextCheck<AccommodationDbContext>("sqlite");
+    .AddDbContextCheck<DatabaseContext>("sqlite");
 
 var app = builder.Build();
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
-    var database = scope.ServiceProvider.GetRequiredService<AccommodationDbContext>();
+    var database = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
     await database.Database.MigrateAsync();
 }
 

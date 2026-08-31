@@ -144,14 +144,15 @@ As of 2026-08-31:
 - `student-1.yml` installs/builds the frontend, tests both .NET services, validates Compose, and builds all three feature images without requiring live Ollama.
 - Local frontend build and four focused .NET endpoint tests pass; Compose configuration validates.
 - Mitchell reports that the three containers build, start, and pass their runtime health checks.
-- Chunk 2 catalogue code now includes an EF Core migration, POCO entity plus separate `IEntityTypeConfiguration`, validated create/list/filter/get/replace/delete endpoints, case-insensitive duplicate protection, exact integer-cent price storage, JSON amenities constraints, and isolated integration tests.
+- Chunk 2 catalogue code now includes EF Core migrations, a POCO entity plus separate `IEntityTypeConfiguration`, a generic `DatabaseContext`, and a scoped accommodation repository. HTTP endpoints no longer depend on EF Core or the context directly.
+- Catalogue behaviour includes validated create/list/filter/get/replace/delete endpoints, case-insensitive duplicate protection, exact integer-cent price storage, JSON amenities constraints, and isolated integration tests.
 - The database container starts healthy with an empty catalogue, and temporary runtime CRUD validation leaves the catalogue empty.
 - Automatic seed data is intentionally excluded by Mitchell's decision. FR-16 and the required minimum 10-record evidence remain open until Mitchell creates the records manually through the functional application.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
 - Manual catalogue data, search history, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, diagrams, and final execution evidence remain to be implemented.
 
-The current services prove the Chunk 1 boundaries and runtime health only; they do not yet implement accommodation search or recommendation behaviour.
+The current services prove the Chunk 1 boundaries and runtime health plus the Chunk 2 catalogue API. They do not yet implement traveller search, history, or recommendation behaviour.
 
 ## Immediate Next Gate
 

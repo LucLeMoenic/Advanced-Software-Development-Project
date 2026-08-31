@@ -65,6 +65,12 @@ The current Compose file is a starting point for the integrated application. Ser
 docker compose up --build
 ```
 
+Start only the Student 1 application and print its localhost URLs:
+
+```powershell
+.\scripts\start-student1.ps1
+```
+
 ## Shared Release 0 Agentic Loop
 
 The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the local Ollama runtime:
@@ -73,11 +79,10 @@ The shared .NET service under `ai-services/agentic-loop/` uses two distinct mode
 - Llama reviewer for Observe;
 - one bounded implementer revision plus a human-controlled Adapt decision.
 
-Configure already-installed local models and start the service:
+Configure the local model tags and start the service. Compose pulls a configured model only when it is missing from the persistent Ollama volume:
 
 ```powershell
 Copy-Item .env.example .env
-.\scripts\verify-agentic-models.ps1
 docker compose up -d agentic-loop
 ```
 
