@@ -19,5 +19,6 @@ docker run -p 5100:80 asd-vue-frontend:latest
 ```
 
 Notes:
+
 - Uses Vite (port 5173 by default) for development.
 - Production build is served by nginx in the Dockerfile.

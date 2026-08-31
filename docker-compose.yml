@@ -1,4 +1,41 @@
 services:
+  shared-frontend:
+    build:
+      context: ./shared/vue-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5100:80"
+    depends_on:
+      - ollama
+
+  student2-frontend:
+    build:
+      context: ./student-2/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5102:80"
+
+  student3-frontend:
+    build:
+      context: ./student-3/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5103:80"
+
+  student4-frontend:
+    build:
+      context: ./student-4/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5104:80"
+
+  student5-frontend:
+    build:
+      context: ./student-5/frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5105:80"
+
   ollama:
     image: ollama/ollama:latest
     restart: unless-stopped
@@ -35,8 +72,6 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
-# Add volumes, networks, and environment as needed by the team
 
 volumes:
   ollama-data:

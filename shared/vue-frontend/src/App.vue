@@ -6,10 +6,15 @@
 </template>
 
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import HelloWorld from "./components/HelloWorld.vue";
 </script>
 
 <style>
-main { padding: 1.5rem; font-family: Arial, sans-serif }
-h1 { color: #2c3e50 }
+main {
+  padding: 1.5rem;
+  font-family: Arial, sans-serif;
+}
+h1 {
+  color: #2c3e50;
+}
 </style>

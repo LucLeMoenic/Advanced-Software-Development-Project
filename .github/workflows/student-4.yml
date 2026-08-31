@@ -1,12 +1,25 @@
 name: Student 4 CI
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'student-4/**'
+      - '.github/workflows/student-4.yml'
+      - 'docker-compose.yml'
+  pull_request:
+    paths:
+      - 'student-4/**'
+      - '.github/workflows/student-4.yml'
+      - 'docker-compose.yml'
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Student 4 services
-        run: |
-          echo "Build steps for student-4 services go here"
+
+      - name: Validate Docker Compose config
+        run: docker compose config
+
+      - name: Build Student 4 frontend container
+        run: docker build -t student4-frontend -f student-4/frontend/Dockerfile student-4/frontend

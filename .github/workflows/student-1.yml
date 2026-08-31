@@ -6,6 +6,7 @@ permissions:
 on:
   push:
     paths:
+      - "student-1/**"
       - "Mitchell-Harris-Feature(Accomidation)/**"
       - "ai-services/agentic-loop/**"
       - "docker-compose.yml"
@@ -14,6 +15,7 @@ on:
       - ".github/workflows/student-1.yml"
   pull_request:
     paths:
+      - "student-1/**"
       - "Mitchell-Harris-Feature(Accomidation)/**"
       - "ai-services/agentic-loop/**"
       - "docker-compose.yml"

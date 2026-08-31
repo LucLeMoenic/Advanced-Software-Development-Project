@@ -119,3 +119,14 @@ The first implementation attempt used Python. Mitchell rejected that technology;
 Automatic Ollama model pulls were also removed at Mitchell's request. `scripts/verify-agentic-models.ps1` now checks existing local tags and fails without downloading anything.
 
 **Remaining blocking work:** real local model execution records, accommodation feature services, populated databases, full feature Compose integration, feature CI jobs, diagrams, report evidence, and showcase evidence.
+
+## 2026-08-31 - Main DevOps Merge Review
+
+Reviewed the conflicting `docker-compose.yml` and Student 1 workflow changes from `BCP/Clean_Up_Design` and `origin/main`.
+
+| Finding | Resolution |
+|---|---|
+| Both branches independently replaced the placeholder Compose file, producing duplicate Ollama ports, volumes, and conflicting volume names. | Kept `main`'s shared and Student 2-5 frontend services, retained the branch's Ollama health check and agentic-loop service, and reduced Ollama to one port mapping and one `ollama-data` volume. |
+| `main` added only a scaffold-presence check for Student 1, while the branch added executable .NET tests and container/Compose checks. | Retained the stronger executable checks and added `student-1/**` to the path triggers for the planned standard-folder migration. |
+
+**Verdict:** conflicts resolved without dropping either branch's compatible infrastructure. The merge remains uncommitted for human review and commit.
