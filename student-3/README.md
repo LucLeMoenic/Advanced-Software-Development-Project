@@ -1,20 +1,23 @@
 # Student 3 — Local Experience & Attraction Recommender
 
-Release 0 microservice slice: browse/filter local attractions and leave reviews.
+Release 0 microservice slice: browse/filter local attractions, leave reviews, and get an
+AI-Mode recommendation (Ollama + Qwen) grounded in the seeded attraction catalogue.
 
 ## Layout
 
-- `frontend/` — static HTML/CSS + HTMX. `index.html` browses/filters attractions. Served by
-  nginx, which reverse-proxies `/api/` to `student3-backend` (see `nginx.conf`) so the page
-  can call same-origin `/api/...` paths.
-- `backend/` — Flask API. Owns the public `/api/*` contract used by the frontend. Talks to
-  the database service over HTTP via `database_client.py` — it never touches the SQLite
-  file directly.
+- `frontend/` — static HTML/CSS + HTMX. `index.html` browses/filters attractions and hosts
+  the "ask the AI" interest form. Served by nginx, which reverse-proxies `/api/` to
+  `student3-backend` (see `nginx.conf`) so the page can call same-origin `/api/...` paths.
+- `backend/` — Flask API. Owns the public `/api/*` contract used by the frontend, and the
+  `/api/recommend` Plan → Act → Observe → Adapt loop (`recommend.py`). Talks to the database
+  service over HTTP via `database_client.py` — it never touches the SQLite file directly.
 - `database/` — Flask API that owns `attractions.db` and the `attractions`/`reviews` schema
   (`schema.sql`). Exposes CRUD at `/api/data/*`. `init_db.py` creates the schema; `seed.py`
   inserts sample rows (idempotent - skips if already seeded).
-- `tests/` — pytest suite covering both services' CRUD, all offline (a temp SQLite file per
-  test).
+- `tests/` — pytest suite covering both services' CRUD and `/api/recommend`, all offline
+  (the database tests use a temp SQLite file per test; the recommend tests mock Ollama).
+- `docs/prompt-log.md` — running log of AI-assisted design decisions, especially the
+  `/api/recommend` prompt shape.
 
 ## Local development (without Docker)
 
@@ -29,6 +32,7 @@ python app.py            # listens on :8080
 cd student-3/backend
 pip install -r requirements.txt
 set DATABASE_API_URL=http://localhost:8080
+set OLLAMA_URL=http://localhost:11434
 python app.py             # listens on :8080 too - use a different port locally if running both at once
 
 # terminal 3 - frontend
