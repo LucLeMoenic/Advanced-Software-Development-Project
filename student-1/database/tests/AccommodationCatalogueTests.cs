@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Accommodation.Database.Api;
 using Accommodation.Database.Data;
+using Accommodation.Database.Repositories;
 using AccommodationEntity = Accommodation.Database.Data.Accommodation;
 
 namespace Accommodation.Database.Tests;
@@ -208,8 +209,9 @@ public sealed class AccommodationCatalogueTests : DatabaseApiTestBase
     public async Task DatabaseConstraintsRejectInvalidRows()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        var database = scope.ServiceProvider.GetRequiredService<AccommodationDbContext>();
-        database.Accommodations.Add(new AccommodationEntity
+        var repository =
+            scope.ServiceProvider.GetRequiredService<IAccommodationRepository>();
+        repository.Add(new AccommodationEntity
         {
             Name = "Invalid Price",
             Destination = "Sydney",
@@ -222,14 +224,15 @@ public sealed class AccommodationCatalogueTests : DatabaseApiTestBase
             UpdatedAt = DateTime.UtcNow
         });
 
-        await Assert.ThrowsAsync<DbUpdateException>(() => database.SaveChangesAsync());
+        await Assert.ThrowsAsync<DbUpdateException>(
+            () => repository.SaveChangesAsync(CancellationToken.None));
     }
 
     [Fact]
     public async Task DatabaseConstraintRejectsMalformedAmenitiesJson()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        var database = scope.ServiceProvider.GetRequiredService<AccommodationDbContext>();
+        var database = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
         database.Accommodations.Add(new AccommodationEntity
         {
             Name = "Invalid Amenities",

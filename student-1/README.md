@@ -24,9 +24,9 @@ Only the database service may open SQLite. The frontend may call only the backen
 
 ## Current Status
 
-Chunk 1 is complete. The Vue frontend, ASP.NET backend, and ASP.NET/EF Core SQLite database API have production Dockerfiles, health endpoints, focused endpoint tests, root Compose wiring, and Student 1 CI coverage. Local frontend and .NET checks pass, Compose configuration validates, and Mitchell reports that all three containers build, start, and report healthy.
+Chunk 1 is complete. The Vue frontend, ASP.NET backend, and ASP.NET/EF Core SQLite database API have production Dockerfiles, health endpoints, focused endpoint tests, root Compose wiring, and Student 1 CI coverage. The database API also implements the Chunk 2 accommodation catalogue with migrations, validated CRUD/filtering, and a scoped repository boundary modelled on WiseTech Academy's EF structure. Local frontend and .NET checks pass, Compose configuration validates, and Mitchell reports that all three containers build, start, and report healthy.
 
-This scaffold proves the service boundaries and runtime setup only. Catalogue CRUD, search history, backend orchestration, application-model ranking, the complete traveller interface, and shared navigation remain later chunks. Real local agentic-loop execution records are also still required.
+Search history, backend orchestration, application-model ranking, the complete traveller interface, shared navigation, and the required manually created catalogue records remain later work. Real local agentic-loop execution records are also still required.
 
 ## Documentation Order
 

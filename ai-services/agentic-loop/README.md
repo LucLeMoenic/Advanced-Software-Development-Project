@@ -10,10 +10,9 @@ It never writes source files, runs validation commands, commits, or pushes. It r
 
 ## Setup
 
-Copy `.env.example` to `.env` and set its values to model tags already installed on the demonstration machine. Verification never downloads a model:
+Copy `.env.example` to `.env` and set the required model tags. Compose checks each tag and pulls it only when it is missing from the persistent Ollama volume:
 
 ```powershell
-.\scripts\verify-agentic-models.ps1
 docker compose up -d agentic-loop
 ```
 
@@ -22,7 +21,7 @@ The example configuration references two unique local models:
 - `qwen2.5-coder:7b` for implementation;
 - `llama3.2:3b` for review and the accommodation application's single model.
 
-If either example model is missing, select different approved tags that are already installed or install models manually outside this workflow. The scripts and service do not pull models.
+If either example model is missing, the `ollama-agentic-models` setup container downloads it before the agentic loop starts. Existing model data is reused.
 
 ## Run
 

@@ -10,7 +10,7 @@ using Accommodation.Database.Data;
 
 namespace Accommodation.Database.Data.Migrations
 {
-    [DbContext(typeof(AccommodationDbContext))]
+    [DbContext(typeof(DatabaseContext))]
     [Migration("20260831065124_AddAmenitiesJsonConstraint")]
     partial class AddAmenitiesJsonConstraint
     {

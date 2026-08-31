@@ -3,7 +3,7 @@ using Accommodation.Database.Data.Configurations;
 
 namespace Accommodation.Database.Data;
 
-public sealed class AccommodationDbContext(DbContextOptions<AccommodationDbContext> options)
+public sealed class DatabaseContext(DbContextOptions<DatabaseContext> options)
     : DbContext(options)
 {
     public DbSet<Accommodation> Accommodations => Set<Accommodation>();

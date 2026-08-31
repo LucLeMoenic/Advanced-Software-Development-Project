@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
 using Accommodation.Database.Data;
+using Accommodation.Database.Repositories;
 using AccommodationEntity = Accommodation.Database.Data.Accommodation;
 
 namespace Accommodation.Database.Api;
@@ -24,7 +24,7 @@ public static class AccommodationEndpoints
 
     private static async Task<IResult> ListAsync(
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
         var queryResult = ParseFilters(context);
         if (queryResult.Error is not null)
@@ -33,44 +33,20 @@ public static class AccommodationEndpoints
         }
 
         var filters = queryResult.Filters!;
-        var query = database.Accommodations.AsNoTracking();
-
-        if (filters.Destination is not null)
-        {
-            query = query.Where(item =>
-                EF.Functions.Collate(item.Destination, "NOCASE") == filters.Destination);
-        }
-
-        if (filters.MinimumPrice is not null)
-        {
-            query = query.Where(item => item.NightlyPrice >= filters.MinimumPrice);
-        }
-
-        if (filters.MaximumPrice is not null)
-        {
-            query = query.Where(item => item.NightlyPrice <= filters.MaximumPrice);
-        }
-
-        if (filters.Guests is not null)
-        {
-            query = query.Where(item => item.MaxGuests >= filters.Guests);
-        }
-
-        if (filters.IsActive is not null)
-        {
-            query = query.Where(item => item.IsActive == filters.IsActive);
-        }
-
-        var accommodations = await query
-            .OrderBy(item => item.Id)
-            .ToListAsync();
+        var accommodations = await repository.ListAsync(
+            filters.Destination,
+            filters.MinimumPrice,
+            filters.MaximumPrice,
+            filters.Guests,
+            filters.IsActive,
+            context.RequestAborted);
 
         return Results.Ok(accommodations.Select(ToResponse));
     }
 
     private static async Task<IResult> CreateAsync(
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
         var readResult = await ReadRequestAsync(context);
         if (readResult.Error is not null)
@@ -85,7 +61,11 @@ public static class AccommodationEndpoints
         }
 
         var value = validation.Value!;
-        if (await DuplicateExistsAsync(database, value.Name, value.Destination))
+        if (await repository.DuplicateExistsAsync(
+                value.Name,
+                value.Destination,
+                null,
+                context.RequestAborted))
         {
             return Conflict(context);
         }
@@ -106,8 +86,8 @@ public static class AccommodationEndpoints
             UpdatedAt = now
         };
 
-        database.Accommodations.Add(accommodation);
-        var saveError = await SaveAsync(context, database);
+        repository.Add(accommodation);
+        var saveError = await SaveAsync(context, repository);
         if (saveError is not null)
         {
             return saveError;
@@ -119,11 +99,12 @@ public static class AccommodationEndpoints
     private static async Task<IResult> GetAsync(
         int id,
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
-        var accommodation = await database.Accommodations
-            .AsNoTracking()
-            .SingleOrDefaultAsync(item => item.Id == id);
+        var accommodation = await repository.GetAsync(
+            id,
+            trackChanges: false,
+            context.RequestAborted);
 
         return accommodation is null
             ? NotFound(context)
@@ -133,10 +114,12 @@ public static class AccommodationEndpoints
     private static async Task<IResult> ReplaceAsync(
         int id,
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
-        var accommodation = await database.Accommodations
-            .SingleOrDefaultAsync(item => item.Id == id);
+        var accommodation = await repository.GetAsync(
+            id,
+            trackChanges: true,
+            context.RequestAborted);
         if (accommodation is null)
         {
             return NotFound(context);
@@ -155,7 +138,11 @@ public static class AccommodationEndpoints
         }
 
         var value = validation.Value!;
-        if (await DuplicateExistsAsync(database, value.Name, value.Destination, id))
+        if (await repository.DuplicateExistsAsync(
+                value.Name,
+                value.Destination,
+                id,
+                context.RequestAborted))
         {
             return Conflict(context);
         }
@@ -171,24 +158,26 @@ public static class AccommodationEndpoints
         accommodation.IsActive = value.IsActive;
         accommodation.UpdatedAt = DateTime.UtcNow;
 
-        var saveError = await SaveAsync(context, database);
+        var saveError = await SaveAsync(context, repository);
         return saveError ?? Results.Ok(ToResponse(accommodation));
     }
 
     private static async Task<IResult> DeleteAsync(
         int id,
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
-        var accommodation = await database.Accommodations
-            .SingleOrDefaultAsync(item => item.Id == id);
+        var accommodation = await repository.GetAsync(
+            id,
+            trackChanges: true,
+            context.RequestAborted);
         if (accommodation is null)
         {
             return NotFound(context);
         }
 
-        database.Accommodations.Remove(accommodation);
-        await database.SaveChangesAsync();
+        repository.Remove(accommodation);
+        await repository.SaveChangesAsync(context.RequestAborted);
         return Results.NoContent();
     }
 
@@ -412,28 +401,16 @@ public static class AccommodationEndpoints
         return parsed;
     }
 
-    private static Task<bool> DuplicateExistsAsync(
-        AccommodationDbContext database,
-        string name,
-        string destination,
-        int? excludedId = null)
-    {
-        return database.Accommodations.AnyAsync(item =>
-            (!excludedId.HasValue || item.Id != excludedId.Value)
-            && EF.Functions.Collate(item.Name, "NOCASE") == name
-            && EF.Functions.Collate(item.Destination, "NOCASE") == destination);
-    }
-
     private static async Task<IResult?> SaveAsync(
         HttpContext context,
-        AccommodationDbContext database)
+        IAccommodationRepository repository)
     {
         try
         {
-            await database.SaveChangesAsync();
+            await repository.SaveChangesAsync(context.RequestAborted);
             return null;
         }
-        catch (DbUpdateException)
+        catch (AccommodationConflictException)
         {
             return Conflict(context);
         }

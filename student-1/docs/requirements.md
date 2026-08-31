@@ -92,7 +92,7 @@ Search history is the user-facing CRUD resource used for the rubric demonstratio
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
 | FR-18 | The feature is reachable from the unified home page and uses the shared theme. | The home-page link opens the feature in the integrated Compose application; shared typography, colours, spacing, and controls are visibly reused. |
-| FR-19 | All three assigned services and Ollama run in the one shared Compose application. | `docker compose up --build` starts healthy frontend, backend, database, and Ollama services; service-to-service URLs use Compose DNS names rather than `localhost`; all required model tags are documented and verified as locally available. Project scripts never download models automatically. |
+| FR-19 | All three assigned services and Ollama run in the one shared Compose application. | `docker compose up --build` starts healthy frontend, backend, database, and Ollama services; service-to-service URLs use Compose DNS names rather than `localhost`; Compose checks each configured model tag and pulls it only when missing from the persistent Ollama volume. |
 | FR-20 | The frontend communicates only with the backend/API service. | Browser/network evidence and source review show no direct frontend call to the database API or Ollama. |
 
 ### 3.6 Two-Model Development Agentic Loop
