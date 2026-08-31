@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 
-namespace Student1.Backend.Tests;
+namespace Accommodation.Backend.Tests;
 
 public sealed class ServiceEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
@@ -21,7 +21,7 @@ public sealed class ServiceEndpointsTests : IClassFixture<WebApplicationFactory<
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(body);
-        Assert.Equal("student1-backend", body.Service);
+        Assert.Equal("accommodation-backend", body.Service);
         Assert.Equal("ready", body.Status);
         Assert.Equal("http://localhost:5301", body.Dependencies.Database);
         Assert.Equal("http://localhost:11434", body.Dependencies.Ollama);
@@ -36,7 +36,7 @@ public sealed class ServiceEndpointsTests : IClassFixture<WebApplicationFactory<
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(body);
         Assert.Equal("healthy", body.Status);
-        Assert.Equal("student1-backend", body.Service);
+        Assert.Equal("accommodation-backend", body.Service);
     }
 
     private sealed record ServiceInformation(

@@ -41,9 +41,9 @@ jobs:
         working-directory: student-1/frontend
         run: npm run build
       - name: Test backend
-        run: dotnet test student-1/backend/tests/Student1.Backend.Tests.csproj --configuration Release
+        run: dotnet test student-1/backend/tests/Backend.Tests.csproj --configuration Release
       - name: Test database API
-        run: dotnet test student-1/database/tests/Student1.Database.Tests.csproj --configuration Release
+        run: dotnet test student-1/database/tests/Database.Tests.csproj --configuration Release
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build Student 1 containers

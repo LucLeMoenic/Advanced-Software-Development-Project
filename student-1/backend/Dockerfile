@@ -1,11 +1,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY Student1.Backend.csproj ./
+COPY Backend.csproj ./
 RUN dotnet restore
 
 COPY . ./
-RUN dotnet publish Student1.Backend.csproj \
+RUN dotnet publish Backend.csproj \
     --configuration Release \
     --output /app/publish \
     --no-restore
@@ -18,4 +18,4 @@ RUN apt-get update \
 COPY --from=build /app/publish ./
 ENV ASPNETCORE_HTTP_PORTS=8080
 EXPOSE 8080
-ENTRYPOINT ["dotnet", "Student1.Backend.dll"]
+ENTRYPOINT ["dotnet", "Accommodation.Backend.dll"]

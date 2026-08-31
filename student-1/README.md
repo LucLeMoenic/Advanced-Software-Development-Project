@@ -41,6 +41,6 @@ This scaffold proves the service boundaries and runtime setup only. Catalogue CR
 
 ## Release 0 Scope Guard
 
-Complete the seeded local catalogue path first. Live booking/payments, authentication, MCP, RAG, multi-agent servers, and cloud deployment are not Release 0 work.
+Complete the local catalogue path first. The database starts empty by human decision, and Mitchell will create the required records manually through the functional application. Live booking/payments, authentication, MCP, RAG, multi-agent servers, and cloud deployment are not Release 0 work.
 
 Phase 0 contracts are confirmed in `docs/context.md` and `docs/sprint-backlog.md`.

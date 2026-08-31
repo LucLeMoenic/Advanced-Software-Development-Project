@@ -4,6 +4,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AssemblyName>Accommodation.Backend.Tests</AssemblyName>
+    <RootNamespace>Accommodation.Backend.Tests</RootNamespace>
 
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -22,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Student1.Backend.csproj" />
+    <ProjectReference Include="..\Backend.csproj" />
   </ItemGroup>
 
 </Project>
