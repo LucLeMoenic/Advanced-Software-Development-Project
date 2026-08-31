@@ -101,6 +101,9 @@ public sealed class OllamaRankingClientTests
         Assert.Contains(injection, prompt);
         Assert.DoesNotContain("bookingUrl", prompt);
         Assert.DoesNotContain("imageUrl", prompt);
+        Assert.Equal(0, request.RootElement.GetProperty("options").GetProperty("temperature").GetDouble());
+        Assert.Equal(700, request.RootElement.GetProperty("options").GetProperty("num_predict").GetInt32());
+        Assert.Equal("30m", request.RootElement.GetProperty("keep_alive").GetString());
     }
 
     public static TheoryData<string> InvalidRankings()

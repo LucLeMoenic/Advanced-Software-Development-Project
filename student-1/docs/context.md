@@ -148,15 +148,16 @@ As of 2026-08-31:
 - Mitchell reports that the three containers build, start, and pass their runtime health checks.
 - Chunk 2 catalogue code now includes EF Core migrations, a POCO entity plus separate `IEntityTypeConfiguration`, a generic `DatabaseContext`, and a scoped accommodation repository. HTTP endpoints no longer depend on EF Core or the context directly.
 - Catalogue behaviour includes validated create/list/filter/get/replace/delete endpoints, case-insensitive duplicate protection, exact integer-cent price storage, JSON amenities constraints, and isolated integration tests.
-- The database container starts healthy with an empty catalogue, and temporary runtime CRUD validation leaves the catalogue empty.
-- Automatic seed data is intentionally excluded by Mitchell's decision. FR-16 and the required minimum 10-record evidence remain open until Mitchell creates the records manually through the functional application.
+- The tracked SQLite database contains 10 synthetic international trips and 50 active accommodations created through the database HTTP API. Destinations are Tokyo, Paris, New York, Rome, Barcelona, Singapore, Vancouver, Cape Town, Reykjavik, and Dubai.
+- Every trip has exactly five eligible accommodations after applying its destination, guest, budget, and active filters. Each immutable snapshot contains five manually authored, preference-specific ranking reasons.
+- The synthetic snapshots use `ai` ranking mode for interface demonstration but are not evidence of a live application-model call. Live Ollama evidence remains separately required.
 - Chunk 3 search history now has a constrained EF model and migration, scoped repository, validated create/newest-first list/get/rename/delete endpoints, immutable JSON snapshots, and snapshot independence from catalogue deletion.
 - `database/storage/accommodation.db` contains 10 representative search records created once through the HTTP API. Compose bind-mounts that tracked directory; no runtime seeder remains.
 - The complete database suite passes 19/19 tests, and EF reports no pending model changes.
 - Chunk 4 backend orchestration now validates and normalises traveller searches before dependency calls, requests only eligible active candidates through the database API, ranks deterministically by budget-midpoint distance, price, and ID, persists completed searches, and exposes history list/reopen/rename/delete endpoints.
 - Database calls use a three-second timeout and distinguish unavailable dependencies (`503`) from unusable responses (`502`). Database payloads are validated before becoming public backend DTOs.
 - Chunk 5 application ranking now calls one configured Ollama model with a 12-second timeout and the versioned backend prompt, sends only validated criteria and eligible candidate fields, validates the complete ID/rank/reason response, restores display fields from trusted candidates, and falls back deterministically with a visible notice.
-- The backend suite passes 46/46 tests, including valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, prompt-injection-shaped data, timeout, connection, HTTP, and incomplete-response failures. All 10 tracked SQLite searches still reopen through the backend.
+- The backend suite passes 62/62 tests, including valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, prompt-injection-shaped data, timeout, connection, HTTP, incomplete-response failures, and the live LiteAPI response contract.
 - Chunk 6 traveller frontend now provides the labelled search form, client/backend field feedback, duplicate-submit prevention, loading/empty/AI/fallback/dependency states, ranked cards, and newest-first history reopen/rename/confirmed-delete behavior.
 - `App.vue` coordinates three focused components for search input, history CRUD, and results. Live announcements, focus movement, visible focus, text-only interpolation, responsive breakpoints, and long-text containment are implemented.
 - The frontend suite passes 7/7 component tests and the strict TypeScript/Vite production build passes. Manual 320/768/1280px execution, integrated browser/API evidence, and screenshots remain open.
@@ -164,10 +165,10 @@ As of 2026-08-31:
 - Real two-model Ollama execution records remain to be produced.
 - Chunk 7 shared integration is implemented: the unified Vue page links to `/accommodation/`, shared nginx proxies the feature and backend API without asset collisions, Compose health/dependency ordering passes, and the Student 1 workflow restores dependencies, runs all assigned tests, and builds the integrated images without live Ollama.
 - Local integrated validation confirms the shared page, accommodation route/assets, API proxy, five health checks, and preservation of 12 search records across a database-container restart.
-- Live application-model execution evidence, manual catalogue data, diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
+- Live application-model execution evidence, diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
 
 The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
 
 ## Immediate Next Gate
 
-Run the Chunk 6 browser checklist against the Compose application, then create the manual catalogue records when a functional application path for catalogue creation is available. Keep FR-16 and live-model evidence tracked as incomplete.
+Run the Chunk 6 browser checklist against the populated Compose application and capture the ranking, history, and responsive evidence. Live-model evidence remains incomplete because the verified integrated request used deterministic fallback.

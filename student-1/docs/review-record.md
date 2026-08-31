@@ -421,3 +421,16 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 | Evidence gap | The repository proves the flow with fakes but not with a replacement LiteAPI key, live SQLite import, live Ollama ranking, browser rendering, and a second request demonstrating the cache hit. | Open. |
 
 **Verdict:** The core integration is substantially implemented and connected. Correct the cache-state decision before claiming exact FR-04a compliance, then collect the live end-to-end evidence.
+
+## 2026-08-31 - Live LiteAPI Contract Correction
+
+**Scope:** The browser-reported `accommodation_provider_response_error`, correlated backend request, live sandbox response structure, provider request options, `LiteApiClient`, and its contract tests.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The live rate response omitted `hotels` because the request did not set `includeHotelData`. The client requires that metadata to create catalogue records, so every otherwise successful provider response was rejected. | Added `includeHotelData: true` to the rate request. |
+| Blocking | The live sandbox returns each room type's `offerRetailRate` as one money object, while the implemented DTO expected an array. | Corrected the DTO and mapping to consume the observed object shape and updated provider fixtures. |
+| Required | The live response included one rate without corresponding hotel metadata alongside eight usable results. The client rejected the entire response instead of discarding only the incomplete entry. | Missing metadata entries are now skipped; structurally invalid IDs and batches with no usable imports remain rejected. |
+| Correction | The earlier simulated review incorrectly concluded that the provider contract required an `offerRetailRate` array. | Superseded that conclusion with evidence from the live sandbox response. |
+
+**Verdict:** The cause of the live `502` is corrected in source. Rebuild the backend image and repeat the browser search to confirm provider import, Ollama ranking, persistence, and cache behavior.

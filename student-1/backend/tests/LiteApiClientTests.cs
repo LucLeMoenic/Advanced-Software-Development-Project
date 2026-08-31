@@ -20,6 +20,7 @@ public sealed class LiteApiClientTests
             var body = JsonDocument.Parse(await request.Content!.ReadAsStringAsync());
             Assert.Equal("Gold Coast", body.RootElement.GetProperty("aiSearch").GetString());
             Assert.Equal("AUD", body.RootElement.GetProperty("currency").GetString());
+            Assert.True(body.RootElement.GetProperty("includeHotelData").GetBoolean());
             Assert.Equal(2, body.RootElement
                 .GetProperty("occupancies")[0]
                 .GetProperty("adults")
@@ -32,7 +33,7 @@ public sealed class LiteApiClientTests
                     "hotelId": "lp1",
                     "roomTypes": [{
                       "rates": [{ "maxOccupancy": 4 }],
-                      "offerRetailRate": [{ "amount": 300, "currency": "AUD" }]
+                      "offerRetailRate": { "amount": 300, "currency": "AUD" }
                     }]
                   }],
                   "hotels": [{
@@ -72,9 +73,9 @@ public sealed class LiteApiClientTests
 
     [Theory]
     [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[]}],"hotels":[]}""")]
-    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":1}],"offerRetailRate":[{"amount":100,"currency":"USD"}]}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
-    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":2}],"offerRetailRate":[]}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
-    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":2}],"offerRetailRate":[{"amount":100,"currency":"AUD"},{"amount":100,"currency":"AUD"}]}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
+    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":1}],"offerRetailRate":{"amount":100,"currency":"USD"}}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
+    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":2}],"offerRetailRate":null}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
+    [InlineData("""{"data":[{"hotelId":"lp1","roomTypes":[{"rates":[{"maxOccupancy":2}],"offerRetailRate":{"amount":null,"currency":"AUD"}}]}],"hotels":[{"id":"lp1","name":"Stay"}]}""")]
     [InlineData("""{"data":null,"hotels":[]}""")]
     public async Task UnusableProviderResponsesAreRejected(string json)
     {
@@ -97,6 +98,41 @@ public sealed class LiteApiClientTests
         var imports = await client.SearchAsync(Search(), CancellationToken.None);
 
         Assert.Empty(imports);
+    }
+
+    [Fact]
+    public async Task MissingHotelMetadataIsSkippedWhenOtherResultsAreUsable()
+    {
+        const string json =
+            """
+            {
+              "data": [
+                {
+                  "hotelId": "missing",
+                  "roomTypes": [{
+                    "rates": [{ "maxOccupancy": 2 }],
+                    "offerRetailRate": { "amount": 100, "currency": "AUD" }
+                  }]
+                },
+                {
+                  "hotelId": "lp1",
+                  "roomTypes": [{
+                    "rates": [{ "maxOccupancy": 2 }],
+                    "offerRetailRate": { "amount": 120, "currency": "AUD" }
+                  }]
+                }
+              ],
+              "hotels": [{ "id": "lp1", "name": "Usable Stay" }]
+            }
+            """;
+        var client = CreateClient(
+            new StubHandler(_ => Task.FromResult(JsonResponse(json))),
+            "sandbox-key");
+
+        var imports = await client.SearchAsync(Search(), CancellationToken.None);
+
+        var import = Assert.Single(imports);
+        Assert.Equal("Usable Stay", import.Name);
     }
 
     [Fact]

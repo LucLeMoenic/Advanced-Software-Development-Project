@@ -79,7 +79,7 @@ Complete each chunk before starting the next. Do not add Amadeus, authentication
 - Enforce the field constraints from `requirements.md`.
 - Implement database API create, list/filter, get, replace, and delete endpoints.
 - Filter by destination, price, capacity, and active status.
-- Keep the catalogue empty by default. Mitchell will create at least 10 accommodations manually through the application once the traveller/admin flow is functional.
+- Keep the catalogue empty by default; populate the tracked demonstration database explicitly through the HTTP API rather than startup seed code.
 
 **Test**
 
@@ -91,10 +91,10 @@ Complete each chunk before starting the next. Do not add Amadeus, authentication
 **Done when**
 
 - Catalogue CRUD and filtering work through HTTP.
-- The API and schema are ready for Mitchell to create the required records manually.
+- The tracked demonstration database contains at least 10 valid accommodation records created through the HTTP API.
 - No frontend or backend code accesses SQLite directly.
 
-FR-16's minimum 10-record evidence remains open until those records are created. Automatic seed data is intentionally excluded by human decision.
+FR-16's minimum 10-record count is complete. Automatic runtime seed data remains intentionally excluded by human decision.
 
 ### Chunk 3 - Search History
 

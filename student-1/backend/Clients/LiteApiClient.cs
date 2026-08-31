@@ -42,6 +42,8 @@ public sealed class LiteApiClient(
                     search.CheckIn,
                     search.CheckOut,
                     search.Destination,
+
+                    true,
                     10,
                     8,
                     1,
@@ -118,10 +120,14 @@ public sealed class LiteApiClient(
         {
             if (result is null
                 || string.IsNullOrWhiteSpace(result.HotelId)
-                || !hotelIds.Add(result.HotelId)
-                || !hotels.TryGetValue(result.HotelId, out var hotel))
+                || !hotelIds.Add(result.HotelId))
             {
                 throw new LiteApiResponseException();
+            }
+
+            if (!hotels.TryGetValue(result.HotelId, out var hotel))
+            {
+                continue;
             }
 
             var import = ToImport(result, hotel, search, nights);
@@ -155,10 +161,10 @@ public sealed class LiteApiClient(
         }
 
         var offer = result.RoomTypes?
-            .Where(room => room?.OfferRetailRate is { Count: 1 })
-            .OrderBy(room => room!.OfferRetailRate![0]?.Amount)
+            .Where(room => room?.OfferRetailRate is not null)
+            .OrderBy(room => room!.OfferRetailRate!.Amount)
             .FirstOrDefault();
-        var offerPrice = offer?.OfferRetailRate?[0];
+        var offerPrice = offer?.OfferRetailRate;
         var totalAmount = offerPrice?.Amount;
         var currency = offerPrice?.Currency;
         var maxGuests = offer?.Rates?
@@ -217,6 +223,7 @@ public sealed class LiteApiClient(
         DateOnly Checkin,
         DateOnly Checkout,
         string AiSearch,
+        bool IncludeHotelData,
         int Limit,
         int Timeout,
         int MaxRatesPerHotel,
@@ -234,7 +241,7 @@ public sealed class LiteApiClient(
 
     private sealed record RoomType(
         IReadOnlyList<RoomRate?>? Rates,
-        IReadOnlyList<Money?>? OfferRetailRate);
+        Money? OfferRetailRate);
 
     private sealed record RoomRate(int? MaxOccupancy);
 
