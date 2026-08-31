@@ -308,3 +308,24 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** all 19 database tests pass; EF reports no pending model changes; no concrete entity configuration implements `IEntityTypeConfiguration` directly; migration and snapshot files remain generated artifacts.
 
 **Verdict:** accepted after correction. The handwritten EF layer now consistently follows the agreed Academy context/configuration/repository structure without copying its reflection weakness or SQL Server-specific details.
+
+## 2026-08-31 - Chunk 4 Deterministic Backend Review
+
+**Review type:** Copilot-simulated adversarial review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** Backend DTOs, search validation, deterministic ranking, database HTTP client, persistence, history CRUD, dependency failures, tests, tracked SQLite compatibility, and FR-01 to FR-05/FR-09 to FR-14 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Blocking | Well-formed but semantically invalid database JSON could deserialize into null/default CLR values and then cause a `500` or leak invalid public DTOs. | Added nullable wire DTOs and explicit semantic validation before mapping candidates, history summaries, stored searches, and result snapshots. Invalid payloads now produce `502 dependency_response_error`. |
+| Blocking | The database client treated every dependency `404` as a missing history record, so route/version errors on candidate list, history list, or persistence could escape as `500`. | Limited record-not-found translation to ID-based get/rename/delete calls. Collection and create `404` responses are now unusable dependency responses and map to `502`. |
+| Required | Non-JSON request content types could bypass the stable validation envelope. | Added a JSON content-type boundary check and a focused test proving no database call occurs. |
+| Required | Failure logs did not identify whether candidate retrieval or persistence failed. | Added structured stage, outcome, duration, candidate count, ranking mode, failure category, and correlation ID fields without logging preferences. |
+| Required | The first result DTO copied catalogue-only description, amenity, and URL fields that were absent from the 10 existing persisted snapshots. | Reduced the result contract to the FR-10 display fields: identity, name, destination, nightly price, capacity, rank, and reason. All tracked history now reopens without rewriting SQLite data. |
+| Required | Initial tests did not prove the final accommodation-ID tie-break, semantic payload failures, wrong content type, collection `404`, or repeated deletion. | Expanded the focused backend suite to 29 tests covering those cases in addition to all FR-02 invalid boundaries, empty results, persistence, history CRUD, timeout, malformed JSON, and error shapes. |
+
+**Persistence decision:** the tracked `student-1/database/storage/accommodation.db` remains the source of the 10 representative records and is bind-mounted by Compose. No startup seed code was added. SQLite `-wal` and `-shm` runtime sidecars are ignored while the primary database remains tracked.
+
+**Evidence:** backend tests pass 29/29; database regressions pass 19/19; Docker rebuild succeeds; all 10 persisted searches list and reopen through the rebuilt backend; Compose configuration and diff checks pass.
+
+**Verdict:** accepted after corrections. Chunk 4 is complete without Ollama: valid searches rank and persist deterministically, empty searches persist with an empty snapshot, history CRUD is exposed through the backend, dependency failures use stable `502`/`503` envelopes, and persisted SQLite data survives service rebuilds.
