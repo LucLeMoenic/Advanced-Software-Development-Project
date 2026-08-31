@@ -189,3 +189,50 @@ No additional service, model, dependency, abstraction, or speculative Release 1 
 **Validation:** Vue type-check/production build passed; backend endpoint tests passed 2/2; database endpoint tests passed 2/2; Compose configuration validated. Mitchell separately reported that all three images build, the containers start, and their health checks pass.
 
 **Verdict:** Chunk 1 is complete. The implementation establishes healthy, containerised service boundaries only; it correctly does not claim catalogue CRUD, search history, recommendation AI, or the finished traveller interface.
+
+## 2026-08-31 - Current Implementation Planning Review
+
+**Scope:** Current Student 1 frontend, backend, database API, Dockerfiles, root Compose, Student 1 CI, feature requirements, feature plan, sprint backlog, and risk plan.
+
+| Finding | Planning decision |
+|---|---|
+| The three feature containers, health checks, service-DNS configuration, ports, and SQLite volume now exist. | Preserve the current deployment shape; do not add another service, gateway, queue, cache, or data store. |
+| Accommodation catalogue code and an initial EF Core migration are present as uncommitted work, but the existing database tests cover only root and health endpoints. | Finish catalogue contract tests and verify migration/seed behaviour before starting search history. |
+| The backend still exposes only root and health endpoints. | Implement deterministic search orchestration and database HTTP clients before adding Ollama, so dependency and persistence behaviour can be proven without model variability. |
+| The frontend remains a readiness page and the shared frontend has no accommodation entry point. | Build the traveller workflow after the backend contract is stable, then add the shared navigation link as the final integration step. |
+| Student 1 CI already expects frontend build, both .NET test projects, Compose validation, and all three image builds. | Extend existing test projects and keep CI independent of live Ollama; no separate CI architecture is needed. |
+
+**Verdict:** Continue with the existing feature-plan sequence. The minimum complete design remains three Student 1 services plus the already-shared Ollama runtime; current work should proceed catalogue -> history -> deterministic backend -> Ollama -> frontend -> shared integration.
+
+## 2026-08-31 - Post-Setup Parallel Work Review
+
+**Goal:** identify work after Chunk 1 that can proceed concurrently without textual merge conflicts while preserving the feature plan's dependency order.
+
+| Work area | Parallel decision |
+|---|---|
+| Chunk 2 catalogue and Chunk 3 search history | Do not run as independent branches. Both modify the database project, `AccommodationDbContext`, migrations/model snapshot, startup registration, seeding, and database tests. |
+| Chunk 4 deterministic backend and Chunk 5 AI ranking | Do not run as independent branches. Chunk 5 depends on Chunk 4's DTOs, orchestration, persistence, ranking interface, endpoint wiring, and tests. |
+| Database implementation and frontend preparation | Safe only after the API payloads are frozen and ownership is restricted to `student-1/database/**` versus `student-1/frontend/**`. The frontend lane may build typed clients, components, styling, and component tests against fixtures, but final end-to-end wiring waits for the backend contract. |
+| Database implementation and backend preparation | Safe only with strict ownership of `student-1/database/**` versus `student-1/backend/**` and a frozen database API contract. The backend lane may create DTOs, clients, deterministic ranking, and fake-client tests; integration validation waits for the database endpoints. |
+| Application implementation and report diagrams/evidence templates | Safe when the evidence lane creates separate new files and does not edit shared logs, the backlog, README, Compose, workflows, or source files. Claims of completion and screenshots must wait for real validation. |
+| Chunk 7 shared integration | Keep as one exclusive lane after application behaviour stabilises because it owns shared navigation, root Compose, CI, and setup documentation. |
+
+**Verdict:** no complete numbered chunks after Chunk 1 are guaranteed conflict-free when developed in parallel. Guaranteed conflict avoidance requires explicit directory/file ownership; the strongest useful split is database, backend, frontend, and new evidence-file lanes, with dependent integration performed sequentially.
+
+## 2026-08-31 - Chunk 2 Catalogue Review
+
+**Review type:** Copilot-simulated review using a parallel reviewer subagent. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** Accommodation EF model/configuration/migrations, database API CRUD and filters, integration tests, Docker runtime, and FR-04/FR-15 to FR-17 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Blocking | SQLite's default EF decimal mapping stored prices as text, causing valid values to fail numeric database constraints. | Replaced the mapping with exact integer-cent storage while keeping decimal API values; regenerated the migration and reran the complete suite. |
+| Blocking | Plain-text amenities had no database JSON invariant, so malformed manually inserted data could break response mapping. | Added a SQLite `json_valid`/array check constraint in a follow-up generated migration and added a direct constraint test. |
+| Required | The initial `DbContext` contained every table, column, conversion, index, and constraint mapping inline and did not match Mitchell's expected EF structure. | Compared representative WiseTech Academy code and moved mapping into `Configurations/AccommodationConfiguration.cs`; the context now only exposes the `DbSet` and applies the configuration. |
+| Required | The requirements call for repeatable seed data and at least 10 records, but Mitchell explicitly declined automatic seeding. | Removed the seeder. The catalogue intentionally starts empty, and FR-16/EV-02 minimum-record evidence remains blocked until Mitchell manually creates at least 10 records through the functional application. |
+| Required | Candidate queries must exclude inactive records. | The database API supports explicit `active=true`; the future backend integration must always supply it for candidate retrieval. Catalogue administration may still list inactive records deliberately. |
+
+**Validation:** 12/12 tests pass, including CRUD, validation, case-insensitive conflicts, inclusive filters, not-found responses, SQL-injection-shaped data, price/capacity constraints, malformed amenities JSON, health, and empty startup. The Docker image builds, the existing volume advances through both migrations, the container reports healthy, and runtime create/delete leaves the catalogue empty.
+
+**Verdict:** the Chunk 2 catalogue code is functional and follows the requested WiseTech EF configuration pattern. Chunk 2 cannot be marked fully complete against the original requirements until at least 10 records exist; that gap is an explicit human decision rather than an implementation claim.

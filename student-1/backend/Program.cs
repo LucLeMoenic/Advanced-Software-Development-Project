@@ -8,7 +8,7 @@ var ollamaUrl = builder.Configuration["Services:OllamaUrl"]
 
 app.MapGet("/", () => Results.Ok(new
 {
-    service = "student1-backend",
+    service = "accommodation-backend",
     status = "ready",
     dependencies = new
     {
@@ -20,7 +20,7 @@ app.MapGet("/", () => Results.Ok(new
 app.MapGet("/health", () => Results.Ok(new
 {
     status = "healthy",
-    service = "student1-backend"
+    service = "accommodation-backend"
 }));
 
 app.Run();
