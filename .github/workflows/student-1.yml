@@ -1,12 +1,32 @@
 name: Student 1 CI
 
-on: [push, pull_request]
+on:
+  push:
+    paths:
+      - 'student-1/**'
+      - '.github/workflows/student-1.yml'
+      - 'docker-compose.yml'
+  pull_request:
+    paths:
+      - 'student-1/**'
+      - '.github/workflows/student-1.yml'
+      - 'docker-compose.yml'
 
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Student 1 frontend
+
+      - name: Validate repository structure
+        shell: bash
         run: |
-          echo "Build steps for student-1 frontend go here"
+          if [ -d "student-1" ]; then
+            echo "student-1 scaffold is present"
+            find student-1 -maxdepth 2 -type f | sort
+          else
+            echo "student-1 scaffold not present yet; validating repo-level Release 0 DevOps config only"
+          fi
+
+      - name: Validate Docker Compose config
+        run: docker compose config
