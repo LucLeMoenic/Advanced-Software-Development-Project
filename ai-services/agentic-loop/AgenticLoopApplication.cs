@@ -86,7 +86,10 @@ public static partial class AgenticLoopApplication
             var reviewerModel = Environment.GetEnvironmentVariable("REVIEWER_MODEL");
             if (string.IsNullOrWhiteSpace(implementerModel)
                 || string.IsNullOrWhiteSpace(reviewerModel)
-                || string.Equals(implementerModel, reviewerModel, StringComparison.Ordinal))
+                || string.Equals(
+                    NormaliseModelName(implementerModel),
+                    NormaliseModelName(reviewerModel),
+                    StringComparison.Ordinal))
             {
                 return Results.Json(
                     new { status = "unhealthy", reason = "Model roles are missing or equal." },
@@ -248,7 +251,7 @@ public static partial class AgenticLoopApplication
             throw new LoopException($"Record contains invalid JSON: {recordPath}", exception);
         }
 
-        if (record.SchemaVersion != 1)
+        if (record.SchemaVersion is not (1 or 2))
         {
             throw new LoopException("Record has an unsupported schema.");
         }
@@ -292,7 +295,10 @@ public static partial class AgenticLoopApplication
         {
             throw new LoopException("IMPLEMENTER_MODEL and REVIEWER_MODEL are required.");
         }
-        if (string.Equals(implementerModel, reviewerModel, StringComparison.Ordinal))
+        if (string.Equals(
+            NormaliseModelName(implementerModel),
+            NormaliseModelName(reviewerModel),
+            StringComparison.Ordinal))
         {
             throw new LoopException("Implementer and reviewer models must be different.");
         }
@@ -318,14 +324,7 @@ public static partial class AgenticLoopApplication
             }
 
             var relativePath = Path.GetRelativePath(workspacePath, candidate);
-            if (IsSensitivePath(relativePath))
-            {
-                throw new LoopException($"Sensitive context path is not allowed: {requestedPath}");
-            }
-            if (!IsAllowedContextPath(relativePath))
-            {
-                throw new LoopException($"Context file type is not allowed: {requestedPath}");
-            }
+            ValidateContextPath(relativePath, requestedPath);
             if (!File.Exists(candidate))
             {
                 throw new LoopException($"Context file does not exist: {requestedPath}");
@@ -340,6 +339,9 @@ public static partial class AgenticLoopApplication
                     throw new LoopException(
                         $"Context symbolic link escapes the workspace: {requestedPath}");
                 }
+
+                var targetRelativePath = Path.GetRelativePath(workspacePath, candidate);
+                ValidateContextPath(targetRelativePath, requestedPath);
             }
 
             var bytes = await File.ReadAllBytesAsync(candidate);
@@ -369,6 +371,11 @@ public static partial class AgenticLoopApplication
                 throw new LoopException(
                     $"Context file is not valid UTF-8: {requestedPath}", exception);
             }
+            if (ContainsSecretLikeContent(text))
+            {
+                throw new LoopException(
+                    $"Secret-like context content is not allowed: {requestedPath}");
+            }
 
             var normalisedPath = relativePath.Replace(Path.DirectorySeparatorChar, '/');
             selectedPaths.Add(normalisedPath);
@@ -382,31 +389,112 @@ public static partial class AgenticLoopApplication
         return new LoadedContext(selectedPaths, hashes, content.ToString());
     }
 
-    internal static string ParseVerdict(string review)
+    internal static void ValidateImplementerOutput(string implementation)
     {
-        var observeIndex = review.IndexOf("[OBSERVE]", StringComparison.Ordinal);
-        if (observeIndex < 0)
+        var planMatches = PlanHeadingRegex().Matches(implementation);
+        var actMatches = ActHeadingRegex().Matches(implementation);
+        if (planMatches.Count != 1 || actMatches.Count != 1)
         {
-            throw new LoopException("Reviewer output does not contain an [OBSERVE] section.");
+            throw new LoopException(
+                "Implementer output must contain exactly one [PLAN] and one [ACT] section.");
         }
 
-        var matches = VerdictRegex().Matches(review[observeIndex..]);
+        var planMatch = planMatches[0];
+        var actMatch = actMatches[0];
+        if (planMatch.Index >= actMatch.Index)
+        {
+            throw new LoopException("Implementer output must place [PLAN] before [ACT].");
+        }
+
+        var plan = implementation[
+            (planMatch.Index + planMatch.Length)..actMatch.Index].Trim();
+        var proposedChange = implementation[(actMatch.Index + actMatch.Length)..].Trim();
+        if (plan.Length == 0 || proposedChange.Length == 0)
+        {
+            throw new LoopException(
+                "Implementer output must include a written plan and proposed change.");
+        }
+    }
+
+    internal static string ParseVerdict(string review)
+    {
+        var observeMatches = ObserveHeadingRegex().Matches(review);
+        if (observeMatches.Count != 1)
+        {
+            throw new LoopException(
+                "Reviewer output must contain exactly one [OBSERVE] section.");
+        }
+
+        var observeMatch = observeMatches[0];
+        var observe = review[(observeMatch.Index + observeMatch.Length)..];
+        var matches = VerdictRegex().Matches(observe);
         if (matches.Count != 1)
         {
             throw new LoopException("Reviewer output must contain exactly one valid Verdict line.");
         }
 
-        return matches[0].Groups[1].Value.ToUpperInvariant();
+        var findingsMatch = RequireSingleHeading(observe, FindingsHeadingRegex(), "Findings:");
+        var validationMatch = RequireSingleHeading(
+            observe,
+            ValidationGapsHeadingRegex(),
+            "Validation gaps:");
+        var scopeMatch = RequireSingleHeading(observe, ScopeCheckHeadingRegex(), "Scope check:");
+        if (matches[0].Index >= findingsMatch.Index
+            || findingsMatch.Index >= validationMatch.Index
+            || validationMatch.Index >= scopeMatch.Index)
+        {
+            throw new LoopException(
+                "Reviewer output must order Verdict, Findings, Validation gaps, and Scope check.");
+        }
+
+        var findings = observe[
+            (findingsMatch.Index + findingsMatch.Length)..validationMatch.Index].Trim();
+        var validationGaps = observe[
+            (validationMatch.Index + validationMatch.Length)..scopeMatch.Index].Trim();
+        var scopeCheck = observe[(scopeMatch.Index + scopeMatch.Length)..].Trim();
+        if (findings.Length == 0 || validationGaps.Length == 0 || scopeCheck.Length == 0)
+        {
+            throw new LoopException("Reviewer output contains an empty required section.");
+        }
+
+        var verdict = matches[0].Groups[1].Value.ToUpperInvariant();
+        var noFindings = findings.Equals("- None", StringComparison.OrdinalIgnoreCase);
+        var severityMatches = SeverityValueRegex().Matches(findings);
+        if (!noFindings && severityMatches.Count == 0)
+        {
+            throw new LoopException(
+                "Reviewer findings must use a valid Severity field or state - None.");
+        }
+        if (verdict is "REVISE" or "REJECT"
+            && (noFindings
+                || !EvidenceFieldRegex().IsMatch(findings)
+                || !CorrectionFieldRegex().IsMatch(findings)))
+        {
+            throw new LoopException(
+                "REVISE and REJECT findings require severity, evidence, and required correction.");
+        }
+        if (verdict == "ACCEPT"
+            && severityMatches.Any(match =>
+                match.Groups[1].Value.Equals("BLOCKING", StringComparison.OrdinalIgnoreCase)
+                || match.Groups[1].Value.Equals("REQUIRED", StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new LoopException(
+                "Reviewer output cannot ACCEPT blocking or required findings.");
+        }
+
+        return verdict;
     }
 
     internal static async Task<AgenticLoopRecord> ExecuteLoopAsync(
         LoopExecutionInput input,
         IModelClient modelClient)
     {
+        var implementerModel = NormaliseModelName(input.ImplementerModel);
+        var reviewerModel = NormaliseModelName(input.ReviewerModel);
         var availableModels = await modelClient.GetAvailableModelsAsync();
         var runtimeVersion = await modelClient.GetRuntimeVersionAsync();
-        var missingModels = new[] { input.ImplementerModel, input.ReviewerModel }
-            .Where(model => !availableModels.Contains(NormaliseModelName(model)))
+        var missingModels = new[] { implementerModel, reviewerModel }
+            .Where(model => !availableModels.Contains(model))
             .ToArray();
         if (missingModels.Length > 0)
         {
@@ -438,8 +526,9 @@ public static partial class AgenticLoopApplication
         Console.WriteLine("[PLAN] Implementer model analysing task.");
         Console.WriteLine("[ACT] Implementer model producing proposal.");
         var implementation = await modelClient.GenerateAsync(
-            input.ImplementerModel,
+            implementerModel,
             planActPrompt);
+        ValidateImplementerOutput(implementation);
         Console.WriteLine(implementation);
 
         var reviewMarker = $"REVIEW_DATA_{Guid.NewGuid():N}";
@@ -464,7 +553,7 @@ public static partial class AgenticLoopApplication
             """;
 
         Console.WriteLine("[OBSERVE] Reviewer model assessing proposal.");
-        var review = await modelClient.GenerateAsync(input.ReviewerModel, reviewPrompt);
+        var review = await modelClient.GenerateAsync(reviewerModel, reviewPrompt);
         Console.WriteLine(review);
         var verdict = ParseVerdict(review);
 
@@ -495,8 +584,9 @@ public static partial class AgenticLoopApplication
 
             Console.WriteLine("[ADAPT] Implementer model producing one bounded revision.");
             adaptedProposal = await modelClient.GenerateAsync(
-                input.ImplementerModel,
+                implementerModel,
                 adaptPrompt);
+            ValidateImplementerOutput(adaptedProposal);
             Console.WriteLine(adaptedProposal);
 
             var finalReviewMarker = $"FINAL_REVIEW_DATA_{Guid.NewGuid():N}";
@@ -520,7 +610,7 @@ public static partial class AgenticLoopApplication
 
             Console.WriteLine("[OBSERVE] Reviewer model assessing the adapted proposal.");
             adaptedProposalReview = await modelClient.GenerateAsync(
-                input.ReviewerModel,
+                reviewerModel,
                 finalReviewPrompt);
             Console.WriteLine(adaptedProposalReview);
             finalReviewerVerdict = ParseVerdict(adaptedProposalReview);
@@ -531,15 +621,20 @@ public static partial class AgenticLoopApplication
                 $"[ADAPT] No model revision generated because reviewer verdict is {verdict}.");
         }
 
+        var promptVersions = new PromptVersions(
+            ExtractPromptVersion(input.ImplementerPrompt, "implementer"),
+            ExtractPromptVersion(input.ReviewerPrompt, "reviewer"));
+
         return new AgenticLoopRecord(
-            SchemaVersion: 1,
+            SchemaVersion: 2,
             CreatedAt: DateTimeOffset.UtcNow,
             Task: input.Task,
             ContextFiles: input.Context.Paths,
-            Models: new ModelRoles(input.ImplementerModel, input.ReviewerModel),
+            Models: new ModelRoles(implementerModel, reviewerModel),
             PromptFiles: new PromptFiles(
                 input.ImplementerPromptPath,
                 input.ReviewerPromptPath),
+            PromptVersions: promptVersions,
             EvidenceHashes: new EvidenceHashes(
                 input.Context.Sha256ByPath,
                 HashText(input.ImplementerPrompt),
@@ -611,6 +706,54 @@ public static partial class AgenticLoopApplication
                 or ".targets";
     }
 
+    private static bool ContainsSecretLikeContent(string text)
+    {
+        return PrivateKeyRegex().IsMatch(text)
+            || KnownTokenRegex().IsMatch(text)
+            || CredentialAssignmentRegex().IsMatch(text)
+            || BearerCredentialRegex().IsMatch(text)
+            || ConnectionStringPasswordRegex().IsMatch(text);
+    }
+
+    private static void ValidateContextPath(string relativePath, string requestedPath)
+    {
+        if (IsSensitivePath(relativePath))
+        {
+            throw new LoopException($"Sensitive context path is not allowed: {requestedPath}");
+        }
+        if (!IsAllowedContextPath(relativePath))
+        {
+            throw new LoopException($"Context file type is not allowed: {requestedPath}");
+        }
+    }
+
+    private static Match RequireSingleHeading(
+        string output,
+        Regex headingRegex,
+        string heading)
+    {
+        var matches = headingRegex.Matches(output);
+        if (matches.Count != 1)
+        {
+            throw new LoopException(
+                $"Reviewer output must contain exactly one {heading} section.");
+        }
+
+        return matches[0];
+    }
+
+    private static string ExtractPromptVersion(string prompt, string role)
+    {
+        var matches = PromptVersionRegex().Matches(prompt);
+        if (matches.Count != 1)
+        {
+            throw new LoopException(
+                $"The {role} prompt must contain exactly one Version declaration.");
+        }
+
+        return matches[0].Groups[1].Value;
+    }
+
     internal static string NormaliseModelName(string model)
     {
         return model.Contains(':', StringComparison.Ordinal) ? model : $"{model}:latest";
@@ -670,6 +813,68 @@ public static partial class AgenticLoopApplication
         @"^\s*Verdict:\s*(ACCEPT|REVISE|REJECT)\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex VerdictRegex();
+
+    [GeneratedRegex(@"^\s*\[PLAN\]\s*$", RegexOptions.Multiline)]
+    private static partial Regex PlanHeadingRegex();
+
+    [GeneratedRegex(@"^\s*\[ACT\]\s*$", RegexOptions.Multiline)]
+    private static partial Regex ActHeadingRegex();
+
+    [GeneratedRegex(@"^\s*\[OBSERVE\]\s*$", RegexOptions.Multiline)]
+    private static partial Regex ObserveHeadingRegex();
+
+    [GeneratedRegex(@"^\s*Findings:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex FindingsHeadingRegex();
+
+    [GeneratedRegex(
+        @"^\s*Validation gaps:\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex ValidationGapsHeadingRegex();
+
+    [GeneratedRegex(@"^\s*Scope check:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex ScopeCheckHeadingRegex();
+
+    [GeneratedRegex(
+        @"^\s*(?:-\s*)?Severity:\s*(BLOCKING|REQUIRED|SUGGESTION)\b.*$",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex SeverityValueRegex();
+
+    [GeneratedRegex(@"^\s*Evidence:\s*\S+", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex EvidenceFieldRegex();
+
+    [GeneratedRegex(
+        @"^\s*Required correction:\s*\S+",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex CorrectionFieldRegex();
+
+    [GeneratedRegex(
+        @"^\s*Version:\s*`([^`\r\n]+)`\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex PromptVersionRegex();
+
+    [GeneratedRegex(
+        @"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----",
+        RegexOptions.IgnoreCase)]
+    private static partial Regex PrivateKeyRegex();
+
+    [GeneratedRegex(
+        @"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b")]
+    private static partial Regex KnownTokenRegex();
+
+    [GeneratedRegex(
+        """^\s*(?:(?:const|let|var|string)\s+)?["']?(?:api[_-]?key|apikey|access[_-]?token|accesstoken|auth[_-]?token|authtoken|token|password|client[_-]?secret|clientsecret)["']?\s*[:=]\s*(?:["'][^"'\r\n]{8,}["']|[A-Za-z0-9_+/=-]{12,})\s*[,;]?\s*$""",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex CredentialAssignmentRegex();
+
+    [GeneratedRegex(
+        @"^\s*Authorization\s*:\s*Bearer\s+[A-Za-z0-9._~+/=-]{16,}\s*$",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex BearerCredentialRegex();
+
+    [GeneratedRegex(
+        @"(?:^|;)\s*(?:Password|Pwd)\s*=\s*[^;\r\n]{8,}",
+        RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    private static partial Regex ConnectionStringPasswordRegex();
 }
 
 internal interface IModelClient
@@ -858,6 +1063,7 @@ internal sealed record LoopExecutionInput(
     string PreTestResult);
 internal sealed record ModelRoles(string Implementer, string Reviewer);
 internal sealed record PromptFiles(string Implementer, string Reviewer);
+internal sealed record PromptVersions(string Implementer, string Reviewer);
 internal sealed record TestEvidence(string Command, string Result);
 internal sealed record EvidenceHashes(
     IReadOnlyDictionary<string, string> ContextSha256,
@@ -875,6 +1081,7 @@ internal sealed record AgenticLoopRecord(
     IReadOnlyList<string> ContextFiles,
     ModelRoles Models,
     PromptFiles PromptFiles,
+    PromptVersions? PromptVersions,
     EvidenceHashes EvidenceHashes,
     GenerationOptions GenerationOptions,
     string OllamaVersion,

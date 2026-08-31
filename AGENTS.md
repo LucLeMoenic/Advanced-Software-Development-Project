@@ -14,7 +14,8 @@ This repository uses the Release 0 brief, the ASD project specifications, and th
 
 - Update `Mitchell-Harris-Feature(Accomidation)/docs/prompt-log.md` whenever AI meaningfully writes or edits code or infrastructure.
 - Update `Mitchell-Harris-Feature(Accomidation)/docs/review-record.md` whenever AI reviews existing work.
-- Add reusable prompts to `Mitchell-Harris-Feature(Accomidation)/docs/prompt-library/` as separate markdown files.
+- Keep shared runtime prompts only under `ai-services/agentic-loop/prompts/`; feature documentation must link to them instead of copying them.
+- Add only feature-specific reusable prompts that are not runtime prompts to `Mitchell-Harris-Feature(Accomidation)/docs/prompt-library/`.
 - Keep any report-facing evidence notes aligned with the Release 0 marking criteria and integration requirements.
 
 ## Working Rules

@@ -130,3 +130,27 @@ Reviewed the conflicting `docker-compose.yml` and Student 1 workflow changes fro
 | `main` added only a scaffold-presence check for Student 1, while the branch added executable .NET tests and container/Compose checks. | Retained the stronger executable checks and added `student-1/**` to the path triggers for the planned standard-folder migration. |
 
 **Verdict:** conflicts resolved without dropping either branch's compatible infrastructure. The merge remains uncommitted for human review and commit.
+
+## 2026-08-31 - Runtime Prompt Duplication Review
+
+| Finding | Resolution |
+|---|---|
+| The shared runtime and accommodation feature folder contained different copies of both implementer and reviewer prompts. Their versions, headings, and validation placement had already drifted. | Kept `ai-services/agentic-loop/prompts/implementer.md` and `reviewer.md` as the only runtime sources and deleted the feature copies. |
+| Evidence documentation linked to the duplicate prompt library instead of the files actually loaded and hashed by the runner. | Updated the feature README, context, checklist, prompt-library index, and repository instructions to reference the shared runtime paths. |
+
+**Verdict:** resolved. One authoritative prompt now exists for each runtime model role.
+
+## 2026-08-31 - Post-Merge PR Cleanliness Audit
+
+**Verdict:** required corrections applied. The loop is substantial but its retained parts trace to the Release 0 agentic workflow, safety, reproducibility, or evidence requirements.
+
+| Finding | Resolution |
+|---|---|
+| Any non-empty implementer response and minimally labelled reviewer verdict could be recorded as valid Plan/Act/Observe evidence. | Added structural validation for one ordered, non-empty Plan and Act plus ordered reviewer findings, validation gaps, scope check, and evidence fields for non-accept verdicts. |
+| Allowed text files could contain credentials even though only sensitive filenames were rejected. | Added conservative checks for private-key headers, recognised token formats, and credential assignments before context reaches Ollama. |
+| Records stored prompt hashes but not the human-readable versions required by NFR-14. | Added implementer and reviewer prompt versions to schema version 2 while retaining finalisation support for schema version 1 records. |
+| The main web project could include `tests/**` content during local publish, producing recursive generated output. | Excluded test content and `None` items from the main project. |
+| The checklist incorrectly described Student 1 CI as echo-only, and shared-loop CI ownership was implicit. | Corrected the evidence status and recorded temporary ownership pending a root shared workflow. |
+| Reviewer headings outside `[OBSERVE]`, contradictory ACCEPT findings, model aliases, and sensitive symbolic-link targets could bypass validation. | Bounded reviewer parsing to the Observe section, rejected ACCEPT with blocking/required findings, normalised model tags before comparison/use/recording, and revalidated resolved link targets. |
+
+No additional service, model, dependency, abstraction, or speculative Release 1 capability was added.

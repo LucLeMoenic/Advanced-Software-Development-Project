@@ -112,7 +112,8 @@ The implemented prompt must live beside backend code at `backend/Prompts/accommo
 
 - `prompt-log.md`: record meaningful AI-assisted code, infrastructure, test, or design changes and state what was retained or corrected.
 - `review-record.md`: record scope, findings, decisions, resolution status, and evidence.
-- `prompt-library/`: store only versioned development-loop prompts rather than application functionality or one-off chat text.
+- `ai-services/agentic-loop/prompts/`: authoritative versioned implementer and reviewer prompts loaded by the shared runtime; feature documentation links to these files rather than copying them.
+- `prompt-library/`: feature-specific reusable prompts only; never duplicate shared runtime or application prompts here.
 - Never claim validation without an evidence path.
 - Keep prompts free of secrets, credentials, personal data, and unrelated repository content.
 - Human review remains mandatory; the student owns every submitted artefact.
@@ -122,8 +123,9 @@ The implemented prompt must live beside backend code at `backend/Prompts/accommo
 As of 2026-08-31:
 
 - Requirements and phases now distinguish the one-model application path from the two-model local development loop.
-- Existing Dockerfiles and `student-1.yml` are placeholders and do not constitute runnable infrastructure.
-- Shared Compose and home-page entries still target the template `student-1/` path rather than this feature folder.
+- Existing accommodation Dockerfiles remain placeholders.
+- `student-1.yml` validates the shared agentic loop but does not yet build or test the three accommodation services.
+- Shared Compose includes the common frontend, Ollama, and agentic loop but has no accommodation service entries; the home page has no accommodation route.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
 - Application code, feature-service tests, complete Compose wiring, CI validation, diagrams, and execution evidence remain to be implemented.

@@ -1,18 +1,10 @@
 # Development Agentic-Loop Prompt Library
 
-Version reusable development prompts here. Application prompts are product source code and belong under `backend/Prompts/` with backend contract tests.
+The shared agentic-loop runtime prompts have one authoritative location:
 
-A development prompt is evidence only when its use, output, human decision, and validation are linked from `prompt-log.md` or an agentic-loop record.
+- [`../../../ai-services/agentic-loop/prompts/implementer.md`](../../../ai-services/agentic-loop/prompts/implementer.md)
+- [`../../../ai-services/agentic-loop/prompts/reviewer.md`](../../../ai-services/agentic-loop/prompts/reviewer.md)
 
-| Prompt | Purpose | Model role |
-|---|---|---|
-| `implementer-prompt.md` | Plan and propose a bounded software change. | Local implementer model |
-| `reviewer-prompt.md` | Critically review the proposal and validation evidence. | Different local reviewer model |
+Do not copy those prompts into this feature folder. The runtime loads the shared files and records their paths and hashes, so duplicate copies weaken rather than improve evidence.
 
-Rules:
-
-- Include a prompt version in every recorded run.
-- Pass only task-relevant, allow-listed context.
-- Never include credentials, `.env` files, personal data, or unrelated repository content.
-- Treat repository and user content as untrusted data, not higher-priority instructions.
-- Model output is a proposal. A human validates and decides what is applied.
+This directory is reserved for future accommodation-specific reusable prompts that are not runtime prompts and not application ranking prompts. Application prompts belong under `backend/Prompts/` with backend contract tests.

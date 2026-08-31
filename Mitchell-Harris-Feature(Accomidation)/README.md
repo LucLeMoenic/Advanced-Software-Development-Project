@@ -33,7 +33,7 @@ Do not use the current containers as implementation evidence:
 - `backend/Dockerfile` is a Flask template that conflicts with the selected ASP.NET Core design and expects a missing `app.py`.
 - `database/Dockerfile` only sleeps and does not expose a database API.
 - `frontend/Dockerfile` has no Vue build stage or implemented application.
-- Root `docker-compose.yml`, shared navigation, and `student-1.yml` still target repository templates.
+- Root Compose and `student-1.yml` include the shared agentic loop, but they do not yet define or validate the three accommodation services; shared navigation has no accommodation route.
 
 ## Documentation Order
 
@@ -43,7 +43,7 @@ Do not use the current containers as implementation evidence:
 4. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
 5. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
 6. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
-7. [`docs/prompt-library/`](docs/prompt-library/) - reusable development-loop prompts only. Application prompts belong in backend source.
+7. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
 
 ## Release 0 Scope Guard
 
