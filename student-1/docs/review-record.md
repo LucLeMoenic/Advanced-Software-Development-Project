@@ -290,3 +290,21 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** 19/19 database tests pass; `dotnet-ef migrations has-pending-model-changes` reports no model changes; `docker compose config --quiet` passes; the rebuilt database image starts healthy and its HTTP history endpoint returns all 10 records from the bind-mounted tracked database; the stopped database has no WAL/SHM sidecars.
 
 **Verdict:** accepted. Chunk 3 is complete at the database-service boundary. Backend and frontend history endpoints remain correctly deferred to later chunks, and FR-16 remains open until at least 10 Accommodation records are created.
+
+## 2026-08-31 - Academy EF Pattern Alignment Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** All handwritten Student 1 EF context, entities, configurations, repositories, startup registration, and tests, compared with representative WiseTech Academy database patterns. Generated migrations and snapshots were inspected but not treated as handwritten architecture.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Required | `AccommodationConfiguration` and `SearchConfiguration` were separate files but still placed table, key, properties, constraints, and indexes in one direct `IEntityTypeConfiguration.Configure` method. This did not implement the Academy base-configuration pattern previously agreed with Mitchell. | Added `BaseEntityTypeConfiguration<TEntity>` and converted both configurations to the ordered table, primary-key, properties, indexes, and foreign-key lifecycle. |
+| Required | The context used a primary constructor and expression-bodied sets rather than the explicit Academy context shape. | Changed `DatabaseContext` to an explicit options constructor and initialized `DbSet` properties while retaining explicit configuration application in `OnModelCreating`. Academy's `virtual` modifier was deliberately omitted because this project does not use lazy-loading proxies or context-property overrides. |
+| Noted | The Academy base class discovers `Schema.TableName` with reflection. Copying that mechanism would hide a required value behind runtime reflection and nullable casts. | Preserved the nested `Schema.TableName` convention but required each configuration to expose it through a compile-time checked override. |
+| Noted | This project needs SQLite table check constraints that the sampled Academy base class does not model. | Added one virtual table-configuration hook so constraints remain grouped separately without bypassing the base lifecycle. |
+| Accepted | Accommodation and Search repositories already isolate endpoints from EF queries and persistence, and startup is the only runtime location that directly applies migrations. | No repository or startup restructuring was required. |
+
+**Validation:** all 19 database tests pass; EF reports no pending model changes; no concrete entity configuration implements `IEntityTypeConfiguration` directly; migration and snapshot files remain generated artifacts.
+
+**Verdict:** accepted after correction. The handwritten EF layer now consistently follows the agreed Academy context/configuration/repository structure without copying its reflection weakness or SQL Server-specific details.
