@@ -1,12 +1,39 @@
 name: Student 1 CI
 
-on: [push, pull_request]
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - "Mitchell-Harris-Feature(Accomidation)/**"
+      - "ai-services/agentic-loop/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - "scripts/verify-agentic-models.ps1"
+      - ".github/workflows/student-1.yml"
+  pull_request:
+    paths:
+      - "Mitchell-Harris-Feature(Accomidation)/**"
+      - "ai-services/agentic-loop/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - "scripts/verify-agentic-models.ps1"
+      - ".github/workflows/student-1.yml"
 
 jobs:
-  build:
+  agentic-loop:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build Student 1 frontend
-        run: |
-          echo "Build steps for student-1 frontend go here"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Test shared agentic loop
+        run: dotnet test ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj --configuration Release
+      - name: Build shared agentic loop container
+        run: docker build --tag asd-agentic-loop:ci ai-services/agentic-loop
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+      - name: Build agentic loop through Compose
+        run: docker compose build agentic-loop

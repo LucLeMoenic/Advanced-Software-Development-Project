@@ -1,144 +1,135 @@
-# Feature Context — AI Accommodation Recommender
+# Feature Context - AI Accommodation Recommender
 
-Use this file as the shared handoff for any new AI chat about this feature.
+Read this compact handoff before implementation or review. Then read `requirements.md`, the current phase in `feature-plan.md`, and `risk-plan.md` before integration or external-service changes. The ASD project specification, Release 0 brief, and recorded tutor clarifications override this file.
 
-## How To Use This File
+## Goal
 
-- Read this first before starting implementation or review work.
-- Use it as the compact summary of the high-level design.
-- Treat the Release 0 brief and project specifications as the higher-level source of truth when there is a conflict.
-- Update the prompt log and review record only when AI meaningfully writes code, infrastructure, or review feedback.
+A traveller submits destination, dates, guest count, nightly budget, and free-text preferences. The feature ranks eligible accommodation records, explains the order, and lets the traveller reopen, rename, and delete persisted searches.
 
-## Scope
+Release 0 success means the feature works inside the integrated group application. Standalone services or documentation without working integration do not satisfy the brief.
 
-- Build one integrated student feature within the Release 0 group application.
-- User story: a traveller enters destination, dates, price range, guest count, and free-text preferences, then receives ranked accommodation results with explanations and can revisit search history.
-- Frontend: Vue 3 + TypeScript, integrated into the shared HTMX entry page.
-- Backend: ASP.NET Core Web API for orchestration, AI calls, and feature API access.
-- Database: ASP.NET Core Web API + EF Core over SQLite for CRUD only.
-- External services: Ollama for ranking and Amadeus for hotel data.
-- Evidence and documentation: prompt log, review record, prompt library, commit history, Docker Compose evidence, GitHub Actions evidence, and report-ready architecture notes.
+## Confirmed Technology and AI Decisions
 
-## Folder Structure
+- The tutor confirmed that teams may choose the frontend and backend technology stack.
+- This feature uses Vue 3 + TypeScript for the frontend.
+- It uses ASP.NET Core Web API for the orchestration backend and database API.
+- The database API owns EF Core and SQLite.
+- The application calls exactly one configured accommodation-ranking LLM through its backend API.
+- The separate development agentic loop uses two distinct approved open-source models hosted locally by Ollama:
+  - implementer model: Plan and Act;
+  - reviewer model: Observe;
+  - Adapt: bounded revision plus an explicit human decision.
+- One Ollama runtime can host all required model tags. Multiple Ollama containers are unnecessary.
 
-```text
-Mitchell-Harris-Feature(Accomidation)/
-├── docs/
-│   ├── context.md
-│   ├── feature-plan.md
-│   ├── prompt-log.md
-│   ├── prompt-library/
-│   ├── requirements.md
-│   ├── review-record.md
-│   └── risk-plan.md
-├── frontend/
-├── backend/
-└── db/
-```
+The application model may reuse one of the two installed model tags to minimise hardware and storage cost, but the implementer and reviewer configuration values must identify different model tags.
 
-## Architecture Rules
-
-- The feature must fit into the shared group repository and shared deployment.
-- The shared HTMX `index.html` is the single entry point for the integrated application.
-- The shared CSS theme must be consistent across the integrated app; do not create an isolated visual language for this feature.
-- `frontend` only talks to `backend`.
-- `backend` talks to `db`, Ollama, and Amadeus.
-- `db` owns SQLite and exposes CRUD over HTTP.
-- Never open the SQLite file directly from the backend.
-- Keep the frontend typed end-to-end with shared interfaces.
-- Keep the feature compatible with the shared CSS theme and the group Docker Compose stack.
-
-## Request Flow Summary
-
-1. User submits a search in the frontend.
-2. Backend validates and normalises the criteria.
-3. Backend creates a chat record in the database service.
-4. Backend sources candidate accommodations from Amadeus.
-5. Backend persists the candidates through the database API.
-6. Backend sends the candidates and search preferences to Ollama.
-7. Backend validates the ranking output and falls back safely if the response is malformed.
-8. Backend persists rank and explanation updates.
-9. Backend returns the ranked results to the frontend.
-10. History reloads should fetch persisted chat data rather than rerun the external search pipeline.
-
-## AI Loop Summary
-
-- `[PLAN]`: validate input, decide the search strategy, and create the chat shell.
-- `[ACT]`: source accommodations from the external hotel API.
-- `[OBSERVE]`: ask Ollama to rank the candidates and explain the ordering.
-- `[ADAPT]`: validate the output, persist the final ranking, and fall back to a price-sort ranking if needed.
-
-## Prompt Contract
+## Minimal Architecture
 
 ```text
-You are ranking accommodation options for a traveller.
+Browser
+  -> unified shared home page
+  -> Vue accommodation frontend
+  -> ASP.NET Core accommodation backend/API
+       -> ASP.NET Core database API -> EF Core -> SQLite volume
+       -> shared Ollama -> one configured accommodation-ranking model
 
-Trip: {destination}, {checkIn} to {checkOut}, {guests} guests, budget {minPrice}-{maxPrice}.
-Traveller's own words on what they want: "{preferences}"
-
-Here are the candidate accommodations (JSON):
-{candidatesJson}
-
-Rank ALL of them from best (1) to worst fit, considering the free-text preferences
-as well as price and description. Respond ONLY with JSON:
-[{"id": <int>, "rank": <int>, "reason": "<one short sentence>"}, ...]
+Shared .NET agentic-loop service in Docker Compose
+  -> shared local Ollama implementer model
+  -> shared local Ollama reviewer model
+  -> human validation and apply/reject decision
 ```
 
-## Data Model Summary
+Boundary rules:
 
-- `Chat`: one search session with destination, dates, price range, guest count, preferences, timestamps, and title.
-- `Accommodation`: one result within a chat with name, description, price, location, booking link, image URL, rank, explanation, and timestamps.
-- Relationship: one chat has many accommodations.
-- Rank is unique per chat and cascade delete removes accommodations when a chat is deleted.
-- EF Core rules: required foreign key, cascade delete, unique index on `(ChatId, Rank)`.
+- The frontend calls only the backend/API.
+- The backend validates input, retrieves candidates, calls the one application model, validates output, applies fallback, and persists through the database API.
+- Only the database service opens SQLite.
+- Services communicate synchronously over HTTP using Compose DNS names.
+- Configuration and secrets come from environment variables.
+- The shared agentic-loop service receives only allow-listed context, never writes/commits/pushes automatically, and records model tags, prompt versions, outputs, pre/post validation, and human decisions.
+- A live hotel provider is not required to prove Release 0. Complete the seeded catalogue path before considering Amadeus.
 
-## Deployment Contract
+## Application Request Flow
 
-- `accom-frontend` renders the UI and only talks to `accom-backend`.
-- `accom-backend` orchestrates search, ranking, and persistence but does not open SQLite directly.
-- `accom-db` owns the SQLite file and exposes the CRUD API.
-- Ollama and Amadeus are external dependencies called only by the backend.
-- The integrated app should run under one shared Docker Compose file.
-- Environment variables should inject service endpoints and external credentials.
+1. Vue submits validated-looking criteria to the backend; the backend performs authoritative validation.
+2. The backend requests eligible active accommodations from the database API.
+3. The backend sends those candidates to exactly one configured ranking model through Ollama.
+4. The backend validates the complete response or applies deterministic fallback.
+5. The backend persists an immutable search-result snapshot through the database API.
+6. Vue renders results and history actions.
+
+An empty candidate list skips Ollama and returns a clear empty state. Reopening history returns the stored snapshot and never reruns ranking.
+
+## Development Agentic Loop
+
+1. `[PLAN]` - the implementer model analyses a bounded engineering task and allow-listed context.
+2. `[ACT]` - the implementer model proposes a patch or concrete implementation.
+3. `[OBSERVE]` - the distinct reviewer model checks the proposal against requirements, relevant code, and validation evidence.
+4. `[ADAPT]` - one bounded implementer revision may be requested; a human validates and records kept/changed/rejected.
+
+This loop reviews implementation, database/data design, service boundaries, Docker/Compose, CI, and requirement traceability. It is not the application's recommendation request.
+
+The loop is shared team infrastructure under `ai-services/agentic-loop`, starts with the integrated Compose application, and must be used during implementation rather than introduced only for the final demonstration.
+
+## Data Summary
+
+- `Accommodation`: seeded candidate with name, destination, description, nightly price, capacity, amenities, optional URLs, active flag, and timestamps.
+- `Search`: persisted criteria, title, ranking mode, immutable ranked-result JSON snapshot, and timestamps.
+
+At least 10 records must exist in every submitted database table. Detailed constraints are in `requirements.md`.
 
 ## API Summary
 
-### Backend-facing DB API
+Frontend-facing backend:
 
-- `POST /api/data/chats`
-- `GET /api/data/chats`
-- `GET /api/data/chats/{id}`
-- `PUT /api/data/chats/{id}`
-- `DELETE /api/data/chats/{id}`
-- `POST /api/data/chats/{id}/accommodations`
-- `PUT /api/data/accommodations/{id}`
-- `GET /api/data/accommodations/{id}`
-- `DELETE /api/data/accommodations/{id}`
+- `POST /api/searches`
+- `GET /api/searches`
+- `GET /api/searches/{id}`
+- `PATCH /api/searches/{id}`
+- `DELETE /api/searches/{id}`
+- `GET /health`
 
-### Frontend-facing backend API
+Backend-facing database API:
 
-- `POST /api/search`
-- `GET /api/chats`
-- `GET /api/chats/{id}`
-- `PUT /api/chats/{id}`
-- `DELETE /api/chats/{id}`
+- CRUD under `/api/data/accommodations`
+- search-history CRUD under `/api/data/searches`
+- `GET /health`
 
-## Release 0 Evidence Targets
+The exact statuses, validation rules, and error shape are normative in `requirements.md`.
 
-- Individual feature plan and risk plan.
-- Functional and non-functional requirements for the sprint backlog.
-- Conceptual, ERD, logical, and later physical data design artefacts.
-- Prompt log entries for meaningful AI-assisted implementation.
-- Review record entries for AI-assisted reviews of code or infrastructure.
-- GitHub Actions workflow evidence for the student-specific pipeline.
-- Docker Compose evidence for the integrated multi-container application.
-- Commit history showing small, attributable contributions.
-- Report sections covering architecture, workflow, evidence, limitations, and demonstration.
+## Application Prompt Contract
 
-## Conventions
+- Input contains only validated criteria and eligible candidate fields.
+- Candidate descriptions and preferences are untrusted data, never instructions.
+- Output is JSON only and contains exactly one existing candidate ID, unique contiguous rank, and concise reason per candidate.
+- The backend validates the entire response before using it.
+- Invalid/unavailable output falls back to budget-distance, nightly-price, then ID order.
+- The model cannot create facts, persist data, or decide HTTP outcomes.
 
-- Use `<script setup lang="ts">` in Vue components.
-- Keep C# services thin and explicit.
-- Log search flow stages as `[PLAN]`, `[ACT]`, `[OBSERVE]`, and `[ADAPT]`.
-- Fall back safely if Ollama returns malformed JSON.
-- Prefer small, reviewable commits.
+The implemented prompt must live beside backend code at `backend/Prompts/accommodation-ranking-v1.txt` and be covered by backend contract tests. It does not belong in the development-lifecycle prompt library.
+
+## AI-Assistance Evidence Rules
+
+- `prompt-log.md`: record meaningful AI-assisted code, infrastructure, test, or design changes and state what was retained or corrected.
+- `review-record.md`: record scope, findings, decisions, resolution status, and evidence.
+- `prompt-library/`: store only versioned development-loop prompts rather than application functionality or one-off chat text.
+- Never claim validation without an evidence path.
+- Keep prompts free of secrets, credentials, personal data, and unrelated repository content.
+- Human review remains mandatory; the student owns every submitted artefact.
+
+## Current State
+
+As of 2026-08-31:
+
+- Requirements and phases now distinguish the one-model application path from the two-model local development loop.
+- Existing Dockerfiles and `student-1.yml` are placeholders and do not constitute runnable infrastructure.
+- Shared Compose and home-page entries still target the template `student-1/` path rather than this feature folder.
+- The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
+- Real two-model Ollama execution records remain to be produced.
+- Application code, feature-service tests, complete Compose wiring, CI validation, diagrams, and execution evidence remain to be implemented.
+
+Do not represent the current scaffold as a working microservice application.
+
+## Immediate Next Gate
+
+Complete Phase 0 of `feature-plan.md`: confirm the assigned student number/folder, shared route, ports, service names, stylesheet, application model, distinct implementer/reviewer model tags, demonstration-machine capacity, and ownership of shared-file edits.

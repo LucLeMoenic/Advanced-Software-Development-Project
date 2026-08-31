@@ -65,6 +65,24 @@ The current Compose file is a starting point for the integrated application. Ser
 docker compose up --build
 ```
 
+## Shared Release 0 Agentic Loop
+
+The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the local Ollama runtime:
+
+- Qwen implementer for Plan and Act;
+- Llama reviewer for Observe;
+- one bounded implementer revision plus a human-controlled Adapt decision.
+
+Configure already-installed local models and start the service:
+
+```powershell
+Copy-Item .env.example .env
+.\scripts\verify-agentic-models.ps1
+docker compose up -d agentic-loop
+```
+
+See [`ai-services/agentic-loop/README.md`](ai-services/agentic-loop/README.md) for the run/finalisation commands and evidence format.
+
 ## Development Workflow
 
 1. Create a feature branch from `main`.

@@ -25,3 +25,4 @@ This repository uses the Release 0 brief, the ASD project specifications, and th
 - If the task involves implementation, check the relevant docs before editing files.
 - If the task involves review, check the current code and log the review outcome.
 - Do not add entries to the logs for purely conversational questions.
+- Copilot must never create Git commits or push changes for this repository. The user alone performs `git commit` and `git push` manually.
