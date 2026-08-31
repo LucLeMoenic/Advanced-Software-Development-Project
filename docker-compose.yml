@@ -58,7 +58,7 @@ services:
     ports:
       - "5301:8080"
     volumes:
-      - student1-sqlite-data:/data
+      - ./student-1/database/storage:/data
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
       interval: 10s
@@ -173,4 +173,3 @@ services:
 
 volumes:
   ollama-data:
-  student1-sqlite-data:

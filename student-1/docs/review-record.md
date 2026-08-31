@@ -270,3 +270,23 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Evidence:** `database/Repositories/IAccommodationRepository.cs`, `database/Repositories/AccommodationRepository.cs`, `database/Data/DatabaseContext.cs`, `database/Api/AccommodationEndpoints.cs`, `database/Program.cs`, migration designer/snapshot metadata, and `dotnet test student-1\database\tests\Database.Tests.csproj --no-restore` with 12/12 passing.
 
 **Verdict:** accepted. The database API now follows the selected context/configuration/repository pattern while preserving the existing SQLite schema and catalogue API behavior. FR-16 remains open because the catalogue still intentionally lacks the required manually created records.
+
+## 2026-08-31 - Chunk 3 Search History Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** Search entity/configuration/migration, repository and endpoint boundaries, create/list/get/rename/delete behavior, immutable snapshots, database constraints, one-time data population, Compose persistence, and FR-11 to FR-14/FR-17 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Blocking | A committed SQLite file would be hidden by the existing named `/data` volume, so pushing the populated file would not make it available in a clean Compose checkout. | Replaced the Student 1 named volume with a bind mount of `student-1/database/storage`; the tracked database is now the file opened at `/data/accommodation.db`. |
+| Required | The initial implementation included startup seed code, which would recreate sample records and mix fixture generation with normal runtime behavior. | Removed the seeder and its startup call. Populated 10 representative Search rows once through the real HTTP endpoint and checkpointed the database into one self-contained tracked file. |
+| Required | Search records require protection beyond API validation because the SQLite file may also be populated manually. | Added database checks for date order, guests, cent-based price range/order, ranking mode, text lengths, and a valid JSON-array snapshot. |
+| Required | History summaries must be newest first and reopening must not rerun or depend on live Accommodation rows. | Added descending creation/ID ordering and a regression test that creates a snapshot, deletes its accommodation, and reopens the unchanged stored result. |
+| Required | Search input includes malformed JSON, missing dates, past check-in, invalid price order, invalid ranking modes, and non-array snapshots. | Added boundary validation with stable error envelopes and integration coverage proving invalid requests do not persist. |
+
+**Evidence:** `database/Data/Search.cs`, `database/Data/Configurations/SearchConfiguration.cs`, migration `20260831093522_AddSearchHistory`, `database/Repositories/SearchRepository.cs`, `database/Api/SearchEndpoints.cs`, `database/tests/SearchHistoryTests.cs`, tracked `database/storage/accommodation.db`, and the Student 1 database bind mount in root Compose.
+
+**Validation:** 19/19 database tests pass; `dotnet-ef migrations has-pending-model-changes` reports no model changes; `docker compose config --quiet` passes; the rebuilt database image starts healthy and its HTTP history endpoint returns all 10 records from the bind-mounted tracked database; the stopped database has no WAL/SHM sidecars.
+
+**Verdict:** accepted. Chunk 3 is complete at the database-service boundary. Backend and frontend history endpoints remain correctly deferred to later chunks, and FR-16 remains open until at least 10 Accommodation records are created.

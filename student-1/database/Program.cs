@@ -10,6 +10,7 @@ var connectionString = builder.Configuration.GetConnectionString("AccommodationD
 builder.Services.AddDbContext<DatabaseContext>(options =>
     options.UseSqlite(connectionString));
 builder.Services.AddScoped<IAccommodationRepository, AccommodationRepository>();
+builder.Services.AddScoped<ISearchRepository, SearchRepository>();
 builder.Services
     .AddHealthChecks()
     .AddDbContextCheck<DatabaseContext>("sqlite");
@@ -31,6 +32,7 @@ app.MapGet("/", () => Results.Ok(new
 
 app.MapHealthChecks("/health");
 app.MapAccommodationEndpoints();
+app.MapSearchEndpoints();
 
 app.Run();
 
