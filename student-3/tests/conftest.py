@@ -10,8 +10,8 @@ BACKEND_DIR = os.path.join(STUDENT3_DIR, "backend")
 DATABASE_DIR = os.path.join(STUDENT3_DIR, "database")
 
 # Both service directories are added once so their modules (db,
-# database_client, ...) can import each other's siblings with plain
-# top-level imports, exactly like they do inside their own containers.
+# database_client, recommend, ...) can import each other's siblings with
+# plain top-level imports, exactly like they do inside their own containers.
 for directory in (BACKEND_DIR, DATABASE_DIR):
     if directory not in sys.path:
         sys.path.insert(0, directory)
@@ -51,8 +51,8 @@ def database_client(tmp_path, monkeypatch):
 @pytest.fixture
 def backend_client(monkeypatch):
     """A Flask test client for the student-3 backend, with no live
-    dependency on the database service - tests mock database_client
-    as needed."""
+    dependency on the database service or Ollama - tests mock
+    database_client / requests as needed."""
     backend_app_module = _load_module_fresh(
         "student3_backend_app", os.path.join(BACKEND_DIR, "app.py")
     )

@@ -156,11 +156,15 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_API_URL: http://student3-database:8080
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
     ports:
       - "5203:8080"
     depends_on:
       student3-database:
         condition: service_healthy
+      ollama-model-setup:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
