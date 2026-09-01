@@ -192,7 +192,8 @@ public sealed class LiteApiClientTests
             2,
             50m,
             200m,
-            string.Empty);
+            string.Empty,
+            true);
     }
 
     private static HttpResponseMessage JsonResponse(string json)

@@ -184,6 +184,19 @@ public sealed class SearchHistoryTests : DatabaseApiTestBase
     }
 
     [Fact]
+    public async Task ProgrammaticRankingModeIsPersisted()
+    {
+        var response = await Client.PostAsJsonAsync(
+            Route,
+            ValidRequest("Programmatic Search") with { RankingMode = "programmatic" });
+        var stored = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(stored);
+        Assert.Equal("programmatic", stored.RankingMode);
+    }
+
+    [Fact]
     public async Task DatabaseRejectsMalformedSearchSnapshot()
     {
         await using var scope = Factory.Services.CreateAsyncScope();

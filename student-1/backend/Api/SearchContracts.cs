@@ -7,7 +7,8 @@ public sealed record SearchRequest(
     int? Guests,
     decimal? MinimumPrice,
     decimal? MaximumPrice,
-    string? Preferences);
+    string? Preferences,
+    bool? UseAi);
 
 public sealed record SearchRenameRequest(string? Title);
 

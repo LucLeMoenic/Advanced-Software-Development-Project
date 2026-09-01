@@ -68,7 +68,8 @@ internal static class SearchValidator
                 request.Guests!.Value,
                 decimal.Round(request.MinimumPrice!.Value, 2),
                 decimal.Round(request.MaximumPrice!.Value, 2),
-                preferences),
+                preferences,
+                request.UseAi == true),
             null);
     }
 }
@@ -84,4 +85,5 @@ public sealed record ValidatedSearch(
     int Guests,
     decimal MinimumPrice,
     decimal MaximumPrice,
-    string Preferences);
+    string Preferences,
+    bool UseAi);

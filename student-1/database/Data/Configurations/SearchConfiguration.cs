@@ -30,7 +30,7 @@ public sealed class SearchConfiguration : BaseEntityTypeConfiguration<Search>
             "min_price >= 0 AND max_price <= 10000000 AND min_price <= max_price");
         table.HasCheckConstraint(
             "CK_searches_ranking_mode",
-            "ranking_mode IN ('ai', 'fallback')");
+            "ranking_mode IN ('ai', 'fallback', 'programmatic')");
         table.HasCheckConstraint(
             "CK_searches_results_json",
             "json_valid(results_json) AND json_type(results_json) = 'array'");
@@ -74,7 +74,7 @@ public sealed class SearchConfiguration : BaseEntityTypeConfiguration<Search>
             .IsRequired();
         configuration.Property(search => search.RankingMode)
             .HasColumnName("ranking_mode")
-            .HasMaxLength(8)
+            .HasMaxLength(12)
             .IsRequired();
         configuration.Property(search => search.ResultsJson)
             .HasColumnName("results_json")

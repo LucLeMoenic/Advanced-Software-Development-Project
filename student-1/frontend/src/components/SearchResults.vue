@@ -24,6 +24,16 @@ function formatDate(value: string) {
   return dateFormatter.format(new Date(`${value}T00:00:00`))
 }
 
+function rankingLabel(mode: SearchResponse['rankingMode']) {
+  if (mode === 'ai') {
+    return 'AI ranked'
+  }
+  if (mode === 'programmatic') {
+    return 'Programmatic ranking'
+  }
+  return 'Fallback ranked'
+}
+
 async function focusHeading() {
   await nextTick()
   heading.value?.focus()
@@ -36,7 +46,6 @@ defineExpose({ focusHeading })
   <section class="results-section" aria-labelledby="results-heading">
     <div class="results-heading-row">
       <div>
-        <p class="eyebrow">Saved recommendation</p>
         <h2 id="results-heading" ref="heading" tabindex="-1">
           {{ search.title }}
         </h2>
@@ -48,7 +57,7 @@ defineExpose({ focusHeading })
         </p>
       </div>
       <span :class="['mode-badge', `mode-${search.rankingMode}`]">
-        {{ search.rankingMode === 'ai' ? 'AI ranked' : 'Fallback ranked' }}
+        {{ rankingLabel(search.rankingMode) }}
       </span>
     </div>
 
@@ -61,16 +70,16 @@ defineExpose({ focusHeading })
       <strong>New LiteAPI accommodation data imported.</strong>
       <span>The validated rates were cached in the local catalogue before ranking.</span>
     </div>
-
     <div v-if="search.results.length === 0" class="empty-state">
-      <span aria-hidden="true">0</span>
       <h3>No matching accommodation</h3>
       <p>Try a wider price range, another destination, or a different guest count.</p>
     </div>
 
     <ol v-else class="results-list">
       <li v-for="result in search.results" :key="result.accommodationId" class="result-card">
-        <div class="rank" :aria-label="`Rank ${result.rank}`">{{ result.rank }}</div>
+        <div class="rank" :aria-label="`Rank ${result.rank}`">
+          {{ String(result.rank).padStart(2, '0') }}
+        </div>
         <div class="result-main">
           <div class="result-title-row">
             <div>

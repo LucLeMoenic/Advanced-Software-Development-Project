@@ -219,9 +219,9 @@ public static class SearchEndpoints
         }
 
         var rankingMode = request.RankingMode?.Trim().ToLowerInvariant();
-        if (rankingMode is not ("ai" or "fallback"))
+        if (rankingMode is not ("ai" or "fallback" or "programmatic"))
         {
-            fields["rankingMode"] = "Must be either ai or fallback.";
+            fields["rankingMode"] = "Must be ai, fallback, or programmatic.";
         }
 
         string? resultsJson = null;

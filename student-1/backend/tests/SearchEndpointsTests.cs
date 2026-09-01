@@ -115,6 +115,37 @@ public sealed class SearchEndpointsTests
     }
 
     [Fact]
+    public async Task ProgrammaticSearchSkipsOllamaAndPersistsDistinctMode()
+    {
+        var database = new FakeDatabaseApiClient
+        {
+            Candidates =
+            [
+                Candidate(2, 110m),
+                Candidate(1, 100m)
+            ]
+        };
+        var ollama = new FakeOllamaRankingClient
+        {
+            Failure = RankingFailure.Unavailable
+        };
+        using var factory = CreateFactory(database, ollama);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/searches",
+            ValidSearch() with { UseAi = false });
+        var saved = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(saved);
+        Assert.Equal("programmatic", saved.RankingMode);
+        Assert.Equal([1, 2], saved.Results.Select(result => result.AccommodationId));
+        Assert.Null(saved.Notice);
+        Assert.Equal(0, ollama.CallCount);
+    }
+
+    [Fact]
     public async Task EmptyLocalCatalogueImportsLiteApiRatesBeforeRanking()
     {
         var database = new FakeDatabaseApiClient();
@@ -322,7 +353,8 @@ public sealed class SearchEndpointsTests
             2,
             50m,
             150m,
-            string.Empty);
+            string.Empty,
+            true);
     }
 
     private static AccommodationCandidate Candidate(int id, decimal price)

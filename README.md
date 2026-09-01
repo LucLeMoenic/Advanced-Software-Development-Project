@@ -51,11 +51,27 @@ Run these commands from the repository root in PowerShell.
    docker compose build shared-frontend student1-frontend student1-backend student1-database
    ```
 
-3. Start the shared page and Student 1 services. Compose starts Ollama and pulls the configured application model only when it is missing:
+3. Start the shared page and Student 1 services. Compose starts one shared Ollama runtime, installs any missing models from `OLLAMA_MODELS`, and preloads `APPLICATION_MODEL` before the backend starts:
 
    ```powershell
    docker compose up -d --build --wait shared-frontend
    ```
+
+   On a Windows machine with an NVIDIA GPU available to Docker, start the Student 1 services with automatic GPU acceleration:
+
+   ```powershell
+   .\scripts\start-student1.ps1
+   ```
+
+   To start the complete integrated application with GPU acceleration explicitly enabled for Ollama:
+
+   ```powershell
+   .\scripts\start-app.ps1 -Gpu
+   ```
+
+   Omit `-Gpu` to run the complete application in CPU mode.
+
+   CPU-only machines continue to use the main Compose file without the optional `docker-compose.gpu.yml` override.
 
 4. Open `http://localhost:5100` and select **Accommodation Recommender**, or open `http://localhost:5100/accommodation/` directly.
 
@@ -84,13 +100,13 @@ Run these commands from the repository root in PowerShell.
 
 ## Shared Release 0 Agentic Loop
 
-The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the local Ollama runtime:
+The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the same shared Ollama runtime used by application microservices:
 
 - Qwen implementer for Plan and Act;
 - Llama reviewer for Observe;
 - one bounded implementer revision plus a human-controlled Adapt decision.
 
-Configure the local model tags and start the service. Compose pulls a configured model only when it is missing from the persistent Ollama volume:
+Configure the shared model list and each consumer's selected model tags, then start the service. The single `ollama-model-setup` job pulls only models missing from the shared persistent Ollama volume and preloads the application model:
 
 ```powershell
 Copy-Item .env.example .env

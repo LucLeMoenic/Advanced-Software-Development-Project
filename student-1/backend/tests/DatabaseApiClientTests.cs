@@ -138,6 +138,33 @@ public sealed class DatabaseApiClientTests
     }
 
     [Fact]
+    public async Task ProgrammaticSearchResponseIsAccepted()
+    {
+        var handler = new StubHandler(_ => JsonResponse(
+            """
+            [{
+              "id": 1,
+              "title": "Sydney",
+              "destination": "Sydney",
+              "checkIn": "2026-09-10",
+              "checkOut": "2026-09-12",
+              "guests": 2,
+              "rankingMode": "programmatic",
+              "createdAt": "2026-09-01T00:00:00Z",
+              "updatedAt": "2026-09-01T00:00:00Z"
+            }]
+            """));
+        var client = new DatabaseApiClient(new HttpClient(handler)
+        {
+            BaseAddress = new Uri("http://database")
+        });
+
+        var searches = await client.ListSearchesAsync(CancellationToken.None);
+
+        Assert.Equal("programmatic", Assert.Single(searches).RankingMode);
+    }
+
+    [Fact]
     public async Task TimeoutIsAnUnavailableDependency()
     {
         var client = new DatabaseApiClient(new HttpClient(new TimeoutHandler())

@@ -1,5 +1,64 @@
 # Review Record
 
+## 2026-09-01 - UI Simplification and Product Design Review
+
+**Scope:** Shared feature entry page and the accommodation search, result, status, and history interfaces at desktop, tablet, and mobile widths.
+
+**Findings:** The interface relied on oversized headings, repeated eyebrow labels, pill badges, rounded nested cards, shadows, a gradient feature card, and decorative rank/empty-state circles. These patterns gave primary, secondary, and tertiary information similar visual weight. The accommodation page also lacked an obvious path back to the shared feature list, while history cards required unnecessary lateral scanning.
+
+**Resolution:** Reduced the heading scale and page width, removed shadows and gradients, retained one subtle boundary around the primary search task, and converted results and history to compact divider-led rows. Ranking modes and counts are now quiet metadata rather than pills, controls share a restrained radius, notices use a simple left rule, and the accommodation page includes a clear text link back to all features. The shared entry page now uses the same typography, spacing, row treatment, and interaction language.
+
+## 2026-09-01 - GPU AI Timeout Regression Review
+
+**Scope:** Shared Ollama setup job, NVIDIA Compose override, backend Ollama timeout, model lifecycle, and live AI recommendation behavior.
+
+**Finding:** The consolidated `ollama-model-setup` job checked and downloaded model tags but no longer preloaded the application model. After an Ollama restart, `llama3.2:3b` still offloaded all 29 layers to the RTX 2000 Ada GPU, but initialization exceeded the backend's required 12-second timeout. Client cancellation then aborted the load, leaving no warm model for the next request and causing repeated fallback responses.
+
+**Resolution:** The shared setup job now ensures `APPLICATION_MODEL` is installed and runs one bounded preload with a 30-minute keep-alive before dependent services start. The 12-second backend timeout, deterministic fallback, shared runtime, and GPU override remain unchanged.
+
+## 2026-09-01 - Shared Entry Page Visual Review
+
+**Scope:** Shared Vue landing component, global stylesheet, HTML title/description, navigation behavior, responsive layout, focus treatment, and consistency with the accommodation UI.
+
+**Finding:** The entry page used unrelated hard-coded greys, a narrow plain list, and generic browser metadata, so it did not visually belong to the same integrated application as the accommodation feature.
+
+**Resolution:** Applied the accommodation interface's colour tokens, typography scale, panel/card treatment, spacing, focus colour, responsive width, and reduced-motion behavior. Existing destinations remain unchanged and unknown team features retain neutral labels rather than invented names.
+
+## 2026-09-01 - Shared Ollama Topology Review
+
+**Scope:** Root Compose Ollama runtime, model initialisation, Student 1 backend, agentic loop, GPU override, and shared configuration documentation.
+
+**Finding:** Runtime traffic already used one `ollama` service, but separate `ollama-application-model` and `ollama-agentic-models` setup containers made the topology look application-owned and would encourage each feature to add another setup service.
+
+**Resolution:** Replaced both with one neutral `ollama-model-setup` job driven by the shared `OLLAMA_MODELS` list. The job exits after ensuring models exist; the only long-running model server is `ollama`, and all consumers use Compose DNS `http://ollama:11434`.
+
+## 2026-09-01 - AI-Only Preferences Review
+
+**Scope:** Search-form preference visibility, request payload behavior, focused component coverage, and privacy requirements.
+
+**Finding:** The preferences field remained visible for programmatic searches even though deterministic ranking does not use it. This was misleading and could persist text that had no effect.
+
+**Resolution:** Preferences now render only after AI is selected. Programmatic submissions always send an empty preference value, including when AI is unticked after text was entered. Frontend tests cover hidden, revealed, re-hidden, and request-payload behavior.
+
+## 2026-09-01 - Opt-in AI Ranking Review
+
+**Scope:** Backend ranking selection, database ranking-mode persistence, Vue AI control and labels, responsive layout, migration, and focused automated tests.
+
+**Goal:** Make AI recommendation explicitly opt-in without removing useful default ranking or mislabelling programmatic results as AI fallback.
+
+### Findings
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | Existing requests always reached Ollama, so users could not choose the faster deterministic path. | Added nullable backend input with explicit-true semantics and an unchecked frontend control. |
+| Required | The database constraint represented only `ai` and `fallback`, which would misclassify intentional non-AI ranking. | Added `programmatic` across validation, EF configuration, migration, API types, and UI labels. |
+| Required | The first frontend history label used a nested ternary and the checkbox's nine-column span could create implicit columns at tablet width. | Replaced the ternary with a label helper and made the checkbox span the responsive grid width. |
+| Required | Existing UI tests could render mocked AI/fallback responses without proving the corresponding opt-in request. | Added request-body assertions for `useAi: false` and `useAi: true`, programmatic rendering coverage, and explicit opt-in before fallback coverage. |
+
+### Status
+
+**Implementation verdict:** The opt-in behavior is complete across code, migration, and the integrated runtime. Backend tests pass 67/67, database tests pass 20/20, frontend tests pass 8/8, the frontend production build passes, and EF reports no pending model changes. Rebuilt live requests returned `programmatic` with no notice by default and `ai` with six sentence-form reasons after opt-in. Browser screenshots remain required for final demonstration evidence.
+
 ## 2026-08-31 - Chunk 7 Shared Integration and CI Review
 
 **Scope:** Shared Vue entry page, shared nginx boundary, root Compose, `student-1.yml`, root setup instructions, and current Chunk 6 worktree changes.
@@ -434,3 +493,31 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 | Correction | The earlier simulated review incorrectly concluded that the provider contract required an `offerRetailRate` array. | Superseded that conclusion with evidence from the live sandbox response. |
 
 **Verdict:** The cause of the live `502` is corrected in source. Rebuild the backend image and repeat the browser search to confirm provider import, Ollama ranking, persistence, and cache behavior.
+
+## 2026-09-01 - Live Ollama Fallback Investigation
+
+**Scope:** Browser fallback state, backend and Ollama runtime logs, Docker/WSL resources, Ollama request format, ranking output validation, and live frontend-proxy execution.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | WSL limited Docker to two processors and 4 GB, so Ollama used one inference thread and the backend cancelled real ranking requests at the required 12-second timeout. | Retained an 8 GB WSL memory limit and removed the processor cap, allowing Docker to use the host's 22 logical processors while the application retains its specified 12-second timeout. |
+| Blocking | The client sent `"format": "json"`. Live `llama3.2:3b` responses were JSON objects containing repeated `accommodationId`, `rank`, and `reason` keys rather than the required array, so strict validation correctly selected fallback. | Replaced generic JSON mode with an exact JSON schema requiring an array with the current candidate count, allowed candidate IDs, rank bounds, reason bounds, required fields, and no additional properties. The existing whole-response validator remains authoritative. |
+| Blocking | After the schema correction, a changed destination still timed out because the prompt repeated verbose candidate field names and duplicated trust instructions. Exact repeated prompts benefited from Ollama's cache, masking the cold-prompt failure. | Kept every allow-listed input field but serialised candidate values under one shared field header and shortened the equivalent prompt contract. Cold Sydney and Tokyo prompts now complete within the existing timeout. |
+| Required | The initial performance-oriented prompt requested 1-4 word reasons, producing generic fragments such as `Best price` and comma-separated lists rather than useful explanations. | Required one specific 5-10 word sentence containing a supplied price, amenity, capacity, or location detail. The JSON schema and backend validator enforce sentence casing, final punctuation, length, and the 10-word maximum. |
+| Required | The host had an NVIDIA RTX 2000 Ada GPU with 8 GB VRAM, but the Compose Ollama service requested no GPU device and therefore ran entirely on CPU. | Added a small optional GPU Compose override. The Student 1 startup script selects it only when both `nvidia-smi` and Docker's NVIDIA runtime are available, preserving the main CPU-only Compose path. |
+| Accepted | Deterministic fallback prevented request failure and invalid history while the AI path was unavailable or malformed. | Kept fallback behavior unchanged. |
+
+**Validation:** all 65 backend tests pass. Ollama reports CUDA execution with all 29 model layers offloaded and `size_vram` of about 2.55 GB. Retrying the previously failing Sydney request through `http://localhost:5101/api/searches` returned five specific sentence-form reasons with `rankingMode: ai`, no notice, and 2.5 second completion. Database, backend, frontend, and Ollama services remained healthy.
+
+**Verdict:** fixed. The live frontend-triggered path now reaches the configured Ollama model, accepts a schema-conforming ranking, persists it as `ai`, and returns it without the fallback notice.
+
+## 2026-09-01 - Integrated Startup GPU Opt-In Review
+
+**Scope:** `scripts/start-app.ps1`, the optional GPU Compose override, CPU portability, NVIDIA runtime detection, and startup documentation.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The integrated startup script always used the CPU-only main Compose file, so users could not explicitly enable the existing Ollama GPU override. | Added `-Gpu`, validated NVIDIA GPU and Docker runtime availability before startup, and reused the same selected Compose files for `up` and `ps`. |
+| Accepted | GPU mode must remain optional because other team machines and CI may not expose NVIDIA devices. | CPU remains the default; the main Compose file and CI behavior are unchanged. |
+
+**Verdict:** accepted. `scripts/start-app.ps1 -Gpu` enables Ollama GPU acceleration explicitly, while `scripts/start-app.ps1` remains portable CPU mode.
