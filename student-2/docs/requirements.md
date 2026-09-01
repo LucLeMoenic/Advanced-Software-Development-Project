@@ -1,58 +1,266 @@
-# Itinerary Planner Requirements
+# AI Accommodation Recommender Requirements
 
-## Scope
+## 1. Purpose and Scope
 
-Release 0 provides an integrated itinerary planner through:
+The AI Accommodation Recommender helps a traveller rank accommodation options from a local SQLite catalogue according to destination, travel dates, guest count, and nightly budget. Programmatic ranking is the default, and the traveller may explicitly opt in to additional AI ranking and provide free-text preferences. When a destination has no cached catalogue records, the backend may populate that catalogue from LiteAPI sandbox rates before ranking.
 
-`Browser -> shared frontend -> Student 2 frontend -> Student 2 backend -> database API -> SQLite`
+Release 0 must deliver one integrated, containerised feature through the required path:
 
-For AI generation, the backend calls the team's shared Ollama runtime using one configured approved model. The frontend never calls SQLite or Ollama directly.
+`Vue 3 + TypeScript frontend -> ASP.NET Core backend/API -> ASP.NET Core database API -> EF Core -> SQLite`
 
-## Functional Requirements
+The tutor has confirmed that teams may choose their frontend and backend technologies; this feature retains the existing Vue 3/TypeScript and ASP.NET Core design. The application backend calls exactly one configured accommodation-ranking model through the shared Ollama runtime. Separately, the development agentic loop uses two distinct approved models hosted locally by Ollama: one implementer model and one reviewer model.
+
+The feature must run from the team's shared `docker-compose.yml`, be reachable from the unified home page, use the shared CSS theme, and provide demonstrable Create, Read, Update, and Delete operations.
+
+### 1.1 Release 0 In Scope
+
+- Search criteria entry and validation.
+- Default deterministic programmatic ranking with optional AI ranking per search.
+- Ranking at least 10 seeded accommodation records with Ollama.
+- Deterministic fallback ranking if opted-in Ollama ranking is unavailable or invalid.
+- Persisted search history with create, read, rename, and delete actions.
+- Accommodation catalogue CRUD in the database API.
+- Backend-only LiteAPI sandbox import when a searched destination is not yet cached.
+- Three independently containerised student services.
+- Integration with the shared Ollama service, home page, theme, Compose stack, and `student-1.yml` workflow.
+- A terminal-runnable Plan -> Act -> Observe -> Adapt development loop using two distinct local Ollama models with separate implementation and review responsibilities.
+- Tests, logs, diagrams, and evidence required by the Release 0 rubric.
+
+### 1.2 Release 0 Out of Scope
+
+- Live booking, payments, accounts, authentication, maps, reviews, and price guarantees.
+- Production hotel availability, date-specific price guarantees, and booking-provider service levels. LiteAPI data is a demonstration cache, not a production quote.
+- MCP, RAG, multi-agent systems, cloud deployment, and production-scale availability. These belong to later releases.
+- Scraping accommodation websites.
+
+## 2. Actors and System Boundaries
+
+| Actor or system | Responsibility |
+|---|---|
+| Traveller | Submits criteria, views recommendations, and manages search history. |
+| Vue frontend service | Renders the typed user interface and sends browser requests only to the backend/API service. |
+| ASP.NET Core backend/API service | Validates input, retrieves candidates, ranks programmatically, optionally calls the single application model, validates ranking output, persists searches, and exposes the frontend-facing API. |
+| ASP.NET Core database API service | Owns EF Core and the SQLite file and exposes accommodation and search-history CRUD over HTTP. |
+| SQLite | Stores the accommodation catalogue and persisted search history. No other service may open its file. |
+| Shared Ollama service | Hosts all locally required model tags for team application microservices and the two distinct development-loop roles. No feature owns a separate Ollama runtime. |
+| LiteAPI sandbox | Optionally supplies accommodation rates to the backend when the requested destination has no local catalogue records. The browser never receives the provider credential. |
+| Shared .NET agentic-loop service | Runs inside the integrated Compose application, supplies versioned context and prompts to the implementer model, captures its proposal, supplies that proposal to the reviewer model, and records the final human-controlled adaptation. |
+| Shared home page | Provides the integrated entry point to this feature. |
+
+## 3. Functional Requirements
+
+Each requirement is mandatory for Release 0 unless marked otherwise.
+
+### 3.1 Search and Validation
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| IT-FR-01 | Create a trip from traveller, destination, dates, budget, and interests. | Backend validates all fields and returns a persisted day-by-day itinerary. |
-| IT-FR-02 | Generate an itinerary with AI Mode. | A frontend request reaches the backend, shared Ollama, and configured approved model; output contains exactly two valid stops per trip day. |
-| IT-FR-03 | Remain usable when AI fails. | Invalid, unavailable, or timed-out model output produces a visible deterministic fallback itinerary. |
-| IT-FR-04 | Read saved trips. | The traveller can list and reopen persisted trips without another model call. |
-| IT-FR-05 | Update trip details and stops. | Trip records and individual stop day, activity, and notes can be updated through the backend. |
-| IT-FR-06 | Delete trips and stops. | Confirmed deletion removes the selected resource; deleting a trip cascades to its stops. |
-| IT-FR-07 | Add and regenerate stops. | The traveller can add a stop, regenerate one stop, or atomically regenerate the whole itinerary. |
-| IT-FR-08 | Persist complete state safely. | New and regenerated itineraries are committed atomically by the database API; failed validation does not delete valid existing stops. |
-| IT-FR-09 | Expose database CRUD only over HTTP. | Only the database service opens SQLite; the backend uses the database API. |
-| IT-FR-10 | Integrate with the team application. | The shared home page opens `/itinerary/`, and the feature uses the shared visual system. |
-| IT-FR-11 | Demonstrate Plan, Act, Observe, Adapt. | The shared development agentic loop produces a finalised record using distinct implementer and reviewer models; application trace text is not used as substitute evidence. |
+| FR-01 | The traveller can submit destination, check-in date, check-out date, guest count, minimum nightly price, maximum nightly price, and whether to use AI ranking. AI searches may also include free-text preferences. | The Vue frontend leaves AI ranking unchecked and hides the preferences control by default. Selecting AI reveals preferences. Unselecting AI hides the control and sends an empty preference value. |
+| FR-02 | The backend validates all search input before calling the database or Ollama. | Destination is 2-100 characters; check-in is not before the current local date; check-out is after check-in; guests is an integer from 1-20; prices are numbers from 0-100000; minimum price is not greater than maximum price; preferences is at most 500 characters. |
+| FR-03 | Invalid input produces field-specific feedback without creating history or calling Ollama. | The backend returns HTTP `400` with a stable error object; the frontend displays the message beside or above the form; database and Ollama test doubles receive no call. |
+| FR-04 | The backend retrieves eligible accommodation candidates only through the database API. | Candidates match the requested destination case-insensitively, support at least the requested guest count, fall within the nightly price range, and are active. The backend never opens SQLite directly. |
+| FR-04a | When the database API has no cached accommodation for a destination, the backend may import LiteAPI sandbox results before retrieving eligible candidates again. | The backend sends validated criteria using LiteAPI's `aiSearch` location method, requests at most 10 AUD results, validates provider IDs, metadata, occupancy, URLs, and price data, converts total-stay prices to nightly prices, and creates catalogue records only through the database API. Existing destination data skips LiteAPI. |
+| FR-05 | A valid search with no eligible candidates returns an explicit empty state. | The frontend displays that no matching accommodation is available; the backend returns HTTP `200` with an empty result list and does not call Ollama. |
 
-## Data Requirements
+### 3.2 AI Recommendation
 
-### trips
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-06 | When the traveller explicitly opts in, the backend sends eligible candidates and validated search criteria to the shared Ollama service using an approved Release 0 model. | `useAi: true` follows frontend -> backend -> Ollama -> model; omitted or false `useAi` never calls Ollama. The request is visible in backend logs without secrets or full free-text preferences. |
+| FR-06a | Without AI opt-in, the backend returns deterministic programmatic ranking. | Candidates are ordered by absolute distance from the traveller's budget midpoint, then nightly price, then accommodation ID; the saved ranking mode is `programmatic`; no AI-unavailable notice is shown. |
+| FR-07 | Ollama must return one ranking entry for every supplied candidate. | Each entry contains an existing integer accommodation ID, a unique rank from 1 through candidate count, and a reason of 1-200 characters. No unknown, duplicate, omitted, or extra IDs are accepted. |
+| FR-08 | The backend validates model output before returning or storing it. | JSON parsing, schema validation, ID set equality, rank uniqueness/range, and reason length are tested. Invalid output is never treated as a successful AI ranking. |
+| FR-09 | The backend provides a deterministic fallback when opted-in Ollama ranking times out, is unavailable, or returns invalid output. | Candidates are ordered by absolute distance from the traveller's budget midpoint, then nightly price, then accommodation ID; each result is labelled as fallback-ranked; the user receives results with a non-blocking notice. |
+| FR-10 | Each result identifies the accommodation, nightly price, location, capacity, rank, and concise explanation. | Results are ordered by ascending rank and all displayed values come from validated database/API or ranking data. |
 
-`id`, `user_name`, `destination`, `start_date`, `end_date`, `budget`, `interests`, `created_at`, `updated_at`.
+### 3.3 Search History CRUD
 
-### trip_stops
+Search history is the user-facing CRUD resource used for the rubric demonstration.
 
-`id`, `trip_id`, `day`, `activity`, `notes`, `sort_order`, `created_at`, `updated_at`.
+| ID | CRUD | Requirement | Acceptance criteria |
+|---|---|---|---|
+| FR-11 | Create | A completed search is persisted through the database API. | One history record contains the validated criteria, ranked result snapshot, ranking mode (`programmatic`, `ai`, or `fallback`), title, and UTC creation/update timestamps. Empty-candidate searches may also be stored with an empty snapshot. |
+| FR-12 | Read | The traveller can list and reopen persisted searches. | History is ordered newest first; reopening renders the stored snapshot and never calls Ollama again. |
+| FR-13 | Update | The traveller can rename a search. | A title trimmed to 1-80 characters is persisted; invalid titles return `400`; missing records return `404`; the updated title appears without a full-page reload. |
+| FR-14 | Delete | The traveller can delete a search. | The user is asked to confirm; deletion removes the record; repeated deletion returns `404`; the item disappears from the interface. |
 
-`trip_stops.trip_id` references `trips.id` with cascade delete. Every submitted database table must contain at least ten records; a fresh database seeds ten trips and twenty stops.
+### 3.4 Accommodation Catalogue CRUD
 
-## Non-Functional Requirements
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-15 | The database API exposes create, list, get, update, and delete operations for accommodations. | Integration tests cover valid requests plus `400`, `404`, and duplicate/constraint failures. |
+| FR-16 | The catalogue contains at least 10 valid accommodation records for local execution, CI, and demonstration. | A repeatable seed operation creates at least 10 records without duplicates and can be run against an empty database. |
+| FR-17 | Deleting an accommodation does not corrupt stored history. | Search history stores a result snapshot, so an old search remains readable after its source accommodation changes or is deleted. |
 
-| ID | Requirement |
+### 3.5 Integrated Application
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-18 | The feature is reachable from the unified home page and uses the shared theme. | The home-page link opens the feature in the integrated Compose application; shared typography, colours, spacing, and controls are visibly reused. |
+| FR-19 | All three assigned services use the one shared Ollama runtime in the shared Compose application. | `docker compose up --build` starts healthy frontend, backend, database, and shared Ollama services; every AI consumer uses `http://ollama:11434` through Compose DNS; one shared setup job checks configured model tags and pulls only missing models into the persistent Ollama volume. |
+| FR-20 | The frontend communicates only with the backend/API service. | Browser/network evidence and source review show no direct frontend call to the database API or Ollama. |
+
+### 3.6 Two-Model Development Agentic Loop
+
+This loop reviews software engineering work; it is separate from the accommodation application's ranking request.
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-21 | The loop uses two distinct approved open-source model tags hosted by local Ollama. | `IMPLEMENTER_MODEL` and `REVIEWER_MODEL` are required configuration values, are not equal, and both are available from the local Ollama instance before execution. |
+| FR-22 | The implementer model owns Plan and Act. | Given a bounded task and selected repository context, it returns a written plan and a proposed implementation/diff or concrete action; its output is stored in the loop record. |
+| FR-23 | The reviewer model owns Observe. | It receives the goal, constraints, relevant context, proposed implementation, and validation output; it returns structured findings with severity, evidence, and required correction. It must not silently approve malformed or missing input. |
+| FR-24 | Adapt is explicit and human-controlled. | The loop sends review findings back to the implementer for one bounded revision or records a justified rejection; a human chooses whether to apply the result, runs validation, and records kept/changed/rejected decisions. No model writes to `main`, commits, pushes, or receives secrets automatically. |
+| FR-25 | The loop is an integrated, terminal-runnable, bounded, and auditable team service. | The .NET service is defined under `ai-services/`, runs in the shared Compose application, accepts a task/context allow-list, applies per-call timeouts and one revision maximum, prints `[PLAN]`, `[ACT]`, `[OBSERVE]`, and `[ADAPT]`, and writes a timestamped pending record. A separate finalisation command requires the human decision and post-test evidence. |
+| FR-26 | The loop can review the required Release 0 surfaces. | Reusable prompts cover implementation, database/data design, microservice boundaries, Docker/Compose, CI workflow, and requirement traceability without sending unrelated repository content. |
+| FR-27 | The shared loop is used throughout implementation rather than added only for the showcase. | Finalised records exist for meaningful database, backend, frontend, AI integration, Docker/Compose, and CI changes, each containing pre-test/baseline, reviewer findings, adaptation decision, post-test, and human decision. |
+
+## 4. API Contracts
+
+Exact JSON schemas belong beside the implementation and tests. These endpoint behaviours are the minimum stable contract.
+
+### 4.1 Frontend-Facing Backend API
+
+| Method and path | Success | Purpose |
+|---|---:|---|
+| `POST /api/searches` | `201` | Validate criteria, rank candidates, persist the search, and return the saved result. |
+| `GET /api/searches` | `200` | List search-history summaries newest first. |
+| `GET /api/searches/{id}` | `200` | Return one stored search and its result snapshot without reranking. |
+| `PATCH /api/searches/{id}` | `200` | Rename one stored search. |
+| `DELETE /api/searches/{id}` | `204` | Delete one stored search. |
+| `GET /health` | `200` | Report backend process health. |
+
+### 4.2 Backend-Facing Database API
+
+| Method and path | Success | Purpose |
+|---|---:|---|
+| `GET /api/data/accommodations` | `200` | Filter/list candidate accommodations. |
+| `POST /api/data/accommodations` | `201` | Create a catalogue record. |
+| `GET /api/data/accommodations/{id}` | `200` | Read one catalogue record. |
+| `PUT /api/data/accommodations/{id}` | `200` | Replace one catalogue record. |
+| `DELETE /api/data/accommodations/{id}` | `204` | Delete one catalogue record. |
+| `GET /api/data/searches` | `200` | List persisted search summaries. |
+| `POST /api/data/searches` | `201` | Persist a completed search. |
+| `GET /api/data/searches/{id}` | `200` | Read one persisted search. |
+| `PATCH /api/data/searches/{id}` | `200` | Rename one persisted search. |
+| `DELETE /api/data/searches/{id}` | `204` | Delete one persisted search. |
+| `GET /health` | `200` | Report database API process and SQLite connectivity health. |
+
+### 4.3 Error Shape
+
+All API errors must use:
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Check-out must be after check-in.",
+    "fields": {
+      "checkOut": "Must be after check-in."
+    },
+    "correlationId": "..."
+  }
+}
+```
+
+`fields` may be empty for non-validation errors. Expected statuses are `400` for invalid input, `404` for missing resources, `409` for a data conflict, `502` for an unusable dependency response, and `503` for an unavailable dependency when no functional fallback exists.
+
+## 5. Data Requirements
+
+### 5.1 Accommodation
+
+| Field | Rule |
 |---|---|
-| IT-NFR-01 | Frontend, backend, and database services are independently containerised and health checked. |
-| IT-NFR-02 | Database calls time out within 3 seconds and Ollama calls within 20 seconds. |
-| IT-NFR-03 | User and model values are validated server-side and rendered as text. |
-| IT-NFR-04 | The interface is keyboard operable, visibly focused, and usable at 320px, 768px, and 1280px without horizontal scrolling. |
-| IT-NFR-05 | Configuration uses environment variables and Compose DNS names; no secret is committed. |
-| IT-NFR-06 | Student 2 CI runs frontend, backend, and database tests, validates Compose, and builds integrated images without requiring a live model. |
-| IT-NFR-07 | The feature runs locally from the unified application at `http://localhost:5100/itinerary/`. |
+| `id` | Positive integer primary key. |
+| `name` | Required, trimmed, 1-120 characters. |
+| `destination` | Required, trimmed, 2-100 characters; indexed with `is_active`. |
+| `description` | Required, trimmed, 1-1000 characters. |
+| `nightly_price` | Required decimal, 0-100000, stored with two-decimal precision. |
+| `max_guests` | Required integer, 1-20. |
+| `amenities` | Required JSON array of unique non-empty strings; maximum 30 values. |
+| `image_url` | Optional HTTP(S) URL, maximum 2048 characters. |
+| `booking_url` | Optional HTTP(S) URL, maximum 2048 characters. |
+| `is_active` | Required boolean; defaults to true. |
+| `created_at`, `updated_at` | Required UTC timestamps. |
 
-## Evidence Required
+### 5.2 Search
 
-- Frontend, backend, and database automated-test output.
-- Successful Student 2 GitHub Actions run URL or screenshot.
-- Clean Docker Compose build/start and health evidence.
-- Browser screenshots for create/read/update/delete, AI success, forced fallback, shared home integration, and responsive widths.
-- A genuine finalised shared Plan/Act/Observe/Adapt record.
-- Architecture/data-design diagrams, prompt log, review record, contribution/commit logs, known limitations, attendance checkpoint, and showcase video URL.
+| Field | Rule |
+|---|---|
+| `id` | Positive integer primary key. |
+| `title` | Required, trimmed, 1-80 characters. |
+| `destination` | Same normalised value accepted by FR-02. |
+| `check_in`, `check_out` | ISO `YYYY-MM-DD`; check-out after check-in. |
+| `guests` | Integer, 1-20. |
+| `min_price`, `max_price` | Decimal, 0-100000; minimum not greater than maximum. |
+| `preferences` | String, 0-500 characters. |
+| `ranking_mode` | Enum-like value: `programmatic`, `ai`, or `fallback`. |
+| `results_json` | Valid JSON array containing the immutable ranked-result snapshot. |
+| `created_at`, `updated_at` | Required UTC timestamps. |
+
+At least 10 records must exist in every table used in the submitted demonstration database. Seed data must contain no secrets or personal data.
+
+## 6. Non-Functional Requirements
+
+| ID | Category | Requirement and measurable acceptance target |
+|---|---|---|
+| NFR-01 | Performance | With local seeded data and a responsive local Ollama model, 95% of search requests complete within 15 seconds across 20 sequential manual/test requests. Non-AI history operations complete within 2 seconds. Record the device and model used with the evidence. |
+| NFR-02 | Timeout | Database API calls time out within 3 seconds, LiteAPI calls within 10 seconds, and the Ollama call within 12 seconds. A timeout follows the explicit provider-error or ranking-fallback behaviour. |
+| NFR-03 | Reliability | A malformed or unavailable Ollama response cannot crash the request process, create invalid ranks, or lose an otherwise valid search. |
+| NFR-04 | Accessibility | Search, history, dialogs, notices, and results are keyboard operable; controls have programmatic labels; focus is visible; status changes use an appropriate live region; images have meaningful or empty alt text. |
+| NFR-05 | Responsive UI | At viewport widths of 320px, 768px, and 1280px, all controls and results remain usable without horizontal page scrolling. |
+| NFR-06 | Security | Secrets are supplied by environment variables and excluded from source control and logs. User input is validated server-side, rendered as text rather than trusted HTML, and never interpolated into SQL. |
+| NFR-07 | Privacy | The feature requires no account or personal identity data. Free-text preferences are requested and stored only for AI-selected searches; the UI states that saved history retains them and deletion removes the whole history record. |
+| NFR-08 | Observability | Every search has a correlation ID across backend logs. Logs identify stage, outcome, duration, candidate count, ranking mode, and dependency failure category without logging secrets or full preference text. |
+| NFR-09 | Maintainability | NuGet and npm dependencies use committed lock/restore metadata; TypeScript strict mode and nullable C# reference types are enabled; configuration is environment-driven; public API payloads use explicit DTOs and are covered by automated tests. |
+| NFR-10 | Container health | Each service has a health check. A service reports healthy only when it can perform its own responsibility; database health includes opening SQLite. |
+| NFR-11 | Portability | The integrated application starts on a clean supported machine using documented prerequisites and `docker compose up --build`; no absolute paths or developer-specific values are required. |
+| NFR-12 | CI isolation | `student-1.yml` runs without live Ollama or internet hotel APIs by using deterministic test doubles, and fails on test, syntax, dependency, or Docker build errors. |
+| NFR-13 | Agentic-loop safety | The development loop sends only explicitly allow-listed files, rejects secret-like input paths/content, limits context/output size, times out each call, and stops after the configured maximum iterations. |
+| NFR-14 | Agentic-loop reproducibility | Every record identifies exact model tags, prompt versions, selected context files, task text, timestamps, and validation commands/results so another team member can explain what occurred. |
+
+## 7. AI Prompt and Validation Contract
+
+The backend supplies only validated criteria and eligible candidates. The prompt must:
+
+- state that candidate data and traveller preferences are untrusted data, not instructions;
+- require JSON only, with no Markdown;
+- define the exact output fields and constraints from FR-07;
+- prohibit adding candidates or inventing facts;
+- ask for concise reasons based only on supplied fields.
+
+The model is advisory. The backend, not the model, owns validation, fallback, persistence, and HTTP responses.
+
+## 8. Test and Evidence Requirements
+
+| ID | Required evidence |
+|---|---|
+| EV-01 | Unit tests for input validation, prompt/output validation, and deterministic fallback ordering. |
+| EV-02 | Database API integration tests covering CRUD, filtering, seed idempotency, and constraints. |
+| EV-03 | Backend integration tests with fake database and Ollama responses covering success, empty candidates, timeout, malformed JSON, missing/duplicate IDs, and history CRUD. |
+| EV-04 | Frontend tests or a documented repeatable browser checklist covering submission, errors, loading state, results, history reopen, rename, delete, keyboard use, and responsive widths. |
+| EV-05 | Local terminal evidence of the two-model development loop showing implementer `[PLAN]/[ACT]`, reviewer `[OBSERVE]`, human-controlled `[ADAPT]`, exact model tags, one requested correction, and the resulting validation. |
+| EV-06 | Multiple finalised loop records showing use throughout implementation, including pre-test and post-test evidence. |
+| EV-07 | `docker compose up --build` evidence showing all feature services and the shared AI service healthy. |
+| EV-08 | Successful `student-1.yml` GitHub Actions run that builds and validates all three assigned services. |
+| EV-09 | Screenshots of the unified home page, search form with AI opt-in, programmatic results, AI-ranked results, fallback notice, history CRUD, and shared visual theme. |
+| EV-10 | Architecture diagrams for the individual services, integrated Release 0 app, Docker Compose deployment, DevOps pipeline, and agentic loop. |
+| EV-11 | Prompt log, reusable prompt assets, AI review record, commit log, contribution log, known issues, attendance checkpoints, and demonstration video URL. |
+
+## 9. Full-Marks Traceability
+
+| Release 0 criterion | Feature obligation |
+|---|---|
+| Project Setup | Correct standard folder placement, populated tables, shared home/theme, Dockerfiles, Compose wiring, Ollama configuration, and workflow. |
+| Service Implementation | Independently containerised Vue frontend, ASP.NET Core backend, and ASP.NET Core/EF Core/SQLite database API communicate over HTTP and expose health checks. |
+| AI-Mode Integration | An explicitly opted-in frontend request reaches Ollama through the backend and produces visible recommendations; the default request remains programmatic. |
+| Agentic AI Workflow | A terminal-runnable development loop uses distinct local implementer and reviewer models and records Plan, Act, Observe, Adapt, validation, and human decisions. |
+| Prompt Engineering and Context | Versioned runtime prompt, development prompts, prompt log, context file, and validation/review records are maintained. |
+| DevOps and GitHub Actions | `student-1.yml` installs pinned dependencies, runs tests, and validates all assigned container builds. |
+| Docker Compose Integration | The feature runs inside the single team Compose file using service DNS, health checks, and shared Ollama. |
+| Working Software | The frontend demonstrates create, read, update, and delete through both API layers and SQLite. |
+| Technical Report | EV-05 through EV-11 provide the required diagrams, logs, screenshots, execution evidence, and contribution records. |
+| Project Demonstration | Mitchell attends and demonstrates the integrated feature, AI path, CRUD, agentic loop, and CI evidence within the group video. |
+
+## 10. Definition of Done
+
+Release 0 is done only when every mandatory FR, NFR, and EV item above is satisfied in the integrated group application. A standalone feature, placeholder service, echo-only CI workflow, unpopulated table, direct SQLite access from the backend, or feature absent from the unified home page is not done and risks zero for the affected criterion.

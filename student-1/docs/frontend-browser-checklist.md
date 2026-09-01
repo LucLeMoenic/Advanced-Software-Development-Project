@@ -1,45 +1,50 @@
-# Chunk 6 Frontend Browser Checklist
+# Itinerary Planner Browser Checklist
 
-Use this checklist against the running Compose application. Record screenshots or video paths beside each completed item; do not mark an item complete from component tests alone.
+Run this against `http://localhost:5100/itinerary/` after a clean Compose startup. Record screenshot/video paths and do not mark an item complete from automated tests alone.
 
-## Automated Baseline
+## Shared Integration
 
-- [x] `npm --prefix student-1/frontend test` - 8/8 component tests pass.
-- [x] `npm --prefix student-1/frontend run build` - strict TypeScript check and Vite production build pass.
-- [x] `git diff --check` - no whitespace errors.
+- [ ] Open the shared home page on port 5100 and select Itinerary Planner.
+- [ ] Confirm the route remains under `/itinerary/` and the shared header/theme is visible.
+- [ ] Confirm browser requests use `/itinerary-api/` and never call the database or Ollama directly.
 
-## Search and Result States
+## Trip and AI Flow
 
-- [ ] Submit valid criteria once and confirm the button disables while loading.
-- [ ] Confirm AI-ranked cards show rank, name, destination, nightly price, capacity, and reason.
-- [ ] Force Ollama failure and confirm results remain visible with the fallback notice.
-- [ ] Submit criteria with no eligible candidates and confirm the explicit empty state.
-- [ ] Stop the database service and confirm the dependency error is visible and focused.
-- [ ] Submit invalid fields and confirm field messages, focus movement, and no completed search.
+- [ ] Submit invalid fields and capture visible feedback without a saved trip.
+- [ ] Submit a valid trip and capture loading state.
+- [ ] Capture a genuine AI-generated itinerary with two stops for every day.
+- [ ] Force Ollama unavailable/invalid and capture the visible fallback notice.
+- [ ] Reopen the saved trip and confirm no new generation request occurs.
 
-## History CRUD
+## CRUD and Revision
 
-- [ ] Confirm new history appears first.
-- [ ] Reopen a saved search and confirm the stored snapshot appears without a new ranking request.
-- [ ] Rename the displayed search and confirm both history and result headings update.
-- [ ] Cancel rename and confirm focus returns to Rename.
-- [ ] Reject delete confirmation and confirm the item remains.
-- [ ] Confirm deletion and verify the item disappears and focus moves to a stable history target.
+- [ ] Create a trip.
+- [ ] Read it from Saved trips.
+- [ ] Edit an individual stop.
+- [ ] Add an individual stop.
+- [ ] Regenerate an individual stop.
+- [ ] Remove an individual stop after confirmation.
+- [ ] Regenerate the whole itinerary and verify replacement is complete.
+- [ ] Delete a trip after confirmation and verify it leaves Saved trips.
+- [ ] Restart the database/app stack and verify retained data remains.
 
-## Accessibility
+## Accessibility and Responsive Layout
 
-- [ ] Complete search, reopen, rename, cancel, and delete using only the keyboard.
-- [ ] Confirm focus is visibly outlined on every interactive control.
-- [ ] Confirm a screen reader announces loading, validation, result, rename, and delete status changes.
-- [ ] Confirm all controls have an accessible name and error text is associated with its field.
-- [ ] Confirm no user or model text is rendered as HTML.
+- [ ] Complete the primary workflow using keyboard only.
+- [ ] Confirm visible focus on links, inputs, buttons, and dialog controls.
+- [ ] Confirm status changes are announced by the live region.
+- [ ] Confirm labels and dialog actions have meaningful accessible names.
+- [ ] At 320px, verify no horizontal page scroll or clipped controls.
+- [ ] At 768px, verify form/history and itinerary remain usable.
+- [ ] At 1280px, verify layout and reading order remain coherent.
 
-## Responsive Widths
+## Evidence Paths
 
-At each width, use maximum-length or long unbroken destination, title, accommodation name, and reason values.
-
-| Width | No horizontal page scroll | Form usable | History actions usable | Result text contained | Evidence |
-|---:|---|---|---|---|---|
-| 320px | [ ] | [ ] | [ ] | [ ] | Pending |
-| 768px | [ ] | [ ] | [ ] | [ ] | Pending |
-| 1280px | [ ] | [ ] | [ ] | [ ] | Pending |
+| Evidence | Path or URL |
+|---|---|
+| Shared home and feature route | Pending |
+| AI success | Pending |
+| Forced fallback | Pending |
+| CRUD sequence | Pending |
+| Restart persistence | Pending |
+| 320px / 768px / 1280px | Pending |

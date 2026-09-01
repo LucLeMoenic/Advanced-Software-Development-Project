@@ -1,122 +1,17 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Create and revise day-by-day travel itineraries.">
-  <title>Itinerary Planner</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="app.js" type="module"></script>
-</head>
-<body>
-  <header class="app-header">
-    <div class="app-header-inner">
-      <a class="product-name" href="/itinerary/">Itinerary Planner</a>
-      <nav class="page-navigation" aria-label="Application navigation">
-        <a href="/">All features</a>
-      </nav>
-    </div>
-  </header>
-
-  <main class="page-shell">
-    <section class="page-intro" aria-labelledby="page-title">
-      <p class="page-kicker">Plan and refine</p>
-      <h1 id="page-title">Build an itinerary around your trip</h1>
-      <p class="hero-copy">Set the destination, dates, budget, and interests, then refine every stop.</p>
-    </section>
-
-    <div class="planner-grid">
-      <aside class="control-panel" aria-label="Trip controls">
-        <form id="trip-form" novalidate>
-          <div class="panel-heading">
-            <div>
-              <p class="step-label">New journey</p>
-              <h2>Trip details</h2>
-            </div>
-            <span class="step-number">01</span>
-          </div>
-
-          <label for="user">Traveller</label>
-          <input id="user" name="user" maxlength="80" autocomplete="name" required>
-
-          <label for="destination">Destination</label>
-          <input id="destination" name="destination" maxlength="100" autocomplete="off" placeholder="e.g. Kyoto" required>
-
-          <div class="field-row">
-            <div>
-              <label for="start-date">Start</label>
-              <input id="start-date" name="startDate" type="date" required>
-            </div>
-            <div>
-              <label for="end-date">End</label>
-              <input id="end-date" name="endDate" type="date" required>
-            </div>
-          </div>
-
-          <label for="budget">Total budget (AUD)</label>
-          <input id="budget" name="budget" type="number" min="0" max="1000000" step="0.01" placeholder="2500" required>
-
-          <label for="interests">Interests</label>
-          <textarea id="interests" name="interests" maxlength="500" rows="3" placeholder="Street food, architecture, quiet gardens"></textarea>
-
-          <button class="primary-button" type="submit">Generate itinerary</button>
-        </form>
-
-        <section class="saved-trips" aria-labelledby="saved-heading">
-          <div class="saved-heading-row">
-            <h2 id="saved-heading">Saved trips</h2>
-            <button id="refresh-trips" class="text-button" type="button">Refresh</button>
-          </div>
-          <ul id="trip-list" class="trip-list"><li class="muted">Loading trips...</li></ul>
-        </section>
-      </aside>
-
-      <section class="itinerary-panel" aria-labelledby="itinerary-heading">
-        <div id="status" class="status" role="status" aria-live="polite"></div>
-        <div id="empty-state" class="empty-state">
-          <span class="empty-index">01 / 02 / 03</span>
-          <h2 id="itinerary-heading">Your days will unfold here.</h2>
-          <p>Complete the trip details to draft a practical itinerary you can shape stop by stop.</p>
-        </div>
-        <div id="itinerary-content" hidden>
-          <header class="itinerary-header">
-            <div>
-              <p id="trip-dates" class="eyebrow"></p>
-              <h2 id="trip-title"></h2>
-              <p id="trip-summary" class="trip-summary"></p>
-            </div>
-            <div class="header-actions">
-              <span id="generation-mode" class="mode-badge"></span>
-              <button id="regenerate-trip" class="secondary-button" type="button">Regenerate all</button>
-              <button id="delete-trip" class="danger-button" type="button">Delete trip</button>
-            </div>
-          </header>
-          <div id="days" class="days"></div>
-          <button id="add-stop" class="add-button" type="button">+ Add a stop</button>
-          <section id="agent-trace" class="agent-trace" aria-labelledby="trace-heading" hidden>
-            <h3 id="trace-heading">Agent workflow</h3>
-            <ol id="trace-list"></ol>
-          </section>
-        </div>
-      </section>
-    </div>
-  </main>
-
-  <dialog id="stop-dialog">
-    <form id="stop-form" method="dialog">
-      <h2 id="stop-dialog-title">Add a stop</h2>
-      <input id="stop-id" type="hidden">
-      <label for="stop-day">Day</label>
-      <input id="stop-day" type="number" min="1" max="31" required>
-      <label for="stop-activity">Activity</label>
-      <input id="stop-activity" maxlength="160" required>
-      <label for="stop-notes">Notes</label>
-      <textarea id="stop-notes" maxlength="1000" rows="4"></textarea>
-      <div class="dialog-actions">
-        <button class="text-button" value="cancel" type="button" id="cancel-stop">Cancel</button>
-        <button class="primary-button" value="save" type="submit">Save stop</button>
-      </div>
-    </form>
-  </dialog>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Student 1 accommodation recommendation service"
+    />
+    <title>Accommodation Recommender</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
 </html>

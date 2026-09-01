@@ -1,20 +1,59 @@
-# Itinerary Planner Risk Plan
+# AI Accommodation Recommender Risk Plan
 
-Scores use probability and impact from 1 to 5; score is `P x I`.
+## 1. Method
 
-| ID | Risk | P | I | Score | Mitigation | Current status |
-|---|---|---:|---:|---:|---|---|
-| IT-R01 | Feature is not reachable from the unified app and receives no integration marks. | 2 | 5 | 10 | Keep `/itinerary/` on shared nginx and use port 5100 as the user entry point. | Mitigated in source; clean Compose evidence pending |
-| IT-R02 | Multi-call persistence leaves an orphan trip or destroys stops during regeneration. | 3 | 5 | 15 | Generate first and commit trip/stops or replacement stops in one database transaction. | Mitigated and regression-tested |
-| IT-R03 | Malformed AI output creates missing days or inconsistent itineraries. | 4 | 4 | 16 | Require exact fields, valid day range, complete day coverage, and exactly two stops per day; otherwise use fallback. | Mitigated and tested |
-| IT-R04 | Ollama is unavailable or too slow during demonstration. | 3 | 4 | 12 | Use one shared preloaded approved model, bounded timeout, visible deterministic fallback, and capture success/fallback evidence beforehand. | Fallback implemented; live evidence pending |
-| IT-R05 | Browser bypasses the backend or backend opens SQLite. | 2 | 5 | 10 | Same-origin `/itinerary-api/` proxy; only database service includes SQLite access. | Mitigated by architecture |
-| IT-R06 | External CDN fails in the local demonstration. | 3 | 3 | 9 | Keep all frontend runtime assets inside the Student 2 image. | Resolved; HTMX CDN removed |
-| IT-R07 | Automated coverage misses frontend regressions and API failure paths. | 3 | 4 | 12 | Run frontend Vitest plus backend/database pytest in Student 2 CI; expand edge tests with defects. | Basic suites complete; broader failure coverage pending |
-| IT-R08 | Required agentic-loop evidence is confused with application trace text. | 4 | 5 | 20 | Run and finalise the shared two-model development loop; cite the JSON record and terminal output. | Open |
-| IT-R09 | Missing planning/report/video evidence loses marks despite working code. | 4 | 5 | 20 | Maintain the Release 0 checklist and capture evidence incrementally. | Open |
-| IT-R10 | Work without durable remote history cannot support contribution evidence. | 2 | 5 | 10 | Keep selective commits on the Student 2 branch, push with approval, and open a reviewed pull request. | Local branch and commits complete; push/PR open |
-| IT-R11 | Responsive or keyboard defects appear during the showcase. | 3 | 3 | 9 | Complete the browser checklist at 320px, 768px, and 1280px and capture evidence. | Open |
-| IT-R12 | Local Docker lacks Compose, preventing reproducible startup evidence. | 4 | 4 | 16 | Install/repair Docker Compose v2, then run the repository command and capture output. Manual Docker topology is temporary only. | Open |
+Review this register at the start and end of each feature-plan phase and before shared Compose, CI, model, schema, or public API changes.
 
-Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
+- Probability (P): 1 rare, 2 unlikely, 3 possible, 4 likely, 5 almost certain.
+- Impact (I): 1 negligible, 2 minor, 3 moderate, 4 major, 5 release/marks threatening.
+- Score: `P x I`. Treat 15-25 as critical, 8-12 as high, 4-6 as medium, and 1-3 as low.
+- Owner is accountable for action, not necessarily the only implementer.
+
+## 2. Risk Register
+
+| ID | Risk and consequence | P | I | Score | Prevention / mitigation | Trigger and contingency | Owner | Evidence / review point |
+|---|---|---:|---:|---:|---|---|---|---|
+| R-01 | Feature remains outside the integrated app, causing zero for non-integrated work. | 4 | 5 | 20 | Confirm standard folder, shared route, ports, Compose names, theme, and shared-file ownership in Phase 0; integrate incrementally. | If the unified page cannot open the working feature, stop feature expansion and pair with the integration owner. | Mitchell + integration owner | Unified-page URL and full Compose evidence. |
+| R-02 | Placeholder Dockerfiles or echo-only CI are mistaken for completed infrastructure. | 4 | 4 | 16 | Phase gates reject placeholders; build each real image and make CI execute tests. | Any `sleep infinity`, missing entry point, or echo-only build step blocks completion. | Mitchell | Docker build logs and workflow run. |
+| R-03 | The chosen Vue/ASP.NET stack is not consistently implemented across docs, containers, and CI. | 3 | 4 | 12 | Record the tutor clarification; use Vue/TypeScript and ASP.NET Core consistently; remove Flask templates. | Conflicting runtime/dependency in a changed file blocks merge. | Mitchell | Dependency, Dockerfile, and documentation review. |
+| R-04 | The application calls more than one ranking model or bypasses its backend API, violating the clarified application AI flow. | 3 | 5 | 15 | One `APPLICATION_MODEL` setting exists only in backend configuration; frontend has no Ollama URL. | Network/source review finds another model or direct browser call: block integration and remove it. | Mitchell | Browser network capture and backend configuration. |
+| R-05 | The agentic loop uses one model for both roles, so review is not independent. | 3 | 5 | 15 | Require distinct `IMPLEMENTER_MODEL` and `REVIEWER_MODEL` values and fail fast when equal. | Equal model tags or missing role evidence makes the run invalid and must be repeated. | Mitchell | Terminal output and saved loop record. |
+| R-06 | Required local models exceed demonstration-machine RAM/VRAM/disk or respond too slowly. | 3 | 4 | 12 | Benchmark approved quantised model tags early; minimise unique tags by allowing the app to reuse one loop model; keep compact prompts; automatically use the optional NVIDIA Compose override when supported. | If a call exceeds the agreed timeout, confirm GPU offload or CPU allocation, then select smaller approved tags only if the configured hardware remains insufficient. | Mitchell + demo host | Model list, hardware note, CPU/GPU timing record, and Ollama layer-offload log. |
+| R-07 | Application Ollama output is malformed/partial, breaking the demo or corrupting results. | 4 | 4 | 16 | Validate complete output and implement deterministic fallback before AI integration. | Timeout, invalid JSON/schema/IDs/ranks invokes fallback and visible notice. | Mitchell | Failure tests and forced-fallback demo. |
+| R-08 | Model follows malicious instructions embedded in preferences, catalogue data, repository files, or proposed code. | 3 | 4 | 12 | Delimit untrusted data, state it is data, restrict output, allow-list context, and validate model output. | Unexpected instructions/unknown IDs/out-of-scope proposal is rejected; no automatic write occurs. | Mitchell | Injection tests for app and loop prompts. |
+| R-09 | Agentic runner leaks secrets or sends excessive/unrelated code to models. | 3 | 5 | 15 | Reject `.env`, credential, binary, outside-repository, and oversized inputs; use explicit file allow-lists; redact records. | Suspected secret: stop, rotate/revoke, remove from current changes, notify team, and follow repository history-remediation policy. | Secret owner + Mitchell | Context-filter tests and record review. |
+| R-10 | Agentic loop applies unsafe changes, loops indefinitely, or falsely claims validation. | 3 | 5 | 15 | No automatic write/commit/push; bound calls/iterations; include real validation output; human records apply/reject. | Timeout, malformed output, failed validation, or iteration limit returns non-zero and requires human resolution. | Mitchell | Fake-model tests and one rejected-run record. |
+| R-11 | Backend directly accesses SQLite, destroying the database-service boundary. | 3 | 5 | 15 | Keep EF Core/SQLite packages and connection string only in database project; backend receives only data API URL. | Static/dependency review finds SQLite access in backend: block merge and use HTTP client. | Mitchell | Architecture review and project references. |
+| R-12 | Partial failure persists incomplete or invalid search history. | 3 | 4 | 12 | Validate ranking before one search create; store immutable snapshot in one database transaction. | Persistence failure returns explicit error and never claims save success. | Mitchell | Transaction and dependency-failure tests. |
+| R-13 | Tables have fewer than the required 10 records. | 1 | 5 | 5 | The tracked SQLite database contains 10 international Search records and 50 active Accommodation records created through HTTP APIs without runtime seed code. Every trip has exactly five eligible catalogue rows. | A later count below 10 in either submitted table, or below five eligible accommodations for a saved trip, reopens this risk. | Mitchell | Tracked database, API counts, and per-trip filter evidence. |
+| R-14 | CRUD exists only in API tooling rather than through the frontend. | 2 | 5 | 10 | Vue now implements search create plus history read/rename/delete through the backend; complete integrated browser recording remains required. | Missing or failing browser action blocks frontend completion; curl/Postman is not a substitute. | Mitchell | Seven frontend component tests pass; integrated browser CRUD recording pending. |
+| R-15 | Shared Compose changes collide with team services, use `localhost`, or create duplicate Ollama runtimes. | 4 | 4 | 16 | Agree names/ports; use service DNS; keep one shared `ollama` runtime and model store for all consumers; review the full stack. | Collision, duplicate runtime, or unhealthy dependency requires correction with the integration owner. | Mitchell + team | `docker compose config`, service topology, and integrated startup. |
+| R-16 | Search history changes after catalogue edits/deletes. | 2 | 3 | 6 | Persist immutable result snapshots rather than live joins on reopen. | History mutation after catalogue CRUD blocks data phase. | Mitchell | Passing snapshot-after-accommodation-delete regression test. |
+| R-17 | Accessibility/responsive behaviour is deferred until the demo. | 2 | 3 | 6 | Labels, visible focus, live status, action focus movement, responsive breakpoints, and long-text containment are implemented and component-tested where jsdom supports them; manual 320/768/1280px checks remain in the frontend gate. | Blocked keyboard flow or horizontal page scroll blocks completion. | Mitchell | Frontend tests and `docs/frontend-browser-checklist.md`; viewport screenshots pending. |
+| R-18 | Folder spelling/standard-structure mismatch breaks scripts, CI, or assessment navigation. | 1 | 4 | 4 | Keep all active code, CI, Compose, and documentation paths under the completed `student-1/` migration. | Any reintroduced old path must be corrected before merge. | Mitchell + team | Repository path scan and CI/Compose config. |
+| R-19 | LiteAPI credential exposure, rate limits, response drift, or stale cached prices break searches or misrepresent demo data. | 3 | 4 | 12 | Keep the key backend-only in ignored local `.env`; revoke disclosed keys; use a 10-second timeout and a 10-hotel limit; validate the official response contract; label imported data as demo cache rather than a guaranteed quote. | Missing/unavailable provider returns a stable dependency error; malformed data is rejected; if the provider contract changes, disable imports and use existing catalogue records until tests are updated. | Mitchell | Provider contract tests, secret scan, simulated review, and one replacement-key sandbox run. |
+| R-20 | Prompt/development logs become unverifiable claims or academic-integrity risk. | 3 | 4 | 12 | Record task, models, prompt versions, outputs, human decision, validation, and commit/PR/evidence link. | Incomplete record cannot be cited in the report until corrected. | Mitchell | Weekly evidence audit. |
+| R-21 | Demo/report evidence is collected too late or misses individual participation. | 3 | 5 | 15 | Capture evidence at each phase; maintain paths in the checklist; rehearse Mitchell's segment. | Missing path in Phase 11 blocks done; rerun/reshoot before submission. | Mitchell + report/video owners | Weekly checklist review and rehearsal. |
+| R-22 | The agentic loop is added only for the demonstration instead of being used throughout development. | 3 | 5 | 15 | Establish the shared service in Phase 1 and require finalised pre/post records in every meaningful later phase. | Missing phase records block the loop evidence gate even if the final demo works. | Team AI owner + Mitchell | Record audit in Phase 8. |
+| R-23 | The Vue/ASP.NET technology approval cannot be proven against the written Python/Flask/HTMX specification. | 3 | 5 | 15 | Preserve the tutor's written clarification or obtain a dated confirmation and cite it in planning/report evidence. | If no durable evidence exists, ask for written confirmation before final report claims. | Mitchell | Approval artefact path in Phase 0. |
+
+## 3. Active Actions
+
+| Priority | Action | Due phase | Status |
+|---:|---|---:|---|
+| 1 | Confirm folder, route, ports, service names, theme, model tags, and shared-file ownership. | 0 | Complete |
+| 2 | Replace the three placeholder accommodation Dockerfiles and extend Student 1 CI to build and test the real services. | 2 / 10 | Complete; GitHub Actions run URL remains evidence work |
+| 3 | Create at least 10 valid records through the HTTP application boundary and capture count evidence. | After traveller/admin flow | Complete - 10 international trips and 50 active accommodations persist; every trip has exactly five eligible rows |
+| 4 | Implement deterministic application fallback before connecting Ollama. | 5 | Complete |
+| 5 | Run the bounded two-model service with distinct installed models and finalise a genuine correction record. | 1 | Open |
+| 6 | Integrate from the shared page and full Compose stack before report work. | 9 | Open |
+
+## 4. Accepted Constraints
+
+- Local Ollama latency depends on demonstration hardware; exact tags and timings must accompany evidence.
+- Model recommendations/reviews are advisory. Application validators and human review own correctness.
+- Release 0 is classroom-scale, so synchronous HTTP, one SQLite store, and one shared Ollama runtime are proportionate.
+
+## 5. Review Rule
+
+When a risk changes score, mitigation, owner, or status, record the date and reason in `review-record.md` and update this file in the same change.
