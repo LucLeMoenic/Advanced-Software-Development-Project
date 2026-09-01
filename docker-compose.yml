@@ -9,6 +9,8 @@ services:
     depends_on:
       student1-frontend:
         condition: service_healthy
+      student2-frontend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
       interval: 10s
@@ -78,8 +80,58 @@ services:
     build:
       context: ./student-2/frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5102:80"
+    depends_on:
+      student2-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student2-backend:
+    build:
+      context: ./student-2/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: http://student2-database:8080
+      OLLAMA_URL: http://ollama:11434
+      APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+      PORT: 8080
+    ports:
+      - "5202:8080"
+    depends_on:
+      student2-database:
+        condition: service_healthy
+      ollama-model-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student2-database:
+    build:
+      context: ./student-2/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/itinerary.db
+      PORT: 8080
+    ports:
+      - "5302:8080"
+    volumes:
+      - ./student-2/database/storage:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   student3-frontend:
     build:

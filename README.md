@@ -4,7 +4,7 @@ Template repository for the 2026 Advanced Software Development project. The proj
 
 ## Current Status
 
-The integrated Compose application includes the shared Vue home page, the Student 1 accommodation feature, the shared Ollama runtime, and the bounded .NET agentic loop. Other student services remain independently owned.
+The integrated Compose application includes the shared Vue home page, the Student 1 Accommodation Recommender, the Student 2 Itinerary Planner, the shared Ollama runtime, and the bounded .NET agentic loop. Other student services remain independently owned.
 
 ## Repository Structure
 
@@ -97,6 +97,16 @@ Run these commands from the repository root in PowerShell.
    ```powershell
    docker compose down
    ```
+
+## Student 2 Itinerary Planner
+
+Start the shared page and Student 2 services from the repository root:
+
+```powershell
+docker compose up -d --build shared-frontend
+```
+
+Open `http://localhost:5100` and select **Itinerary Planner**, or open `http://localhost:5100/itinerary/` directly. Ports `5102`, `5202`, and `5302` expose the individual services for diagnostics only.
 
 ## Shared Release 0 Agentic Loop
 

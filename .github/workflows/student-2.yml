@@ -1,25 +1,60 @@
 name: Student 2 CI
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
-      - 'student-2/**'
-      - '.github/workflows/student-2.yml'
-      - 'docker-compose.yml'
+      - "student-2/**"
+      - "shared/vue-frontend/**"
+      - ".github/workflows/student-2.yml"
+      - "docker-compose.yml"
   pull_request:
     paths:
-      - 'student-2/**'
-      - '.github/workflows/student-2.yml'
-      - 'docker-compose.yml'
+      - "student-2/**"
+      - "shared/vue-frontend/**"
+      - ".github/workflows/student-2.yml"
+      - "docker-compose.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: student-2/frontend/package-lock.json
+
+      - name: Install frontend test dependencies
+        working-directory: student-2/frontend
+        run: npm ci
+
+      - name: Test frontend behavior
+        working-directory: student-2/frontend
+        run: npm test
+
+      - name: Install backend test dependencies
+        run: pip install -r student-2/backend/requirements.txt pytest
+
+      - name: Test backend orchestration
+        working-directory: student-2/backend
+        run: python -m pytest tests
+
+      - name: Install database test dependencies
+        run: pip install -r student-2/database/requirements.txt
+
+      - name: Test database API
+        working-directory: student-2/database
+        run: python -m pytest tests
 
       - name: Validate Docker Compose config
-        run: docker compose config
+        run: docker compose config --quiet
 
-      - name: Build Student 2 frontend container
-        run: docker build -t student2-frontend -f student-2/frontend/Dockerfile student-2/frontend
+      - name: Build integrated Student 2 containers
+        run: docker compose build shared-frontend student2-frontend student2-backend student2-database

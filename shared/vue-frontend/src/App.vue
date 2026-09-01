@@ -31,11 +31,13 @@
             </a>
           </li>
           <li>
-            <a class="feature-card" href="http://localhost:5102">
+            <a class="feature-card" href="/itinerary/">
               <span class="student-label">Student 2</span>
               <span class="feature-content">
-                <strong>Team feature</strong>
-                <span class="feature-description">Open the Student 2 application.</span>
+                <strong>Itinerary Planner</strong>
+                <span class="feature-description">
+                  Generate and refine a day-by-day journey with AI assistance.
+                </span>
               </span>
               <span class="feature-action">Open</span>
             </a>
