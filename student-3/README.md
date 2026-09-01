@@ -49,3 +49,14 @@ cd student-3
 pip install -r backend/requirements.txt
 pytest tests
 ```
+
+## Docker Compose
+
+Wired into the root `docker-compose.yml`: `student3-db-init` (one-shot schema+seed) →
+`student3-database` → `student3-backend` → `student3-frontend`. From the repo root:
+
+```bash
+docker compose up -d student3-frontend
+```
+
+brings up this whole slice. No Ollama dependency yet — AI-Mode is Release 1 scope.
