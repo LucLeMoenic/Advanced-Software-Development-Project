@@ -403,7 +403,7 @@ public sealed class DatabaseApiClient(HttpClient client) : IDatabaseApiClient
 
     private static bool RankingMode(string? value)
     {
-        return value is "ai" or "fallback";
+        return value is "ai" or "fallback" or "programmatic";
     }
 
     private static bool OptionalUrl(string? value)

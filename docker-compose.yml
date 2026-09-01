@@ -48,7 +48,7 @@ services:
     depends_on:
       student1-database:
         condition: service_healthy
-      ollama-application-model:
+      ollama-model-setup:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
@@ -115,44 +115,26 @@ services:
       timeout: 5s
       retries: 10
 
-  ollama-application-model:
+  ollama-model-setup:
     image: ollama/ollama:latest
     restart: "no"
     environment:
       OLLAMA_HOST: http://ollama:11434
-      MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-llama3.2:3b qwen2.5-coder:7b}
+      APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -eu
-        if ollama show "$$MODEL" > /dev/null 2>&1; then
-          echo "Ollama model already installed: $$MODEL"
-        else
-          ollama pull "$$MODEL"
-        fi
-        ollama run "$$MODEL" "Return only OK." --keepalive 30m > /dev/null
-    depends_on:
-      ollama:
-        condition: service_healthy
-
-  ollama-agentic-models:
-    image: ollama/ollama:latest
-    restart: "no"
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-      IMPLEMENTER_MODEL: ${IMPLEMENTER_MODEL:-qwen2.5-coder:7b}
-      REVIEWER_MODEL: ${REVIEWER_MODEL:-llama3.2:3b}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -eu
-        for model in "$$IMPLEMENTER_MODEL" "$$REVIEWER_MODEL"; do
+        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL; do
           if ollama show "$$model" > /dev/null 2>&1; then
             echo "Ollama model already installed: $$model"
           else
             ollama pull "$$model"
           fi
         done
+        echo "Preloading application model: $$APPLICATION_MODEL"
+        ollama run "$$APPLICATION_MODEL" "Return only OK." --keepalive 30m > /dev/null
     depends_on:
       ollama:
         condition: service_healthy
@@ -173,7 +155,7 @@ services:
       - ./:/workspace:ro
       - ./docs/agentic-loop-records:/workspace/docs/agentic-loop-records
     depends_on:
-      ollama-agentic-models:
+      ollama-model-setup:
         condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "dotnet", "/app/AgenticLoop.dll", "healthcheck"]

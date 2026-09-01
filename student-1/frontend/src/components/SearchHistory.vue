@@ -30,6 +30,16 @@ const dateFormatter = new Intl.DateTimeFormat('en-AU', {
   year: 'numeric',
 })
 
+function rankingLabel(mode: SearchSummary['rankingMode']) {
+  if (mode === 'ai') {
+    return 'AI'
+  }
+  if (mode === 'programmatic') {
+    return 'Programmatic'
+  }
+  return 'Fallback'
+}
+
 onMounted(loadHistory)
 
 async function loadHistory() {
@@ -190,10 +200,10 @@ defineExpose({ addSearch })
   <aside ref="panel" class="panel history-panel" aria-labelledby="history-heading">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Saved searches</p>
-        <h2 id="history-heading" tabindex="-1">Recent trips</h2>
+        <h2 id="history-heading" tabindex="-1">Saved searches</h2>
+        <p class="section-copy">Reopen a previous result without running the ranking again.</p>
       </div>
-      <span class="count-badge">{{ history.length }}</span>
+      <span class="count-badge">{{ history.length }} saved</span>
     </div>
 
     <p v-if="loading" class="muted">Loading search history...</p>
@@ -236,7 +246,7 @@ defineExpose({ addSearch })
           <div class="history-title-row">
             <strong>{{ search.title }}</strong>
             <span :class="['mode-badge', `mode-${search.rankingMode}`]">
-              {{ search.rankingMode === 'ai' ? 'AI' : 'Fallback' }}
+              {{ rankingLabel(search.rankingMode) }}
             </span>
           </div>
           <p>{{ formatDate(search.checkIn) }} - {{ formatDate(search.checkOut) }}</p>

@@ -73,18 +73,55 @@ describe('App', () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     await fillValidForm(wrapper)
+    await wrapper.get('#use-ai').setValue(true)
+    await wrapper.get('#preferences').setValue('Near transport')
 
     await wrapper.get('form').trigger('submit')
     await wrapper.get('form').trigger('submit')
 
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(wrapper.get('.submit-button').attributes('disabled')).toBeDefined()
+    expect(searchRequestBody()).toMatchObject({
+      preferences: 'Near transport',
+      useAi: true,
+    })
 
     resolveSearch(jsonResponse(savedSearch, 201))
     await flushPromises()
 
     expect(wrapper.text()).toContain('Harbour Stay')
     expect(wrapper.text()).toContain('AI ranked')
+  })
+
+  it('uses programmatic ranking by default', async () => {
+    const programmaticSearch = {
+      ...savedSearch,
+      rankingMode: 'programmatic',
+      notice: null,
+    }
+    mockFetch(jsonResponse([]), jsonResponse(programmaticSearch, 201))
+    const wrapper = mount(App)
+    await flushPromises()
+    await fillValidForm(wrapper)
+
+    expect((wrapper.get('#use-ai').element as HTMLInputElement).checked).toBe(false)
+    expect(wrapper.find('#preferences').exists()).toBe(false)
+
+    await wrapper.get('#use-ai').setValue(true)
+    await wrapper.get('#preferences').setValue('Near transport')
+    await wrapper.get('#use-ai').setValue(false)
+
+    expect(wrapper.find('#preferences').exists()).toBe(false)
+
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(searchRequestBody()).toMatchObject({
+      preferences: '',
+      useAi: false,
+    })
+    expect(wrapper.text()).toContain('Programmatic ranking')
+    expect(wrapper.text()).not.toContain('Reliable fallback used.')
   })
 
   it('keeps a newly completed search when the initial history request finishes later', async () => {
@@ -127,6 +164,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await flushPromises()
     await fillValidForm(wrapper)
+    await wrapper.get('#use-ai').setValue(true)
 
     await wrapper.get('form').trigger('submit')
     await flushPromises()
@@ -218,6 +256,11 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
+function searchRequestBody() {
+  const [, request] = vi.mocked(fetch).mock.calls[1]!
+  return JSON.parse(request?.body as string) as Record<string, unknown>
+}
+
 async function fillValidForm(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('#destination').setValue('Sydney')
   await wrapper.get('#check-in').setValue('2026-09-10')
@@ -225,5 +268,4 @@ async function fillValidForm(wrapper: ReturnType<typeof mount>) {
   await wrapper.get('#guests').setValue('2')
   await wrapper.get('#minimum-price').setValue('100')
   await wrapper.get('#maximum-price').setValue('300')
-  await wrapper.get('#preferences').setValue('Near transport')
 }

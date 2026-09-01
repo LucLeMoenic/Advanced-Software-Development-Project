@@ -4,7 +4,18 @@ $repositoryRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repositoryRoot
 
 try {
-    docker compose up -d --build --wait student1-frontend
+    $composeFiles = @("-f", "docker-compose.yml")
+    $dockerRuntimes = docker info --format "{{json .Runtimes}}"
+    $hasNvidiaGpu = (Get-Command nvidia-smi -ErrorAction SilentlyContinue) `
+        -and $dockerRuntimes -match '"nvidia"'
+
+    if ($hasNvidiaGpu) {
+        $composeFiles += @("-f", "docker-compose.gpu.yml")
+        Write-Host "NVIDIA GPU detected. Starting Ollama with GPU acceleration."
+    }
+
+    Write-Host "Starting Student 1 services. Docker may take a few minutes to build images and pass health checks..."
+    docker compose @composeFiles up -d --build --wait student1-frontend
     if ($LASTEXITCODE -ne 0) {
         throw "Student 1 services failed to start."
     }
@@ -19,7 +30,7 @@ try {
     Write-Host "  Ollama:           http://localhost:11434"
     Write-Host ""
 
-    docker compose ps `
+    docker compose @composeFiles ps `
         student1-frontend `
         student1-backend `
         student1-database `
