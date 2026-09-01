@@ -8,5 +8,7 @@
 - [Frontend browser checklist](frontend-browser-checklist.md)
 - [Contribution log](contribution-log.md)
 - [Known issues](known-issues.md)
+- [Prompt log](prompt-log.md)
+- [Review record](review-record.md)
 
-Shared AI-development evidence remains under `student-1/docs/prompt-log.md`, `student-1/docs/review-record.md`, and `docs/agentic-loop-records/` according to the repository instructions.
+Shared development agentic-loop evidence remains under `docs/agentic-loop-records/`.
