@@ -4,6 +4,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import database_client as db
+from recommend import get_recommendation
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -97,6 +98,16 @@ def create_review():
     if error:
         return jsonify(error), 400
     return jsonify(review), 201
+
+
+@app.post("/api/recommend")
+def recommend():
+    # HTMX forms POST as x-www-form-urlencoded by default, so accept both.
+    payload = request.get_json(silent=True) or request.form.to_dict() or {}
+    interest_text = (payload.get("interest") or "").strip()
+    if not interest_text:
+        return jsonify({"error": "validation_error", "message": "interest is required."}), 400
+    return jsonify(get_recommendation(interest_text))
 
 
 @app.post("/api/itinerary")
