@@ -26,12 +26,12 @@ function formatDate(value: string) {
 
 function rankingLabel(mode: SearchResponse['rankingMode']) {
   if (mode === 'ai') {
-    return 'AI ranked'
+    return 'AI-assisted match'
   }
   if (mode === 'programmatic') {
-    return 'Programmatic ranking'
+    return 'Budget match'
   }
-  return 'Fallback ranked'
+  return 'Budget match (AI unavailable)'
 }
 
 async function focusHeading() {
@@ -44,21 +44,26 @@ defineExpose({ focusHeading })
 
 <template>
   <section class="results-section" aria-labelledby="results-heading">
-    <div class="results-heading-row">
+    <div class="results-header">
       <div>
+        <p class="section-label">Recommendations</p>
         <h2 id="results-heading" ref="heading" tabindex="-1">
           {{ search.title }}
         </h2>
         <p class="results-summary">
-          {{ formatDate(search.checkIn) }} - {{ formatDate(search.checkOut) }}
+          {{ formatDate(search.checkIn) }} to {{ formatDate(search.checkOut) }}
           · {{ search.guests }} guest{{ search.guests === 1 ? '' : 's' }}
           · {{ currency.format(search.minimumPrice) }} to
           {{ currency.format(search.maximumPrice) }} nightly
         </p>
       </div>
-      <span :class="['mode-badge', `mode-${search.rankingMode}`]">
-        {{ rankingLabel(search.rankingMode) }}
-      </span>
+      <div class="results-meta">
+        <strong>{{ search.results.length }}</strong>
+        <span>{{ search.results.length === 1 ? 'match' : 'matches' }}</span>
+        <span :class="['mode-label', `mode-${search.rankingMode}`]">
+          {{ rankingLabel(search.rankingMode) }}
+        </span>
+      </div>
     </div>
 
     <div v-if="search.notice" class="notice notice-warning" role="status">
@@ -73,12 +78,21 @@ defineExpose({ focusHeading })
     <div v-if="search.results.length === 0" class="empty-state">
       <h3>No matching accommodation</h3>
       <p>Try a wider price range, another destination, or a different guest count.</p>
+      <a class="text-link" href="#destination">Adjust search details</a>
     </div>
 
     <ol v-else class="results-list">
-      <li v-for="result in search.results" :key="result.accommodationId" class="result-card">
-        <div class="rank" :aria-label="`Rank ${result.rank}`">
-          {{ String(result.rank).padStart(2, '0') }}
+      <li
+        v-for="result in search.results"
+        :key="result.accommodationId"
+        :class="['result-card', { 'result-card-first': result.rank === 1 }]"
+      >
+        <div class="rank">
+          <span class="sr-only">
+            Rank {{ result.rank }}{{ result.rank === 1 ? ', best match' : '' }}
+          </span>
+          <span aria-hidden="true">{{ result.rank }}</span>
+          <small v-if="result.rank === 1" aria-hidden="true">Best match</small>
         </div>
         <div class="result-main">
           <div class="result-title-row">
@@ -88,7 +102,10 @@ defineExpose({ focusHeading })
             </div>
             <strong>{{ currency.format(result.nightlyPrice) }}<span>/night</span></strong>
           </div>
-          <p class="reason">{{ result.reason }}</p>
+          <p class="reason">
+            <span>Why it matches</span>
+            {{ result.reason }}
+          </p>
         </div>
       </li>
     </ol>

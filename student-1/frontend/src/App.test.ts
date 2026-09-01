@@ -90,7 +90,7 @@ describe('App', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Harbour Stay')
-    expect(wrapper.text()).toContain('AI ranked')
+    expect(wrapper.text()).toContain('AI-assisted match')
   })
 
   it('uses programmatic ranking by default', async () => {
@@ -104,12 +104,13 @@ describe('App', () => {
     await flushPromises()
     await fillValidForm(wrapper)
 
+    expect((wrapper.get('#standard-ranking').element as HTMLInputElement).checked).toBe(true)
     expect((wrapper.get('#use-ai').element as HTMLInputElement).checked).toBe(false)
     expect(wrapper.find('#preferences').exists()).toBe(false)
 
     await wrapper.get('#use-ai').setValue(true)
     await wrapper.get('#preferences').setValue('Near transport')
-    await wrapper.get('#use-ai').setValue(false)
+    await wrapper.get('#standard-ranking').setValue(true)
 
     expect(wrapper.find('#preferences').exists()).toBe(false)
 
@@ -120,7 +121,7 @@ describe('App', () => {
       preferences: '',
       useAi: false,
     })
-    expect(wrapper.text()).toContain('Programmatic ranking')
+    expect(wrapper.text()).toContain('Budget match')
     expect(wrapper.text()).not.toContain('Reliable fallback used.')
   })
 
@@ -218,11 +219,11 @@ describe('App', () => {
     }))
     expect(document.activeElement).toBe(wrapper.get('[data-rename-id="1"]').element)
 
-    await wrapper.get('.button-danger').trigger('click')
+    await wrapper.get('.button-link-danger').trigger('click')
     await flushPromises()
 
     expect(confirm).toHaveBeenCalledOnce()
-    expect(wrapper.text()).toContain('Completed searches will appear here.')
+    expect(wrapper.text()).toContain('No saved searches yet')
     expect(fetch).toHaveBeenNthCalledWith(4, '/api/searches/1', { method: 'DELETE' })
     expect(document.activeElement).toBe(wrapper.get('#history-heading').element)
   })
