@@ -9,10 +9,10 @@ namespace AgenticLoop;
 public static partial class AgenticLoopApplication
 {
     private const int MaxTaskCharacters = 4_000;
-    private const int MaxContextBytes = 16_000;
-    private const int MaxContextFileBytes = 8_000;
-    internal const int OllamaContextTokens = 8_192;
-    internal const int OllamaMaxOutputTokens = 2_048;
+    private const int MaxContextBytes = 32_000;
+    private const int MaxContextFileBytes = 16_000;
+    internal const int OllamaContextTokens = 16_384;
+    internal const int OllamaMaxOutputTokens = 4_096;
     internal const double OllamaTemperature = 0;
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -703,7 +703,9 @@ public static partial class AgenticLoopApplication
                 or ".txt"
                 or ".xml"
                 or ".props"
-                or ".targets";
+                or ".targets"
+                or ".py"
+                or ".sql";
     }
 
     private static bool ContainsSecretLikeContent(string text)
