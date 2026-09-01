@@ -6,7 +6,7 @@
 - No successful GitHub Actions run URL or screenshot has been recorded for `student-2.yml`.
 - No finalised shared Plan/Act/Observe/Adapt development-loop record exists for Student 2.
 - Integrated browser screenshots, responsive checks, keyboard walkthrough, persistence restart capture, and the showcase video are pending.
-- Student 2 changes remain uncommitted until the user creates the appropriate branch, commits, and pull request.
+- Five selective local commits exist on `student-2/release-0-itinerary-planner`; the branch has not been pushed and no pull request exists yet.
 
 ## Product Limitations
 

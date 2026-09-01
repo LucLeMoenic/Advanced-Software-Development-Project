@@ -19,19 +19,19 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 | Integrated execution proof | Evidence pending / blocked | Seven services run through a manual Docker network, but clean Compose evidence is blocked because Compose v2 is unavailable locally. |
 | AI execution proof | Evidence pending | Source integration exists; a live frontend-triggered Ollama success and forced fallback still need capture. |
 | Development agentic loop | Not evidenced | No finalised Student 2 two-model Plan/Act/Observe/Adapt record exists. |
-| GitHub/CI evidence | Human action | Workflow exists, but changes are uncommitted and no successful Actions run or PR is recorded. |
+| GitHub/CI evidence | Human action | Five selective local commits exist on the Student 2 branch; push, PR, and successful Actions evidence remain pending. |
 | Report and showcase | In progress | Documentation structure exists; screenshots, execution evidence, attendance, and video remain. |
 
 ## Marking Criteria
 
 | No. | Criterion | Current status | Done | Still required |
 |---:|---|---|---|---|
-| 1 | Project setup | Evidence pending | Standard folders; shared `/itinerary/` route and theme; Dockerfiles; root service definitions; Student 2 workflow; shared Ollama configuration; 10 trips and 20 stops on fresh initialization. | Commit/PR, clean Compose capture, and report evidence. |
+| 1 | Project setup | Evidence pending | Standard folders; shared `/itinerary/` route and theme; Dockerfiles; root service definitions; Student 2 workflow; shared Ollama configuration; 10 trips and 20 stops on fresh initialization; selective local commit history. | Push/PR, clean Compose capture, and report evidence. |
 | 2 | Service implementation | Evidence pending | Independently containerised frontend, backend, and database API; health endpoints; HTTP boundaries; production images build. | Capture the integrated services healthy through the official Compose command. |
 | 3 | AI-Mode integration | Evidence pending | Backend calls shared Ollama with one configured approved model; versioned prompt, strict output validation, deterministic fallback, and visible generation mode exist. | Capture a genuine AI result initiated from the integrated frontend and identify the exact model tag. |
 | 4 | Agentic AI workflow | Not evidenced | Shared runner and prompts exist at team level. | Run Student 2 work through distinct implementer/reviewer models, demonstrate Plan/Act/Observe/Adapt in the terminal, human-review it, and finalise the record. |
 | 5 | Prompt engineering and context | In progress | Application prompt, untrusted-data instructions, output constraints, prompt log, review record, and architecture boundaries exist. | Add the genuine loop record and explain selected context, model roles, validation, and human decision in the report. |
-| 6 | DevOps and GitHub Actions | Evidence pending | `student-2.yml` installs Node/Python dependencies, runs all three suites, validates Compose, and builds shared/Student 2 images. | Commit and push through the team's branch/PR process; capture a successful Actions run URL or screenshot. |
+| 6 | DevOps and GitHub Actions | Evidence pending | `student-2.yml` installs Node/Python dependencies, runs all three suites, validates Compose, and builds shared/Student 2 images. Five local proof commits exist. | Push the branch with approval, open a pull request, and capture a successful Actions run URL or screenshot. |
 | 7 | Docker Compose integration | Blocked locally | Root Compose defines Student 2 services, health ordering, shared frontend route, database storage, and one shared Ollama runtime. | Repair/install Compose v2, run clean `docker compose up --build`, and capture configuration, health, and routing evidence. |
 | 8 | Working software and CRUD | Evidence pending | Browser controls and backend/database endpoints implement create/read/update/delete for trips/stops plus add/remove/edit/regenerate actions. Atomic writes prevent partial itinerary replacement. | Complete and capture the integrated browser CRUD sequence and database restart persistence. |
 | 9 | Technical report | In progress | Requirements, planning, risk, data design, architecture, prompt/review records, contribution log, known issues, and evidence checklists exist. | Add test output, Actions/Compose evidence, screenshots, commit/PR references, attendance checkpoint, and final limitations. |
@@ -102,11 +102,12 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 
 ## Human and Team Actions
 
-- [ ] Create or switch to the agreed Student 2 feature branch.
-- [ ] Review all currently uncommitted/untracked changes.
-- [ ] Create meaningful commits manually.
+- [x] Create or switch to the agreed Student 2 feature branch.
+- [x] Review and selectively isolate Student 2 changes from unrelated worktree changes.
+- [x] Create meaningful local commits in database, backend, frontend, integration, and documentation chunks.
 - [ ] Push and open a pull request.
-- [ ] Record commit hashes and the pull-request URL in `contribution-log.md`.
+- [x] Record local commit hashes in `contribution-log.md`.
+- [ ] Record the pull-request URL and reviewer decision in `contribution-log.md`.
 - [ ] Record the successful Actions URL.
 - [ ] Add Student 2 evidence to the group technical report.
 - [ ] Record the Week 6 attendance checkpoint.
@@ -118,7 +119,7 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 1. Repair Docker Compose v2 and capture one clean integrated run.
 2. Run and finalise the genuine two-model development agentic loop.
 3. Complete the browser checklist, including AI success, fallback, CRUD, restart, keyboard, and responsive captures.
-4. Review, commit, push, and open the Student 2 pull request; retain the successful Actions run.
+4. Push the reviewed local branch, open the Student 2 pull request, and retain the successful Actions run.
 5. Assemble report evidence and complete attendance/video actions.
 
 ## Important Distinction
