@@ -6,6 +6,7 @@ export interface SearchRequest {
   minimumPrice: number
   maximumPrice: number
   preferences: string
+  useAi: boolean
 }
 
 export interface SearchResult {
@@ -25,7 +26,7 @@ export interface SearchSummary {
   checkIn: string
   checkOut: string
   guests: number
-  rankingMode: 'ai' | 'fallback'
+  rankingMode: 'ai' | 'fallback' | 'programmatic'
   createdAt: string
   updatedAt: string
 }

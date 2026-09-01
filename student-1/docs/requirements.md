@@ -2,7 +2,7 @@
 
 ## 1. Purpose and Scope
 
-The AI Accommodation Recommender helps a traveller rank accommodation options from a local SQLite catalogue according to destination, travel dates, guest count, nightly budget, and free-text preferences. When a destination has no cached catalogue records, the backend may populate that catalogue from LiteAPI sandbox rates before ranking.
+The AI Accommodation Recommender helps a traveller rank accommodation options from a local SQLite catalogue according to destination, travel dates, guest count, and nightly budget. Programmatic ranking is the default, and the traveller may explicitly opt in to additional AI ranking and provide free-text preferences. When a destination has no cached catalogue records, the backend may populate that catalogue from LiteAPI sandbox rates before ranking.
 
 Release 0 must deliver one integrated, containerised feature through the required path:
 
@@ -15,8 +15,9 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 ### 1.1 Release 0 In Scope
 
 - Search criteria entry and validation.
+- Default deterministic programmatic ranking with optional AI ranking per search.
 - Ranking at least 10 seeded accommodation records with Ollama.
-- Deterministic fallback ranking if Ollama is unavailable or invalid.
+- Deterministic fallback ranking if opted-in Ollama ranking is unavailable or invalid.
 - Persisted search history with create, read, rename, and delete actions.
 - Accommodation catalogue CRUD in the database API.
 - Backend-only LiteAPI sandbox import when a searched destination is not yet cached.
@@ -38,10 +39,10 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 |---|---|
 | Traveller | Submits criteria, views recommendations, and manages search history. |
 | Vue frontend service | Renders the typed user interface and sends browser requests only to the backend/API service. |
-| ASP.NET Core backend/API service | Validates input, retrieves candidates, calls the single application model, validates ranking output, persists searches, and exposes the frontend-facing API. |
+| ASP.NET Core backend/API service | Validates input, retrieves candidates, ranks programmatically, optionally calls the single application model, validates ranking output, persists searches, and exposes the frontend-facing API. |
 | ASP.NET Core database API service | Owns EF Core and the SQLite file and exposes accommodation and search-history CRUD over HTTP. |
 | SQLite | Stores the accommodation catalogue and persisted search history. No other service may open its file. |
-| Shared Ollama service | Hosts the application ranking model and the two distinct development-loop model roles locally. |
+| Shared Ollama service | Hosts all locally required model tags for team application microservices and the two distinct development-loop roles. No feature owns a separate Ollama runtime. |
 | LiteAPI sandbox | Optionally supplies accommodation rates to the backend when the requested destination has no local catalogue records. The browser never receives the provider credential. |
 | Shared .NET agentic-loop service | Runs inside the integrated Compose application, supplies versioned context and prompts to the implementer model, captures its proposal, supplies that proposal to the reviewer model, and records the final human-controlled adaptation. |
 | Shared home page | Provides the integrated entry point to this feature. |
@@ -54,7 +55,7 @@ Each requirement is mandatory for Release 0 unless marked otherwise.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| FR-01 | The traveller can submit destination, check-in date, check-out date, guest count, minimum nightly price, maximum nightly price, and free-text preferences. | The Vue frontend provides labelled controls for every field and sends one request to the backend. |
+| FR-01 | The traveller can submit destination, check-in date, check-out date, guest count, minimum nightly price, maximum nightly price, and whether to use AI ranking. AI searches may also include free-text preferences. | The Vue frontend leaves AI ranking unchecked and hides the preferences control by default. Selecting AI reveals preferences. Unselecting AI hides the control and sends an empty preference value. |
 | FR-02 | The backend validates all search input before calling the database or Ollama. | Destination is 2-100 characters; check-in is not before the current local date; check-out is after check-in; guests is an integer from 1-20; prices are numbers from 0-100000; minimum price is not greater than maximum price; preferences is at most 500 characters. |
 | FR-03 | Invalid input produces field-specific feedback without creating history or calling Ollama. | The backend returns HTTP `400` with a stable error object; the frontend displays the message beside or above the form; database and Ollama test doubles receive no call. |
 | FR-04 | The backend retrieves eligible accommodation candidates only through the database API. | Candidates match the requested destination case-insensitively, support at least the requested guest count, fall within the nightly price range, and are active. The backend never opens SQLite directly. |
@@ -65,10 +66,11 @@ Each requirement is mandatory for Release 0 unless marked otherwise.
 
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
-| FR-06 | The backend sends eligible candidates and the validated search criteria to the shared Ollama service using an approved Release 0 model. | The request is visible in backend logs without secrets or full free-text preferences, and the call path is frontend -> backend -> Ollama -> model. |
+| FR-06 | When the traveller explicitly opts in, the backend sends eligible candidates and validated search criteria to the shared Ollama service using an approved Release 0 model. | `useAi: true` follows frontend -> backend -> Ollama -> model; omitted or false `useAi` never calls Ollama. The request is visible in backend logs without secrets or full free-text preferences. |
+| FR-06a | Without AI opt-in, the backend returns deterministic programmatic ranking. | Candidates are ordered by absolute distance from the traveller's budget midpoint, then nightly price, then accommodation ID; the saved ranking mode is `programmatic`; no AI-unavailable notice is shown. |
 | FR-07 | Ollama must return one ranking entry for every supplied candidate. | Each entry contains an existing integer accommodation ID, a unique rank from 1 through candidate count, and a reason of 1-200 characters. No unknown, duplicate, omitted, or extra IDs are accepted. |
 | FR-08 | The backend validates model output before returning or storing it. | JSON parsing, schema validation, ID set equality, rank uniqueness/range, and reason length are tested. Invalid output is never treated as a successful AI ranking. |
-| FR-09 | The backend provides a deterministic fallback when Ollama times out, is unavailable, or returns invalid output. | Candidates are ordered by absolute distance from the traveller's budget midpoint, then nightly price, then accommodation ID; each result is labelled as fallback-ranked; the user receives results with a non-blocking notice. |
+| FR-09 | The backend provides a deterministic fallback when opted-in Ollama ranking times out, is unavailable, or returns invalid output. | Candidates are ordered by absolute distance from the traveller's budget midpoint, then nightly price, then accommodation ID; each result is labelled as fallback-ranked; the user receives results with a non-blocking notice. |
 | FR-10 | Each result identifies the accommodation, nightly price, location, capacity, rank, and concise explanation. | Results are ordered by ascending rank and all displayed values come from validated database/API or ranking data. |
 
 ### 3.3 Search History CRUD
@@ -77,7 +79,7 @@ Search history is the user-facing CRUD resource used for the rubric demonstratio
 
 | ID | CRUD | Requirement | Acceptance criteria |
 |---|---|---|---|
-| FR-11 | Create | A completed search is persisted through the database API. | One history record contains the validated criteria, ranked result snapshot, ranking mode (`ai` or `fallback`), title, and UTC creation/update timestamps. Empty-candidate searches may also be stored with an empty snapshot. |
+| FR-11 | Create | A completed search is persisted through the database API. | One history record contains the validated criteria, ranked result snapshot, ranking mode (`programmatic`, `ai`, or `fallback`), title, and UTC creation/update timestamps. Empty-candidate searches may also be stored with an empty snapshot. |
 | FR-12 | Read | The traveller can list and reopen persisted searches. | History is ordered newest first; reopening renders the stored snapshot and never calls Ollama again. |
 | FR-13 | Update | The traveller can rename a search. | A title trimmed to 1-80 characters is persisted; invalid titles return `400`; missing records return `404`; the updated title appears without a full-page reload. |
 | FR-14 | Delete | The traveller can delete a search. | The user is asked to confirm; deletion removes the record; repeated deletion returns `404`; the item disappears from the interface. |
@@ -95,7 +97,7 @@ Search history is the user-facing CRUD resource used for the rubric demonstratio
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
 | FR-18 | The feature is reachable from the unified home page and uses the shared theme. | The home-page link opens the feature in the integrated Compose application; shared typography, colours, spacing, and controls are visibly reused. |
-| FR-19 | All three assigned services and Ollama run in the one shared Compose application. | `docker compose up --build` starts healthy frontend, backend, database, and Ollama services; service-to-service URLs use Compose DNS names rather than `localhost`; Compose checks each configured model tag and pulls it only when missing from the persistent Ollama volume. |
+| FR-19 | All three assigned services use the one shared Ollama runtime in the shared Compose application. | `docker compose up --build` starts healthy frontend, backend, database, and shared Ollama services; every AI consumer uses `http://ollama:11434` through Compose DNS; one shared setup job checks configured model tags and pulls only missing models into the persistent Ollama volume. |
 | FR-20 | The frontend communicates only with the backend/API service. | Browser/network evidence and source review show no direct frontend call to the database API or Ollama. |
 
 ### 3.6 Two-Model Development Agentic Loop
@@ -191,7 +193,7 @@ All API errors must use:
 | `guests` | Integer, 1-20. |
 | `min_price`, `max_price` | Decimal, 0-100000; minimum not greater than maximum. |
 | `preferences` | String, 0-500 characters. |
-| `ranking_mode` | Enum-like value: `ai` or `fallback`. |
+| `ranking_mode` | Enum-like value: `programmatic`, `ai`, or `fallback`. |
 | `results_json` | Valid JSON array containing the immutable ranked-result snapshot. |
 | `created_at`, `updated_at` | Required UTC timestamps. |
 
@@ -207,7 +209,7 @@ At least 10 records must exist in every table used in the submitted demonstratio
 | NFR-04 | Accessibility | Search, history, dialogs, notices, and results are keyboard operable; controls have programmatic labels; focus is visible; status changes use an appropriate live region; images have meaningful or empty alt text. |
 | NFR-05 | Responsive UI | At viewport widths of 320px, 768px, and 1280px, all controls and results remain usable without horizontal page scrolling. |
 | NFR-06 | Security | Secrets are supplied by environment variables and excluded from source control and logs. User input is validated server-side, rendered as text rather than trusted HTML, and never interpolated into SQL. |
-| NFR-07 | Privacy | The feature requires no account or personal identity data. Free-text preferences are stored because history requires them; the UI states this and deletion removes the whole history record. |
+| NFR-07 | Privacy | The feature requires no account or personal identity data. Free-text preferences are requested and stored only for AI-selected searches; the UI states that saved history retains them and deletion removes the whole history record. |
 | NFR-08 | Observability | Every search has a correlation ID across backend logs. Logs identify stage, outcome, duration, candidate count, ranking mode, and dependency failure category without logging secrets or full preference text. |
 | NFR-09 | Maintainability | NuGet and npm dependencies use committed lock/restore metadata; TypeScript strict mode and nullable C# reference types are enabled; configuration is environment-driven; public API payloads use explicit DTOs and are covered by automated tests. |
 | NFR-10 | Container health | Each service has a health check. A service reports healthy only when it can perform its own responsibility; database health includes opening SQLite. |
@@ -240,7 +242,7 @@ The model is advisory. The backend, not the model, owns validation, fallback, pe
 | EV-06 | Multiple finalised loop records showing use throughout implementation, including pre-test and post-test evidence. |
 | EV-07 | `docker compose up --build` evidence showing all feature services and the shared AI service healthy. |
 | EV-08 | Successful `student-1.yml` GitHub Actions run that builds and validates all three assigned services. |
-| EV-09 | Screenshots of the unified home page, search form, AI-ranked results, fallback notice, history CRUD, and shared visual theme. |
+| EV-09 | Screenshots of the unified home page, search form with AI opt-in, programmatic results, AI-ranked results, fallback notice, history CRUD, and shared visual theme. |
 | EV-10 | Architecture diagrams for the individual services, integrated Release 0 app, Docker Compose deployment, DevOps pipeline, and agentic loop. |
 | EV-11 | Prompt log, reusable prompt assets, AI review record, commit log, contribution log, known issues, attendance checkpoints, and demonstration video URL. |
 
@@ -250,7 +252,7 @@ The model is advisory. The backend, not the model, owns validation, fallback, pe
 |---|---|
 | Project Setup | Correct standard folder placement, populated tables, shared home/theme, Dockerfiles, Compose wiring, Ollama configuration, and workflow. |
 | Service Implementation | Independently containerised Vue frontend, ASP.NET Core backend, and ASP.NET Core/EF Core/SQLite database API communicate over HTTP and expose health checks. |
-| AI-Mode Integration | A frontend-triggered request reaches Ollama through the backend and produces visible recommendations. |
+| AI-Mode Integration | An explicitly opted-in frontend request reaches Ollama through the backend and produces visible recommendations; the default request remains programmatic. |
 | Agentic AI Workflow | A terminal-runnable development loop uses distinct local implementer and reviewer models and records Plan, Act, Observe, Adapt, validation, and human decisions. |
 | Prompt Engineering and Context | Versioned runtime prompt, development prompts, prompt log, context file, and validation/review records are maintained. |
 | DevOps and GitHub Actions | `student-1.yml` installs pinned dependencies, runs tests, and validates all assigned container builds. |

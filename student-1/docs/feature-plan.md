@@ -5,8 +5,8 @@
 Build an integrated accommodation recommender where a traveller:
 
 1. submits destination, dates, guests, budget, and preferences;
-2. receives explainable accommodation rankings from one backend-controlled Ollama model;
-3. still receives deterministic results when Ollama fails;
+2. receives deterministic accommodation rankings by default;
+3. may opt in to explainable ranking from one backend-controlled Ollama model, with deterministic fallback if it fails;
 4. can reopen, rename, and delete saved searches.
 
 The feature is complete only when its Vue frontend, ASP.NET backend, ASP.NET database API, SQLite data, Ollama integration, shared navigation, Docker Compose configuration, and Student 1 CI work together.
@@ -35,7 +35,7 @@ Detailed contracts are in `requirements.md`. Work status and requirement mapping
 Boundary rules:
 
 - The frontend calls only the backend.
-- The backend calls the database API and Ollama.
+- The backend calls the database API and calls Ollama only for opted-in searches.
 - Only the database API opens SQLite.
 - The application uses one ranking model per request.
 - History stores an immutable ranked-result snapshot.
@@ -254,7 +254,7 @@ For each chunk:
 
 The .NET agentic-loop code is implemented. Complete this setup before the final report and video evidence.
 
-1. Compose checks the configured model tags and pulls only models missing from the persistent Ollama volume.
+1. Compose checks the configured model tags, pulls only models missing from the persistent Ollama volume, and preloads the application model before the backend starts.
 2. Copy `.env.example` to `.env` and confirm:
 
    ```text

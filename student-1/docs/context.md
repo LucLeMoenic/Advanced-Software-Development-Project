@@ -4,7 +4,7 @@ Read this compact handoff before implementation or review. Then read `requiremen
 
 ## Goal
 
-A traveller submits destination, dates, guest count, nightly budget, and free-text preferences. The feature ranks eligible accommodation records, explains the order, and lets the traveller reopen, rename, and delete persisted searches.
+A traveller submits destination, dates, guest count, and nightly budget. The feature ranks eligible accommodation records, optionally accepts free-text preferences for AI-selected ranking, explains the order, and lets the traveller reopen, rename, and delete persisted searches.
 
 Release 0 success means the feature works inside the integrated group application. Standalone services or documentation without working integration do not satisfy the brief.
 
@@ -14,12 +14,12 @@ Release 0 success means the feature works inside the integrated group applicatio
 - This feature uses Vue 3 + TypeScript for the frontend.
 - It uses ASP.NET Core Web API for the orchestration backend and database API.
 - The database API owns EF Core and SQLite.
-- The application calls exactly one configured accommodation-ranking LLM through its backend API.
+- Programmatic ranking is the application default. The traveller may opt in per search to one configured accommodation-ranking LLM through the backend API.
 - The separate development agentic loop uses two distinct approved open-source models hosted locally by Ollama:
   - implementer model: Plan and Act;
   - reviewer model: Observe;
   - Adapt: bounded revision plus an explicit human decision.
-- One Ollama runtime can host all required model tags. Multiple Ollama containers are unnecessary.
+- One shared Ollama runtime hosts all required model tags for every team microservice and the development loop. Consumers select a model tag but do not own an Ollama runtime.
 
 The application model may reuse one of the two installed model tags to minimise hardware and storage cost, but the implementer and reviewer configuration values must identify different model tags.
 
@@ -58,7 +58,7 @@ Shared .NET agentic-loop service in Docker Compose
 Boundary rules:
 
 - The frontend calls only the backend/API.
-- The backend validates input, retrieves cached candidates, optionally imports a previously unseen destination from LiteAPI through the database API, calls the one application model, validates output, applies fallback, and persists through the database API.
+- The backend validates input, retrieves cached candidates, optionally imports a previously unseen destination from LiteAPI through the database API, ranks deterministically, calls the one application model only when requested, validates AI output, applies fallback after AI failure, and persists through the database API.
 - Only the database service opens SQLite.
 - Services communicate synchronously over HTTP using Compose DNS names.
 - Configuration and secrets come from environment variables.
@@ -70,8 +70,8 @@ Boundary rules:
 1. Vue submits validated-looking criteria to the backend; the backend performs authoritative validation.
 2. The backend requests eligible active accommodations and destination-cache state from the database API.
 3. If the destination is uncached, the backend requests up to 10 LiteAPI sandbox rates, validates them, imports them through the database API, and repeats the eligible-candidate query.
-4. The backend sends eligible candidates to exactly one configured ranking model through Ollama.
-5. The backend validates the complete response or applies deterministic fallback.
+4. The backend uses deterministic programmatic ranking unless the traveller explicitly selected AI ranking.
+5. For opted-in searches, the backend sends eligible candidates to exactly one configured ranking model through Ollama, then validates the complete response or applies deterministic fallback.
 6. The backend persists an immutable search-result snapshot through the database API.
 7. Vue renders results, a provider-import notice when applicable, and history actions.
 
@@ -156,19 +156,24 @@ As of 2026-08-31:
 - The complete database suite passes 19/19 tests, and EF reports no pending model changes.
 - Chunk 4 backend orchestration now validates and normalises traveller searches before dependency calls, requests only eligible active candidates through the database API, ranks deterministically by budget-midpoint distance, price, and ID, persists completed searches, and exposes history list/reopen/rename/delete endpoints.
 - Database calls use a three-second timeout and distinguish unavailable dependencies (`503`) from unusable responses (`502`). Database payloads are validated before becoming public backend DTOs.
-- Chunk 5 application ranking now calls one configured Ollama model with a 12-second timeout and the versioned backend prompt, sends only validated criteria and eligible candidate fields, validates the complete ID/rank/reason response, restores display fields from trusted candidates, and falls back deterministically with a visible notice.
-- The backend suite passes 62/62 tests, including valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, prompt-injection-shaped data, timeout, connection, HTTP, incomplete-response failures, and the live LiteAPI response contract.
-- Chunk 6 traveller frontend now provides the labelled search form, client/backend field feedback, duplicate-submit prevention, loading/empty/AI/fallback/dependency states, ranked cards, and newest-first history reopen/rename/confirmed-delete behavior.
+- Chunk 5 application ranking now defaults to deterministic `programmatic` ranking and calls one configured Ollama model only after explicit traveller opt-in. The model path retains its 12-second timeout, versioned backend prompt, complete ID/rank/reason validation, trusted display-field restoration, and deterministic fallback with a visible notice.
+- The backend suite passes 67/67 tests, including programmatic Ollama bypass and database-response mapping, valid AI ranking, malformed/Markdown output, unknown/missing/duplicate/extra IDs, invalid ranks/reasons, sentence-format and word-count constraints, prompt-injection-shaped data, timeout, connection, HTTP, incomplete-response failures, and the live LiteAPI response contract.
+- Chunk 6 traveller frontend now provides the labelled search form with unchecked AI opt-in and an AI-only preferences field, client/backend field feedback, duplicate-submit prevention, loading/empty/programmatic/AI/fallback/dependency states, ranked cards, and newest-first history reopen/rename/confirmed-delete behavior.
 - `App.vue` coordinates three focused components for search input, history CRUD, and results. Live announcements, focus movement, visible focus, text-only interpolation, responsive breakpoints, and long-text containment are implemented.
-- The frontend suite passes 7/7 component tests and the strict TypeScript/Vite production build passes. Manual 320/768/1280px execution, integrated browser/API evidence, and screenshots remain open.
+- The frontend suite passes 8/8 component tests and the strict TypeScript/Vite production build passes. Manual 320/768/1280px execution and browser screenshots remain open.
 - The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
 - Real two-model Ollama execution records remain to be produced.
 - Chunk 7 shared integration is implemented: the unified Vue page links to `/accommodation/`, shared nginx proxies the feature and backend API without asset collisions, Compose health/dependency ordering passes, and the Student 1 workflow restores dependencies, runs all assigned tests, and builds the integrated images without live Ollama.
+- The unified entry page now uses the same blue/neutral tokens, typography, bordered panels, rounded feature cards, visible focus treatment, and responsive behavior as the accommodation interface.
 - Local integrated validation confirms the shared page, accommodation route/assets, API proxy, five health checks, and preservation of 12 search records across a database-container restart.
-- Live application-model execution evidence, diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
+- Live application-model execution is now confirmed: after removing the local WSL CPU cap, replacing generic Ollama JSON mode with an exact ranking-array schema, and compacting the unchanged allow-listed ranking input, cold Sydney and Tokyo searches returned five `ai`-ranked results through the frontend proxy within the 12-second model timeout. Accepted reasons are specific 5-10 word sentences containing supplied accommodation details.
+- Opt-in runtime behavior is confirmed through the rebuilt frontend proxy: an unchecked-equivalent Sydney request returned six `programmatic` results with no notice, while the same request with `useAi: true` returned six `ai` results with sentence-form reasons and no fallback notice.
+- On compatible Windows/NVIDIA machines, `scripts/start-student1.ps1` automatically includes `docker-compose.gpu.yml`; the current RTX 2000 Ada runtime offloads all model layers and reduced the previously failing Sydney search to 2.5 seconds. The main Compose file remains CPU-compatible.
+- Root Compose now has one long-running `ollama` service and one short-lived shared `ollama-model-setup` job. The setup job installs missing shared tags and preloads `APPLICATION_MODEL` for 30 minutes so the backend's 12-second request timeout is not consumed by a cold model load. Student 1 and the agentic loop both use `http://ollama:11434`; future team AI consumers use the same service and add required tags to `OLLAMA_MODELS`.
+- Diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
 
 The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
 
 ## Immediate Next Gate
 
-Run the Chunk 6 browser checklist against the populated Compose application and capture the ranking, history, and responsive evidence. Live-model evidence remains incomplete because the verified integrated request used deterministic fallback.
+Run the Chunk 6 browser checklist against the populated Compose application and capture ranking, history, and responsive screenshots. Preserve one forced-fallback example alongside the confirmed live AI success.

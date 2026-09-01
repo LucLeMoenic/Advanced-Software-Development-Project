@@ -10,6 +10,7 @@ interface SearchFormValues {
   minimumPrice: string
   maximumPrice: string
   preferences: string
+  useAi: boolean
 }
 
 const props = defineProps<{
@@ -30,6 +31,7 @@ const form = reactive<SearchFormValues>({
   minimumPrice: '',
   maximumPrice: '',
   preferences: '',
+  useAi: false,
 })
 
 const clientErrors = ref<Record<string, string>>({})
@@ -55,7 +57,8 @@ async function submitForm() {
     guests: Number(form.guests),
     minimumPrice: Number(form.minimumPrice),
     maximumPrice: Number(form.maximumPrice),
-    preferences: form.preferences.trim(),
+    preferences: form.useAi ? form.preferences.trim() : '',
+    useAi: form.useAi,
   })
 }
 
@@ -91,7 +94,7 @@ function validateForm(): Record<string, string> {
   ) {
     validationErrors.minimumPrice = 'Minimum price cannot exceed maximum price.'
   }
-  if (form.preferences.length > 500) {
+  if (form.useAi && form.preferences.length > 500) {
     validationErrors.preferences = 'Use 500 characters or fewer.'
   }
 
@@ -117,8 +120,8 @@ defineExpose({ focusFirstInvalid })
   <section class="panel search-panel" aria-labelledby="search-heading">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">Search accommodation</p>
-        <h2 id="search-heading">Where are you going?</h2>
+        <h2 id="search-heading">Find accommodation</h2>
+        <p class="section-copy">Enter the details of your stay. AI ranking is optional.</p>
       </div>
     </div>
 
@@ -237,7 +240,15 @@ defineExpose({ focusFirstInvalid })
         </div>
       </div>
 
-      <div class="field preferences-field">
+      <label class="ai-option" for="use-ai">
+        <input id="use-ai" v-model="form.useAi" name="useAi" type="checkbox">
+        <span>
+          <strong>Use AI recommendations</strong>
+          <small>Optional. Otherwise results use budget and price ranking.</small>
+        </span>
+      </label>
+
+      <div v-if="form.useAi" class="field preferences-field">
         <div class="label-row">
           <label for="preferences">Preferences</label>
           <span>{{ form.preferences.length }}/500</span>

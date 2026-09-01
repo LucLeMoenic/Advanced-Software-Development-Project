@@ -21,7 +21,7 @@ The example configuration references two unique local models:
 - `qwen2.5-coder:7b` for implementation;
 - `llama3.2:3b` for review and the accommodation application's single model.
 
-If either example model is missing, the `ollama-agentic-models` setup container downloads it before the agentic loop starts. Existing model data is reused.
+If a configured model is missing, the shared `ollama-model-setup` job downloads it before AI consumers start. The job also preloads `APPLICATION_MODEL` so the accommodation backend does not spend its request timeout loading a cold model. The agentic loop and application microservices all use the single `ollama` runtime and persistent model store.
 
 ## Run
 

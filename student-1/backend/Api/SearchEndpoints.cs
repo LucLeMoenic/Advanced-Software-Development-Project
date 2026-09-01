@@ -85,38 +85,43 @@ public static class SearchEndpoints
                 importedProviderData = imports.Count > 0;
             }
 
-            var rankingMode = "fallback";
+            var rankingMode = "programmatic";
             string? notice = null;
             IReadOnlyList<SearchResult> results = [];
 
             if (candidates.Count > 0)
             {
                 stage = "ranking";
-                try
-                {
-                    results = await ollama.RankAsync(
-                        search,
-                        candidates,
-                        context.RequestAborted);
-                    rankingMode = "ai";
-                }
-                catch (OllamaRankingException exception)
-                {
-                    results = DeterministicRanker.Rank(
-                        candidates,
-                        search.MinimumPrice,
-                        search.MaximumPrice);
-                    notice = "AI ranking was unavailable, so deterministic fallback ranking was used.";
+                results = DeterministicRanker.Rank(
+                    candidates,
+                    search.MinimumPrice,
+                    search.MaximumPrice);
 
-                    logger.LogWarning(
-                        "Search {CorrelationId} stage {Stage} outcome {Outcome} continued in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}; failure category {FailureCategory}",
-                        context.TraceIdentifier,
-                        stage,
-                        "fallback",
-                        stopwatch.ElapsedMilliseconds,
-                        candidates.Count,
-                        rankingMode,
-                        exception.FailureCategory);
+                if (search.UseAi)
+                {
+                    try
+                    {
+                        results = await ollama.RankAsync(
+                            search,
+                            candidates,
+                            context.RequestAborted);
+                        rankingMode = "ai";
+                    }
+                    catch (OllamaRankingException exception)
+                    {
+                        rankingMode = "fallback";
+                        notice = "AI ranking was unavailable, so deterministic fallback ranking was used.";
+
+                        logger.LogWarning(
+                            "Search {CorrelationId} stage {Stage} outcome {Outcome} continued in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}; failure category {FailureCategory}",
+                            context.TraceIdentifier,
+                            stage,
+                            "fallback",
+                            stopwatch.ElapsedMilliseconds,
+                            candidates.Count,
+                            rankingMode,
+                            exception.FailureCategory);
+                    }
                 }
             }
 

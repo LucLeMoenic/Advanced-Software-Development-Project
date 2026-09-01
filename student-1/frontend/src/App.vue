@@ -39,6 +39,8 @@ async function submitSearch(search: SearchRequest) {
       statusMessage.value = 'No matching accommodation was found.'
     } else if (savedSearch.rankingMode === 'fallback') {
       statusMessage.value = `${savedSearch.results.length} fallback-ranked accommodations are ready.`
+    } else if (savedSearch.rankingMode === 'programmatic') {
+      statusMessage.value = `${savedSearch.results.length} programmatically ranked accommodations are ready.`
     } else {
       statusMessage.value = `${savedSearch.results.length} AI-ranked accommodations are ready.`
     }
@@ -102,14 +104,15 @@ async function focusError() {
 
 <template>
   <main class="page-shell">
+    <nav class="page-navigation" aria-label="Application navigation">
+      <a href="/">All features</a>
+    </nav>
+
     <header class="hero">
-      <div>
-        <p class="eyebrow">Plan a stay that fits</p>
-        <h1>Accommodation Recommender</h1>
-        <p class="hero-copy">
-          Search by destination, dates, guests, and budget to find your best matches.
-        </p>
-      </div>
+      <h1>Accommodation Recommender</h1>
+      <p class="hero-copy">
+        Compare stays by destination, dates, guests, and nightly budget.
+      </p>
     </header>
 
     <p class="sr-only" role="status" aria-live="polite">{{ statusMessage }}</p>
