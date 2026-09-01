@@ -1,0 +1,6 @@
+# Local SQLite file created by running the service outside Docker.
+storage/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
