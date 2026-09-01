@@ -19,7 +19,7 @@
   -->
   <header>
     <h1>Local Experience &amp; Attraction Recommender</h1>
-    <p class="tagline">Browse attractions or ask the AI for a suggestion.</p>
+    <p class="tagline">Browse and filter local attractions, restaurants, and activities.</p>
   </header>
 
   <main>
@@ -61,30 +61,6 @@
       <div id="attraction-list" class="card-grid" aria-live="polite">
         <p class="loading">Loading attractions...</p>
       </div>
-    </section>
-
-    <section id="recommend" aria-labelledby="recommend-heading">
-      <h2 id="recommend-heading">Ask the AI</h2>
-      <p>Tell us what you're interested in and we'll suggest something from the catalogue.</p>
-
-      <form
-        id="recommend-form"
-        hx-post="/api/recommend"
-        hx-swap="none"
-        hx-on::after-request="renderRecommendation(event)">
-        <label for="interest">Your interests</label>
-        <input
-          id="interest"
-          name="interest"
-          type="text"
-          placeholder="e.g. I like street art and casual Asian food"
-          required
-          minlength="3"
-          maxlength="200">
-        <button type="submit">Get Recommendation</button>
-      </form>
-
-      <div id="recommend-result" aria-live="polite"></div>
     </section>
   </main>
 

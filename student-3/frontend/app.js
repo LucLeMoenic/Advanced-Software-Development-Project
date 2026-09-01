@@ -8,10 +8,9 @@
  */
 
 /**
- * Attraction names/descriptions come from the CRUD API (any client can POST
- * one) and recommendation text comes from the LLM, so both are untrusted by
- * the time they reach the DOM. Always pass user- or model-supplied text
- * through this before interpolating it into innerHTML.
+ * Attraction names/descriptions come from the CRUD API, and any client can
+ * POST one, so treat them as untrusted by the time they reach the DOM.
+ * Always pass this text through here before interpolating it into innerHTML.
  */
 function escapeHtml(value) {
   const div = document.createElement('div');
@@ -74,26 +73,4 @@ function renderAttractions(event) {
 
   list.innerHTML = attractions.map(attractionCardHtml).join('');
   htmx.process(list);
-}
-
-function renderRecommendation(event) {
-  const box = document.getElementById('recommend-result');
-  const data = parseJsonResponse(event);
-
-  if (event.detail.xhr.status >= 400 || data === null) {
-    const message = (data && data.message) || 'Something went wrong, please try again.';
-    box.innerHTML = `<p class="error">${escapeHtml(message)}</p>`;
-    return;
-  }
-
-  const sourceLabel = {
-    ai: 'AI',
-    ai_retry: 'AI (retried)',
-    fallback: 'Templated fallback',
-  }[data.source] || data.source;
-
-  box.innerHTML = `
-    <p class="rec-source">Source: ${escapeHtml(sourceLabel)}</p>
-    <p class="rec-text">${escapeHtml(data.recommendation).replace(/\n/g, '<br>')}</p>
-  `;
 }
