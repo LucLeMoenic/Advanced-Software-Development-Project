@@ -32,17 +32,21 @@ const dateFormatter = new Intl.DateTimeFormat('en-AU', {
 
 function rankingLabel(mode: SearchSummary['rankingMode']) {
   if (mode === 'ai') {
-    return 'AI'
+    return 'AI-assisted'
   }
   if (mode === 'programmatic') {
-    return 'Programmatic'
+    return 'Budget match'
   }
-  return 'Fallback'
+  return 'AI unavailable'
 }
 
 onMounted(loadHistory)
 
 async function loadHistory() {
+  loading.value = true
+  loadError.value = ''
+  emit('status', 'Loading saved searches.')
+
   try {
     const loadedHistory = await searchesApi.list()
     history.value = mergeNewestFirst(loadedHistory, history.value)
@@ -197,22 +201,36 @@ defineExpose({ addSearch })
 </script>
 
 <template>
-  <aside ref="panel" class="panel history-panel" aria-labelledby="history-heading">
+  <aside
+    ref="panel"
+    class="history-panel"
+    aria-labelledby="history-heading"
+    :aria-busy="loading"
+  >
     <div class="section-heading">
       <div>
+        <p class="section-label">Your activity</p>
         <h2 id="history-heading" tabindex="-1">Saved searches</h2>
-        <p class="section-copy">Reopen a previous result without running the ranking again.</p>
+        <p class="section-copy">Open a stored result without ranking it again.</p>
       </div>
-      <span class="count-badge">{{ history.length }} saved</span>
+      <span class="count-label">{{ history.length }}</span>
     </div>
 
-    <p v-if="loading" class="muted">Loading search history...</p>
-    <div v-else-if="loadError" class="notice notice-error" role="alert">
-      {{ loadError }}
+    <div v-if="loading" class="history-loading" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
     </div>
-    <p v-else-if="history.length === 0" class="empty-copy">
-      Completed searches will appear here.
-    </p>
+    <div v-else-if="loadError" class="notice notice-error" role="alert">
+      <span>{{ loadError }}</span>
+      <button class="button button-small button-secondary" type="button" @click="loadHistory">
+        Try again
+      </button>
+    </div>
+    <div v-else-if="history.length === 0" class="history-empty">
+      <strong>No saved searches yet</strong>
+      <p>Your completed trips will appear here.</p>
+    </div>
 
     <ol v-else class="history-list">
       <li v-for="search in history" :key="search.id" class="history-item">
@@ -245,12 +263,14 @@ defineExpose({ addSearch })
         <template v-else>
           <div class="history-title-row">
             <strong>{{ search.title }}</strong>
-            <span :class="['mode-badge', `mode-${search.rankingMode}`]">
+            <span :class="['mode-label', `mode-${search.rankingMode}`]">
               {{ rankingLabel(search.rankingMode) }}
             </span>
           </div>
-          <p>{{ formatDate(search.checkIn) }} - {{ formatDate(search.checkOut) }}</p>
-          <p>{{ search.destination }} · {{ search.guests }} guest{{ search.guests === 1 ? '' : 's' }}</p>
+          <p>
+            {{ search.destination }} · {{ formatDate(search.checkIn) }} to {{ formatDate(search.checkOut) }}
+            · {{ search.guests }} guest{{ search.guests === 1 ? '' : 's' }}
+          </p>
           <div class="history-actions">
             <button
               class="button button-small button-secondary"
@@ -261,7 +281,7 @@ defineExpose({ addSearch })
               Reopen
             </button>
             <button
-              class="button button-small button-quiet"
+              class="button-link"
               type="button"
               :data-rename-id="search.id"
               @click="startRename(search)"
@@ -269,7 +289,7 @@ defineExpose({ addSearch })
               Rename
             </button>
             <button
-              class="button button-small button-danger"
+              class="button-link button-link-danger"
               type="button"
               :disabled="activeId === search.id"
               @click="deleteSearch(search)"

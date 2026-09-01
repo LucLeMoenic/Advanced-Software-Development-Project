@@ -135,8 +135,8 @@ public sealed class OllamaRankingClient(
                     {
                         type = "string",
                         minLength = 1,
-                        maxLength = 100,
-                        pattern = "^[A-Z][^\\r\\n]{0,98}\\.$"
+                        maxLength = 160,
+                        pattern = "^[A-Z][^\\r\\n]{0,158}\\.$"
                     }
                 },
                 required = new[] { "accommodationId", "rank", "reason" },
@@ -169,9 +169,14 @@ public sealed class OllamaRankingClient(
         var candidateIds = candidatesById.Keys.ToHashSet();
         var entryIds = new HashSet<int>();
         var ranks = new HashSet<int>();
+        var reasons = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var entry in entries)
         {
+            var wordCount = entry?.Reason?.Split(
+                ' ',
+                StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+
             if (entry is null
                 || !candidateIds.Contains(entry.AccommodationId)
                 || !entryIds.Add(entry.AccommodationId)
@@ -182,10 +187,10 @@ public sealed class OllamaRankingClient(
                 || entry.Reason != entry.Reason.Trim()
                 || !char.IsUpper(entry.Reason[0])
                 || !entry.Reason.EndsWith('.')
-                || entry.Reason.Split(
-                    ' ',
-                    StringSplitOptions.RemoveEmptyEntries).Length > 10
-                || entry.Reason.Length > 200)
+                || wordCount < 8
+                || wordCount > 18
+                || entry.Reason.Length > 160
+                || !reasons.Add(entry.Reason))
             {
                 throw new OllamaResponseException();
             }

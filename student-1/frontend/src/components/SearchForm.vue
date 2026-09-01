@@ -120,161 +120,203 @@ defineExpose({ focusFirstInvalid })
   <section class="panel search-panel" aria-labelledby="search-heading">
     <div class="section-heading">
       <div>
-        <h2 id="search-heading">Find accommodation</h2>
-        <p class="section-copy">Enter the details of your stay. AI ranking is optional.</p>
+        <p class="section-label">New search</p>
+        <h2 id="search-heading">Where are you staying?</h2>
+        <p class="section-copy">Add the trip details, then choose how results should be ranked.</p>
       </div>
     </div>
 
     <form novalidate @submit.prevent="submitForm">
-      <div class="field destination-field">
-        <label for="destination">Destination</label>
-        <input
-          id="destination"
-          v-model="form.destination"
-          name="destination"
-          autocomplete="address-level2"
-          maxlength="100"
-          placeholder="e.g. Sydney"
-          :aria-invalid="Boolean(errors.destination)"
-          :aria-describedby="errors.destination ? 'destination-error' : undefined"
-        >
-        <span v-if="errors.destination" id="destination-error" class="field-error">
-          {{ errors.destination }}
-        </span>
-      </div>
-
-      <div class="form-grid">
-        <div class="field">
-          <label for="check-in">Check-in</label>
-          <input
-            id="check-in"
-            v-model="form.checkIn"
-            name="checkIn"
-            type="date"
-            :min="today"
-            :aria-invalid="Boolean(errors.checkIn)"
-            :aria-describedby="errors.checkIn ? 'check-in-error' : undefined"
-          >
-          <span v-if="errors.checkIn" id="check-in-error" class="field-error">
-            {{ errors.checkIn }}
-          </span>
-        </div>
-
-        <div class="field">
-          <label for="check-out">Check-out</label>
-          <input
-            id="check-out"
-            v-model="form.checkOut"
-            name="checkOut"
-            type="date"
-            :min="form.checkIn || today"
-            :aria-invalid="Boolean(errors.checkOut)"
-            :aria-describedby="errors.checkOut ? 'check-out-error' : undefined"
-          >
-          <span v-if="errors.checkOut" id="check-out-error" class="field-error">
-            {{ errors.checkOut }}
-          </span>
-        </div>
-
-        <div class="field">
-          <label for="guests">Guests</label>
-          <input
-            id="guests"
-            v-model="form.guests"
-            name="guests"
-            type="number"
-            min="1"
-            max="20"
-            step="1"
-            inputmode="numeric"
-            :aria-invalid="Boolean(errors.guests)"
-            :aria-describedby="errors.guests ? 'guests-error' : undefined"
-          >
-          <span v-if="errors.guests" id="guests-error" class="field-error">
-            {{ errors.guests }}
-          </span>
-        </div>
-
-        <div class="field">
-          <label for="minimum-price">Minimum nightly price</label>
-          <div class="money-input">
-            <span aria-hidden="true">$</span>
+      <fieldset class="form-section">
+        <legend>Stay details</legend>
+        <div class="stay-grid">
+          <div class="field destination-field">
+            <label for="destination">Destination</label>
             <input
-              id="minimum-price"
-              v-model="form.minimumPrice"
-              name="minimumPrice"
-              type="number"
-              min="0"
-              max="100000"
-              step="0.01"
-              inputmode="decimal"
-              :aria-invalid="Boolean(errors.minimumPrice)"
-              :aria-describedby="errors.minimumPrice ? 'minimum-price-error' : undefined"
+              id="destination"
+              v-model="form.destination"
+              name="destination"
+              autocomplete="address-level2"
+              maxlength="100"
+              placeholder="City or destination"
+              :aria-invalid="Boolean(errors.destination)"
+              :aria-describedby="errors.destination ? 'destination-error' : undefined"
             >
+            <span v-if="errors.destination" id="destination-error" class="field-error">
+              {{ errors.destination }}
+            </span>
           </div>
-          <span v-if="errors.minimumPrice" id="minimum-price-error" class="field-error">
-            {{ errors.minimumPrice }}
-          </span>
-        </div>
 
-        <div class="field">
-          <label for="maximum-price">Maximum nightly price</label>
-          <div class="money-input">
-            <span aria-hidden="true">$</span>
+          <div class="field">
+            <label for="check-in">Check-in</label>
             <input
-              id="maximum-price"
-              v-model="form.maximumPrice"
-              name="maximumPrice"
-              type="number"
-              min="0"
-              max="100000"
-              step="0.01"
-              inputmode="decimal"
-              :aria-invalid="Boolean(errors.maximumPrice)"
-              :aria-describedby="errors.maximumPrice ? 'maximum-price-error' : undefined"
+              id="check-in"
+              v-model="form.checkIn"
+              name="checkIn"
+              type="date"
+              :min="today"
+              :aria-invalid="Boolean(errors.checkIn)"
+              :aria-describedby="errors.checkIn ? 'check-in-error' : undefined"
             >
+            <span v-if="errors.checkIn" id="check-in-error" class="field-error">
+              {{ errors.checkIn }}
+            </span>
           </div>
-          <span v-if="errors.maximumPrice" id="maximum-price-error" class="field-error">
-            {{ errors.maximumPrice }}
+
+          <div class="field">
+            <label for="check-out">Check-out</label>
+            <input
+              id="check-out"
+              v-model="form.checkOut"
+              name="checkOut"
+              type="date"
+              :min="form.checkIn || today"
+              :aria-invalid="Boolean(errors.checkOut)"
+              :aria-describedby="errors.checkOut ? 'check-out-error' : undefined"
+            >
+            <span v-if="errors.checkOut" id="check-out-error" class="field-error">
+              {{ errors.checkOut }}
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="guests">Guests</label>
+            <input
+              id="guests"
+              v-model="form.guests"
+              name="guests"
+              type="number"
+              min="1"
+              max="20"
+              step="1"
+              inputmode="numeric"
+              :aria-invalid="Boolean(errors.guests)"
+              :aria-describedby="errors.guests ? 'guests-error' : undefined"
+            >
+            <span v-if="errors.guests" id="guests-error" class="field-error">
+              {{ errors.guests }}
+            </span>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section budget-section">
+        <legend>Nightly budget</legend>
+        <div class="budget-grid">
+          <div class="field">
+            <label for="minimum-price">Minimum<span class="sr-only"> nightly price</span></label>
+            <div class="money-input">
+              <span aria-hidden="true">$</span>
+              <input
+                id="minimum-price"
+                v-model="form.minimumPrice"
+                name="minimumPrice"
+                type="number"
+                min="0"
+                max="100000"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="0"
+                :aria-invalid="Boolean(errors.minimumPrice)"
+                :aria-describedby="errors.minimumPrice ? 'minimum-price-error' : undefined"
+              >
+            </div>
+            <span v-if="errors.minimumPrice" id="minimum-price-error" class="field-error">
+              {{ errors.minimumPrice }}
+            </span>
+          </div>
+
+          <span class="budget-separator" aria-hidden="true">to</span>
+
+          <div class="field">
+            <label for="maximum-price">Maximum<span class="sr-only"> nightly price</span></label>
+            <div class="money-input">
+              <span aria-hidden="true">$</span>
+              <input
+                id="maximum-price"
+                v-model="form.maximumPrice"
+                name="maximumPrice"
+                type="number"
+                min="0"
+                max="100000"
+                step="0.01"
+                inputmode="decimal"
+                placeholder="500"
+                :aria-invalid="Boolean(errors.maximumPrice)"
+                :aria-describedby="errors.maximumPrice ? 'maximum-price-error' : undefined"
+              >
+            </div>
+            <span v-if="errors.maximumPrice" id="maximum-price-error" class="field-error">
+              {{ errors.maximumPrice }}
+            </span>
+          </div>
+          <span class="budget-suffix">AUD per night</span>
+        </div>
+      </fieldset>
+
+      <fieldset class="form-section ranking-section">
+        <legend>Ranking method</legend>
+        <div class="ranking-options">
+          <label class="ranking-option" for="standard-ranking">
+            <input
+              id="standard-ranking"
+              v-model="form.useAi"
+              name="rankingMethod"
+              type="radio"
+              :value="false"
+            >
+            <span>
+              <strong>Budget match</strong>
+              <small>Fast, predictable ranking based on budget and nightly price.</small>
+            </span>
+          </label>
+
+          <label class="ranking-option" for="use-ai">
+            <input
+              id="use-ai"
+              v-model="form.useAi"
+              name="rankingMethod"
+              type="radio"
+              :value="true"
+            >
+            <span>
+              <strong>AI-assisted match</strong>
+              <small>Uses your preferences to explain and order eligible stays.</small>
+            </span>
+          </label>
+        </div>
+
+        <div v-if="form.useAi" class="field preferences-field">
+          <div class="label-row">
+            <label for="preferences">What matters to you?</label>
+            <span>{{ form.preferences.length }}/500</span>
+          </div>
+          <textarea
+            id="preferences"
+            v-model="form.preferences"
+            name="preferences"
+            rows="3"
+            maxlength="500"
+            placeholder="For example: quiet at night, accessible entrance, close to public transport"
+            :aria-invalid="Boolean(errors.preferences)"
+            :aria-describedby="errors.preferences ? 'preferences-error preferences-help' : 'preferences-help'"
+          />
+          <span id="preferences-help" class="field-help">
+            Preferences are stored with this saved search and removed when the search is deleted.
+          </span>
+          <span v-if="errors.preferences" id="preferences-error" class="field-error">
+            {{ errors.preferences }}
           </span>
         </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <p>Completed searches are saved automatically.</p>
+        <button class="button button-primary submit-button" type="submit" :disabled="submitting">
+          <span v-if="submitting" class="spinner" aria-hidden="true"></span>
+          {{ submitting ? 'Finding stays...' : 'Show recommendations' }}
+        </button>
       </div>
-
-      <label class="ai-option" for="use-ai">
-        <input id="use-ai" v-model="form.useAi" name="useAi" type="checkbox">
-        <span>
-          <strong>Use AI recommendations</strong>
-          <small>Optional. Otherwise results use budget and price ranking.</small>
-        </span>
-      </label>
-
-      <div v-if="form.useAi" class="field preferences-field">
-        <div class="label-row">
-          <label for="preferences">Preferences</label>
-          <span>{{ form.preferences.length }}/500</span>
-        </div>
-        <textarea
-          id="preferences"
-          v-model="form.preferences"
-          name="preferences"
-          rows="4"
-          maxlength="500"
-          placeholder="e.g. Quiet room, accessible entrance, close to public transport"
-          :aria-invalid="Boolean(errors.preferences)"
-          :aria-describedby="errors.preferences ? 'preferences-error preferences-help' : 'preferences-help'"
-        />
-        <span id="preferences-help" class="field-help">
-          Preferences are saved with search history. Delete the search to remove them.
-        </span>
-        <span v-if="errors.preferences" id="preferences-error" class="field-error">
-          {{ errors.preferences }}
-        </span>
-      </div>
-
-      <button class="button button-primary submit-button" type="submit" :disabled="submitting">
-        <span v-if="submitting" class="spinner" aria-hidden="true"></span>
-        {{ submitting ? 'Finding stays...' : 'Find accommodation' }}
-      </button>
     </form>
   </section>
 </template>

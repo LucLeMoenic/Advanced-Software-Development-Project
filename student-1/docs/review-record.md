@@ -1,5 +1,25 @@
 # Review Record
 
+## 2026-09-01 - AI Ranking Explanation Quality Review
+
+**Scope:** Application ranking prompt, structured Ollama output schema, backend reason validation, and focused contract tests.
+
+**Finding:** The previous example and 5-10 word limit encouraged the model to restate a single feature, such as "offers metro access," without explaining why that feature helps the traveller. The validator also accepted very short reasons and identical explanations for different accommodations.
+
+**Resolution:** Reasons must now contain 8-18 words, explain the traveller benefit of one or two supplied facts, connect evidence to a stated preference when supported, and use a distinct fact or benefit for each candidate. The backend rejects reasons outside the word/character limits and rejects case-insensitive duplicates. The no-invention and untrusted-input rules remain unchanged.
+
+**Status:** Focused ranking-client tests cover valid benefit-led reasons, prompt instructions, short and overlong output, exact duplicates, malformed output, and the existing ID/rank/security contract.
+
+## 2026-09-01 - Accommodation Frontend Product Redesign Review
+
+**Scope:** Accommodation application shell, trip search form, ranking selection, recommendation results, saved-search CRUD, loading/empty/error states, responsive behavior, keyboard flow, and component coverage.
+
+**Findings:** The existing linear page made saved searches feel detached from the active task, compressed unrelated inputs into one dense grid, and exposed implementation language such as "programmatic" and "fallback" directly to travellers. The AI checkbox did not compare the two ranking choices clearly, the initial results area had no orientation state, and saved-search rows lost important destination context after rename. The redesign review also found weak budget accessible names, ineffective rank-one styling, silent history retries, non-focusing in-page links, and ambiguous rank semantics for screen readers.
+
+**Resolution:** Reframed the page as a search-first product workspace with one bounded search surface and one results/history surface. Grouped stay, budget, and ranking fields semantically; replaced the checkbox with explicit Budget match and AI-assisted match radio choices; added a purposeful initial state; restored destination metadata; and made results, explanations, modes, actions, notices, and history states visually consistent. Follow-up corrections added full accessible budget names, live retry announcements, usable focus targets, explicit screen-reader rank text, stronger focus contrast, and clearer separation of destructive actions.
+
+**Status:** The redesign preserves existing routes, API calls, payloads, validation, persistence, rename/delete behavior, focus movement, and backend ranking decisions. Automated frontend tests and the strict production build pass. Manual browser evidence at 320px, 768px, and 1280px remains open.
+
 ## 2026-09-01 - UI Simplification and Product Design Review
 
 **Scope:** Shared feature entry page and the accommodation search, result, status, and history interfaces at desktop, tablet, and mobile widths.

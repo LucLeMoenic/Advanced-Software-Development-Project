@@ -38,11 +38,11 @@ async function submitSearch(search: SearchRequest) {
     if (savedSearch.results.length === 0) {
       statusMessage.value = 'No matching accommodation was found.'
     } else if (savedSearch.rankingMode === 'fallback') {
-      statusMessage.value = `${savedSearch.results.length} fallback-ranked accommodations are ready.`
+      statusMessage.value = `${savedSearch.results.length} accommodations are ready using budget ranking because AI was unavailable.`
     } else if (savedSearch.rankingMode === 'programmatic') {
-      statusMessage.value = `${savedSearch.results.length} programmatically ranked accommodations are ready.`
+      statusMessage.value = `${savedSearch.results.length} budget-ranked accommodations are ready.`
     } else {
-      statusMessage.value = `${savedSearch.results.length} AI-ranked accommodations are ready.`
+      statusMessage.value = `${savedSearch.results.length} AI-assisted accommodations are ready.`
     }
 
     await focusResults()
@@ -103,15 +103,22 @@ async function focusError() {
 </script>
 
 <template>
-  <main class="page-shell">
-    <nav class="page-navigation" aria-label="Application navigation">
-      <a href="/">All features</a>
-    </nav>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a class="product-name" href="/accommodation/">Accommodation Recommender</a>
+      <nav class="page-navigation" aria-label="Application navigation">
+        <a href="/">All features</a>
+      </nav>
+    </div>
+  </header>
 
-    <header class="hero">
-      <h1>Accommodation Recommender</h1>
+  <main class="page-shell">
+    <header class="page-intro">
+      <p class="page-kicker">Plan and compare</p>
+      <h1>Find a stay that fits the trip</h1>
       <p class="hero-copy">
-        Compare stays by destination, dates, guests, and nightly budget.
+        Search by the details that matter, compare ranked options, and return to
+        saved results without running the search again.
       </p>
     </header>
 
@@ -136,19 +143,29 @@ async function focusError() {
       @invalid="statusMessage = 'Check the highlighted search fields.'"
     />
 
-    <SearchResults
-      v-if="currentSearch"
-      ref="searchResults"
-      :search="currentSearch"
-    />
+    <div class="workspace">
+      <SearchResults
+        v-if="currentSearch"
+        ref="searchResults"
+        :search="currentSearch"
+      />
+      <section v-else class="results-placeholder" aria-labelledby="results-placeholder-heading">
+        <p class="section-label">Recommendations</p>
+        <h2 id="results-placeholder-heading">Your matches will appear here</h2>
+        <p>
+          Complete the search above to compare eligible stays by price and fit.
+        </p>
+        <a class="text-link" href="#destination">Enter stay details</a>
+      </section>
 
-    <SearchHistory
-      ref="searchHistory"
-      @opened="showSearch"
-      @renamed="updateRenamedSearch"
-      @deleted="clearDeletedSearch"
-      @error="showError"
-      @status="statusMessage = $event"
-    />
+      <SearchHistory
+        ref="searchHistory"
+        @opened="showSearch"
+        @renamed="updateRenamedSearch"
+        @deleted="clearDeletedSearch"
+        @error="showError"
+        @status="statusMessage = $event"
+      />
+    </div>
   </main>
 </template>

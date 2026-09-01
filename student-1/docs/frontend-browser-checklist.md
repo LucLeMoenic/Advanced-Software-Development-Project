@@ -4,7 +4,7 @@ Use this checklist against the running Compose application. Record screenshots o
 
 ## Automated Baseline
 
-- [x] `npm --prefix student-1/frontend test` - 7/7 component tests pass.
+- [x] `npm --prefix student-1/frontend test` - 8/8 component tests pass.
 - [x] `npm --prefix student-1/frontend run build` - strict TypeScript check and Vite production build pass.
 - [x] `git diff --check` - no whitespace errors.
 
