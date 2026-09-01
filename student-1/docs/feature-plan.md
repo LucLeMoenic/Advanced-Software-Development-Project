@@ -79,7 +79,7 @@ Complete each chunk before starting the next. Do not add Amadeus, authentication
 - Enforce the field constraints from `requirements.md`.
 - Implement database API create, list/filter, get, replace, and delete endpoints.
 - Filter by destination, price, capacity, and active status.
-- Keep the catalogue empty by default. Mitchell will create at least 10 accommodations manually through the application once the traveller/admin flow is functional.
+- Keep the catalogue empty by default; populate the tracked demonstration database explicitly through the HTTP API rather than startup seed code.
 
 **Test**
 
@@ -91,10 +91,10 @@ Complete each chunk before starting the next. Do not add Amadeus, authentication
 **Done when**
 
 - Catalogue CRUD and filtering work through HTTP.
-- The API and schema are ready for Mitchell to create the required records manually.
+- The tracked demonstration database contains at least 10 valid accommodation records created through the HTTP API.
 - No frontend or backend code accesses SQLite directly.
 
-FR-16's minimum 10-record evidence remains open until those records are created. Automatic seed data is intentionally excluded by human decision.
+FR-16's minimum 10-record count is complete. Automatic runtime seed data remains intentionally excluded by human decision.
 
 ### Chunk 3 - Search History
 
@@ -123,7 +123,8 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 
 - Add explicit request, candidate, result, history, and error DTOs.
 - Validate and normalise every search field at the backend boundary.
-- Retrieve candidates only through the database API.
+- Retrieve cached candidates only through the database API.
+- If the destination has no cached records, request at most 10 LiteAPI sandbox rates, validate and import them through the database API, then repeat candidate filtering.
 - Implement deterministic ranking by budget-midpoint distance, nightly price, then accommodation ID.
 - Persist completed searches through the database API.
 - Expose frontend-facing search and history CRUD endpoints.
@@ -134,6 +135,7 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 - Every validation boundary in FR-02.
 - Invalid input causes no database or Ollama call.
 - Candidate-filter request construction.
+- LiteAPI request/response validation, import, cache hit, empty response, and dependency failures using test doubles.
 - Empty-candidate response.
 - Deterministic ordering.
 - Database timeout and malformed response.
@@ -142,7 +144,7 @@ FR-16's minimum 10-record evidence remains open until those records are created.
 **Done when**
 
 - Search, results, persistence, reopen, rename, and delete work end to end without Ollama.
-- Empty results and dependency failures return the required response shapes.
+- Empty results and database, provider, and Ollama dependency failures return the required response shapes.
 
 ### Chunk 5 - Application AI Ranking
 

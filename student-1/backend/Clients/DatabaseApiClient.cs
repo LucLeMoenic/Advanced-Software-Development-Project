@@ -12,6 +12,10 @@ public interface IDatabaseApiClient
         CandidateQuery query,
         CancellationToken cancellationToken);
 
+    Task ImportAccommodationAsync(
+        AccommodationImportRequest request,
+        CancellationToken cancellationToken);
+
     Task<SearchResponse> CreateSearchAsync(
         PersistSearchRequest request,
         CancellationToken cancellationToken);
@@ -49,6 +53,41 @@ public sealed class DatabaseApiClient(HttpClient client) : IDatabaseApiClient
             cancellationToken);
 
         return values.Select(value => ToCandidate(value, query)).ToArray();
+    }
+
+    public async Task ImportAccommodationAsync(
+        AccommodationImportRequest request,
+        CancellationToken cancellationToken)
+    {
+        using var message = new HttpRequestMessage(
+            HttpMethod.Post,
+            "/api/data/accommodations")
+        {
+            Content = JsonContent.Create(request, options: JsonOptions)
+        };
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await client.SendAsync(message, cancellationToken);
+        }
+        catch (TaskCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new DatabaseUnavailableException(exception);
+        }
+        catch (HttpRequestException exception)
+        {
+            throw new DatabaseUnavailableException(exception);
+        }
+
+        using (response)
+        {
+            if (response.StatusCode is not HttpStatusCode.Created
+                and not HttpStatusCode.Conflict)
+            {
+                throw new DatabaseResponseException();
+            }
+        }
     }
 
     public async Task<SearchResponse> CreateSearchAsync(

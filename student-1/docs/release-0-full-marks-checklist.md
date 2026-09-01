@@ -46,14 +46,14 @@ If a feature is not integrated, the brief states that it receives 0 marks.
 
 | Criterion | Required Mitchell evidence | Status | Evidence location |
 |---|---|---|---|
-| 1. Project Setup | Standard folder; three services; populated tables; Dockerfiles; shared route/theme; model config; workflow; Compose entries. | In progress | Standard folder, service projects, Dockerfiles, workflow, Compose entries, and 10 tracked Search records implemented; Accommodation records and shared route/theme integration remain |
-| 2. Service Implementation | Healthy Vue frontend, ASP.NET backend, and ASP.NET/EF Core database API containers communicating over HTTP. | In progress | Database catalogue and search-history APIs are implemented under `database/` through scoped repositories; 19/19 database tests pass; frontend-facing search and recommendation HTTP behaviour remains |
-| 3. AI-Mode Integration | Browser-triggered call through backend to exactly one configured application model, backend-owned ranking prompt, output validation, and visible result. | Not started | Pending |
+| 1. Project Setup | Standard folder; three services; populated tables; Dockerfiles; shared route/theme; model config; workflow; Compose entries. | In progress | Standard folder, service projects, Dockerfiles, workflow, Compose entries, shared route/theme integration, 10 international Search records, and 50 active Accommodation records are implemented; every trip has exactly five eligible catalogue rows and final evidence capture remains |
+| 2. Service Implementation | Healthy Vue frontend, ASP.NET backend, and ASP.NET/EF Core database API containers communicating over HTTP. | In progress | All three services and API layers are implemented; database tests pass 19/19, backend tests pass 62/62 including the corrected live provider contract, frontend tests pass 7/7, and the frontend production build passes; final integrated evidence remains |
+| 3. AI-Mode Integration | Browser-triggered call through backend to exactly one configured application model, backend-owned ranking prompt, output validation, and visible result. | In progress | Frontend submits through `/api/searches` and renders AI/fallback results; backend ranking prompt/client/validation tests pass; live browser-to-Ollama evidence pending |
 | 4. Agentic AI Workflow | Integrated .NET loop service, implementer Plan/Act, distinct reviewer Observe, bounded Adapt, pre/post evidence, human decision, exact local model tags, and records throughout development. | In progress | `ai-services/agentic-loop/` and Compose wiring exist; real model records pending |
 | 5. Prompt/Context Management | Implementer/reviewer prompts, prompt log, context, review record, allow-listed context, model outputs, and human decisions. | In progress | `ai-services/agentic-loop/prompts/`, `docs/context.md`, `docs/prompt-log.md`, `docs/review-record.md` |
 | 6. DevOps/GitHub Actions | Passing assigned workflow runs frontend/.NET/runner checks and builds three images. | In progress | `.github/workflows/student-1.yml` now defines frontend build, .NET tests, Compose validation, and three-image builds; passing GitHub Actions URL remains pending |
 | 7. Docker Compose | One stack with service DNS, health, shared Ollama/model setup, and SQLite persistence. | In progress | `docker-compose.yml` contains all three accommodation services, health ordering, service DNS configuration, and a bind mount for tracked `database/storage/accommodation.db`; full integrated stack evidence remains |
-| 8. Working Software | Browser search create, history read/rename/delete, persisted restart, AI success and fallback. | In progress | Database API create/list/get/rename/delete and immutable snapshot persistence are implemented and tested; backend and browser layers remain |
+| 8. Working Software | Browser search create, history read/rename/delete, persisted restart, AI success and fallback. | In progress | Vue search/results/history CRUD, a live LiteAPI sandbox import, 10 international synthetic trips, 50 active accommodations, exactly five matching rows and tailored reasons per trip, and database persistence are implemented; synthetic `ai` snapshots are not live-model evidence, so live AI success, manual browser CRUD, restart recapture, and screenshots remain |
 | 9. Technical Report | Required diagrams, test/CI/Compose evidence, screenshots, logs, limitations, commits, contributions, attendance. | Not started | Pending |
 | 10. Demonstration | Mitchell's rehearsed segment and final published group video URL. | Not started | Pending |
 
@@ -75,14 +75,14 @@ If a feature is not integrated, the brief states that it receives 0 marks.
 
 | Scenario | Status | Evidence location |
 |---|---|---|
-| Valid search produces one-model AI-ranked results | Not started | Pending |
-| Invalid search has field errors and no side effects | Not started | Pending |
-| No candidates skips the application model | Not started | Pending |
-| Model timeout/malformed output produces deterministic fallback | Not started | Pending |
-| History reopen does not rerun ranking | Not started | Pending |
-| Rename/delete work from Vue | Not started | Pending |
+| Valid search produces one-model AI-ranked results | In progress | Frontend rendering covered by `frontend/src/App.test.ts`; backend model contract covered by backend tests; live model/browser evidence pending |
+| Invalid search has field errors and no side effects | In progress | `frontend/src/App.test.ts` and backend validation tests pass; integrated screenshot pending |
+| No candidates skips the application model | In progress | Frontend empty state and backend no-candidate behavior are tested; integrated screenshot pending |
+| Model timeout/malformed output produces deterministic fallback | In progress | Frontend fallback notice and backend failure paths are tested; forced-fallback browser evidence pending |
+| History reopen does not rerun ranking | In progress | `frontend/src/App.test.ts` verifies GET reopen rather than POST; integrated browser evidence pending |
+| Rename/delete work from Vue | In progress | `frontend/src/App.test.ts` covers rename synchronization, confirmation, deletion, and focus; integrated browser evidence pending |
 | Restart preserves history | Not started | Pending |
-| Keyboard and 320/768/1280px checks pass | Not started | Pending |
+| Keyboard and 320/768/1280px checks pass | In progress | Focus/live-region component tests pass; repeatable manual checks are in `docs/frontend-browser-checklist.md`; viewport execution/screenshots pending |
 | Every table has at least 10 records | Not started | Pending |
 | Two distinct local models complete implement-review-adapt cycle | Not started | Pending |
 | Reviewer requests a correction and the final record shows the decision/validation | Not started | Pending |

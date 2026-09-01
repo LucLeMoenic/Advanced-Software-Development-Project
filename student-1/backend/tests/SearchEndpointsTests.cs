@@ -18,7 +18,8 @@ public sealed class SearchEndpointsTests
     {
         var database = new FakeDatabaseApiClient();
         var ollama = new FakeOllamaRankingClient();
-        using var factory = CreateFactory(database, ollama);
+        var liteApi = new FakeLiteApiClient();
+        using var factory = CreateFactory(database, ollama, liteApi);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync("/api/searches", request);
@@ -29,6 +30,7 @@ public sealed class SearchEndpointsTests
         Assert.Contains(field, error.Error.Fields.Keys);
         Assert.Equal(0, database.CallCount);
         Assert.Equal(0, ollama.CallCount);
+        Assert.Equal(0, liteApi.CallCount);
     }
 
     [Fact]
@@ -83,7 +85,8 @@ public sealed class SearchEndpointsTests
             ]
         };
         var ollama = new FakeOllamaRankingClient();
-        using var factory = CreateFactory(database, ollama);
+        var liteApi = new FakeLiteApiClient();
+        using var factory = CreateFactory(database, ollama, liteApi);
         using var client = factory.CreateClient();
 
         var response = await client.PostAsJsonAsync(
@@ -108,6 +111,58 @@ public sealed class SearchEndpointsTests
         Assert.Equal([1, 2, 3, 4], saved.Results.Select(result => result.Rank));
         Assert.Null(saved.Notice);
         Assert.Equal(1, ollama.CallCount);
+        Assert.Equal(0, liteApi.CallCount);
+    }
+
+    [Fact]
+    public async Task EmptyLocalCatalogueImportsLiteApiRatesBeforeRanking()
+    {
+        var database = new FakeDatabaseApiClient();
+        var liteApi = new FakeLiteApiClient
+        {
+            Imports =
+            [
+                Import("Provider Stay 1", 90m, 2),
+                Import("Provider Stay 2", 130m, 4)
+            ]
+        };
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama, liteApi);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
+        var saved = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(saved);
+        Assert.True(saved.ImportedProviderData);
+        Assert.Equal(2, database.ImportedAccommodations.Count);
+        Assert.Equal(1, liteApi.CallCount);
+        Assert.Equal(1, ollama.CallCount);
+        Assert.Equal(2, saved.Results.Count);
+    }
+
+    [Theory]
+    [InlineData(ProviderFailure.Unavailable, HttpStatusCode.ServiceUnavailable, "accommodation_provider_unavailable")]
+    [InlineData(ProviderFailure.InvalidResponse, HttpStatusCode.BadGateway, "accommodation_provider_response_error")]
+    public async Task LiteApiFailuresReturnExplicitErrors(
+        ProviderFailure failure,
+        HttpStatusCode expectedStatus,
+        string expectedCode)
+    {
+        var liteApi = new FakeLiteApiClient { Failure = failure };
+        using var factory = CreateFactory(
+            new FakeDatabaseApiClient(),
+            new FakeOllamaRankingClient(),
+            liteApi);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(expectedStatus, response.StatusCode);
+        Assert.NotNull(error);
+        Assert.Equal(expectedCode, error.Error.Code);
     }
 
     [Theory]
@@ -296,9 +351,27 @@ public sealed class SearchEndpointsTests
             "Within budget.");
     }
 
+    private static AccommodationImportRequest Import(
+        string name,
+        decimal price,
+        int maxGuests)
+    {
+        return new(
+            name,
+            "Gold Coast",
+            "Imported from LiteAPI.",
+            price,
+            maxGuests,
+            [],
+            null,
+            null,
+            true);
+    }
+
     private static WebApplicationFactory<Program> CreateFactory(
         FakeDatabaseApiClient database,
-        FakeOllamaRankingClient ollama)
+        FakeOllamaRankingClient ollama,
+        FakeLiteApiClient? liteApi = null)
     {
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
@@ -307,8 +380,11 @@ public sealed class SearchEndpointsTests
                 {
                     services.RemoveAll<IDatabaseApiClient>();
                     services.RemoveAll<IOllamaRankingClient>();
+                    services.RemoveAll<ILiteApiClient>();
                     services.AddSingleton<IDatabaseApiClient>(database);
                     services.AddSingleton<IOllamaRankingClient>(ollama);
+                    services.AddSingleton<ILiteApiClient>(
+                        liteApi ?? new FakeLiteApiClient());
                 });
             });
     }
@@ -325,6 +401,35 @@ public sealed class SearchEndpointsTests
         None,
         InvalidResponse,
         Unavailable
+    }
+
+    public enum ProviderFailure
+    {
+        None,
+        InvalidResponse,
+        Unavailable
+    }
+
+    private sealed class FakeLiteApiClient : ILiteApiClient
+    {
+        public IReadOnlyList<AccommodationImportRequest> Imports { get; init; } = [];
+        public ProviderFailure Failure { get; init; }
+        public int CallCount { get; private set; }
+
+        public Task<IReadOnlyList<AccommodationImportRequest>> SearchAsync(
+            ValidatedSearch search,
+            CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Failure switch
+            {
+                ProviderFailure.InvalidResponse =>
+                    throw new LiteApiResponseException(),
+                ProviderFailure.Unavailable =>
+                    throw new LiteApiUnavailableException("connection"),
+                _ => Task.FromResult(Imports)
+            };
+        }
     }
 
     private sealed class FakeOllamaRankingClient : IOllamaRankingClient
@@ -365,6 +470,7 @@ public sealed class SearchEndpointsTests
     private sealed class FakeDatabaseApiClient : IDatabaseApiClient
     {
         public IReadOnlyList<AccommodationCandidate> Candidates { get; init; } = [];
+        public List<AccommodationImportRequest> ImportedAccommodations { get; } = [];
         public List<SearchResponse> Searches { get; } = [];
         public CandidateQuery? LastCandidateQuery { get; private set; }
         public PersistSearchRequest? LastPersistRequest { get; private set; }
@@ -377,7 +483,41 @@ public sealed class SearchEndpointsTests
         {
             Called();
             LastCandidateQuery = query;
-            return Task.FromResult(Candidates);
+            if (Candidates.Count > 0)
+            {
+                return Task.FromResult(Candidates);
+            }
+
+            IReadOnlyList<AccommodationCandidate> imported = ImportedAccommodations
+                .Where(value =>
+                    value.Destination.Equals(
+                        query.Destination,
+                        StringComparison.OrdinalIgnoreCase)
+                    && value.NightlyPrice >= query.MinimumPrice
+                    && value.NightlyPrice <= query.MaximumPrice
+                    && value.MaxGuests >= query.Guests
+                    && value.IsActive)
+                .Select((value, index) => new AccommodationCandidate(
+                    index + 100,
+                    value.Name,
+                    value.Destination,
+                    value.Description,
+                    value.NightlyPrice,
+                    value.MaxGuests,
+                    value.Amenities,
+                    value.ImageUrl,
+                    value.BookingUrl))
+                .ToArray();
+            return Task.FromResult(imported);
+        }
+
+        public Task ImportAccommodationAsync(
+            AccommodationImportRequest request,
+            CancellationToken cancellationToken)
+        {
+            Called();
+            ImportedAccommodations.Add(request);
+            return Task.CompletedTask;
         }
 
         public Task<SearchResponse> CreateSearchAsync(

@@ -54,7 +54,13 @@ public sealed class OllamaRankingClient(
         {
             response = await client.PostAsJsonAsync(
                 "/api/generate",
-                new GenerateRequest(settings.Model, prompt, false, "json"),
+                new GenerateRequest(
+                    settings.Model,
+                    prompt,
+                    false,
+                    "json",
+                    new GenerateOptions(0, 700),
+                    "30m"),
                 JsonOptions,
                 cancellationToken);
         }
@@ -165,7 +171,13 @@ public sealed class OllamaRankingClient(
         string Model,
         string Prompt,
         bool Stream,
-        string Format);
+        string Format,
+        GenerateOptions Options,
+        [property: JsonPropertyName("keep_alive")] string KeepAlive);
+
+    private sealed record GenerateOptions(
+        double Temperature,
+        [property: JsonPropertyName("num_predict")] int NumPredict);
 
     private sealed record GenerateResponse(string? Response, bool? Done);
 

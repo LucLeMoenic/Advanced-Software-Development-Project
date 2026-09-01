@@ -3,10 +3,17 @@ services:
     build:
       context: ./shared/vue-frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5100:80"
     depends_on:
-      - ollama
+      student1-frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   student1-frontend:
     build:
@@ -32,6 +39,8 @@ services:
     environment:
       Services__DatabaseUrl: http://student1-database:8080
       Services__OllamaUrl: http://ollama:11434
+      Services__LiteApiUrl: https://api.liteapi.travel
+      LITEAPI_KEY: ${LITEAPI_KEY:-}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
       ASPNETCORE_HTTP_PORTS: 8080
     ports:
@@ -121,6 +130,7 @@ services:
         else
           ollama pull "$$MODEL"
         fi
+        ollama run "$$MODEL" "Return only OK." --keepalive 30m > /dev/null
     depends_on:
       ollama:
         condition: service_healthy

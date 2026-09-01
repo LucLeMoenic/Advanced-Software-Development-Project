@@ -6,6 +6,6 @@ Return JSON only, with no Markdown or commentary. The response must be a JSON ar
 
 - "accommodationId": an existing supplied integer candidate ID
 - "rank": a unique integer from 1 through the number of candidates
-- "reason": a concise string from 1 to 200 characters
+- "reason": a brief explanation of 3 to 8 words and no more than 60 characters
 
 Do not add, omit, or duplicate candidates. Do not invent facts. Base each reason only on the supplied criteria and candidate fields.

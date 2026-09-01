@@ -6,6 +6,9 @@ var databaseUrl = builder.Configuration["Services:DatabaseUrl"]
     ?? "http://localhost:5301";
 var ollamaUrl = builder.Configuration["Services:OllamaUrl"]
     ?? "http://localhost:11434";
+var liteApiUrl = builder.Configuration["Services:LiteApiUrl"]
+    ?? "https://api.liteapi.travel";
+var liteApiKey = builder.Configuration["LITEAPI_KEY"] ?? string.Empty;
 var applicationModel = builder.Configuration["APPLICATION_MODEL"]
     ?? "llama3.2:3b";
 var rankingPrompt = File.ReadAllText(Path.Combine(
@@ -15,6 +18,7 @@ var rankingPrompt = File.ReadAllText(Path.Combine(
 
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton(new OllamaRankingSettings(applicationModel, rankingPrompt));
+builder.Services.AddSingleton(new LiteApiSettings(liteApiKey));
 builder.Services
     .AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client =>
     {
@@ -27,6 +31,12 @@ builder.Services
         client.BaseAddress = new Uri(ollamaUrl);
         client.Timeout = TimeSpan.FromSeconds(12);
     });
+builder.Services
+    .AddHttpClient<ILiteApiClient, LiteApiClient>(client =>
+    {
+        client.BaseAddress = new Uri(liteApiUrl);
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
 
 var app = builder.Build();
 
@@ -37,7 +47,8 @@ app.MapGet("/", () => Results.Ok(new
     dependencies = new
     {
         database = databaseUrl,
-        ollama = ollamaUrl
+        ollama = ollamaUrl,
+        accommodationProvider = liteApiUrl
     }
 }));
 

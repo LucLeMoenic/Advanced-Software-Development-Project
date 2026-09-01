@@ -1,5 +1,25 @@
 # Review Record
 
+## 2026-08-31 - Chunk 7 Shared Integration and CI Review
+
+**Scope:** Shared Vue entry page, shared nginx boundary, root Compose, `student-1.yml`, root setup instructions, and current Chunk 6 worktree changes.
+
+**Goal:** Complete Chunk 7 on the current branch without overwriting the still-running Chunk 6 frontend work.
+
+### Findings
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The unified Vue page was still boilerplate and had no Accommodation Recommender link or `/accommodation` route. | Added the named feature entry and a shared nginx reverse-proxy route to the healthy Student 1 frontend. |
+| Required | The shared frontend had no health check or dependency ordering for the proxied feature. | Added `/health`, Compose health configuration, and a healthy Student 1 frontend dependency. |
+| Required | Student 1 CI built the frontend but did not run its component tests or explicit .NET restores. | Added frontend tests, explicit restores, `--no-restore` test execution, and shared integration image validation. |
+| Required | Root instructions described template infrastructure and omitted exact integrated model, test, health, persistence, and stop commands. | Replaced the stale setup section with commands matching the implemented Compose stack. |
+| Constraint | Chunk 6 had uncommitted changes in the Student 1 frontend and tracked database. | Left those files untouched and limited Chunk 7 edits to independent integration surfaces and required records. |
+
+### Status
+
+**Implementation verdict:** Chunk 7 code and documentation are complete. Local builds, tests, Compose validation, integrated route/assets/API checks, service health, and SQLite restart persistence pass. Manual browser demonstration and GitHub Actions run evidence remain pending.
+
 ## 2026-08-31 - Release 0 Documentation and AI Infrastructure Audit
 
 **Scope:** `Project_Specifications.md`, Release 0 brief, accommodation feature docs, feature README, three Dockerfiles, root Compose, unified home page, and `student-1.yml`.
@@ -348,3 +368,69 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** all 46 backend tests pass and `git diff --check` reports no whitespace errors.
 
 **Verdict:** implementation accepted. Live Ollama execution remains open evidence work; this review used deterministic test doubles and must not be cited as a genuine model run.
+
+## 2026-08-31 - Chunk 6 Traveller Frontend Review
+
+**Review type:** Copilot-simulated review. The local Ollama implementer and reviewer models were not run.
+
+**Scope:** `frontend/src/App.vue`, the typed frontend API boundary, search/history/results components, responsive styling, component tests, and FR-01/FR-03/FR-05/FR-10/FR-12 to FR-14/FR-20/NFR-04 to NFR-07 traceability.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Required | The first component split allowed the initial history request to overwrite a search completed while history was still loading. | Reconciled loaded and newly added summaries by ID and newest-first creation time; added a test that resolves the initial list after search creation. |
+| Required | Renaming a search updated history but left the currently displayed results heading stale. | Added a typed rename event to the coordinator and update the displayed snapshot when IDs match; the test now reopens, renames, and checks the result heading. |
+| Required | Entering, validating, saving, cancelling, and deleting history actions did not consistently move or restore keyboard focus. | Added focus movement into the rename input, local validation announcement/focus, restoration to Rename after save/cancel, and movement to the next action or history heading after deletion. |
+| Required | Valid long unbroken user/model text could overflow cards at the required 320px width. | Added minimum-width containment and `overflow-wrap: anywhere` to history and result text containers. |
+| Required | Initial tests did not cover the history race, rename synchronization, focus movement, or rename live announcements. | Expanded the suite from five to seven tests and added active-element and live-region assertions. Manual viewport execution remains an explicit evidence item because jsdom does not calculate layout. |
+| Accepted | `App.vue` now coordinates only global search state, errors, live status, and cross-component synchronization. | Kept `SearchForm`, `SearchHistory`, and `SearchResults` as the three component boundaries; no additional store, router, or UI dependency was introduced. |
+| Accepted | Browser data is rendered only through Vue interpolation and all network calls use relative backend `/api/searches` routes. | Kept the text-only rendering and frontend-to-backend boundary; no `v-html`, database URL, or Ollama URL exists in frontend source. |
+
+**Validation:** `npm --prefix student-1/frontend test` passes 7/7 tests; `npm --prefix student-1/frontend run build` passes strict TypeScript checking and the Vite production build; `git diff --check` passes.
+
+**Verdict:** implementation accepted after corrections. Manual keyboard walkthrough, 320/768/1280px layout execution, integrated API execution, and screenshots remain pending and are not claimed by this simulated review.
+
+## 2026-08-31 - LiteAPI Import and Ranking Review
+
+**Review type:** Copilot-simulated code review plus verification against the official LiteAPI v3 `/hotels/rates` OpenAPI documentation. No real LiteAPI credential or sandbox request was used.
+
+**Scope:** LiteAPI request/response contract, backend-only credential handling, destination cache decision, database-API import boundary, search orchestration, Ollama hand-off, frontend notice, Compose configuration, and deterministic tests.
+
+| Severity | Finding | Decision and resolution |
+|---|---|---|
+| Blocking | The initial client modelled `offerRetailRate` as one object, but the official response defines an array. A conforming sandbox response would fail deserialization. | Changed the wire contract to a price array, accept one usable AUD offer price, and updated the provider fixtures to match the official schema. |
+| Required | `cityName` was sent without the country code LiteAPI requires for that search method. | Replaced it with the documented `aiSearch` location method so the existing free-text destination contract remains valid without inventing a country field. |
+| Required | Response validation allowed up to 100 entries even though this integration requests and promises at most 10. | Enforced a maximum of 10 rate results and 10 hotel metadata records at the provider boundary. |
+| Required | Empty responses, duplicate hotel metadata, missing/multiple offer prices, rate limits, missing credentials, and import/cache orchestration needed explicit coverage. | Expanded the provider and endpoint suites; all 61 backend tests pass with deterministic HTTP/database/Ollama doubles. |
+| Accepted limitation | LiteAPI total-stay rates are converted to nightly catalogue prices and cached independently of dates. This can become stale for later date combinations. | Kept this intentionally for the non-production university demonstration requested by Mitchell and documented that imported data is not a live price guarantee. |
+| Accepted limitation | Imports are individual database API creates rather than one atomic provider batch. | Kept the existing CRUD API boundary to avoid an unrequested database protocol expansion. A mid-batch failure returns an explicit dependency error; production-grade transactional import remains out of Release 0 scope. |
+| Security action | A sandbox credential was disclosed in conversation. | The value was not used, logged, copied into commands, or stored in repository files. It must be revoked and replaced before real runtime validation; only the replacement belongs in ignored local `.env`. |
+
+**Validation:** backend tests pass 61/61; frontend tests pass 7/7; strict TypeScript/Vite build passes; Compose configuration and `git diff --check` pass.
+
+**Verdict:** implementation accepted for deterministic integration. A real LiteAPI sandbox request, SQLite import, Ollama ranking, browser result, and second-search cache hit remain pending and must not be claimed until a replacement key is configured.
+
+## 2026-08-31 - LiteAPI End-to-End Flow Understanding Review
+
+**Scope:** Current frontend search submission, backend validation and orchestration, LiteAPI import, database catalogue access, Ollama ranking, result persistence, and frontend rendering.
+
+| Severity | Finding | Status |
+|---|---|---|
+| Accepted | The implemented happy path matches the intended frontend -> backend -> catalogue/LiteAPI -> Ollama -> search snapshot flow. Search criteria are validated before dependency calls, provider data is validated before database import, model output is validated before use, and the saved snapshot includes ranking order and reasons. | Implemented with deterministic tests; live provider/model execution remains pending. |
+| Required | The import decision currently uses the eligible-candidate query result. Therefore a destination with cached records that are outside the requested budget or guest capacity is treated as uncached and triggers LiteAPI, contrary to FR-04a's rule that existing destination data skips the provider. | Open. Add a destination-cache-state query or equivalent database API contract, test cached-but-ineligible searches, and call LiteAPI only when the destination itself is absent. |
+| Accepted limitation | Imported total-stay prices are converted to nightly catalogue prices and persist beyond the requested dates. | Intentionally retained for Release 0 demonstration data; not a live availability or price guarantee. |
+| Evidence gap | The repository proves the flow with fakes but not with a replacement LiteAPI key, live SQLite import, live Ollama ranking, browser rendering, and a second request demonstrating the cache hit. | Open. |
+
+**Verdict:** The core integration is substantially implemented and connected. Correct the cache-state decision before claiming exact FR-04a compliance, then collect the live end-to-end evidence.
+
+## 2026-08-31 - Live LiteAPI Contract Correction
+
+**Scope:** The browser-reported `accommodation_provider_response_error`, correlated backend request, live sandbox response structure, provider request options, `LiteApiClient`, and its contract tests.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The live rate response omitted `hotels` because the request did not set `includeHotelData`. The client requires that metadata to create catalogue records, so every otherwise successful provider response was rejected. | Added `includeHotelData: true` to the rate request. |
+| Blocking | The live sandbox returns each room type's `offerRetailRate` as one money object, while the implemented DTO expected an array. | Corrected the DTO and mapping to consume the observed object shape and updated provider fixtures. |
+| Required | The live response included one rate without corresponding hotel metadata alongside eight usable results. The client rejected the entire response instead of discarding only the incomplete entry. | Missing metadata entries are now skipped; structurally invalid IDs and batches with no usable imports remain rejected. |
+| Correction | The earlier simulated review incorrectly concluded that the provider contract required an `offerRetailRate` array. | Superseded that conclusion with evidence from the live sandbox response. |
+
+**Verdict:** The cause of the live `502` is corrected in source. Rebuild the backend image and repeat the browser search to confirm provider import, Ollama ranking, persistence, and cache behavior.
