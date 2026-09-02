@@ -553,9 +553,10 @@ public static partial class AgenticLoopApplication
             """;
 
         Console.WriteLine("[OBSERVE] Reviewer model assessing proposal.");
-        var review = await modelClient.GenerateAsync(reviewerModel, reviewPrompt);
-        Console.WriteLine(review);
-        var verdict = ParseVerdict(review);
+        var (review, verdict) = await GenerateValidReviewAsync(
+            modelClient,
+            reviewerModel,
+            reviewPrompt);
 
         string? adaptedProposal = null;
         string? adaptedProposalReview = null;
@@ -609,11 +610,10 @@ public static partial class AgenticLoopApplication
                 """;
 
             Console.WriteLine("[OBSERVE] Reviewer model assessing the adapted proposal.");
-            adaptedProposalReview = await modelClient.GenerateAsync(
+            (adaptedProposalReview, finalReviewerVerdict) = await GenerateValidReviewAsync(
+                modelClient,
                 reviewerModel,
                 finalReviewPrompt);
-            Console.WriteLine(adaptedProposalReview);
-            finalReviewerVerdict = ParseVerdict(adaptedProposalReview);
         }
         else
         {
@@ -655,6 +655,36 @@ public static partial class AgenticLoopApplication
             HumanNotes: null,
             PostTest: null,
             FinalisedAt: null);
+    }
+
+    private static async Task<(string Review, string Verdict)> GenerateValidReviewAsync(
+        IModelClient modelClient,
+        string reviewerModel,
+        string reviewPrompt)
+    {
+        var review = await modelClient.GenerateAsync(reviewerModel, reviewPrompt);
+        Console.WriteLine(review);
+        try
+        {
+            return (review, ParseVerdict(review));
+        }
+        catch (LoopException exception)
+        {
+            Console.WriteLine("[OBSERVE] Reviewer output was malformed; requesting one format correction.");
+            var correctedReview = await modelClient.GenerateAsync(
+                reviewerModel,
+                $"""
+                {reviewPrompt}
+
+                FORMAT_CORRECTION_REQUIRED
+                The previous response failed strict validation: {exception.Message}
+                Return a fresh review using exactly the required [OBSERVE] structure.
+                Select one verdict only and do not echo the format template or verdict alternatives.
+                END_FORMAT_CORRECTION_REQUIRED
+                """);
+            Console.WriteLine(correctedReview);
+            return (correctedReview, ParseVerdict(correctedReview));
+        }
     }
 
     private static bool IsInsideWorkspace(string workspace, string candidate)
