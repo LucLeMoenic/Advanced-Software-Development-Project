@@ -124,9 +124,6 @@ function renderTrip(trip) {
   const stops = trip.stops || [];
   renderMetrics(trip, stops);
   renderDays(stops);
-  const trace = trip.agentTrace || [];
-  document.querySelector("#agent-trace").hidden = trace.length === 0;
-  document.querySelector("#trace-list").innerHTML = trace.map((item) => `<li><span class="trace-stage">${escapeHtml(item.stage)}:</span> ${escapeHtml(item.outcome)}</li>`).join("");
 }
 
 function renderMetrics(trip, stops) {

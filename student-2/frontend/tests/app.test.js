@@ -89,7 +89,6 @@ describe("Itinerary Planner", () => {
     await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toBe("Osaka itinerary"));
     expect(document.querySelector("#days").textContent).toContain("Market walk");
     expect(document.querySelector("#days").textContent).toContain("Museum visit");
-    expect(document.querySelector("#trace-list").textContent).toContain("Adapt");
     expect(document.querySelector("#metric-duration").textContent).toBe("2 days");
     expect(document.querySelector("#metric-stops").textContent).toBe("2");
     expect(document.querySelector("#metric-budget").textContent).toBe("AUD 750");
