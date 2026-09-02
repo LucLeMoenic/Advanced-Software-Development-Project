@@ -36,7 +36,6 @@ public static class SearchEndpoints
         {
             return readResult.Error;
         }
-        var randomValue = new Random();
 
         var validation = ValidateCreate(readResult.Value!);
         if (validation.Error is not null)
