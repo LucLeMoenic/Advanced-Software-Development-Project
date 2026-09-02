@@ -370,6 +370,26 @@ public sealed class AgenticLoopTests
     }
 
     [Fact]
+    public async Task ExecuteLoopAsync_RetriesOneMalformedReviewerResponse()
+    {
+        var client = new FakeModelClient(
+            [
+                ImplementerResponse("Proposal"),
+                "Verdict: ACCEPT",
+                ReviewerResponse("ACCEPT")
+            ]);
+
+        var record = await AgenticLoopApplication.ExecuteLoopAsync(
+            CreateExecutionInput(),
+            client);
+
+        Assert.Equal("ACCEPT", record.FinalReviewerVerdict);
+        Assert.Equal(3, client.Calls.Count);
+        Assert.Contains("FORMAT_CORRECTION_REQUIRED", client.Calls[2].Prompt);
+        Assert.Contains("exactly one [OBSERVE] section", client.Calls[2].Prompt);
+    }
+
+    [Fact]
     public async Task FinaliseRecordAsync_StoresHumanDecisionAndPostTestOnce()
     {
         var directory = CreateTemporaryDirectory();

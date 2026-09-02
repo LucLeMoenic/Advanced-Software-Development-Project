@@ -2,11 +2,14 @@
 
 ## Open Evidence and Environment Issues
 
-- The current Docker installation does not provide Docker Compose v2 or the legacy `docker-compose` binary. A manual seven-container topology is running, but a clean Compose execution still needs to be captured on a correctly configured machine.
 - No successful GitHub Actions run URL or screenshot has been recorded for `student-2.yml`.
 - No finalised shared Plan/Act/Observe/Adapt development-loop record exists for Student 2.
 - Integrated browser screenshots, responsive checks, keyboard walkthrough, persistence restart capture, and the showcase video are pending.
-- The selective commits are pushed on `LLM/release-0-itinerary-planner`; the latest Student 2 Actions run failed during backend test collection and the workflow correction still needs a successful remote run.
+- The current branch is `feature/student2-release0-improvements`. Its latest fixes are local and have not been pushed or validated by a remote workflow run.
+- Local Compose configuration, Student 2 service health, and backend-to-database HTTP integration pass. A clean-checkout run and durable report evidence remain pending.
+- The complete group Compose application still lacks backend/database implementations for Students 4 and 5; those services remain owned by their respective team members.
+- Tutor acceptance of the shared Vue entry point should be retained because the written brief refers to HTMX.
+- Live AI and fallback behavior pass locally, but their durable report evidence has not yet been assembled.
 
 ## Product Limitations
 

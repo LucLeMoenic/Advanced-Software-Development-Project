@@ -27,15 +27,15 @@ Deliver a containerised itinerary planner that generates and safely revises pers
 | 4. Safe persistence | Create and whole-trip regeneration use database-owned atomic operations. | Complete |
 | 5. Traveller frontend | Input, day view, saved trips, edit/regenerate/add/remove controls, and shared styling exist. | Complete |
 | 6. Focused automated tests | Frontend, backend, and database suites cover primary behavior and safety regressions. | Complete; broader edge coverage remains useful |
-| 7. Shared integration and CI | Home route, Compose services, and Student 2 workflow exist. | Implemented; clean Compose and Actions evidence pending |
+| 7. Shared integration and CI | Home route, Compose services, and Student 2 workflow exist. | Complete locally, including service startup and HTTP smoke checks; remote Actions evidence pending |
 | 8. Agentic workflow | Shared two-model loop has a finalised Student 2 record. | Not started |
 | 9. Report evidence | Diagrams, screenshots, execution records, contributions, limitations, and video references are assembled. | In progress |
 
 ## Next Gates
 
 1. Run the shared agentic loop against the Student 2 reliability or architecture changes and finalise the record after human review.
-2. Commit through a Student 2 feature branch and pull request.
+2. Review and commit the latest fixes on the Student 2 feature branch, then open a pull request.
 3. Capture a successful GitHub Actions run.
-4. Install/fix Docker Compose locally and capture a clean integrated startup rather than the manual topology.
+4. Capture a clean-checkout integrated Compose startup for durable report evidence.
 5. Complete the browser checklist and collect screenshots.
 6. Add report references, attendance evidence, and the published group showcase URL.

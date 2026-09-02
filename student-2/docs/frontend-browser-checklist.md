@@ -7,6 +7,7 @@ Run this against `http://localhost:5100/itinerary/` after a clean Compose startu
 - [ ] Open the shared home page on port 5100 and select Itinerary Planner.
 - [ ] Confirm the route remains under `/itinerary/` and the shared header/theme is visible.
 - [ ] Confirm browser requests use `/itinerary-api/` and never call the database or Ollama directly.
+- [ ] Filter saved trips by destination and traveller.
 
 ## Trip and AI Flow
 
@@ -20,13 +21,16 @@ Run this against `http://localhost:5100/itinerary/` after a clean Compose startu
 
 - [ ] Create a trip.
 - [ ] Read it from Saved trips.
+- [ ] Edit trip details and confirm the saved itinerary reflects them.
 - [ ] Edit an individual stop.
+- [ ] Duplicate an individual stop.
 - [ ] Add an individual stop.
 - [ ] Regenerate an individual stop.
 - [ ] Remove an individual stop after confirmation.
 - [ ] Regenerate the whole itinerary and verify replacement is complete.
 - [ ] Delete a trip after confirmation and verify it leaves Saved trips.
 - [ ] Restart the database/app stack and verify retained data remains.
+- [ ] Open the print preview and confirm only the selected itinerary is included.
 
 ## Accessibility and Responsive Layout
 

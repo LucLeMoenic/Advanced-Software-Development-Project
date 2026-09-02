@@ -108,6 +108,8 @@ docker compose up -d --build shared-frontend
 
 Open `http://localhost:5100` and select **Itinerary Planner**, or open `http://localhost:5100/itinerary/` directly. Ports `5102`, `5202`, and `5302` expose the individual services for diagnostics only.
 
+Student 2 requirements and current readiness evidence are indexed in [`student-2/docs/README.md`](student-2/docs/README.md).
+
 ## Shared Release 0 Agentic Loop
 
 The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the same shared Ollama runtime used by application microservices:

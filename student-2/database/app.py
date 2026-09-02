@@ -234,14 +234,24 @@ def create_app(database_path=None):
         if fields:
             return error("Check the trip details.", fields=fields)
         with closing(connect()) as connection:
+            existing = connection.execute("SELECT id FROM trips WHERE id = ?", (trip_id,)).fetchone()
+            if existing is None:
+                return error("Trip not found.", 404)
+            day_count = (date.fromisoformat(trip["endDate"]) - date.fromisoformat(trip["startDate"])).days + 1
+            latest_stop_day = connection.execute(
+                "SELECT MAX(day) FROM trip_stops WHERE trip_id = ?", (trip_id,)
+            ).fetchone()[0]
+            if latest_stop_day is not None and latest_stop_day > day_count:
+                return error(
+                    "Trip dates cannot exclude existing stops.",
+                    fields={"endDate": f"Trip must include existing stop day {latest_stop_day}."},
+                )
             cursor = connection.execute(
                 "UPDATE trips SET user_name=?,destination=?,start_date=?,end_date=?,budget=?,interests=?,updated_at=? WHERE id=?",
                 (trip["user"], trip["destination"], trip["startDate"], trip["endDate"], trip["budget"], trip["interests"], now(), trip_id),
             )
             connection.commit()
             row = connection.execute("SELECT * FROM trips WHERE id = ?", (trip_id,)).fetchone()
-        if cursor.rowcount == 0:
-            return error("Trip not found.", 404)
         return jsonify(trip_dict(row))
 
     @app.delete("/api/data/trips/<int:trip_id>")
@@ -259,16 +269,24 @@ def create_app(database_path=None):
         if fields:
             return error("Check the stop details.", fields=fields)
         timestamp = now()
-        try:
-            with closing(connect()) as connection:
-                cursor = connection.execute(
-                    "INSERT INTO trip_stops(trip_id,day,activity,notes,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
-                    (stop["tripId"], stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], timestamp, timestamp),
+        with closing(connect()) as connection:
+            trip_row = connection.execute(
+                "SELECT start_date, end_date FROM trips WHERE id = ?", (stop["tripId"],)
+            ).fetchone()
+            if trip_row is None:
+                return error("Trip not found.", 404)
+            day_count = (date.fromisoformat(trip_row["end_date"]) - date.fromisoformat(trip_row["start_date"])).days + 1
+            if stop["day"] > day_count:
+                return error(
+                    "Check the stop details.",
+                    fields={"day": f"Day must be within the {day_count}-day trip."},
                 )
-                connection.commit()
-                row = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (cursor.lastrowid,)).fetchone()
-        except sqlite3.IntegrityError:
-            return error("Trip not found.", 404)
+            cursor = connection.execute(
+                "INSERT INTO trip_stops(trip_id,day,activity,notes,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+                (stop["tripId"], stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], timestamp, timestamp),
+            )
+            connection.commit()
+            row = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (cursor.lastrowid,)).fetchone()
         return jsonify(stop_dict(row)), 201
 
     @app.put("/api/data/trips/<int:trip_id>/stops")
@@ -298,18 +316,32 @@ def create_app(database_path=None):
 
     @app.put("/api/data/stops/<int:stop_id>")
     def update_stop(stop_id):
-        fields, stop = validate_stop(request.get_json(silent=True) or {})
-        if fields:
-            return error("Check the stop details.", fields=fields)
         with closing(connect()) as connection:
+            existing = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (stop_id,)).fetchone()
+            if existing is None:
+                return error("Stop not found.", 404)
+            fields, stop = validate_stop({
+                **(request.get_json(silent=True) or {}),
+                "tripId": existing["trip_id"],
+                "sortOrder": existing["sort_order"],
+            })
+            if fields:
+                return error("Check the stop details.", fields=fields)
+            trip_row = connection.execute(
+                "SELECT start_date, end_date FROM trips WHERE id = ?", (existing["trip_id"],)
+            ).fetchone()
+            day_count = (date.fromisoformat(trip_row["end_date"]) - date.fromisoformat(trip_row["start_date"])).days + 1
+            if stop["day"] > day_count:
+                return error(
+                    "Check the stop details.",
+                    fields={"day": f"Day must be within the {day_count}-day trip."},
+                )
             cursor = connection.execute(
-                "UPDATE trip_stops SET trip_id=?,day=?,activity=?,notes=?,sort_order=?,updated_at=? WHERE id=?",
-                (stop["tripId"], stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], now(), stop_id),
+                "UPDATE trip_stops SET day=?,activity=?,notes=?,sort_order=?,updated_at=? WHERE id=?",
+                (stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], now(), stop_id),
             )
             connection.commit()
             row = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (stop_id,)).fetchone()
-        if cursor.rowcount == 0:
-            return error("Stop not found.", 404)
         return jsonify(stop_dict(row))
 
     @app.delete("/api/data/stops/<int:stop_id>")
