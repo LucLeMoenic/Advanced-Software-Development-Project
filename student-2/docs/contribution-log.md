@@ -9,8 +9,12 @@ Do not claim a commit, pull request, review, attendance event, or demonstration 
 | 2026-09-01 | Built the shared-style itinerary interface, saved trips, stop controls, local assets, and jsdom tests. | `student-2/frontend/` | Frontend tests pass 2/2 | `2abd328` |
 | 2026-09-01 | Integrated Student 2 with the shared home page, Compose topology, CI workflow, and root instructions. | Root Compose/README, shared frontend, `student-2.yml` | All Student 2 production images build | `af9b1b6` |
 | 2026-09-01 | Added Release 0 requirements, plans, risks, architecture/data designs, evidence checklists, and AI activity records. | `student-2/docs/`, Student 2 README, prompt/review logs | Documentation diagnostics pass | `19eba10` |
+| 2026-09-02 | Enforced itinerary data integrity and expanded focused regression coverage. | Student 2 backend/database and tests | Database 5/5 and backend 8/8 passed at commit time | `3cc43bf` |
+| 2026-09-02 | Expanded and reorganised the itinerary interface and interaction tests. | Student 2 frontend | Frontend 6/6 passed at commit time | `c9c61c8` |
+| 2026-09-02 | Reconciled Release 0 evidence documentation. | Student 2 documentation | Documentation review completed | `4294cd9` |
+| 2026-09-02 | Made stop ownership immutable, preserved stop ordering, cleared stale progress errors, constrained Ollama output, and added a Compose smoke stage. | Student 2 frontend/backend/database, tests, and `student-2.yml` | Frontend 6/6, backend 10/10, database 5/5; live AI and Compose smoke checks pass locally | Pending commit |
 
-Branch: `LLM/release-0-itinerary-planner`.
+Branch: `feature/student2-release0-improvements`.
 
 ## Human Evidence To Add
 

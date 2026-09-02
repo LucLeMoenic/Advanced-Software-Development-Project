@@ -6,7 +6,7 @@ The Itinerary Planner turns a traveller's destination, dates, total budget, and 
 
 ```text
 Browser
-  -> frontend (nginx, HTML/CSS/JavaScript + HTMX)
+	-> frontend (nginx, HTML/CSS/JavaScript)
   -> backend (Flask orchestration API)
 	  -> shared Ollama / llama3.2:3b
 	  -> database API (Flask)
@@ -49,4 +49,4 @@ cd student-2/database; python -m pytest tests; cd ../..
 docker compose build student2-database student2-backend student2-frontend
 ```
 
-CI installs Node 22 and Python 3.11 dependencies, runs the frontend Vitest suite and both pytest suites, validates Compose, and builds all Student 2 plus shared frontend images without requiring a live model in tests.
+CI installs Node 22 and Python 3.11 dependencies, runs the frontend Vitest suite and both pytest suites, validates Compose, builds all Student 2 plus shared frontend images, and smoke-tests the three Student 2 services without requiring a live model.

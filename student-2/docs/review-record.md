@@ -86,3 +86,64 @@ The four Criterion 8 implementation defects from this reassessment were resolved
 - Focused coverage now includes frontend trip update, stop edit/regeneration/removal, whole-itinerary regeneration, parent-relative stop days, trip shortening, missing-parent updates, and cascade deletion.
 
 Validation used disposable language-runtime containers because the host shell lacked Python/Vitest: database 5/5, backend 8/8, and frontend 4/4 tests pass. Criteria 4-7 and 9-10 evidence gaps remain open and are not resolved by these feature changes.
+
+## 2026-09-02 - Post-Implementation Release 0 Review
+
+**Scope:** Fresh review of Student 2 source, automated tests, current Compose runtime, shared integration, CI, and checked-in assessment evidence against the ten Release 0 criteria. This section supersedes earlier current-status claims but preserves them as historical review context.
+
+### Verified Findings
+
+| Severity | Criterion | Finding |
+|---|---|---|
+| Blocking evidence | 4, 5 | No finalised Student 2 two-model Plan/Act/Observe/Adapt record exists under `docs/agentic-loop-records/`. The application `agentTrace` is not development-loop evidence. |
+| Blocking evidence | 6, 9, 10 | No successful Student 2 Actions URL, technical report artifact, integrated screenshot set, attendance checkpoint, published showcase URL, or Student 2 video timestamp is checked in. |
+| High integration risk | 1, 7 | Student 2 is integrated and healthy, but the group Compose application still lacks complete backend/database sets for Students 4 and 5. The required integrated five-feature application is therefore not evidenced as complete. |
+| High compliance risk | 1 | The Release 0 brief explicitly requests a shared HTMX index, while the shared entry point is Vue. Student 2's README also still describes its frontend as HTMX although its implementation is plain HTML/CSS/JavaScript. Confirm tutor acceptance or align implementation and documentation. |
+| Required fix | 8 | Stop update accepts a client-supplied `tripId` and the database updates `trip_id`, allowing an existing stop to be moved to another valid trip. The requirement describes stop updates as day/activity/notes changes, so ownership should be derived from the stored stop and remain immutable. |
+| Required fix | 8 | The stop form submits `sortOrder: 99` for both create and edit. Editing an existing stop therefore silently moves it to the end instead of preserving its stored order. |
+| Required fix | 2, 8 | API failures open the custom error dialog but do not replace stale live-region text such as “Planning your itinerary...” or “Regenerating the itinerary...”, producing contradictory status feedback. |
+| Test gap | 2, 3, 7 | CI validates isolated mocked suites, Compose syntax, and image builds, but does not start the stack or smoke-test shared proxy, backend/database HTTP boundaries, persistence, or controlled Ollama success/fallback behavior. |
+| Documentation risk | 6, 7, 9 | `release-0-checklist.md`, `known-issues.md`, `contribution-log.md`, and earlier review sections contain stale or conflicting branch, Compose, test-count, push, and CI claims. Reconcile them before report use. |
+
+### Criterion Assessment
+
+| No. | Criterion | Repository and runtime support |
+|---:|---|---|
+| 1 | Project setup | Partial: Student 2 structure, seeded data, workflow, shared route, and model configuration exist; shared HTMX compliance and complete five-feature integration remain unresolved. |
+| 2 | Service implementation | Supported for Student 2 locally: frontend, backend, and database services are healthy and integrated; error-state consistency and CI integration coverage remain open. |
+| 3 | AI-Mode integration | Partial: approved-model Ollama invocation, strict output validation, and fallback exist in source; genuine frontend-triggered AI success evidence is absent. |
+| 4 | Agentic AI workflow | Unsupported by evidence: shared runner assets exist but no finalised Student 2 execution record exists. |
+| 5 | Prompt engineering and context | Partial: versioned application prompt and AI logs exist; assessed two-model context, review, adaptation, and human-decision record is absent. |
+| 6 | DevOps and GitHub Actions | Partial: the workflow runs all isolated suites, validates Compose, and builds images; no successful remote run is recorded and no runtime smoke test exists. |
+| 7 | Docker Compose integration | Partial: the live Student 2 path is healthy through shared Compose routing, but complete group integration and durable evidence are incomplete. |
+| 8 | Working software | Substantially implemented: browser/backend/database CRUD and generation workflows run, with stop ownership, ordering, and stale-error-state defects still requiring correction. |
+| 9 | Technical report | Partial: extensive feature documentation exists, but the report and required CI, AI, browser, attendance, and execution evidence are incomplete. |
+| 10 | Project demonstration | Unsupported by evidence: no published video, attendance record, or Student 2 timestamp is present. |
+
+### Validation Evidence
+
+- Frontend Vitest: 6/6 passed in Node 22.
+- Backend pytest: 8/8 passed in Python 3.11.
+- Database pytest: 5/5 passed in Python 3.11.
+- `docker compose config --quiet`: passed.
+- `shared-frontend`, `student2-frontend`, `student2-backend`, `student2-database`, and `ollama`: running and healthy.
+- Shared home, `/itinerary/`, and `/itinerary-api/trips`: HTTP 200.
+- Current persisted development data: 11 trips and 11 stops; fresh initialization source creates 10 trips and 20 stops.
+
+**Verdict:** Student 2 is functionally substantial and locally integrated, but not yet Release 0 submission-ready. Fix the three implementation defects, add an integrated CI smoke test, reconcile stale documentation, and capture the missing AI, agentic-loop, Actions, report, attendance, and showcase evidence.
+
+## 2026-09-02 - Required Fix Resolution
+
+**Scope:** Resolution of the implementation, CI, and documentation findings from the post-implementation review.
+
+| Previous finding | Resolution | Evidence |
+|---|---|---|
+| Client-controlled stop ownership | Resolved. Backend and database update handlers derive `tripId` from the stored stop and never update `trip_id`. | Backend ownership regression passes; database forged-`tripId` regression passes. |
+| Stop edits overwrite ordering | Resolved. The frontend preserves stored `sortOrder`, and both APIs derive it from the stored stop rather than trusting an update payload; new stops receive the next order within their selected day. | Frontend request-payload and API forged-order regressions pass. |
+| API errors leave stale progress text | Resolved. Opening an error dialog clears the live status region first. | Frontend failed-planning regression passes. |
+| CI has no runtime integration check | Resolved in workflow. CI starts the three Student 2 services without Ollama dependencies, waits for health, and verifies backend-to-database retrieval of at least 10 trips. | Exact Compose startup and smoke commands pass locally with 11 trips. Remote Actions evidence remains pending. |
+| Current documents conflict | Resolved for current-status documents. Historical review entries remain unchanged as dated evidence. | README, checklist, feature/risk plans, known issues, contribution log, and prompt log use the current branch and validation state. |
+
+Validation after the fixes: frontend 6/6, backend 10/10, database 5/5; Compose configuration valid; Student 2 frontend, backend, and database healthy; backend trip retrieval returned 11 records. A genuine shared-route request produced trip 14 in `ai` mode with two stops on each day; the preceding invalid model shape produced trip 13 in deterministic `fallback` mode with complete coverage.
+
+**Current verdict:** The identified Student 2 implementation defects and local AI execution requirement are resolved. Remaining blockers are evidence or team-owned work: a finalised human-controlled two-model loop record, a successful remote Actions run, clean-checkout/browser/report evidence, complete Student 4/5 service integration, and retained tutor acceptance of the shared Vue frontend.
