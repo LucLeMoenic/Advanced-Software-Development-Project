@@ -14,7 +14,7 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 | Area | Status | Current evidence |
 |---|---|---|
 | Feature implementation | Complete | Frontend, backend, database API, SQLite, CRUD, AI generation/fallback, atomic persistence, Dockerfiles, health endpoints, and shared routing exist. |
-| Automated validation | Complete | Frontend 2/2, backend 6/6, and database 3/3 tests pass; all three Student 2 production images build. |
+| Automated validation | Complete | Frontend 5/5, backend 8/8, and database 5/5 tests pass; all three Student 2 production images have previously built. |
 | Planning and design | Complete | Requirements, feature plan, risk plan, conceptual model, ERD, logical/physical design, and architecture diagrams exist under `student-2/docs/`. |
 | Integrated execution proof | Evidence pending / blocked | Seven services run through a manual Docker network, but clean Compose evidence is blocked because Compose v2 is unavailable locally. |
 | AI execution proof | Evidence pending | Source integration exists; a live frontend-triggered Ollama success and forced fallback still need capture. |
@@ -33,7 +33,7 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 | 5 | Prompt engineering and context | In progress | Application prompt, untrusted-data instructions, output constraints, prompt log, review record, and architecture boundaries exist. | Add the genuine loop record and explain selected context, model roles, validation, and human decision in the report. |
 | 6 | DevOps and GitHub Actions | Evidence pending | `student-2.yml` installs Node/Python dependencies, runs all three suites, validates Compose, and builds shared/Student 2 images. Five local proof commits exist. | Push the branch with approval, open a pull request, and capture a successful Actions run URL or screenshot. |
 | 7 | Docker Compose integration | Blocked locally | Root Compose defines Student 2 services, health ordering, shared frontend route, database storage, and one shared Ollama runtime. | Repair/install Compose v2, run clean `docker compose up --build`, and capture configuration, health, and routing evidence. |
-| 8 | Working software and CRUD | Evidence pending | Browser controls and backend/database endpoints implement create/read/update/delete for trips/stops plus add/remove/edit/regenerate actions. Atomic writes prevent partial itinerary replacement. | Complete and capture the integrated browser CRUD sequence and database restart persistence. |
+| 8 | Working software and CRUD | Evidence pending | Browser controls and backend/database endpoints implement create/read/update/delete for trips/stops plus add/remove/edit/regenerate actions. Parent-relative day validation and atomic writes protect itinerary consistency. | Complete and capture the integrated browser CRUD sequence and database restart persistence. |
 | 9 | Technical report | In progress | Requirements, planning, risk, data design, architecture, prompt/review records, contribution log, known issues, and evidence checklists exist. | Add test output, Actions/Compose evidence, screenshots, commit/PR references, attendance checkpoint, and final limitations. |
 | 10 | Project demonstration | Not started | Feature has a demonstrable browser workflow. | Rehearse Student 2 segment; show integrated CRUD, live AI, fallback, agentic loop, CI, and deployment; attend Week 6; publish and link the group video. |
 
@@ -46,6 +46,14 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 - [x] Trip and stop CRUD pass through frontend -> backend -> database API.
 - [x] Only the database service opens SQLite.
 - [x] Trip deletion cascades to stops.
+- [x] Trip details can be edited through the frontend.
+- [x] Saved trips can be filtered by destination or traveller.
+- [x] The selected itinerary shows duration, stop count, daily budget, and planned-day coverage.
+- [x] Stops can be duplicated through the existing create API.
+- [x] The selected itinerary has a print-friendly view.
+- [x] Stop days are constrained to the parent trip duration.
+- [x] Trip shortening cannot strand existing stops outside the date range.
+- [x] Missing stop-parent updates return a controlled response without data loss.
 - [x] Trip creation and whole-itinerary replacement are transactional.
 - [x] AI output requires exact fields, valid days, and complete day coverage.
 - [x] Full generation requires exactly two stops per day.
@@ -56,11 +64,11 @@ Reassessed against the Release 0 brief and project specification on 2026-09-01.
 - [x] Shared home page links to `/itinerary/`.
 - [x] Student 2 uses the shared visual system.
 - [x] Fresh database initialization creates 10 trips and 20 stops.
-- [x] Frontend tests pass 2/2.
-- [x] Backend tests pass 6/6.
-- [x] Database tests pass 3/3.
+- [x] Frontend tests pass 5/5.
+- [x] Backend tests pass 8/8.
+- [x] Database tests pass 5/5.
 - [x] Frontend, backend, and database production images build.
-- [ ] Broaden failure-path coverage beyond the focused Release 0 regression suite.
+- [x] Cover trip/stop updates, regeneration, parent-relative days, missing parents, and cascade deletion.
 
 ## Planning and Documentation Checklist
 
