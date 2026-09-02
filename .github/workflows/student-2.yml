@@ -58,3 +58,17 @@ jobs:
 
       - name: Build integrated Student 2 containers
         run: docker compose build shared-frontend student2-frontend student2-backend student2-database
+
+      - name: Start Student 2 services
+        run: docker compose up --detach --no-deps --wait student2-database student2-backend student2-frontend
+
+      - name: Smoke test Student 2 integration
+        run: |
+          curl --fail --silent http://localhost:5102/health
+          curl --fail --silent http://localhost:5202/health
+          curl --fail --silent http://localhost:5302/health
+          curl --fail --silent http://localhost:5202/api/trips | python -c "import json,sys; trips=json.load(sys.stdin); assert len(trips) >= 10"
+
+      - name: Stop Student 2 services
+        if: always()
+        run: docker compose down
