@@ -28,7 +28,12 @@ def test_seed_and_trip_stop_crud():
         stop["activity"] = "Osaka Castle"
         assert client.put(f"/api/data/stops/{stop['id']}", json=stop).get_json()["activity"] == "Osaka Castle"
         assert client.delete(f"/api/data/stops/{stop['id']}").status_code == 204
+        cascade_stop = client.post("/api/data/stops", json={
+            "tripId": trip["id"], "day": 2, "activity": "Dotonbori walk",
+            "notes": "Visit after sunset", "sortOrder": 0,
+        }).get_json()
         assert client.delete(f"/api/data/trips/{trip['id']}").status_code == 204
+        assert client.get(f"/api/data/stops/{cascade_stop['id']}").status_code == 404
 
 
 def test_validation_rejects_invalid_trip_without_writing():
@@ -68,3 +73,48 @@ def test_atomic_itinerary_create_and_replace_preserve_valid_state():
         })
         assert replacement.status_code == 200
         assert [stop["activity"] for stop in replacement.get_json()] == ["Castle visit"]
+
+
+def test_stop_days_and_trip_updates_respect_trip_duration():
+    with tempfile.NamedTemporaryFile(suffix=".db") as database:
+        client = create_app(database.name).test_client()
+        trip = client.post("/api/data/trips", json={
+            "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
+            "endDate": "2026-10-12", "budget": 1500, "interests": "food",
+        }).get_json()
+        stop = {
+            "tripId": trip["id"], "day": 3, "activity": "Museum visit",
+            "notes": "Book ahead", "sortOrder": 0,
+        }
+        assert client.post("/api/data/stops", json=stop).status_code == 201
+
+        outside_trip = client.post("/api/data/stops", json={**stop, "day": 4})
+        assert outside_trip.status_code == 400
+        assert "3-day trip" in outside_trip.get_json()["error"]["fields"]["day"]
+
+        shortened = client.put(f"/api/data/trips/{trip['id']}", json={
+            **trip, "endDate": "2026-10-10",
+        })
+        assert shortened.status_code == 400
+        saved = client.get(f"/api/data/trips/{trip['id']}").get_json()
+        assert saved["endDate"] == "2026-10-12"
+        assert [item["day"] for item in saved["stops"]] == [3]
+
+
+def test_stop_update_rejects_missing_trip_without_changing_stop():
+    with tempfile.NamedTemporaryFile(suffix=".db") as database:
+        client = create_app(database.name).test_client()
+        trip = client.post("/api/data/trips", json={
+            "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
+            "endDate": "2026-10-11", "budget": 1500, "interests": "food",
+        }).get_json()
+        stop = client.post("/api/data/stops", json={
+            "tripId": trip["id"], "day": 1, "activity": "Market walk",
+            "notes": "Try local food", "sortOrder": 0,
+        }).get_json()
+
+        response = client.put(f"/api/data/stops/{stop['id']}", json={**stop, "tripId": 999999})
+        assert response.status_code == 404
+        saved = client.get(f"/api/data/stops/{stop['id']}").get_json()
+        assert saved["tripId"] == trip["id"]
+        assert saved["activity"] == "Market walk"

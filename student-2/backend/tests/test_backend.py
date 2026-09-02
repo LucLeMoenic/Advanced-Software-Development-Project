@@ -88,3 +88,22 @@ def test_invalid_stop_is_rejected_before_database_call():
     response = create_app(database, FakeGenerator()).test_client().post("/api/trips/11/stops", json={"day": 0})
     assert response.status_code == 400
     assert database.calls == []
+
+
+def test_stop_outside_trip_is_rejected_before_database_write():
+    database = FakeDatabase()
+    response = create_app(database, FakeGenerator()).test_client().post("/api/trips/11/stops", json={
+        "day": 3, "activity": "Outside trip", "notes": "", "sortOrder": 0,
+    })
+    assert response.status_code == 400
+    assert "2-day trip" in response.get_json()["error"]["fields"]["day"]
+    assert [call[0:2] for call in database.calls] == [("GET", "/api/data/trips/11")]
+
+
+def test_stop_update_validates_target_trip_before_write():
+    database = FakeDatabase()
+    response = create_app(database, FakeGenerator()).test_client().put("/api/stops/7", json={
+        "tripId": 11, "day": 3, "activity": "Outside trip", "notes": "", "sortOrder": 0,
+    })
+    assert response.status_code == 400
+    assert not any(call[0] == "PUT" for call in database.calls)

@@ -166,6 +166,19 @@ def create_app(database_client=None, generator=None):
     def dependency_error(exception):
         return jsonify({"error": {"code": "dependency_unavailable", "message": str(exception), "fields": {}}}), 503
 
+    def validate_stop_day(stop):
+        trip, status = database.request("GET", f"/api/data/trips/{stop['tripId']}")
+        if status != 200:
+            return respond(trip, status)
+        day_count = (date.fromisoformat(trip["endDate"]) - date.fromisoformat(trip["startDate"])).days + 1
+        if stop["day"] > day_count:
+            return jsonify({"error": {
+                "code": "validation_error",
+                "message": "Check the stop details.",
+                "fields": {"day": f"Day must be within the {day_count}-day trip."},
+            }}), 400
+        return None
+
     @app.before_request
     def correlation_id():
         g.correlation_id = request.headers.get("X-Correlation-ID", os.urandom(8).hex())
@@ -241,6 +254,9 @@ def create_app(database_client=None, generator=None):
         if fields:
             return jsonify({"error": {"code": "validation_error", "message": "Check the stop details.", "fields": fields}}), 400
         try:
+            invalid_day = validate_stop_day(stop)
+            if invalid_day:
+                return invalid_day
             body, status = database.request("POST", "/api/data/stops", stop)
             return respond(body, status)
         except DependencyError as exception:
@@ -252,6 +268,9 @@ def create_app(database_client=None, generator=None):
         if fields:
             return jsonify({"error": {"code": "validation_error", "message": "Check the stop details.", "fields": fields}}), 400
         try:
+            invalid_day = validate_stop_day(stop)
+            if invalid_day:
+                return invalid_day
             body, status = database.request("PUT", f"/api/data/stops/{stop_id}", stop)
             return respond(body, status)
         except DependencyError as exception:
