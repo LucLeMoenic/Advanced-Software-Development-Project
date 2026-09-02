@@ -101,7 +101,7 @@ def test_stop_days_and_trip_updates_respect_trip_duration():
         assert [item["day"] for item in saved["stops"]] == [3]
 
 
-def test_stop_update_rejects_missing_trip_without_changing_stop():
+def test_stop_update_preserves_existing_trip_ownership():
     with tempfile.NamedTemporaryFile(suffix=".db") as database:
         client = create_app(database.name).test_client()
         trip = client.post("/api/data/trips", json={
@@ -113,8 +113,9 @@ def test_stop_update_rejects_missing_trip_without_changing_stop():
             "notes": "Try local food", "sortOrder": 0,
         }).get_json()
 
-        response = client.put(f"/api/data/stops/{stop['id']}", json={**stop, "tripId": 999999})
-        assert response.status_code == 404
+        response = client.put(f"/api/data/stops/{stop['id']}", json={**stop, "tripId": 999999, "sortOrder": 99})
+        assert response.status_code == 200
         saved = client.get(f"/api/data/stops/{stop['id']}").get_json()
         assert saved["tripId"] == trip["id"]
+        assert saved["sortOrder"] == 0
         assert saved["activity"] == "Market walk"

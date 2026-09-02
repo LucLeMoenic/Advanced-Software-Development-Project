@@ -36,6 +36,26 @@ class ItineraryGenerator:
         path = prompt_path or Path(__file__).parent / "prompts" / "itinerary-v1.txt"
         self.instructions = Path(path).read_text(encoding="utf-8")
 
+    @staticmethod
+    def output_schema(trip, target_day=None):
+        day_count = (date.fromisoformat(trip["endDate"]) - date.fromisoformat(trip["startDate"])).days + 1
+        stop_count = 1 if target_day is not None else day_count * 2
+        return {
+            "type": "array",
+            "minItems": stop_count,
+            "maxItems": stop_count,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "day": {"type": "integer", "minimum": target_day or 1, "maximum": target_day or day_count},
+                    "activity": {"type": "string", "minLength": 1, "maxLength": 160},
+                    "notes": {"type": "string", "maxLength": 1000},
+                },
+                "required": ["day", "activity", "notes"],
+                "additionalProperties": False,
+            },
+        }
+
     def generate(self, trip, existing_stops=None, target_day=None):
         context = {
             "trip": {key: trip[key] for key in ("destination", "startDate", "endDate", "budget", "interests")},
@@ -45,7 +65,12 @@ class ItineraryGenerator:
         try:
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
-                json={"model": self.model, "prompt": f"{self.instructions}\nINPUT DATA:\n{json.dumps(context)}", "stream": False, "format": "json"},
+                json={
+                    "model": self.model,
+                    "prompt": f"{self.instructions}\nINPUT DATA:\n{json.dumps(context)}",
+                    "stream": False,
+                    "format": self.output_schema(trip, target_day),
+                },
                 timeout=20,
             )
             response.raise_for_status()
@@ -264,10 +289,14 @@ def create_app(database_client=None, generator=None):
 
     @app.put("/api/stops/<int:stop_id>")
     def update_stop(stop_id):
-        fields, stop = validate_stop(request.get_json(silent=True) or {})
-        if fields:
-            return jsonify({"error": {"code": "validation_error", "message": "Check the stop details.", "fields": fields}}), 400
         try:
+            existing, existing_status = database.request("GET", f"/api/data/stops/{stop_id}")
+            if existing_status != 200:
+                return respond(existing, existing_status)
+            payload = {**(request.get_json(silent=True) or {}), "sortOrder": existing["sortOrder"]}
+            fields, stop = validate_stop(payload, existing["tripId"])
+            if fields:
+                return jsonify({"error": {"code": "validation_error", "message": "Check the stop details.", "fields": fields}}), 400
             invalid_day = validate_stop_day(stop)
             if invalid_day:
                 return invalid_day

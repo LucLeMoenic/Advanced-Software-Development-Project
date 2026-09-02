@@ -316,18 +316,20 @@ def create_app(database_path=None):
 
     @app.put("/api/data/stops/<int:stop_id>")
     def update_stop(stop_id):
-        fields, stop = validate_stop(request.get_json(silent=True) or {})
-        if fields:
-            return error("Check the stop details.", fields=fields)
         with closing(connect()) as connection:
-            existing = connection.execute("SELECT id FROM trip_stops WHERE id = ?", (stop_id,)).fetchone()
+            existing = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (stop_id,)).fetchone()
             if existing is None:
                 return error("Stop not found.", 404)
+            fields, stop = validate_stop({
+                **(request.get_json(silent=True) or {}),
+                "tripId": existing["trip_id"],
+                "sortOrder": existing["sort_order"],
+            })
+            if fields:
+                return error("Check the stop details.", fields=fields)
             trip_row = connection.execute(
-                "SELECT start_date, end_date FROM trips WHERE id = ?", (stop["tripId"],)
+                "SELECT start_date, end_date FROM trips WHERE id = ?", (existing["trip_id"],)
             ).fetchone()
-            if trip_row is None:
-                return error("Trip not found.", 404)
             day_count = (date.fromisoformat(trip_row["end_date"]) - date.fromisoformat(trip_row["start_date"])).days + 1
             if stop["day"] > day_count:
                 return error(
@@ -335,8 +337,8 @@ def create_app(database_path=None):
                     fields={"day": f"Day must be within the {day_count}-day trip."},
                 )
             cursor = connection.execute(
-                "UPDATE trip_stops SET trip_id=?,day=?,activity=?,notes=?,sort_order=?,updated_at=? WHERE id=?",
-                (stop["tripId"], stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], now(), stop_id),
+                "UPDATE trip_stops SET day=?,activity=?,notes=?,sort_order=?,updated_at=? WHERE id=?",
+                (stop["day"], stop["activity"], stop["notes"], stop["sortOrder"], now(), stop_id),
             )
             connection.commit()
             row = connection.execute("SELECT * FROM trip_stops WHERE id = ?", (stop_id,)).fetchone()

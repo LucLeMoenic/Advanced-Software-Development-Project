@@ -180,6 +180,9 @@ describe("Itinerary Planner", () => {
     document.querySelector("#stop-activity").value = "Edited market walk";
     document.querySelector("#stop-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Edited market walk"));
+    const stopUpdate = fetchMock.mock.calls.find(([url, options]) => url === "/itinerary-api/stops/1" && options?.method === "PUT");
+    expect(JSON.parse(stopUpdate[1].body)).toMatchObject({ sortOrder: 0 });
+    expect(JSON.parse(stopUpdate[1].body)).not.toHaveProperty("tripId");
 
     document.querySelector("[data-duplicate-stop='1']").click();
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Edited market walk (copy)"));
@@ -222,6 +225,7 @@ describe("Itinerary Planner", () => {
     await vi.waitFor(() => expect(document.querySelector("#feedback-dialog").dataset.kind).toBe("error"));
     expect(document.querySelector("#feedback-title").textContent).toBe("Something went wrong");
     expect(document.querySelector("#feedback-message").textContent).toBe("The planning service is unavailable.");
+    expect(document.querySelector("#status").textContent).toBe("");
     document.querySelector("#feedback-confirm").click();
 
     const trip = { id: 12, user: "Alex", destination: "Osaka", startDate: "2026-10-10", endDate: "2026-10-11", budget: 1500, stops: [] };

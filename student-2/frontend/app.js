@@ -40,6 +40,7 @@ function closeFeedback(result) {
 }
 
 function showError(message) {
+  setStatus("");
   return openFeedback({ kind: "error", title: "Something went wrong", message });
 }
 
@@ -268,12 +269,14 @@ elements.stopForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!validateForm(elements.stopForm)) return;
   const stopId = document.querySelector("#stop-id").value;
+  const existingStop = state.currentTrip.stops.find((stop) => stop.id === Number(stopId));
+  const day = Number(document.querySelector("#stop-day").value);
   const payload = {
-    tripId: state.currentTrip.id,
-    day: Number(document.querySelector("#stop-day").value),
+    day,
     activity: document.querySelector("#stop-activity").value,
     notes: document.querySelector("#stop-notes").value,
-    sortOrder: 99,
+    sortOrder: existingStop?.sortOrder
+      ?? Math.max(-1, ...state.currentTrip.stops.filter((stop) => stop.day === day).map((stop) => stop.sortOrder)) + 1,
   };
   try {
     await api(stopId ? `/stops/${stopId}` : `/trips/${state.currentTrip.id}/stops`, { method: stopId ? "PUT" : "POST", body: JSON.stringify(payload) });

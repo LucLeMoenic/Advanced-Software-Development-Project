@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from app import ItineraryGenerator, create_app
@@ -68,6 +70,34 @@ def test_generator_validation_and_fallback_cover_every_day():
     assert {stop["day"] for stop in fallback} == {1, 2}
 
 
+def test_generator_requests_the_exact_itinerary_array_schema(monkeypatch):
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            generated = FakeGenerator().generate(valid_trip())[0]
+            return {"response": json.dumps([
+                {key: stop[key] for key in ("day", "activity", "notes")}
+                for stop in generated
+            ])}
+
+    request_payload = {}
+
+    def post(url, json, timeout):
+        request_payload.update(json)
+        return Response()
+
+    monkeypatch.setattr("app.requests.post", post)
+    stops, mode = ItineraryGenerator("http://ollama", "llama3.2:3b").generate(valid_trip())
+
+    assert mode == "ai"
+    assert len(stops) == 4
+    assert request_payload["format"]["type"] == "array"
+    assert request_payload["format"]["minItems"] == 4
+    assert request_payload["format"]["maxItems"] == 4
+
+
 def test_regenerate_one_stop_preserves_its_day_and_identity():
     response = create_app(FakeDatabase(), FakeGenerator()).test_client().post("/api/stops/7/regenerate")
     assert response.status_code == 200
@@ -107,3 +137,14 @@ def test_stop_update_validates_target_trip_before_write():
     })
     assert response.status_code == 400
     assert not any(call[0] == "PUT" for call in database.calls)
+
+
+def test_stop_update_preserves_server_owned_trip_id():
+    database = FakeDatabase()
+    response = create_app(database, FakeGenerator()).test_client().put("/api/stops/7", json={
+        "tripId": 999, "day": 1, "activity": "Updated stop", "notes": "New notes", "sortOrder": 99,
+    })
+    assert response.status_code == 200
+    write = next(call for call in database.calls if call[0:2] == ("PUT", "/api/data/stops/7"))
+    assert write[2]["tripId"] == 11
+    assert write[2]["sortOrder"] == 0
