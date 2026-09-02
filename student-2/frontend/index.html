@@ -19,57 +19,61 @@
   </header>
 
   <main class="page-shell">
-    <section class="page-intro" aria-labelledby="page-title">
-      <p class="page-kicker">Plan and refine</p>
-      <h1 id="page-title">Build an itinerary around your trip</h1>
-      <p class="hero-copy">Set the destination, dates, budget, and interests, then refine every stop.</p>
-    </section>
-
-    <div class="planner-grid">
-      <aside class="control-panel" aria-label="Trip controls">
-        <form id="trip-form" novalidate>
-          <div class="panel-heading">
-            <div>
-              <p class="step-label">New journey</p>
-              <h2>Trip details</h2>
+    <details id="trip-composer" class="trip-composer" open>
+      <summary>
+        <span>
+          <span id="trip-form-kicker" class="step-label">New journey</span>
+          <span id="trip-form-title" class="composer-title">Trip details</span>
+          <span id="trip-form-summary" class="composer-summary">Set the destination, dates, budget, and interests.</span>
+        </span>
+        <span class="composer-toggle" aria-hidden="true"></span>
+      </summary>
+      <form id="trip-form" novalidate>
+          <div class="composer-fields">
+            <div class="field-group field-traveller">
+              <label for="user">Traveller</label>
+              <input id="user" name="user" maxlength="80" autocomplete="name" required>
             </div>
-            <span class="step-number">01</span>
-          </div>
-
-          <label for="user">Traveller</label>
-          <input id="user" name="user" maxlength="80" autocomplete="name" required>
-
-          <label for="destination">Destination</label>
-          <input id="destination" name="destination" maxlength="100" autocomplete="off" placeholder="e.g. Kyoto" required>
-
-          <div class="field-row">
-            <div>
+            <div class="field-group field-destination">
+              <label for="destination">Destination</label>
+              <input id="destination" name="destination" maxlength="100" autocomplete="off" placeholder="e.g. Kyoto" required>
+            </div>
+            <div class="field-group field-interests">
+              <label for="interests">Interests</label>
+              <input id="interests" name="interests" maxlength="500" placeholder="Food, architecture, gardens">
+            </div>
+            <div class="field-group field-start-date">
               <label for="start-date">Start</label>
               <input id="start-date" name="startDate" type="date" required>
             </div>
-            <div>
+            <div class="field-group field-end-date">
               <label for="end-date">End</label>
               <input id="end-date" name="endDate" type="date" required>
             </div>
+            <div class="field-group field-budget">
+              <label for="budget">Budget (AUD)</label>
+              <input id="budget" name="budget" type="number" min="0" max="1000000" step="0.01" placeholder="2500" required>
+            </div>
           </div>
 
-          <label for="budget">Total budget (AUD)</label>
-          <input id="budget" name="budget" type="number" min="0" max="1000000" step="0.01" placeholder="2500" required>
+          <div class="trip-form-actions">
+            <button id="trip-submit" class="primary-button" type="submit">Generate itinerary</button>
+            <button id="cancel-trip-edit" class="text-button" type="button" hidden>Cancel edit</button>
+          </div>
+      </form>
+    </details>
 
-          <label for="interests">Interests</label>
-          <textarea id="interests" name="interests" maxlength="500" rows="3" placeholder="Street food, architecture, quiet gardens"></textarea>
-
-          <button class="primary-button" type="submit">Generate itinerary</button>
-        </form>
-
-        <section class="saved-trips" aria-labelledby="saved-heading">
+    <div class="planner-grid">
+        <aside class="saved-trips" aria-labelledby="saved-heading">
           <div class="saved-heading-row">
             <h2 id="saved-heading">Saved trips</h2>
             <button id="refresh-trips" class="text-button" type="button">Refresh</button>
           </div>
+          <label class="visually-hidden" for="trip-filter">Filter saved trips</label>
+          <input id="trip-filter" type="search" placeholder="Filter by destination or traveller" autocomplete="off">
+          <p id="trip-count" class="list-count" aria-live="polite"></p>
           <ul id="trip-list" class="trip-list"><li class="muted">Loading trips...</li></ul>
-        </section>
-      </aside>
+        </aside>
 
       <section class="itinerary-panel" aria-labelledby="itinerary-heading">
         <div id="status" class="status" role="status" aria-live="polite"></div>
@@ -82,15 +86,30 @@
           <header class="itinerary-header">
             <div>
               <p id="trip-dates" class="eyebrow"></p>
-              <h2 id="trip-title"></h2>
+              <div class="trip-title-row">
+                <h2 id="trip-title"></h2>
+                <span id="generation-mode" class="mode-badge"></span>
+              </div>
               <p id="trip-summary" class="trip-summary"></p>
             </div>
             <div class="header-actions">
-              <span id="generation-mode" class="mode-badge"></span>
-              <button id="regenerate-trip" class="secondary-button" type="button">Regenerate all</button>
-              <button id="delete-trip" class="danger-button" type="button">Delete trip</button>
+              <button id="edit-trip" class="secondary-button" type="button">Edit trip</button>
+              <details id="trip-actions-menu" class="action-menu">
+                <summary aria-label="Trip actions" title="Trip actions"><span aria-hidden="true">&#8230;</span></summary>
+                <div class="action-menu-items">
+                  <button id="regenerate-trip" type="button">Regenerate all</button>
+                  <button id="print-trip" type="button">Print itinerary</button>
+                  <button id="delete-trip" class="danger-action" type="button">Delete trip</button>
+                </div>
+              </details>
             </div>
           </header>
+          <dl class="trip-metrics" aria-label="Itinerary summary">
+            <div><dt>Duration</dt><dd id="metric-duration"></dd></div>
+            <div><dt>Stops</dt><dd id="metric-stops"></dd></div>
+            <div><dt>Daily budget</dt><dd id="metric-budget"></dd></div>
+            <div><dt>Planned days</dt><dd id="metric-days"></dd></div>
+          </dl>
           <div id="days" class="days"></div>
           <button id="add-stop" class="add-button" type="button">+ Add a stop</button>
           <section id="agent-trace" class="agent-trace" aria-labelledby="trace-heading" hidden>
@@ -103,7 +122,7 @@
   </main>
 
   <dialog id="stop-dialog">
-    <form id="stop-form" method="dialog">
+    <form id="stop-form" method="dialog" novalidate>
       <h2 id="stop-dialog-title">Add a stop</h2>
       <input id="stop-id" type="hidden">
       <label for="stop-day">Day</label>
@@ -117,6 +136,16 @@
         <button class="primary-button" value="save" type="submit">Save stop</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="feedback-dialog" class="feedback-dialog" aria-labelledby="feedback-title" aria-describedby="feedback-message">
+    <div class="feedback-symbol" aria-hidden="true"></div>
+    <h2 id="feedback-title"></h2>
+    <p id="feedback-message"></p>
+    <div class="dialog-actions">
+      <button id="feedback-cancel" class="text-button" type="button" hidden>Cancel</button>
+      <button id="feedback-confirm" class="primary-button" type="button">OK</button>
+    </div>
   </dialog>
 </body>
 </html>
