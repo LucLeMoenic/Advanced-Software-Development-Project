@@ -32,6 +32,7 @@
           hx-get="/api/attractions"
           hx-trigger="load, click"
           hx-swap="none"
+          hx-on:click="currentCategory = null"
           hx-on::after-request="renderAttractions(event)">
           All
         </button>
@@ -39,6 +40,7 @@
           type="button"
           hx-get="/api/attractions?category=sight"
           hx-swap="none"
+          hx-on:click="currentCategory = 'sight'"
           hx-on::after-request="renderAttractions(event)">
           Sights
         </button>
@@ -46,6 +48,7 @@
           type="button"
           hx-get="/api/attractions?category=restaurant"
           hx-swap="none"
+          hx-on:click="currentCategory = 'restaurant'"
           hx-on::after-request="renderAttractions(event)">
           Restaurants
         </button>
@@ -53,6 +56,7 @@
           type="button"
           hx-get="/api/attractions?category=activity"
           hx-swap="none"
+          hx-on:click="currentCategory = 'activity'"
           hx-on::after-request="renderAttractions(event)">
           Activities
         </button>
@@ -85,6 +89,37 @@
       </form>
 
       <div id="recommend-result" aria-live="polite"></div>
+    </section>
+
+    <section id="manage" aria-labelledby="manage-heading">
+      <h2 id="manage-heading">Add an Attraction</h2>
+
+      <form
+        id="create-attraction-form"
+        hx-ext="json-body"
+        hx-post="/api/attractions"
+        hx-swap="none"
+        hx-on::after-request="handleCreateAttraction(event)">
+        <label for="create-name">Name</label>
+        <input id="create-name" name="name" type="text" required maxlength="200">
+
+        <label for="create-category">Category</label>
+        <select id="create-category" name="category" required>
+          <option value="sight">Sight</option>
+          <option value="restaurant">Restaurant</option>
+          <option value="activity">Activity</option>
+        </select>
+
+        <label for="create-description">Description</label>
+        <textarea id="create-description" name="description" rows="3" maxlength="500"></textarea>
+
+        <label for="create-rating">Rating</label>
+        <input id="create-rating" name="rating" type="number" min="0" max="5" step="0.5">
+
+        <button type="submit">Add attraction</button>
+      </form>
+
+      <div id="create-result" aria-live="polite"></div>
     </section>
   </main>
 
