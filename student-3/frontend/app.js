@@ -264,12 +264,13 @@ function handleCreateReview(event, attractionId) {
 }
 
 function renderAttractions(event) {
-  // Remembered so a later create/update/delete can refresh the same
-  // filtered view instead of always resetting back to "All".
-  currentCategory = (event.detail.requestConfig
-    && event.detail.requestConfig.parameters
-    && event.detail.requestConfig.parameters.category) || null;
-
+  // currentCategory is set by each filter button's own hx-on:click (see
+  // index.html), not read back from this completed request: the buttons
+  // are plain <button>s outside a <form>, with the category baked into
+  // each one's hx-get URL rather than submitted as a named parameter, so
+  // event.detail.requestConfig.parameters.category was always undefined -
+  // confirmed by filtering to "Restaurants" and deleting a card, which
+  // reset the list to "All" instead of staying filtered.
   renderAttractionsData(event.detail.xhr.status, parseJsonResponse(event));
 }
 

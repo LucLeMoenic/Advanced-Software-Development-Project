@@ -32,6 +32,7 @@
           hx-get="/api/attractions"
           hx-trigger="load, click"
           hx-swap="none"
+          hx-on:click="currentCategory = null"
           hx-on::after-request="renderAttractions(event)">
           All
         </button>
@@ -39,6 +40,7 @@
           type="button"
           hx-get="/api/attractions?category=sight"
           hx-swap="none"
+          hx-on:click="currentCategory = 'sight'"
           hx-on::after-request="renderAttractions(event)">
           Sights
         </button>
@@ -46,6 +48,7 @@
           type="button"
           hx-get="/api/attractions?category=restaurant"
           hx-swap="none"
+          hx-on:click="currentCategory = 'restaurant'"
           hx-on::after-request="renderAttractions(event)">
           Restaurants
         </button>
@@ -53,6 +56,7 @@
           type="button"
           hx-get="/api/attractions?category=activity"
           hx-swap="none"
+          hx-on:click="currentCategory = 'activity'"
           hx-on::after-request="renderAttractions(event)">
           Activities
         </button>
