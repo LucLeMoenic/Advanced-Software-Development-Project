@@ -9,7 +9,11 @@ def test_seed_and_trip_stop_crud():
         assert client.get("/health").status_code == 200
         seeded = client.get("/api/data/trips").get_json()
         assert len(seeded) == 10
-        assert len(client.get(f"/api/data/trips/{seeded[0]['id']}").get_json()["stops"]) == 2
+        assert len({trip["user"] for trip in seeded}) == 10
+        assert len({trip["interests"] for trip in seeded}) == 10
+        seeded_details = [client.get(f"/api/data/trips/{trip['id']}").get_json() for trip in seeded]
+        assert all(len(trip["stops"]) == 2 for trip in seeded_details)
+        assert all("Seeded demonstration" not in stop["notes"] for trip in seeded_details for stop in trip["stops"])
 
         trip_response = client.post("/api/data/trips", json={
             "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
