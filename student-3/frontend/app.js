@@ -28,33 +28,37 @@ function parseJsonResponse(event) {
 }
 
 /**
- * TODO(you): build the markup for a single attraction card.
- *
  * `attraction` has: id, name, category, description, rating.
- * Must return an HTML string wrapped in one element (e.g. <article>).
  *
- * It should include an "Add to itinerary" button wired via HTMX. Keep the
- * hx-vals payload to the numeric id only (never interpolate free-text
- * fields like name/description into an HTML attribute), e.g.:
- *   <button type="button"
- *           hx-post="/api/itinerary"
- *           hx-vals='{"attraction_id": ${attraction.id}}'
- *           hx-swap="none"
- *           hx-on::after-request="this.textContent = 'Added'; this.disabled = true;">
- *     Add to itinerary
- *   </button>
+ * Rating is shown only when present (seed data always has one, but
+ * user-created attractions via the API may omit it) so a missing rating
+ * doesn't render as a literal "null" badge. Descriptions aren't truncated -
+ * Release 0's seeded copy is already short, and clipping risks cutting a
+ * sentence mid-word for longer user-submitted ones.
  *
- * Design choices left to you: how to show category/rating (badge? plain
- * text?), whether to truncate long descriptions, empty-rating handling, etc.
- *
- * IMPORTANT: pass name/description/category through escapeHtml() before
- * interpolating them (they come from the CRUD API, so treat them as
- * untrusted) - see escapeHtml() above.
+ * name/description/category come from the CRUD API, so they're untrusted
+ * and go through escapeHtml() before hitting innerHTML. The "Add to
+ * itinerary" button's hx-vals payload is limited to the numeric id for the
+ * same reason - never interpolate free-text fields into an HTML attribute.
  */
 function attractionCardHtml(attraction) {
+  const ratingBadge = attraction.rating != null
+    ? `<span class="rating">★ ${escapeHtml(attraction.rating)}</span>`
+    : '';
+
   return `
     <article class="card">
       <h3>${escapeHtml(attraction.name)}</h3>
+      <p class="category">${escapeHtml(attraction.category)}</p>
+      ${ratingBadge}
+      <p class="description">${escapeHtml(attraction.description)}</p>
+      <button type="button"
+              hx-post="/api/itinerary"
+              hx-vals='{"attraction_id": ${attraction.id}}'
+              hx-swap="none"
+              hx-on::after-request="this.textContent = 'Added'; this.disabled = true;">
+        Add to itinerary
+      </button>
     </article>
   `;
 }

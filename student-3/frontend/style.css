@@ -100,6 +100,42 @@ h2 {
   font-size: 1rem;
 }
 
+.card .category {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+}
+
+.card .rating {
+  display: inline-block;
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-primary);
+}
+
+.card .description {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--color-text);
+}
+
+.card button {
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.card button:disabled {
+  background: var(--color-muted);
+  cursor: default;
+}
+
 .loading,
 .empty,
 .error {
