@@ -1,14 +1,19 @@
 name: Student 3 CI
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
       - 'student-3/**'
+      - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
   pull_request:
     paths:
       - 'student-3/**'
+      - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
 
@@ -17,9 +22,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install backend test dependencies
+        run: pip install -r student-3/backend/requirements.txt
+
+      - name: Install database test dependencies
+        run: pip install -r student-3/database/requirements.txt pytest
+
+      - name: Test backend and database
+        working-directory: student-3
+        run: python -m pytest tests
 
       - name: Validate Docker Compose config
-        run: docker compose config
+        run: docker compose config --quiet
 
-      - name: Build Student 3 frontend container
-        run: docker build -t student3-frontend -f student-3/frontend/Dockerfile student-3/frontend
+      - name: Build integrated Student 3 containers
+        run: docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
+
+      - name: Initialise and seed Student 3 database
+        run: docker compose run --rm --no-deps student3-db-init
+
+      - name: Start Student 3 services
+        run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
+
+      - name: Smoke test Student 3 integration
+        run: |
+          curl --fail --silent http://localhost:5103/health
+          curl --fail --silent http://localhost:5203/health
+          curl --fail --silent http://localhost:5303/health
+          curl --fail --silent http://localhost:5203/api/attractions | python -c "import json,sys; attractions=json.load(sys.stdin); assert len(attractions) >= 10"
+
+      - name: Stop Student 3 services
+        if: always()
+        run: docker compose down
