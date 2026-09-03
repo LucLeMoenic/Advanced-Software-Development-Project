@@ -1,0 +1,595 @@
+/* ==========================================================================
+   Student 5 - Travel Logistics & Advisory Service: frontend theme.
+
+   DESIGN TOKENS
+     --ink    #16303f  headings and body text (deep flight-deck navy)
+     --paper  #f7f9f8  page background
+     --accent #0e7c86  interactive elements and section tabs (transit-signage teal)
+     --warn   #b3701f  visa and document cautions
+     --line   #d7e0e2  borders and dividers
+     --muted  #5b7280  provenance, hints, secondary text
+
+   TYPE       one system sans stack throughout.
+              h1 1.6rem/650, panel h2 1.05rem/650, body 0.95rem/1.55.
+   LAYOUT     max content width 880px, left-aligned.
+   SIGNATURE  every panel carries a coloured left "line tab" like a transit-line
+              indicator. Everything else stays quiet: no cards, no shadows.
+
+   This file is loaded AFTER /shared/style.css, so the two rules the shared
+   sheet sets (body margin, h1 colour) are deliberately re-set below rather
+   than left to cascade.
+
+   Sections marked "backend fragment" style markup this file does not contain.
+   That markup is owned by student-5/backend/templates/ -- its class names are
+   the contract between the two services, so renaming one here fixes nothing.
+   ========================================================================== */
+
+:root {
+  --ink: #16303f;
+  --paper: #f7f9f8;
+  --accent: #0e7c86;
+  --warn: #b3701f;
+  --line: #d7e0e2;
+  --muted: #5b7280;
+  --surface: #fff;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  /* Overrides the shared sheet's 2rem body margin: this layout centres its
+     own main element and needs the header to reach the viewport edges. */
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 0.95rem/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Every focusable thing, once, rather than per-component. Keyboard users must
+   be able to see where they are. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Header and destination picker
+   -------------------------------------------------------------------------- */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--ink); /* overrides the shared sheet's h1 colour */
+}
+
+.destination-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.picker-label {
+  font-weight: 600;
+}
+
+.destination-select {
+  font: inherit;
+  color: inherit;
+  min-width: 14rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+/* backend fragment: destination_options.html */
+.destination-option,
+.destination-option-blank {
+  color: var(--ink);
+}
+
+.destination-option-blank {
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   Panels -- the shared shell every section sits in
+   -------------------------------------------------------------------------- */
+
+.page-main {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 1.25rem;
+}
+
+.panel {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--accent); /* the transit-line tab */
+}
+
+/* Documents are where bad information does real damage, so this one panel
+   wears the caution colour. */
+.panel-visa {
+  border-left-color: var(--warn);
+}
+
+.panel-heading {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.panel-body > :first-child {
+  margin-top: 0;
+}
+
+.panel-body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Pre-swap placeholder text. Reads as "not yet", never as "nothing here". */
+.panel-hint {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* --------------------------------------------------------------------------
+   backend fragment: fragment_message.html and the shared empty state
+   -------------------------------------------------------------------------- */
+
+/* Rendered when a fragment cannot show real content: no destination chosen,
+   an unknown id, or a dependency that is down. It is the honest answer, not an
+   error box, so it is quiet -- but it keeps the caution rule so it never reads
+   as data. */
+.fragment-message {
+  margin: 0 0 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* "No rows recorded for this destination." Deliberate, not broken: destination
+   12 (Fiji) has no weather notes and no transit options and must still look
+   like a finished panel. Appears both as a <p> and as a <td colspan="5">. */
+.fragment-empty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+td.fragment-empty {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
+   backend fragment: weather.html
+   -------------------------------------------------------------------------- */
+
+.weather-notes {
+  margin: 0;
+}
+
+.weather-season {
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.weather-notes > .weather-season:first-child {
+  margin-top: 0;
+}
+
+.weather-detail {
+  margin: 0 0 0.2rem;
+}
+
+/* --------------------------------------------------------------------------
+   backend fragment: visa.html
+   -------------------------------------------------------------------------- */
+
+.visa-callout {
+  margin: 0;
+}
+
+.visa-country {
+  margin: 0 0 0.35rem;
+  font-weight: 650;
+}
+
+/* The single most consequential line on the page. */
+.visa-requirement {
+  margin: 0 0 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.visa-notes {
+  margin: 0 0 0.6rem;
+}
+
+/* Coursework data disclaimer. Smaller than body text but never below the
+   0.8rem legibility floor, and never hidden. */
+.visa-disclaimer {
+  margin: 0.6rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* --------------------------------------------------------------------------
+   Tables -- shared geometry for the transit and manage fragments
+   -------------------------------------------------------------------------- */
+
+.transit-table,
+.destinations-table {
+  width: 100%;
+  margin-top: 0.4rem;
+  border-collapse: collapse;
+}
+
+.transit-heading,
+.destinations-heading {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 2px solid var(--line);
+  font-size: 0.85rem;
+  font-weight: 650;
+  text-align: left;
+}
+
+/* backend fragment: transit.html */
+.transit-row .transit-type,
+.transit-row .transit-details {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.transit-type {
+  width: 11rem;
+  font-weight: 600;
+}
+
+.transit-details {
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   backend fragment: destinations_table.html (the manage panel)
+   -------------------------------------------------------------------------- */
+
+.destinations-manage {
+  display: block;
+}
+
+.destination-row > .destination-id,
+.destination-row > .destination-cell,
+.destination-row > .destination-actions {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.destination-id {
+  width: 3rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.destination-cell {
+  /* Lets the three text columns share the remaining width evenly instead of
+     each sizing to its own longest value. */
+  width: 30%;
+}
+
+.destination-actions {
+  white-space: nowrap;
+}
+
+/* The row inputs are edit-in-place: they should read as table cells until
+   focused, not as a wall of boxes. */
+.field-country,
+.field-visa,
+.field-notes {
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  min-width: 6rem;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+}
+
+.field-country:hover,
+.field-visa:hover,
+.field-notes:hover,
+.field-country:focus,
+.field-visa:focus,
+.field-notes:focus {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.button-advisory,
+.button-save,
+.button-create {
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--accent);
+  color: var(--surface);
+  cursor: pointer;
+}
+
+/* Save sits inside a dense table row, so it is quiet until you want it. */
+.button-save {
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  color: var(--accent);
+}
+
+.button-save:hover {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+/* Destructive, so it wears the caution colour -- but stays outlined rather
+   than filled, because a solid red button next to a solid teal one reads as
+   the primary action. The fragment already puts hx-confirm on it. */
+.button-delete {
+  font: inherit;
+  font-weight: 600;
+  margin-left: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid var(--warn);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--warn);
+  cursor: pointer;
+}
+
+.button-delete:hover {
+  background: var(--warn);
+  color: var(--surface);
+}
+
+.button-advisory:hover,
+.button-create:hover {
+  background: #0b656d;
+  border-color: #0b656d;
+}
+
+/* htmx sets [disabled] on the advisory button for the length of the call. */
+.button-advisory[disabled] {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+   Forms -- the advisory form (this file) and the create form (fragment)
+   -------------------------------------------------------------------------- */
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.field-label,
+.create-label {
+  display: block;
+  margin: 0.4rem 0 0.15rem;
+  font-weight: 600;
+}
+
+.field-input {
+  font: inherit;
+  color: inherit;
+  width: 100%;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface);
+}
+
+/* backend fragment: the create form under the manage table. Its inputs share
+   the .field-country / .field-visa / .field-notes classes with the edit rows,
+   so the transparent edit-in-place treatment is reversed here -- outside a
+   table these need to look like the empty fields they are. */
+/* The fragment's DOM order is label, input, label, input, label, input, button
+   with no wrapper per pair, so a two-track grid (label column, field column)
+   is what lays it out correctly without touching the template. */
+.destination-create-form {
+  display: grid;
+  grid-template-columns: 10rem 1fr;
+  gap: 0.45rem 0.75rem;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.destination-create-form .create-label {
+  margin: 0;
+}
+
+.destination-create-form .field-country,
+.destination-create-form .field-visa,
+.destination-create-form .field-notes {
+  border-color: var(--line);
+  background: var(--surface);
+}
+
+.destination-create-form .button-create {
+  grid-column: 1 / -1;
+  justify-self: start;
+  margin-top: 0.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   Advisory
+   -------------------------------------------------------------------------- */
+
+.advisory-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.9rem 0 0;
+}
+
+/* The call runs a local 3B model and takes several seconds, so the indicator
+   is not decoration -- without it the page looks dead. visibility:hidden keeps
+   the element's box (no layout jump when it appears) while removing it from
+   the accessibility tree until it is real. */
+.advisory-loading {
+  color: var(--muted);
+  font-style: italic;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s ease-in;
+}
+
+.advisory-loading.htmx-request,
+.htmx-request .advisory-loading {
+  opacity: 1;
+  visibility: visible;
+}
+
+.advisory-panel {
+  margin-top: 0.8rem;
+  /* Deliberately no opacity transition here. With one declared, the dim below
+     measured a computed opacity of 1 for the whole request in Chrome and never
+     visibly applied; removing it makes the change take effect immediately.
+     Verified by sampling getComputedStyle during a live generation both ways.
+     The fade was decoration, so it goes rather than the dim. */
+}
+
+/* backend fragment: advisory_result.html */
+.advisory-result {
+  padding: 0.8rem 1rem;
+  border: 1px dashed var(--accent);
+  border-radius: 3px;
+}
+
+.advisory-destination {
+  margin: 0 0 0.5rem;
+  font-weight: 650;
+  font-size: 1rem;
+}
+
+/* One paragraph per non-blank model line, including the hyphen-prefixed
+   packing items. Tight spacing keeps a list-shaped answer looking like a list. */
+.advisory-line {
+  margin: 0 0 0.35rem;
+}
+
+.advisory-model {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.advisory-provenance {
+  margin: 0 0 0.3rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+/* This is generated travel advice, so the warning is load-bearing. It stays at
+   full body weight and full contrast -- unlike .advisory-provenance above it,
+   which is genuine small print. Do not shrink, grey out, or hide this. */
+.advisory-disclaimer {
+  margin: 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--warn);
+  background: #fdf6ec;
+  color: var(--warn);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Stale-result policy: while a new advisory generates, the previous one is
+   dimmed rather than cleared.
+
+   Clearing would be the safer-looking choice, but it costs more than it saves.
+   The generation takes several seconds and can fail, and an emptied panel
+   leaves the traveller with nothing at all -- whereas the old advisory is
+   still true, just not current. Dimming says "superseded" without destroying
+   it, and advisory_result.html prints the country in .advisory-destination, so
+   a result left over from a different destination is still self-identifying.
+
+   The panel is named as a second hx-indicator on the form, which is why it can
+   be selected by class here. When hx-indicator is present htmx puts
+   .htmx-request on the *indicator* elements, not on the element that made the
+   request -- so keying this off the form would silently never match. */
+.advisory-panel.htmx-request {
+  opacity: 0.4;
+}
+
+/* --------------------------------------------------------------------------
+   Narrow screens
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .field-grid,
+  .destination-create-form {
+    grid-template-columns: 1fr;
+  }
+
+  .destination-create-form {
+    align-items: start;
+  }
+
+  /* The manage table has five columns of editable text; below this width it
+     scrolls sideways rather than crushing every input to a few characters. */
+  .destinations-manage {
+    overflow-x: auto;
+  }
+
+  .destinations-table {
+    min-width: 34rem;
+  }
+}
