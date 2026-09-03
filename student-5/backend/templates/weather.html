@@ -1,0 +1,11 @@
+{# Stored weather notes for one destination, as a definition list. #}
+{% if notes %}
+<dl class="weather-notes">
+  {% for note in notes %}
+  <dt class="weather-season">{{ note.season }}</dt>
+  <dd class="weather-detail">{{ note.notes }}</dd>
+  {% endfor %}
+</dl>
+{% else %}
+<p class="fragment-empty">No weather notes are recorded for this destination.</p>
+{% endif %}

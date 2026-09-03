@@ -1,0 +1,21 @@
+{# Stored transit options for one destination, as a table. #}
+{% if options %}
+<table class="transit-table">
+  <thead>
+    <tr>
+      <th class="transit-heading" scope="col">Type</th>
+      <th class="transit-heading" scope="col">Details</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for option in options %}
+    <tr class="transit-row">
+      <td class="transit-type">{{ option.type }}</td>
+      <td class="transit-details">{{ option.details }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="fragment-empty">No transit options are recorded for this destination.</p>
+{% endif %}

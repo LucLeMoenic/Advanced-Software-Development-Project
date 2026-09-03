@@ -1,0 +1,11 @@
+{# The stored visa requirement for one destination, plus its entry notes. #}
+<section class="visa-callout">
+  <p class="visa-country">{{ destination.country }}</p>
+  <p class="visa-requirement">{{ destination.visa_requirement }}</p>
+  {% if destination.notes %}
+  <p class="visa-notes">{{ destination.notes }}</p>
+  {% else %}
+  <p class="fragment-empty">No entry notes are recorded for this destination.</p>
+  {% endif %}
+  <p class="visa-disclaimer">Sample data for coursework. Always confirm entry rules with Smartraveller and the destination government before travelling.</p>
+</section>

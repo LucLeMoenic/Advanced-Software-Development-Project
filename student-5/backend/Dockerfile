@@ -3,6 +3,7 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     DATABASE_API_URL=http://student5-database:8080 \
+    OLLAMA_URL=http://ollama:11434 \
     PORT=8080
 
 WORKDIR /app
@@ -10,7 +11,10 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app.py db_client.py ./
+# APPLICATION_MODEL is deliberately not defaulted here: compose passes the
+# team-wide tag, and ollama_client.py carries the fallback for bare runs.
+COPY app.py db_client.py ollama_client.py advisory.py ui.py ./
+COPY templates ./templates
 COPY tests ./tests
 
 EXPOSE 8080

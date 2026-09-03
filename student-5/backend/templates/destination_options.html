@@ -1,0 +1,9 @@
+{#
+  <option> list for a destination <select>. Rendered without a surrounding
+  <select> on purpose: the frontend owns the control (and its name, id and
+  hx-* attributes) and swaps only the options into it.
+#}
+<option value="" class="destination-option-blank">Choose a destination</option>
+{% for destination in destinations %}
+<option class="destination-option" value="{{ destination.id }}">{{ destination.country }}</option>
+{% endfor %}

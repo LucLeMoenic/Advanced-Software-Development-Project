@@ -2,9 +2,14 @@
 
 This service is the middle tier of the stack. It owns no data of its own: the
 frontend talks to it, and it talks to the database microservice over HTTP
-(never to the SQLite file). Today it is a faithful JSON passthrough over the
-database's CRUD API; the AI advisory endpoint and the HTML views are added in
-later chunks at the extension points marked below.
+(never to the SQLite file) and to Ollama for generated advice.
+
+Three feature areas, three blueprints, deliberately kept apart because they do
+not share failure semantics:
+
+* ``api``      -- JSON passthrough over the database's CRUD API (this module).
+* ``advisory`` -- the Frontend -> Backend/API -> Ollama -> LLM workflow.
+* ``ui``       -- server-rendered HTML fragments for the HTMX frontend.
 """
 
 import os
@@ -12,7 +17,15 @@ from typing import Any, Optional
 
 from flask import Blueprint, Flask, current_app, jsonify, request
 
+from advisory import advisory_bp
 from db_client import DatabaseClient, DatabaseResponse, DatabaseUnavailable
+from ollama_client import (
+    DEFAULT_APPLICATION_MODEL,
+    DEFAULT_OLLAMA_URL,
+    OllamaClient,
+    OllamaUnavailable,
+)
+from ui import ui_bp
 
 DEFAULT_DATABASE_API_URL = "http://student5-database:8080"
 
@@ -182,14 +195,29 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.config["DATABASE_API_URL"] = os.environ.get(
         "DATABASE_API_URL", DEFAULT_DATABASE_API_URL
     )
+    app.config["OLLAMA_URL"] = os.environ.get("OLLAMA_URL", DEFAULT_OLLAMA_URL)
+    # The model tag is configuration, never a literal in the calling code, so
+    # the whole team can move models by changing APPLICATION_MODEL in compose.
+    app.config["APPLICATION_MODEL"] = os.environ.get(
+        "APPLICATION_MODEL", DEFAULT_APPLICATION_MODEL
+    )
     if config:
         app.config.update(config)
 
     app.config["DATABASE_CLIENT"] = DatabaseClient(app.config["DATABASE_API_URL"])
+    app.config["OLLAMA_CLIENT"] = OllamaClient(
+        app.config["OLLAMA_URL"], app.config["APPLICATION_MODEL"]
+    )
 
     @app.errorhandler(DatabaseUnavailable)
     def handle_database_unavailable(_exc):
         return jsonify({"error": "database service unavailable"}), 503
+
+    @app.errorhandler(OllamaUnavailable)
+    def handle_ai_unavailable(_exc):
+        # Distinct from the database 503 above so the caller (and whoever is
+        # reading the logs) can tell which dependency is down.
+        return jsonify({"error": "ai service unavailable"}), 503
 
     @app.errorhandler(404)
     def handle_not_found(_exc):
@@ -204,9 +232,8 @@ def create_app(config: Optional[dict] = None) -> Flask:
         return jsonify({"status": "ok", "service": "student5-backend"})
 
     app.register_blueprint(api)
-
-    # Extension point: later chunks register the AI advisory blueprint and the
-    # HTML view blueprint here.
+    app.register_blueprint(advisory_bp)
+    app.register_blueprint(ui_bp)
 
     return app
 
