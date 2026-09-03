@@ -1,0 +1,227 @@
+USER:
+ENVIRONMENT CONTEXT (from completed setup + database + backend sessions):
+- Windows machine; repo-root .venv (Python 3.13.2) has flask/requests/pytest/
+  responses installed — use it for pytest, don't create another venv. Container
+  image is python:3.11-slim, so write Python 3.11-compatible code.
+- Git Bash: prefix docker commands containing container-side absolute paths with
+  MSYS_NO_PATHCONV=1. In PowerShell use curl.exe, not curl.
+- The database microservice is complete: JSON CRUD on /api/destinations,
+  /api/weather-notes, /api/transit-options; PUT is PARTIAL-MERGE (omitted fields
+  keep stored values); DELETE returns 204 with an empty body; errors are always
+  {"error": "..."}.
+- The backend microservice is complete (30 tests) and you are EXTENDING it, not
+  rewriting it. Existing architecture you must preserve and reuse:
+  * create_app(config) factory; the database client is built once and stored at
+    app.config["DATABASE_CLIENT"], reached via the db() helper on current_app.
+  * db_client.py returns a DatabaseResponse(status_code, payload) NamedTuple —
+    it does NOT raise on 4xx/5xx. Only transport failures raise
+    DatabaseUnavailable, which maps to 503 {"error":"database service
+    unavailable"}.
+  * relay() in app.py is the single chokepoint that turns a DatabaseResponse
+    into a Flask response; it forwards status codes verbatim and returns an
+    empty body when payload is None. Do not change its behaviour.
+  * CRUD routes live on an "api" blueprint. There is a marked extension seam
+    near the end of create_app (a comment) — register your NEW blueprints
+    there: one for the advisory endpoint and one for the /ui/ HTML fragments.
+    Do NOT add them to the existing api blueprint; they must not inherit the
+    passthrough error semantics.
+  * tests/conftest.py already provides fixtures; extend the existing suite and
+    keep all 30 current tests passing.
+- Your AI errors must be distinguishable from database errors: OllamaUnavailable
+  -> 503 {"error":"ai service unavailable"}, separate from the database 503.
+- Note for the /ui/ fragment work: the database does not filter destinations by
+  destination_id (destinations have no such column); weather-notes and
+  transit-options do support ?destination_id=.
+
+You are extending the existing Flask backend in student-5/backend/ (read app.py,
+db_client.py and tests first — preserve all existing behaviour and keep all
+existing tests passing). Work ONLY inside student-5/backend/. Do not commit.
+
+CONTEXT: This service is part of an agentic-AI travel platform. The marked
+requirement is the workflow Frontend -> Backend/API -> Ollama -> LLM, callable
+from the frontend. Ollama runs at env OLLAMA_URL (default http://ollama:11434);
+model tag comes from env APPLICATION_MODEL (default llama3.2:3b). Never hardcode
+a model name in code.
+
+PART A — AI advisory
+1. ollama_client.py: POST {OLLAMA_URL}/api/generate with
+   {"model": <APPLICATION_MODEL>, "prompt": <str>, "stream": false},
+   timeout 120s, return response["response"]. Raise OllamaUnavailable on
+   connection errors/timeouts/non-200.
+2. POST /api/advisory accepting JSON
+   {"destination_id": int (required), "month": str (optional),
+    "interests": str (optional)}.
+   Flow: fetch the destination, its weather_notes and transit_options via
+   db_client; build a grounded prompt that includes that data verbatim and asks
+   the model for (a) a packing suggestion list, (b) visa/document reminders based
+   on the stored visa_requirement, (c) transit tips — concise, traveller-facing,
+   plain text, no markdown headers. Return
+   {"advisory": text, "model": tag, "destination": {...}}.
+   Errors: 404 unknown destination; 503 {"error":"ai service unavailable"} on
+   OllamaUnavailable; 503 database unavailable as before.
+PART B — HTMX fragments (server-rendered HTML for the frontend)
+3. Add GET/POST endpoints under /ui/ that return small HTML fragments (use
+   Flask render_template with a templates/ folder; every fragment must be valid
+   standalone HTML using only classes — the frontend supplies the CSS):
+   GET  /ui/destinations/options        -> <option> list for a <select>
+   GET  /ui/weather?destination_id=N    -> weather_notes as a definition list
+   GET  /ui/visa?destination_id=N       -> visa_requirement callout + notes
+   GET  /ui/transit?destination_id=N    -> transit_options as a table
+   GET  /ui/destinations/table          -> manage table: all destinations with
+        per-row edit forms (hx-put) and delete buttons (hx-delete) targeting the
+        JSON API is NOT allowed for fragments — instead give each row
+        hx-post/hx-delete endpoints under /ui/destinations that perform the
+        change via db_client and return the refreshed table fragment.
+   POST /ui/destinations                -> create from form fields
+        (country, visa_requirement, notes) then return refreshed table fragment.
+   POST /ui/destinations/<id>/delete    -> delete then return refreshed table.
+   POST /ui/advisory                    -> form fields destination_id, month,
+        interests; runs the same advisory flow; returns the advisory text inside
+        <article class="advisory-result"> with the model tag in a <footer>.
+4. Tests: extend the suite. Mock Ollama with `responses`. Cover: advisory happy
+   path (assert the prompt sent to Ollama contains the destination country and at
+   least one stored weather note — proving grounding), 404, both 503 paths, one
+   fragment endpoint returns HTML containing seeded-style data, /ui/destinations
+   POST creates then returns table HTML.
+
+DEFINITION OF DONE: full pytest suite green offline; `docker build` still works.
+
+CLAUDE:
+I'll start by reading the existing backend code and my memory notes to understand what I'm extending.
+
+Now the existing tests and the seeded data shapes.
+
+`★ Insight ─────────────────────────────────────`
+Two dependencies, two failure vocabularies. `db_client.py` deliberately *returns* 4xx (a 404 is a real answer worth forwarding), but Ollama is different: a non-200 from a generation endpoint gives the traveller nothing actionable and there is no partial result to relay. So every Ollama failure collapses into one exception. That asymmetry is a design choice, not an inconsistency — and keeping the two 503 bodies distinct (`database service unavailable` vs `ai service unavailable`) is what lets an operator tell which container died from the response alone.
+`─────────────────────────────────────────────────`
+
+`★ Insight ─────────────────────────────────────`
+One security detail worth naming: `db_client._get` builds the URL with `"{}/{}".format(path, row_id)`. The CRUD routes are safe because Flask's `<int:row_id>` converter already guarantees an integer. But `/api/advisory` takes `destination_id` from a JSON body and `/ui/advisory` from a form field — untrusted strings. Something like `1/../weather-notes/1` would be re-pointed at a different database endpoint. So this feature coerces to `int` at its own boundary, which is exactly where the existing "no validation, forward everything" policy stops applying: the passthrough forwards a body the database will validate, but here the value is interpolated into a URL *this* service constructs.
+`─────────────────────────────────────────────────`
+
+`★ Insight ─────────────────────────────────────`
+Notice `generate_advisory` is deliberately the *only* path to an advisory — both `/api/advisory` and `/ui/advisory` call it. If each route built its own prompt they would drift, and the grounding test would only prove one of them safe. The `describe_*` helpers are separate from `build_prompt` for the same reason: data serialisation is mechanical and testable, while prompt wording is a judgement call that will be tuned repeatedly.
+`─────────────────────────────────────────────────`
+
+**I've left one function for you to write — `build_prompt` in `student-5/backend/advisory.py:154`.**
+
+Everything around it is done: the four `describe_*` helpers already render the stored rows into plain-text blocks (`destination_block`, `weather_block`, `transit_block`, `traveller_block`), and the local variables are waiting at the top of the function. You just need to assemble and `return` the prompt string (~8-10 lines).
+
+This matters because it's the entire contract between your stored data and the model. Trade-offs to weigh:
+
+- **How hard to fence the model in.** "Use only the information below" makes it refuse gracefully when a destination has no transit rows (Fiji, id 12); a softer instruction gets richer advice but lets it invent visa rules — the riskiest possible hallucination for this domain.
+- **Structure vs. freedom.** The spec asks for three things: packing list, visa/document reminders, transit tips. Naming them as numbered sections gets reliably parseable output; asking for flowing prose reads better but varies run to run. Remember the output is rendered as plain paragraphs — no markdown headers.
+- **What to do with `month`/`interests` when absent.** `describe_traveller` returns "No month of travel or interests were supplied." — do you want the model to give general year-round advice, or to ask the traveller to narrow it down?
+- **Length.** A 3B model rambles unless told not to. A stated budget ("under 200 words") keeps the fragment readable in the UI.
+
+While you consider it, I'll build the templates, the `/ui/` blueprint and the tests. Say the word if you'd rather I write a default version.
+
+Now the templates.
+
+Five fragments are now visible in the preview panel. Now the manage table and advisory result.
+
+Both new fragments are also visible in the preview panel. Now the `/ui/` blueprint.
+
+Now the test suite. First the conftest fixtures.
+
+Now the advisory tests.
+
+Now the fragment tests.
+
+Everything except the prompt is built and verified. `docker build` passes, and the suite is **51 passed, 12 failed** — the 30 original tests still green, plus 21 new ones. All 12 failures are the same `NotImplementedError` from the one function left for you.
+
+`★ Insight ─────────────────────────────────────`
+Two things the failure list quietly proves. First, `test_ollama_unreachable_returns_the_ai_503` fails *before* reaching Ollama — the prompt is built before the network call, so a prompt bug and a transport bug surface at the same endpoint. Second, the split between `/api/advisory` and `/ui/advisory` failing together confirms both really do share `generate_advisory`; if only one had failed, the grounding test would have been protecting only half the surface.
+`─────────────────────────────────────────────────`
+
+**Your turn: `build_prompt` in `student-5/backend/advisory.py:154`.**
+
+The four blocks are already assembled as local variables — you just compose them and `return` the string:
+
+```python
+destination_block   # "Country: Japan\nVisa requirement on record: visa-free\nEntry notes on record: ..."
+weather_block       # "- Spring (Mar-May): Mild days and heavy cherry blossom crowds.\n- Summer..."
+transit_block       # "- rail: A Japan Rail Pass covers most Shinkansen services."
+traveller_block     # "Month of travel: April\nTraveller interests: food and hiking"
+```
+
+Constraints the tests already encode: the returned string must contain those blocks verbatim (grounding), and the model output is rendered one line per `<p>`, so ask for plain text with no markdown headers.
+
+The decisions that are genuinely yours:
+
+| Choice | Pull one way | Pull the other |
+|---|---|---|
+| Fencing | "Use only the data below" — safe, refuses gracefully when Fiji has no transit rows | Softer framing — richer advice, but invented visa rules |
+| Shape | Three numbered sections (packing / documents / transit) — predictable | Flowing prose — reads better, varies per run |
+| Missing month | Give year-round advice | Tell the traveller to narrow it down |
+| Length | State a word budget — a 3B model rambles otherwise | Let it run long |
+
+Write it and I'll run the full suite; or say "you write it" and I'll put in a defensible default for you to edit.
+
+USER:
+fully implement the entire feature aligned with the specifications
+
+CLAUDE:
+Understood — I'll write `build_prompt` myself and finish the feature.
+
+All 63 pass. Let me add one more test for the no-child-rows case (Fiji, id 12) since the prompt explicitly instructs the model about it.
+
+Pre-existing collision (both services have `app.py`; each conftest imports `app`) — unrelated to my change, and each suite is green on its own. Now rebuilding the image and checking whether a live smoke test is possible.
+
+A real Ollama container is running. Let me check for the application model and its network, then run a genuine end-to-end test.
+
+Ollama has `llama3.2:3b`. I'll run a real end-to-end test on an isolated network, reaching Ollama via the host port so no shared infrastructure is touched.
+
+The full stack works against the real seeded database. Now the real LLM call.
+
+Real end-to-end works and is clearly grounded (visa-free, Visit Japan Web, Japan Rail Pass, Suica/Pasmo all came from the database). One correction: the spec asks for a packing *list*, and the model produced hyphen bullets — my instruction had forbidden those. I'll align the instruction with the spec.
+
+Now the write fragments — create, edit, delete against the real database.
+
+Found a real bug — the edit silently didn't apply. Let me investigate.
+
+The database accepts JSON `null` for `destinations.notes` (`student-5/database/app.py:126-130`) but rejects `""`. My update path sent `""`, so clearing notes failed. Fixing.
+
+Notes clear and restore correctly. Now the final live AI checks — the fragment, and Fiji (no child rows) to prove the grounding instruction.
+
+Two real issues in that output worth fixing: the model invented a passport-validity rule that is **not** in the stored data (the six-month rule belongs to Indonesia's seeded note, not Japan's), and the bullets doubled up. Tightening the Documents instruction and the bullet format.
+
+The updated `advisory_result.html` is visible in the preview panel. Rebuilding and re-testing.
+
+Markup is clean and bullets are fixed, but the model **still** invents the six-month passport rule. That's a known failure mode: a negative instruction ("do not mention passport validity") primes the very thing it forbids. Replacing it with a positive constraint.
+
+Passport-validity invention is gone. One residual drift remains ("up to 90 days" isn't recorded for Japan), so I'll make the global rule cover numbers, and add a disclaimer to the fragment that doesn't depend on the model complying.
+
+Fiji is exactly right — Documents grounded entirely in the seeded note, and Transit correctly declares the gap instead of inventing ferries. Let me lock the disclaimer in with a test and do a final fragment render.
+
+All 68 pass, and note the `&#39;` — Jinja autoescaping is doing its job on model output. Tearing down the throwaway containers.
+
+Pre-existing containers untouched. Updating my memory notes for future sessions.
+
+Feature complete. **68 tests pass** (30 original untouched + 38 new), `docker build` works, and every endpoint was verified against the real seeded database and the real `llama3.2:3b` in your running Ollama container.
+
+## What was added
+
+| File | Contents |
+|---|---|
+| `ollama_client.py` | `OllamaClient.generate()`, 120s timeout, `OllamaUnavailable` |
+| `advisory.py` | grounding, `build_prompt`, `POST /api/advisory` blueprint |
+| `ui.py` | 8 `/ui/` fragment endpoints |
+| `templates/` | 7 fragments, classes only, no base layout |
+| `tests/test_advisory.py`, `tests/test_ui_fragments.py` | 38 tests |
+
+Modified: `app.py` (config + AI 503 handler + 2 blueprint registrations), `conftest.py` (fixtures), `Dockerfile` (COPY list + `OLLAMA_URL`).
+
+## Three bugs the live run caught that the mocks could not
+
+1. **Clearing a note was impossible.** I had the edit form send `notes: ""`, but the database's `clean_text` rejects empty strings for *every* field while `clean_field` accepts `null` for the one nullable column. Now sends `notes or None`; regression test added.
+2. **The model invented a visa rule.** For Japan it asserted a six-month passport-validity requirement that appears nowhere in the seed data. The cause was my own instruction — "do not mention passport validity" primed exactly that. A positive constraint ("state the recorded visa requirement exactly as written") removed it.
+3. **Doubled bullets** (`- - Layers`), fixed by specifying the bullet format.
+
+`★ Insight ─────────────────────────────────────`
+The deepest lesson here is that **mocked tests cannot validate a prompt**. My grounding test proves the stored data reaches the model — a necessary property, and worth having — but it says nothing about whether the model *respects* it. That only surfaced by running a real 3B model and reading the output against the seed file. It's why the Smartraveller warning ended up hardcoded in the template footer rather than trusted to the prompt: anything that must always appear cannot depend on model compliance. Prompts are configuration you verify empirically; templates are code you verify deterministically.
+`─────────────────────────────────────────────────`
+
+Residual known behaviour, documented rather than papered over: the model still occasionally adds an unrecorded flourish (once it volunteered that Fiji's airports are well-connected). It reliably declares recorded gaps first, and the footer disclaimer always renders.
+
+Nothing is committed, and I left your running containers alone — the smoke test used its own throwaway network, since removed. Two things you may want next: student-5's backend and database aren't in `docker-compose.yml` yet (only `student5-frontend` at 5105), and the frontend needs the CSS for these class names.

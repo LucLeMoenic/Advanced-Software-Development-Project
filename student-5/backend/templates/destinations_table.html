@@ -1,0 +1,77 @@
+{#
+  The manage view: every destination with an inline edit row and a delete
+  button, plus the create form.
+
+  The whole fragment sits inside one wrapper div and every control targets
+  that wrapper with hx-swap="outerHTML", so each write replaces the table with
+  the server's freshly rendered version. The browser never patches the table
+  itself, which means what you see after a write is always what the database
+  actually stored.
+
+  Note there is no <form> around a row: HTML does not allow a form element as a
+  child of <tr>, so the save button uses hx-include="closest tr" to gather that
+  row's inputs instead. The create form is a real form, placed outside the
+  table where it is valid.
+#}
+<div id="destinations-manage" class="destinations-manage">
+  {% if message %}
+  <p class="fragment-message">{{ message }}</p>
+  {% endif %}
+
+  <table class="destinations-table">
+    <thead>
+      <tr>
+        <th class="destinations-heading" scope="col">ID</th>
+        <th class="destinations-heading" scope="col">Country</th>
+        <th class="destinations-heading" scope="col">Visa requirement</th>
+        <th class="destinations-heading" scope="col">Notes</th>
+        <th class="destinations-heading" scope="col">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for destination in destinations %}
+      <tr class="destination-row">
+        <td class="destination-id">{{ destination.id }}</td>
+        <td class="destination-cell">
+          <input class="field-country" type="text" name="country" value="{{ destination.country }}" aria-label="Country">
+        </td>
+        <td class="destination-cell">
+          <input class="field-visa" type="text" name="visa_requirement" value="{{ destination.visa_requirement }}" aria-label="Visa requirement">
+        </td>
+        <td class="destination-cell">
+          <input class="field-notes" type="text" name="notes" value="{{ destination.notes if destination.notes else '' }}" aria-label="Notes">
+        </td>
+        <td class="destination-actions">
+          <button class="button-save" type="button"
+                  hx-post="/ui/destinations/{{ destination.id }}"
+                  hx-include="closest tr"
+                  hx-target="#destinations-manage"
+                  hx-swap="outerHTML">Save</button>
+          <button class="button-delete" type="button"
+                  hx-post="/ui/destinations/{{ destination.id }}/delete"
+                  hx-target="#destinations-manage"
+                  hx-swap="outerHTML"
+                  hx-confirm="Delete {{ destination.country }}?">Delete</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr class="destination-row">
+        <td class="fragment-empty" colspan="5">No destinations are recorded yet.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <form class="destination-create-form"
+        hx-post="/ui/destinations"
+        hx-target="#destinations-manage"
+        hx-swap="outerHTML">
+    <label class="create-label" for="create-country">Country</label>
+    <input class="field-country" id="create-country" type="text" name="country" required>
+    <label class="create-label" for="create-visa">Visa requirement</label>
+    <input class="field-visa" id="create-visa" type="text" name="visa_requirement" required>
+    <label class="create-label" for="create-notes">Notes</label>
+    <input class="field-notes" id="create-notes" type="text" name="notes">
+    <button class="button-create" type="submit">Add destination</button>
+  </form>
+</div>
