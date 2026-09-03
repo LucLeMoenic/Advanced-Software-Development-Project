@@ -1,25 +1,49 @@
 name: Student 5 CI
 
+permissions:
+  contents: read
+
 on:
   push:
     paths:
-      - 'student-5/**'
-      - '.github/workflows/student-5.yml'
-      - 'docker-compose.yml'
+      - "student-5/**"
+      - "docker-compose.yml"
+      - ".github/workflows/student-5.yml"
   pull_request:
     paths:
-      - 'student-5/**'
-      - '.github/workflows/student-5.yml'
-      - 'docker-compose.yml'
+      - "student-5/**"
+      - "docker-compose.yml"
+      - ".github/workflows/student-5.yml"
 
 jobs:
-  build:
+  logistics-services:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            student-5/database/requirements.txt
+            student-5/backend/requirements.txt
+
+      - name: Install database test dependencies
+        run: pip install -r student-5/database/requirements.txt
+
+      - name: Install backend test dependencies
+        run: pip install -r student-5/backend/requirements.txt
+
+      - name: Test database API
+        working-directory: student-5/database
+        run: python -m pytest tests
+
+      - name: Test backend orchestration
+        working-directory: student-5/backend
+        run: python -m pytest tests
 
       - name: Validate Docker Compose config
-        run: docker compose config
+        run: docker compose config --quiet
 
-      - name: Build Student 5 frontend container
-        run: docker build -t student5-frontend -f student-5/frontend/Dockerfile student-5/frontend
+      - name: Build integrated Student 5 containers
+        run: docker compose build student5-database student5-backend student5-frontend

@@ -215,11 +215,9 @@ services:
       - "5104:80"
 
   student5-frontend:
-    # Context is the repo root, not ./student-5/frontend, because the image
-    # copies shared/style.css and Docker cannot COPY from outside the context.
     build:
-      context: .
-      dockerfile: student-5/frontend/Dockerfile
+      context: ./student-5/frontend
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "5105:80"
