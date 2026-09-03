@@ -1,25 +1,60 @@
 name: Student 4 CI
 
+permissions:
+  contents: read
+
 on:
+  workflow_dispatch:
   push:
     paths:
-      - 'student-4/**'
-      - '.github/workflows/student-4.yml'
-      - 'docker-compose.yml'
+      - "student-4/**"
+      - "shared/vue-frontend/**"
+      - "package.json"
+      - "scripts/start-student4.ps1"
+      - "scripts/stop-student4.ps1"
+      - "scripts/test-student4.ps1"
+      - "scripts/validate-student4-docker.ps1"
+      - ".env.example"
+      - ".github/workflows/student-4.yml"
+      - "docker-compose.yml"
   pull_request:
     paths:
-      - 'student-4/**'
-      - '.github/workflows/student-4.yml'
-      - 'docker-compose.yml'
+      - "student-4/**"
+      - "shared/vue-frontend/**"
+      - "package.json"
+      - "scripts/start-student4.ps1"
+      - "scripts/stop-student4.ps1"
+      - "scripts/test-student4.ps1"
+      - "scripts/validate-student4-docker.ps1"
+      - ".env.example"
+      - ".github/workflows/student-4.yml"
+      - "docker-compose.yml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate Docker Compose config
-        run: docker compose config
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
 
-      - name: Build Student 4 frontend container
-        run: docker build -t student4-frontend -f student-4/frontend/Dockerfile student-4/frontend
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            student-4/frontend/package-lock.json
+            shared/vue-frontend/package-lock.json
+
+      - name: Validate source and tests
+        run: npm run validation
+
+      - name: Validate container integration
+        run: npm run docker-validation
+
+      - name: Stop services
+        if: always()
+        run: npm run student4:stop

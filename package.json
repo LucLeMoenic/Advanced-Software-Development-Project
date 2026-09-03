@@ -1,4 +1,13 @@
 {
+  "scripts": {
+    "fe-test": "npm test --prefix student-4/frontend",
+    "be-test": "pwsh -NoProfile -File ./scripts/test-student4.ps1 -Area Backend",
+    "db-test": "pwsh -NoProfile -File ./scripts/test-student4.ps1 -Area Database",
+    "validation": "pwsh -NoProfile -File ./scripts/test-student4.ps1 -Area All",
+    "docker-validation": "pwsh -NoProfile -File ./scripts/validate-student4-docker.ps1",
+    "student4:start": "pwsh -NoProfile -File ./scripts/start-student4.ps1",
+    "student4:stop": "pwsh -NoProfile -File ./scripts/stop-student4.ps1"
+  },
   "devDependencies": {
     "@vue/test-utils": "^2.5.0",
     "jsdom": "^29.1.1",

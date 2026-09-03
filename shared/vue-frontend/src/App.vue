@@ -53,11 +53,11 @@
             </a>
           </li>
           <li>
-            <a class="feature-card" href="http://localhost:5104">
+            <a class="feature-card" href="/budget/">
               <span class="student-label">Student 4</span>
               <span class="feature-content">
-                <strong>Team feature</strong>
-                <span class="feature-description">Open the Student 4 application.</span>
+                <strong>Budget &amp; Expense Tracker</strong>
+                <span class="feature-description">Compare planned category limits with actual spending.</span>
               </span>
               <span class="feature-action">Open</span>
             </a>
