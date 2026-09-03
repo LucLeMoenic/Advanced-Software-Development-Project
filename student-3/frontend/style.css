@@ -136,6 +136,72 @@ h2 {
   cursor: default;
 }
 
+.card-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.card button.danger {
+  background: var(--color-error);
+}
+
+.card button.review-toggle {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+}
+
+.review-form,
+.edit-form {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.edit-form label,
+.review-form-fields label,
+#create-attraction-form label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin: 0.5rem 0 0.2rem;
+}
+
+.edit-form input,
+.edit-form select,
+.edit-form textarea,
+.review-form-fields input,
+.review-form-fields textarea,
+#create-attraction-form input,
+#create-attraction-form select,
+#create-attraction-form textarea {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+#create-attraction-form button {
+  margin-top: 0.6rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  cursor: pointer;
+}
+
+.success {
+  color: #1a7f37;
+}
+
 .loading,
 .empty,
 .error {
