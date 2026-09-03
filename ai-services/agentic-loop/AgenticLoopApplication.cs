@@ -822,7 +822,7 @@ public static partial class AgenticLoopApplication
     [GeneratedRegex(@"^\s*\[ACT\]\s*$", RegexOptions.Multiline)]
     private static partial Regex ActHeadingRegex();
 
-    [GeneratedRegex(@"^\s*\[OBSERVE\]\s*$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^\s*\[OBSERVE\]", RegexOptions.Multiline)]
     private static partial Regex ObserveHeadingRegex();
 
     [GeneratedRegex(@"^\s*Findings:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
