@@ -148,18 +148,60 @@ def create_app(database_path=None):
             """)
             count = connection.execute("SELECT COUNT(*) FROM trips").fetchone()[0]
             if count == 0:
-                destinations = ["Kyoto", "Lisbon", "Melbourne", "Seoul", "Edinburgh", "Hanoi", "Montreal", "Florence", "Auckland", "Copenhagen"]
+                seed_trips = [
+                    ("Culture Explorer", "Kyoto", 0, 1800, "temples, gardens, traditional crafts", [
+                        ("Walk the Philosopher's Path", "Start early, then visit the nearby temples and small craft shops."),
+                        ("Explore Nishiki Market", "Sample local specialities and allow time for the surrounding arcades."),
+                    ]),
+                    ("Coastal Foodie", "Lisbon", 4, 1450, "seafood, viewpoints, historic streets", [
+                        ("Ride to Alfama and explore on foot", "Use the morning for quieter lanes and stop at the viewpoints."),
+                        ("Visit Belem's riverside landmarks", "Book popular sights ahead and leave time for a local bakery."),
+                    ]),
+                    ("Design Weekender", "Melbourne", 8, 1250, "coffee, galleries, architecture", [
+                        ("Tour the laneways and arcades", "Combine street art, independent shops, and a relaxed coffee stop."),
+                        ("Spend an afternoon in Fitzroy", "Browse local design stores and finish with an early dinner."),
+                    ]),
+                    ("Night Market Fan", "Seoul", 12, 2100, "markets, contemporary art, neighbourhoods", [
+                        ("Explore Gyeongbokgung and Bukchon", "Arrive early and respect signs around residential streets."),
+                        ("Discover Hongdae after dark", "Plan dinner at the market and use the metro for the return journey."),
+                    ]),
+                    ("History Walker", "Edinburgh", 16, 1100, "castles, literature, scenic walks", [
+                        ("Walk the Royal Mile", "Begin at the castle and allow time for closes and museum stops."),
+                        ("Climb Arthur's Seat", "Check the weather, wear suitable shoes, and carry water."),
+                    ]),
+                    ("Street Food Seeker", "Hanoi", 20, 950, "street food, history, lakes", [
+                        ("Explore the Old Quarter", "Join a small food walk or note busy stalls to revisit later."),
+                        ("Visit the Temple of Literature", "Go in the morning, then take a relaxed walk around Hoan Kiem Lake."),
+                    ]),
+                    ("Museum Hopper", "Montreal", 24, 1650, "museums, bakeries, cycling", [
+                        ("Cycle along the Lachine Canal", "Reserve a bike and stop in Atwater Market for lunch."),
+                        ("Explore Old Montreal", "Combine the history museum with an evening walk by the waterfront."),
+                    ]),
+                    ("Art Trail Planner", "Florence", 28, 1950, "Renaissance art, markets, viewpoints", [
+                        ("Visit the Uffizi Gallery", "Reserve a timed ticket and keep the rest of the morning flexible."),
+                        ("Walk to Piazzale Michelangelo", "Cross through Oltrarno and arrive before sunset for the city view."),
+                    ]),
+                    ("Outdoor Adventurer", "Auckland", 32, 2400, "coastal walks, islands, local food", [
+                        ("Take the ferry to Waiheke Island", "Confirm the return timetable and choose one coastal walking route."),
+                        ("Explore Mount Eden and nearby cafes", "Walk the summit loop early and spend the afternoon locally."),
+                    ]),
+                    ("Urban Cyclist", "Copenhagen", 36, 2200, "cycling, modern design, bakeries", [
+                        ("Cycle the harbour route", "Use a marked cycle lane and pause at the waterfront public spaces."),
+                        ("Explore Norrebro and the Designmuseum", "Allow time for neighbourhood shops and a bakery stop."),
+                    ]),
+                ]
                 base = date.today() + timedelta(days=30)
-                for index, destination in enumerate(destinations):
+                for user, destination, start_offset, budget, interests, stops in seed_trips:
                     created = now()
+                    start_date = base + timedelta(days=start_offset)
                     cursor = connection.execute(
                         "INSERT INTO trips(user_name,destination,start_date,end_date,budget,interests,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?)",
-                        ("Demo Traveller", destination, (base + timedelta(days=index)).isoformat(), (base + timedelta(days=index + 2)).isoformat(), 1200 + index * 150, "food, culture, walking", created, created),
+                        (user, destination, start_date.isoformat(), (start_date + timedelta(days=1)).isoformat(), budget, interests, created, created),
                     )
-                    for day_number in range(1, 3):
+                    for day_number, (activity, notes) in enumerate(stops, start=1):
                         connection.execute(
                             "INSERT INTO trip_stops(trip_id,day,activity,notes,sort_order,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
-                            (cursor.lastrowid, day_number, f"Explore {destination} - day {day_number}", "Seeded demonstration stop", 0, created, created),
+                            (cursor.lastrowid, day_number, activity, notes, 0, created, created),
                         )
             connection.commit()
 
