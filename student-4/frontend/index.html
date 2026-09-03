@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compare category budgets with actual travel spending and request optional budget advice.">
+  <title>Budget &amp; Expense Tracker</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/htmx.min.js" defer></script>
+  <script src="app.js" type="module"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-inner">
+      <a class="product-name" href="./">Budget &amp; Expense Tracker</a>
+      <a class="home-link" href="/">All features</a>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="workspace-heading" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Student 4 · Release 0</p>
+        <h1 id="page-title">Planned versus actual spending</h1>
+      </div>
+      <div class="journey-control">
+        <label for="journey-select">Journey</label>
+        <select id="journey-select" aria-describedby="journey-help"></select>
+        <span id="journey-help">Choose a locally owned budget group.</span>
+      </div>
+    </section>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <section aria-labelledby="summary-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="summary-heading">Journey position</h2>
+          <p id="summary-period" class="section-note"></p>
+        </div>
+        <button id="refresh" class="icon-button" type="button" title="Refresh budget data" aria-label="Refresh budget data">↻</button>
+      </div>
+      <dl class="summary-strip">
+        <div><dt>Planned</dt><dd id="total-planned">—</dd></div>
+        <div><dt>Actual</dt><dd id="total-actual">—</dd></div>
+        <div><dt>Remaining</dt><dd id="total-remaining">—</dd></div>
+        <div><dt>Used</dt><dd id="total-percentage">—</dd></div>
+      </dl>
+      <div id="notices" class="notices" aria-live="polite"></div>
+    </section>
+
+    <section class="data-section" aria-labelledby="budgets-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="budgets-heading">Category budgets</h2>
+          <p class="section-note">Limits and spending status in the journey base currency.</p>
+        </div>
+        <button id="add-budget" class="primary-button" type="button"><span aria-hidden="true">+</span> Add budget</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Category</th><th scope="col">Planned</th><th scope="col">Actual</th><th scope="col">Remaining</th><th scope="col">Use</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+          <tbody id="budget-rows"></tbody>
+        </table>
+      </div>
+      <p id="budget-empty" class="empty-state" hidden>No category budgets exist for this journey.</p>
+    </section>
+
+    <section class="data-section" aria-labelledby="expenses-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="expenses-heading">Expense ledger</h2>
+          <p class="section-note">Original values and saved demonstration-rate conversions.</p>
+        </div>
+        <button id="add-expense" class="primary-button" type="button"><span aria-hidden="true">+</span> Add expense</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Date</th><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Original</th><th scope="col">Converted</th><th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+          <tbody id="expense-rows"></tbody>
+        </table>
+      </div>
+      <p id="expense-empty" class="empty-state" hidden>No expenses are recorded for this journey.</p>
+    </section>
+
+    <section class="advice-section" aria-labelledby="advice-heading">
+      <div class="section-heading">
+        <div>
+          <h2 id="advice-heading">Budget advice</h2>
+          <p class="section-note">Optional guidance; totals and statuses remain deterministic.</p>
+        </div>
+        <button id="generate-advice" class="secondary-button" type="button">Generate budget advice</button>
+      </div>
+      <div id="advice-output" class="advice-output" hidden>
+        <div class="advice-title-row"><strong id="advice-summary"></strong><span id="advice-source" class="source-badge"></span></div>
+        <ul id="advice-suggestions"></ul>
+      </div>
+      <p id="advice-empty" class="empty-state">Generate advice after reviewing the deterministic dashboard.</p>
+    </section>
+
+    <footer class="rate-disclaimer"><span id="rate-date"></span><span id="rate-disclaimer"></span></footer>
+  </main>
+
+  <dialog id="budget-dialog" aria-labelledby="budget-dialog-title">
+    <form id="budget-form" novalidate>
+      <div class="dialog-heading"><p class="eyebrow">Category limit</p><h2 id="budget-dialog-title">Add budget</h2></div>
+      <input id="budget-id" type="hidden">
+      <div class="form-grid">
+        <label class="full-field">Journey label<input id="budget-journey" maxlength="80" required></label>
+        <label>Category<select id="budget-category" required><option value="accommodation">Accommodation</option><option value="food">Food</option><option value="transport">Transport</option><option value="activities">Activities</option><option value="shopping">Shopping</option><option value="other">Other</option></select></label>
+        <label>Limit amount<input id="budget-amount" inputmode="decimal" placeholder="500.00" required></label>
+        <label>Base currency<select id="budget-currency" required></select></label>
+        <label>Start date<input id="budget-start" type="date" required></label>
+        <label>End date<input id="budget-end" type="date" required></label>
+      </div>
+      <div class="dialog-actions"><button id="cancel-budget" class="text-button" type="button">Cancel</button><button class="primary-button" type="submit">Save budget</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="expense-dialog" aria-labelledby="expense-dialog-title">
+    <form id="expense-form" novalidate>
+      <div class="dialog-heading"><p class="eyebrow">Ledger entry</p><h2 id="expense-dialog-title">Add expense</h2></div>
+      <input id="expense-id" type="hidden">
+      <div class="form-grid">
+        <label class="full-field">Budget category<select id="expense-budget" required></select></label>
+        <label class="full-field">Description<input id="expense-description" maxlength="120" required></label>
+        <label>Original amount<input id="expense-amount" inputmode="decimal" placeholder="45.50" required></label>
+        <label>Original currency<select id="expense-currency" required></select></label>
+        <label>Spent on<input id="expense-date" type="date" required></label>
+        <label class="full-field">Notes<textarea id="expense-notes" maxlength="500" rows="3"></textarea></label>
+      </div>
+      <p id="conversion-preview" class="conversion-preview" aria-live="polite"></p>
+      <div class="dialog-actions"><button id="cancel-expense" class="text-button" type="button">Cancel</button><button class="primary-button" type="submit">Save expense</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <div class="dialog-heading"><p class="eyebrow">Confirm action</p><h2 id="confirm-title">Delete record?</h2></div>
+    <p id="confirm-message"></p>
+    <div class="dialog-actions"><button id="confirm-cancel" class="text-button" type="button">Cancel</button><button id="confirm-accept" class="danger-button" type="button">Delete</button></div>
+  </dialog>
+</body>
+</html>
