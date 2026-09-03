@@ -1,19 +1,24 @@
 /* ==========================================================================
    Student 5 - Travel Logistics & Advisory Service: frontend theme.
 
-   DESIGN TOKENS
-     --ink    #16303f  headings and body text (deep flight-deck navy)
-     --paper  #f7f9f8  page background
-     --accent #0e7c86  interactive elements and section tabs (transit-signage teal)
-     --warn   #b3701f  visa and document cautions
-     --line   #d7e0e2  borders and dividers
-     --muted  #5b7280  provenance, hints, secondary text
+   PALETTE AND CONVENTIONS ADOPTED FROM STUDENT 2'S ITINERARY PLANNER
+   (student-2/frontend/styles.css) as the team's shared visual theme, so the
+   five feature frontends read as one product. Token values below are copied
+   verbatim from that file. Do not drift them independently -- if the team
+   changes the theme, it changes there first and is mirrored here.
 
-   TYPE       one system sans stack throughout.
-              h1 1.6rem/650, panel h2 1.05rem/650, body 0.95rem/1.55.
-   LAYOUT     max content width 880px, left-aligned.
-   SIGNATURE  every panel carries a coloured left "line tab" like a transit-line
-              indicator. Everything else stays quiet: no cards, no shadows.
+   The legacy --ink / --paper / --accent / --warn / --line / --muted names this
+   file used before are kept as aliases pointing at the new tokens, so any rule
+   or future fragment still referencing them resolves to the shared palette
+   instead of the old teal one. New rules should use the --color-* names.
+
+   CONVENTIONS (from the reference)
+     - 1px hairline borders on white surfaces. No card shadows.
+     - 3px radius on buttons; .28rem on text inputs.
+     - Uppercase letter-spaced eyebrow labels (.eyebrow / .step-label).
+     - Fixed-viewport app shell above 1120px; page scrolling below it.
+     - Inter requested as a local/system font only. No webfont download,
+       no build step, no framework.
 
    Sections marked "backend fragment" style markup this file does not contain.
    That markup is owned by student-5/backend/templates/ -- its class names are
@@ -21,13 +26,39 @@
    ========================================================================== */
 
 :root {
-  --ink: #16303f;
-  --paper: #f7f9f8;
-  --accent: #0e7c86;
-  --warn: #b3701f;
-  --line: #d7e0e2;
-  --muted: #5b7280;
-  --surface: #fff;
+  /* Shared theme tokens -- Student 2's Itinerary Planner palette. */
+  --color-primary: #24536b;
+  --color-primary-dark: #173d51;
+  --color-primary-soft: #eaf1f4;
+  --color-text: #17232b;
+  --color-muted: #5d6a72;
+  --color-border: #d8dee2;
+  --color-border-strong: #aeb9c0;
+  --color-surface: #ffffff;
+  --color-subtle: #f5f7f8;
+  --color-background: #f3f5f6;
+  --color-success: #28633f;
+  --color-warning: #7b5714;
+  --color-danger: #9a3030;
+
+  /* Legacy aliases. Kept so nothing that already referenced them breaks; they
+     now resolve to the shared palette rather than the previous teal one. */
+  --ink: var(--color-text);
+  --paper: var(--color-background);
+  --accent: var(--color-primary);
+  --warn: var(--color-warning);
+  --line: var(--color-border);
+  --muted: var(--color-muted);
+  --surface: var(--color-surface);
+
+  /* Inter if the machine already has it, otherwise the platform UI face.
+     Deliberately no @font-face and no <link> to a font CDN: the page must
+     render identically offline and must not add a third-party request. */
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 *,
@@ -36,155 +67,529 @@
   box-sizing: border-box;
 }
 
+html,
 body {
-  margin: 0;
-  background: var(--paper);
-  color: var(--ink);
-  font: 0.95rem/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  height: 100%;
 }
 
-/* Every focusable thing, once, rather than per-component. Keyboard users must
-   be able to see where they are. */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Every focusable thing, once, rather than per-component. */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
+summary:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 1px;
+  outline: 3px solid var(--color-primary-dark);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* --------------------------------------------------------------------------
-   Header and destination picker
+   App header
    -------------------------------------------------------------------------- */
 
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 1.1rem 1.25rem;
-  border-bottom: 2px solid var(--ink);
-  background: var(--surface);
+.app-header {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.page-title {
-  margin: 0;
-  font-size: 1.6rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-}
-
-.destination-picker {
+.app-header-inner {
   display: flex;
+  width: min(100% - 2rem, 88rem);
+  min-height: 3.75rem;
+  margin: 0 auto;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-.picker-label {
+/* The page's single <h1>. Sized as a product wordmark, not as a page title --
+   the composer's .composer-title carries the visual weight instead, exactly as
+   in the reference. */
+.product-name {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.page-navigation a {
+  color: var(--color-primary-dark);
+  font-size: 0.86rem;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2rem;
+}
+
+.page-navigation a::before {
+  content: "\2190";
+  margin-right: 0.4rem;
+}
+
+.page-navigation a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* --------------------------------------------------------------------------
+   Shell
+   -------------------------------------------------------------------------- */
+
+.step-label,
+.eyebrow {
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.step-label {
   font-weight: 600;
 }
 
-.destination-select {
-  font: inherit;
-  color: inherit;
-  min-width: 14rem;
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: var(--surface);
+/* Rows: composer (auto), planner grid (fills), manage section (auto).
+   overflow-y on the shell rather than the body means the normal state -- with
+   "Manage destinations" collapsed -- shows no scrollbar at all, but opening
+   that section scrolls the shell instead of being clipped by body overflow. */
+.page-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 16px;
+  width: min(100% - 2rem, 88rem);
+  height: calc(100dvh - 3.75rem);
+  margin: 0 auto;
+  padding: 18px 0;
+  overflow-y: auto;
 }
 
-/* backend fragment: destination_options.html */
-.destination-option,
-.destination-option-blank {
-  color: var(--ink);
+h2 {
+  margin: 2px 0 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.destination-option-blank {
-  color: var(--muted);
+label,
+.field-label,
+.create-label {
+  display: block;
+  margin: 0 0 5px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.28rem;
+  padding: 9px 10px;
+  color: var(--color-text);
+  background: #fff;
 }
 
 /* --------------------------------------------------------------------------
-   Panels -- the shared shell every section sits in
+   Collapsible sections -- the trip composer and the manage panel share this
+   summary treatment, including the pure-CSS rotating plus/minus toggle.
    -------------------------------------------------------------------------- */
 
-.page-main {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1.25rem;
+.trip-composer,
+.manage-section {
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
 }
 
-.panel {
-  margin: 0 0 1.25rem;
-  padding: 1rem 1.25rem;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--accent); /* the transit-line tab */
+.trip-composer > summary,
+.manage-section > summary {
+  display: flex;
+  min-height: 82px;
+  padding: 16px 24px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  cursor: pointer;
+  list-style: none;
 }
 
-/* Documents are where bad information does real damage, so this one panel
-   wears the caution colour. */
-.panel-visa {
-  border-left-color: var(--warn);
+.trip-composer > summary::-webkit-details-marker,
+.manage-section > summary::-webkit-details-marker {
+  display: none;
 }
 
-.panel-heading {
-  margin: 0 0 0.6rem;
+.trip-composer > summary > span:first-child,
+.manage-section > summary > span:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.composer-title {
+  font-size: 1.45rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.composer-summary {
+  color: var(--color-muted);
+  font-size: 0.84rem;
+}
+
+.composer-toggle {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+}
+
+.composer-toggle::before,
+.composer-toggle::after {
+  position: absolute;
+  top: 17px;
+  left: 9px;
+  width: 18px;
+  height: 2px;
+  content: "";
+  background: var(--color-primary-dark);
+}
+
+.composer-toggle::after {
+  transform: rotate(90deg);
+  transition: transform 0.16s ease;
+}
+
+.trip-composer[open] .composer-toggle::after,
+.manage-section[open] .composer-toggle::after {
+  transform: rotate(0);
+}
+
+/* --------------------------------------------------------------------------
+   Trip composer form
+   -------------------------------------------------------------------------- */
+
+.advisory-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  padding: 8px 24px 26px;
+  align-items: end;
+  border-top: 1px solid var(--color-border);
+}
+
+.composer-fields {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 18px 16px;
+  padding-top: 18px;
+}
+
+.field-group {
+  min-width: 0;
+}
+
+.field-destination { grid-column: span 4; }
+.field-month       { grid-column: span 3; }
+.field-interests   { grid-column: span 5; }
+
+.trip-form-actions {
+  display: flex;
+  min-width: 172px;
+  padding-bottom: 1px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+.primary-button,
+.secondary-button,
+.danger-button,
+.button-advisory,
+.button-create,
+.button-save,
+.button-delete {
+  min-height: 42px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 10px 16px;
+  font-weight: 600;
+}
+
+.primary-button,
+.button-advisory,
+.button-create {
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.primary-button:hover,
+.button-advisory:hover,
+.button-create:hover {
+  background: var(--color-primary-dark);
+}
+
+.button-advisory {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* Secondary = white with a strong border. Save is the non-destructive half of
+   the row's action pair, so it takes this tier. */
+.secondary-button,
+.button-save {
+  border-color: var(--color-border-strong);
+  color: var(--color-primary-dark);
+  background: #fff;
+}
+
+.secondary-button:hover,
+.button-save:hover {
+  background: var(--color-subtle);
+}
+
+/* Danger = outlined, not filled. A solid red next to a solid primary would
+   read as the primary action of the row. The fragment already puts hx-confirm
+   on this button. */
+.danger-button,
+.button-delete {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: transparent;
+}
+
+.danger-button:hover,
+.button-delete:hover {
+  background: #fbf1f1;
+}
+
+.text-button {
+  border: 0;
+  padding: 4px;
+  color: var(--color-primary-dark);
+  background: transparent;
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+/* Table-row buttons are denser than form buttons. */
+.button-save,
+.button-delete {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.button-delete {
+  margin-left: 0.35rem;
+}
+
+/* htmx sets [disabled] on the advisory button for the length of the call. */
+.button-advisory[disabled] {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+   Planner grid -- one bordered white surface, split sidebar / main
+   -------------------------------------------------------------------------- */
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 330px) minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.destination-details {
+  display: flex;
+  min-height: 0;
+  padding: 20px;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-subtle);
+  scrollbar-gutter: stable;
+}
+
+/* Same reason as .advisory-main > * below: this column scrolls, so its
+   sections must keep their natural height rather than being squashed. */
+.destination-details > * {
+  flex: 0 0 auto;
+}
+
+.details-eyebrow {
+  margin: 0;
+}
+
+.detail-section h2 {
+  margin: 0 0 10px;
   font-size: 1.05rem;
-  font-weight: 650;
 }
 
-.panel-body > :first-child {
-  margin-top: 0;
+.advisory-main {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface);
+  scrollbar-gutter: stable;
 }
 
-.panel-body > :last-child {
-  margin-bottom: 0;
+/* This column scrolls as a whole, so none of its children may be compressed
+   to fit it. Without this, flex-shrink:1 squashes the advisory panel below its
+   own content height and the generated text paints straight over the transit
+   table underneath. */
+.advisory-main > * {
+  flex: 0 0 auto;
+}
+
+/* The advisory panel is an hx-target with an innerHTML swap, so anything
+   inside it is destroyed on the first generation. The section's accessible
+   name therefore has to live out here, above the swap boundary. */
+.advisory-head {
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.advisory-head h2 {
+  margin: 4px 0 0;
+  font-size: 1.65rem;
+}
+
+.transit-section {
+  padding: 22px 28px 26px;
+  border-top: 1px solid var(--color-border);
+}
+
+.transit-section h2 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+}
+
+/* --------------------------------------------------------------------------
+   Empty state -- the pre-generation advisory panel
+   -------------------------------------------------------------------------- */
+
+.empty-state {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 72px 32px;
+  text-align: center;
+}
+
+.empty-index {
+  color: var(--color-primary);
+  font-size: 1.1rem;
+}
+
+.empty-state h2 {
+  margin-top: 18px;
+  font-size: 2rem;
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.6;
 }
 
 /* Pre-swap placeholder text. Reads as "not yet", never as "nothing here". */
 .panel-hint {
   margin: 0;
-  color: var(--muted);
-  font-style: italic;
+  color: var(--color-muted);
+  font-size: 0.86rem;
 }
 
 /* --------------------------------------------------------------------------
-   backend fragment: fragment_message.html and the shared empty state
+   backend fragment: fragment_message.html, and the shared empty row
    -------------------------------------------------------------------------- */
 
 /* Rendered when a fragment cannot show real content: no destination chosen,
-   an unknown id, or a dependency that is down. It is the honest answer, not an
-   error box, so it is quiet -- but it keeps the caution rule so it never reads
-   as data. */
+   an unknown id, or a dependency that is down. Also written by the
+   htmx:responseError listener in index.html, so a proxy-level failure and a
+   backend-level failure look identical to the reader. */
 .fragment-message {
-  margin: 0 0 0.6rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--warn);
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-warning);
   border-radius: 3px;
-  color: var(--warn);
+  color: var(--color-warning);
+  background: #fbf6ec;
+  font-size: 0.86rem;
   font-weight: 600;
 }
 
 /* "No rows recorded for this destination." Deliberate, not broken: destination
    12 (Fiji) has no weather notes and no transit options and must still look
-   like a finished panel. Appears both as a <p> and as a <td colspan="5">. */
+   like a finished panel. Appears both as a <p> and as a <td colspan="5">.
+   Muted and boxed rather than italic -- italics read as an aside, and this is
+   the panel's actual answer. */
 .fragment-empty {
   margin: 0;
-  color: var(--muted);
-  font-style: italic;
+  padding: 14px 16px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 3px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  font-size: 0.86rem;
 }
 
 td.fragment-empty {
-  padding: 0.75rem 0.5rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
   text-align: left;
 }
 
 /* --------------------------------------------------------------------------
    backend fragment: weather.html
+   The template emits a real <dl>, so it takes the reference's dt/dd metric
+   treatment: uppercase muted term, plain-weight detail, hairline between.
    -------------------------------------------------------------------------- */
 
 .weather-notes {
@@ -192,16 +597,24 @@ td.fragment-empty {
 }
 
 .weather-season {
-  margin-top: 0.5rem;
+  color: var(--color-muted);
+  font-size: 0.72rem;
   font-weight: 600;
-}
-
-.weather-notes > .weather-season:first-child {
-  margin-top: 0;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .weather-detail {
-  margin: 0 0 0.2rem;
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* A dt that follows a dd starts a new season block. */
+.weather-detail + .weather-season {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
 }
 
 /* --------------------------------------------------------------------------
@@ -209,78 +622,122 @@ td.fragment-empty {
    -------------------------------------------------------------------------- */
 
 .visa-callout {
-  margin: 0;
+  display: block;
 }
 
 .visa-country {
-  margin: 0 0 0.35rem;
-  font-weight: 650;
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
 
-/* The single most consequential line on the page. */
+/* The single most consequential line on the page, so it takes the reference's
+   .mode-badge chip treatment: primary-soft fill, primary-dark text, shrink to
+   its own content so it reads as one fact rather than as prose.
+   Deliberately NOT uppercased like .mode-badge is -- these strings are whole
+   sentences ("Visa required for stays over 30 days"), and uppercasing a
+   sentence costs more legibility than the extra formality buys. */
 .visa-requirement {
-  margin: 0 0 0.6rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--warn);
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 7px 11px;
   border-radius: 3px;
-  color: var(--warn);
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  font-size: 0.86rem;
   font-weight: 600;
+  line-height: 1.4;
 }
 
 .visa-notes {
-  margin: 0 0 0.6rem;
-}
-
-/* Coursework data disclaimer. Smaller than body text but never below the
-   0.8rem legibility floor, and never hidden. */
-.visa-disclaimer {
-  margin: 0.6rem 0 0;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 0.82rem;
+  margin: 0 0 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------
-   Tables -- shared geometry for the transit and manage fragments
+   Mandatory notices
+   backend fragments: visa.html and advisory_result.html
+
+   Both are legal / verification notices and are load-bearing. They carry the
+   warning colour so they are impossible to skim past. Do not shrink below this
+   size, grey them out, hide them, or collapse the two into one rule that some
+   later layout change can suppress.
+   -------------------------------------------------------------------------- */
+
+.visa-disclaimer,
+.advisory-disclaimer {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-warning);
+  border-radius: 0 3px 3px 0;
+  color: var(--color-warning);
+  background: #fbf6ec;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.visa-disclaimer {
+  margin-top: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Tables -- shared geometry for the transit and manage fragments.
+   Hairline row borders, uppercase muted column headings, no zebra striping.
    -------------------------------------------------------------------------- */
 
 .transit-table,
 .destinations-table {
   width: 100%;
-  margin-top: 0.4rem;
   border-collapse: collapse;
 }
 
 .transit-heading,
 .destinations-heading {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 2px solid var(--line);
-  font-size: 0.85rem;
-  font-weight: 650;
+  padding: 0 10px 8px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   text-align: left;
 }
 
-/* backend fragment: transit.html */
-.transit-row .transit-type,
-.transit-row .transit-details {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid var(--line);
-  vertical-align: top;
+.transit-heading:first-child,
+.destinations-heading:first-child {
+  padding-left: 0;
 }
 
-.transit-type {
+/* backend fragment: transit.html */
+.transit-row > .transit-type,
+.transit-row > .transit-details {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--color-border);
+  vertical-align: top;
+  font-size: 0.9rem;
+}
+
+.transit-row > .transit-type {
+  padding-left: 0;
   width: 11rem;
   font-weight: 600;
 }
 
 .transit-details {
-  color: var(--ink);
+  color: var(--color-muted);
+  line-height: 1.5;
 }
 
 /* --------------------------------------------------------------------------
    backend fragment: destinations_table.html (the manage panel)
    -------------------------------------------------------------------------- */
+
+.manage-body {
+  padding: 8px 24px 26px;
+  border-top: 1px solid var(--color-border);
+}
 
 .destinations-manage {
   display: block;
@@ -289,14 +746,16 @@ td.fragment-empty {
 .destination-row > .destination-id,
 .destination-row > .destination-cell,
 .destination-row > .destination-actions {
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--line);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--color-border);
   vertical-align: middle;
 }
 
-.destination-id {
-  width: 3rem;
-  color: var(--muted);
+.destination-row > .destination-id {
+  padding-left: 0;
+  width: 3.5rem;
+  color: var(--color-muted);
+  font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -308,174 +767,63 @@ td.fragment-empty {
 
 .destination-actions {
   white-space: nowrap;
+  text-align: right;
 }
 
-/* The row inputs are edit-in-place: they should read as table cells until
-   focused, not as a wall of boxes. */
+/* This is an inline-edit table: the cells ARE the form. They therefore get
+   real input chrome rather than the transparent "looks like a cell until you
+   touch it" treatment -- a row you can type into should say so before you
+   discover it by clicking. */
 .field-country,
 .field-visa,
 .field-notes {
-  font: inherit;
-  color: inherit;
-  width: 100%;
+  min-height: 36px;
   min-width: 6rem;
-  padding: 0.35rem 0.45rem;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  background: transparent;
+  padding: 7px 9px;
+  font-size: 0.88rem;
 }
 
 .field-country:hover,
 .field-visa:hover,
-.field-notes:hover,
-.field-country:focus,
-.field-visa:focus,
-.field-notes:focus {
-  border-color: var(--line);
-  background: var(--surface);
+.field-notes:hover {
+  border-color: var(--color-primary);
 }
 
-/* --------------------------------------------------------------------------
-   Buttons
-   -------------------------------------------------------------------------- */
-
-.button-advisory,
-.button-save,
-.button-create {
-  font: inherit;
-  font-weight: 600;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid var(--accent);
-  border-radius: 3px;
-  background: var(--accent);
-  color: var(--surface);
-  cursor: pointer;
-}
-
-/* Save sits inside a dense table row, so it is quiet until you want it. */
-.button-save {
-  padding: 0.35rem 0.7rem;
-  background: transparent;
-  color: var(--accent);
-}
-
-.button-save:hover {
-  background: var(--accent);
-  color: var(--surface);
-}
-
-/* Destructive, so it wears the caution colour -- but stays outlined rather
-   than filled, because a solid red button next to a solid teal one reads as
-   the primary action. The fragment already puts hx-confirm on it. */
-.button-delete {
-  font: inherit;
-  font-weight: 600;
-  margin-left: 0.35rem;
-  padding: 0.35rem 0.7rem;
-  border: 1px solid var(--warn);
-  border-radius: 3px;
-  background: transparent;
-  color: var(--warn);
-  cursor: pointer;
-}
-
-.button-delete:hover {
-  background: var(--warn);
-  color: var(--surface);
-}
-
-.button-advisory:hover,
-.button-create:hover {
-  background: #0b656d;
-  border-color: #0b656d;
-}
-
-/* htmx sets [disabled] on the advisory button for the length of the call. */
-.button-advisory[disabled] {
-  cursor: progress;
-  opacity: 0.55;
-}
-
-/* --------------------------------------------------------------------------
-   Forms -- the advisory form (this file) and the create form (fragment)
-   -------------------------------------------------------------------------- */
-
-.field-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.field-label,
-.create-label {
-  display: block;
-  margin: 0.4rem 0 0.15rem;
-  font-weight: 600;
-}
-
-.field-input {
-  font: inherit;
-  color: inherit;
-  width: 100%;
-  padding: 0.45rem 0.55rem;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: var(--surface);
-}
-
-/* backend fragment: the create form under the manage table. Its inputs share
-   the .field-country / .field-visa / .field-notes classes with the edit rows,
-   so the transparent edit-in-place treatment is reversed here -- outside a
-   table these need to look like the empty fields they are. */
-/* The fragment's DOM order is label, input, label, input, label, input, button
-   with no wrapper per pair, so a two-track grid (label column, field column)
-   is what lays it out correctly without touching the template. */
+/* The fragment's create form has DOM order label, input, label, input, label,
+   input, button with no wrapper per pair, so a two-track grid (label column,
+   field column) lays it out correctly without touching the template. */
 .destination-create-form {
   display: grid;
-  grid-template-columns: 10rem 1fr;
-  gap: 0.45rem 0.75rem;
+  grid-template-columns: 10rem minmax(0, 26rem);
+  gap: 10px 16px;
   align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
 }
 
 .destination-create-form .create-label {
   margin: 0;
 }
 
-.destination-create-form .field-country,
-.destination-create-form .field-visa,
-.destination-create-form .field-notes {
-  border-color: var(--line);
-  background: var(--surface);
-}
-
 .destination-create-form .button-create {
   grid-column: 1 / -1;
   justify-self: start;
-  margin-top: 0.5rem;
+  margin-top: 6px;
 }
 
 /* --------------------------------------------------------------------------
    Advisory
    -------------------------------------------------------------------------- */
 
-.advisory-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0.9rem 0 0;
-}
-
 /* The call runs a local 3B model and takes several seconds, so the indicator
    is not decoration -- without it the page looks dead. visibility:hidden keeps
    the element's box (no layout jump when it appears) while removing it from
    the accessibility tree until it is real. */
 .advisory-loading {
-  color: var(--muted);
-  font-style: italic;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.35;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.15s ease-in;
@@ -488,7 +836,7 @@ td.fragment-empty {
 }
 
 .advisory-panel {
-  margin-top: 0.8rem;
+  min-height: 0;
   /* Deliberately no opacity transition here. With one declared, the dim below
      measured a computed opacity of 1 for the whole request in Chrome and never
      visibly applied; removing it makes the change take effect immediately.
@@ -498,46 +846,37 @@ td.fragment-empty {
 
 /* backend fragment: advisory_result.html */
 .advisory-result {
-  padding: 0.8rem 1rem;
-  border: 1px dashed var(--accent);
-  border-radius: 3px;
+  max-width: 68ch;
+  padding: 24px 28px 26px;
 }
 
 .advisory-destination {
-  margin: 0 0 0.5rem;
-  font-weight: 650;
-  font-size: 1rem;
+  margin: 0 0 14px;
+  color: var(--color-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 /* One paragraph per non-blank model line, including the hyphen-prefixed
-   packing items. Tight spacing keeps a list-shaped answer looking like a list. */
+   packing items. */
 .advisory-line {
-  margin: 0 0 0.35rem;
+  margin: 0 0 10px;
+  line-height: 1.55;
 }
 
+/* Provenance footer: quieter than the advisory, separated by a hairline. */
 .advisory-model {
-  margin-top: 0.7rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
 }
 
 .advisory-provenance {
-  margin: 0 0 0.3rem;
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-/* This is generated travel advice, so the warning is load-bearing. It stays at
-   full body weight and full contrast -- unlike .advisory-provenance above it,
-   which is genuine small print. Do not shrink, grey out, or hide this. */
-.advisory-disclaimer {
-  margin: 0;
-  padding: 0.5rem 0.7rem;
-  border-left: 3px solid var(--warn);
-  background: #fdf6ec;
-  color: var(--warn);
-  font-size: 0.9rem;
-  font-weight: 600;
+  margin: 0 0 10px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
 }
 
 /* Stale-result policy: while a new advisory generates, the previous one is
@@ -558,32 +897,222 @@ td.fragment-empty {
   opacity: 0.4;
 }
 
+/* Fragment notices swapped into a panel need the panel's padding, since the
+   fragments themselves carry none. */
+.advisory-panel > .fragment-message,
+.advisory-panel > .fragment-empty {
+  margin: 24px 28px;
+}
+
 /* --------------------------------------------------------------------------
-   Narrow screens
+   1120px -- unlock page scrolling, collapse the composer to two columns
    -------------------------------------------------------------------------- */
 
-@media (max-width: 640px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
+@media (max-width: 1120px) {
+  body {
+    overflow: auto;
   }
 
-  .field-grid,
-  .destination-create-form {
+  .page-shell {
+    display: block;
+    width: min(100% - 1.25rem, 88rem);
+    height: auto;
+    padding: 18px 0 32px;
+    overflow: visible;
+  }
+
+  .trip-composer {
+    margin-bottom: 16px;
+  }
+
+  .advisory-form {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .composer-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .field-destination,
+  .field-month,
+  .field-interests {
+    grid-column: auto;
+  }
+
+  .trip-form-actions {
+    justify-self: start;
+    min-width: 240px;
+  }
+
+  .planner-grid {
+    grid-template-columns: minmax(220px, 38%) minmax(0, 1fr);
+    height: min(680px, calc(100dvh - 32px));
+    margin-bottom: 16px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   560px -- stack the planner grid, bound the sidebar height
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 560px) {
+  .app-header-inner {
+    width: min(100% - 1.25rem, 88rem);
+  }
+
+  .trip-composer > summary,
+  .manage-section > summary {
+    min-height: 64px;
+    padding: 12px 16px;
+  }
+
+  .composer-title {
+    font-size: 1.25rem;
+  }
+
+  .composer-summary {
+    display: none;
+  }
+
+  .advisory-form {
+    padding: 4px 16px 20px;
+  }
+
+  .composer-fields {
     grid-template-columns: 1fr;
   }
 
+  .planner-grid {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .destination-details {
+    height: 300px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .advisory-main {
+    max-height: 70dvh;
+  }
+
+  .advisory-head {
+    padding: 18px;
+  }
+
+  .advisory-head h2 {
+    font-size: 1.35rem;
+  }
+
+  .empty-state {
+    padding: 48px 18px;
+  }
+
+  .empty-state h2 {
+    font-size: 1.5rem;
+  }
+
+  .advisory-result {
+    padding: 18px;
+  }
+
+  .advisory-panel > .fragment-message,
+  .advisory-panel > .fragment-empty {
+    margin: 18px;
+  }
+
+  .transit-section {
+    padding: 18px;
+  }
+
+  .manage-body {
+    padding: 4px 16px 20px;
+  }
+
   .destination-create-form {
+    grid-template-columns: 1fr;
     align-items: start;
   }
 
-  /* The manage table has five columns of editable text; below this width it
-     scrolls sideways rather than crushing every input to a few characters. */
+  /* The manage table has three columns of editable text plus an action pair;
+     below this width it scrolls sideways rather than crushing every input to
+     a few characters. */
   .destinations-manage {
     overflow-x: auto;
   }
 
   .destinations-table {
     min-width: 34rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Print -- the advisory and the destination details, nothing else.
+   The chrome (header, composer, admin table, loading state) is all
+   interaction; on paper it is noise.
+   -------------------------------------------------------------------------- */
+
+@media print {
+  .app-header,
+  .trip-composer,
+  .manage-section,
+  .advisory-loading,
+  .panel-hint {
+    display: none !important;
+  }
+
+  html,
+  body {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+    background: #fff;
+  }
+
+  body,
+  .page-shell,
+  .planner-grid,
+  .destination-details,
+  .advisory-main {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow: visible;
+    background: #fff;
+  }
+
+  .destination-details {
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .advisory-result {
+    max-width: none;
+    padding: 0;
+  }
+
+  .advisory-head,
+  .transit-section {
+    padding: 18px 0 0;
+    border: 0;
+  }
+
+  /* Mandatory notices must survive the print path too. */
+  .visa-disclaimer,
+  .advisory-disclaimer,
+  .visa-requirement {
+    break-inside: avoid;
+  }
+
+  .advisory-panel.htmx-request {
+    opacity: 1;
   }
 }
