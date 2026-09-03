@@ -15,10 +15,6 @@
    SIGNATURE  every panel carries a coloured left "line tab" like a transit-line
               indicator. Everything else stays quiet: no cards, no shadows.
 
-   This file is loaded AFTER /shared/style.css, so the two rules the shared
-   sheet sets (body margin, h1 colour) are deliberately re-set below rather
-   than left to cascade.
-
    Sections marked "backend fragment" style markup this file does not contain.
    That markup is owned by student-5/backend/templates/ -- its class names are
    the contract between the two services, so renaming one here fixes nothing.
@@ -41,8 +37,6 @@
 }
 
 body {
-  /* Overrides the shared sheet's 2rem body margin: this layout centres its
-     own main element and needs the header to reach the viewport edges. */
   margin: 0;
   background: var(--paper);
   color: var(--ink);
@@ -80,7 +74,7 @@ textarea:focus-visible {
   font-size: 1.6rem;
   font-weight: 650;
   letter-spacing: -0.01em;
-  color: var(--ink); /* overrides the shared sheet's h1 colour */
+  color: var(--ink);
 }
 
 .destination-picker {
