@@ -215,11 +215,61 @@ services:
       - "5104:80"
 
   student5-frontend:
+    # Context is the repo root, not ./student-5/frontend, because the image
+    # copies shared/style.css and Docker cannot COPY from outside the context.
     build:
-      context: ./student-5/frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: student-5/frontend/Dockerfile
+    restart: unless-stopped
     ports:
       - "5105:80"
+    depends_on:
+      student5-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student5-backend:
+    build:
+      context: ./student-5/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_API_URL: http://student5-database:8080
+      OLLAMA_URL: http://ollama:11434
+      APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+    ports:
+      - "5205:8080"
+    depends_on:
+      student5-database:
+        condition: service_healthy
+      ollama-model-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student5-database:
+    build:
+      context: ./student-5/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_PATH: /data/logistics.db
+    ports:
+      - "5305:8080"
+    volumes:
+      - ./student-5/database/storage:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   ollama:
     image: ollama/ollama:latest
