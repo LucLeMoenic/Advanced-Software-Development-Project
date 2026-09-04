@@ -6,6 +6,8 @@ permissions:
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - "student-4/**"
       - "shared/vue-frontend/**"
