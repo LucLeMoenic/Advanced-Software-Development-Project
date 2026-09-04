@@ -62,9 +62,10 @@ Exit: frontend tests and packaging pass; browser checklist is prepared.
 
 - Add production Dockerfiles, nginx proxying, root Compose services, persistent
   storage, health/dependency ordering, shared route/card, and model setting.
-- Replace Student 4 CI with frontend/.NET tests, Compose validation, image
-  builds, Ollama-independent startup, health/API smoke tests, count assertions,
-  and unconditional teardown.
+- Replace Student 4 CI with frontend/.NET tests plus direct shared-Compose
+  validation, image builds, model-independent health/API smoke tests, count
+  assertions, and unconditional teardown. Do not add a Student 4-only Compose or
+  container lifecycle path.
 
 Exit: local config, builds, health, seeded API, and supported route checks pass,
 or any environmental blocker is recorded precisely.

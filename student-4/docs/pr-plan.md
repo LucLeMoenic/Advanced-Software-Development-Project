@@ -195,24 +195,22 @@ Files:
 - `docker-compose.yml`
 - `package.json`
 - `scripts/README.md`
-- `scripts/start-student4.ps1`
-- `scripts/stop-student4.ps1`
 - `scripts/test-student4.ps1`
-- `scripts/validate-student4-docker.ps1`
 - `shared/vue-frontend/nginx.conf`
 - `shared/vue-frontend/src/App.vue`
 
 ```powershell
-git add -- .env.example .github/workflows/student-4.yml docker-compose.yml package.json scripts/README.md scripts/start-student4.ps1 scripts/stop-student4.ps1 scripts/test-student4.ps1 scripts/validate-student4-docker.ps1 shared/vue-frontend/nginx.conf shared/vue-frontend/src/App.vue
+git add -- .env.example .github/workflows/student-4.yml docker-compose.yml package.json scripts/README.md scripts/test-student4.ps1 shared/vue-frontend/nginx.conf shared/vue-frontend/src/App.vue
 npm --prefix student-4/frontend run validation
-npm --prefix student-4/frontend run docker-validation
+docker compose config --quiet
+docker compose build shared-frontend student4-frontend student4-backend student4-database
 git diff --cached --check
 git commit -m "Integrate budget services"
 ```
 
-`npm --prefix student-4/frontend run docker-validation` requires Docker Desktop locally. If unavailable,
-push only after `npm --prefix student-4/frontend run validation` passes and require the Student 4 GitHub
-Actions job to supply the container result before approval.
+Docker requires Docker Desktop locally. If unavailable, push only after
+`npm --prefix student-4/frontend run validation` passes and require the Student
+4 GitHub Actions job to supply the container result before approval.
 
 ### Commit 4: `Document release evidence`
 
@@ -238,7 +236,8 @@ PR validation:
 
 ```powershell
 npm --prefix student-4/frontend run validation
-npm --prefix student-4/frontend run docker-validation
+docker compose config --quiet
+docker compose build shared-frontend student4-frontend student4-backend student4-database
 ```
 
 Expected source result: frontend 10, backend 31, and database 12 tests pass;

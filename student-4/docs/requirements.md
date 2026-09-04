@@ -35,7 +35,7 @@
 | NFR-06 | Maintainability | Explicit public DTOs, typed HTTP clients, replaceable exchange-rate provider, migrations, and focused tests are used. |
 | NFR-07 | Isolation | Student 4 code contains no runtime calls to `student1-*`, `student2-*`, `student3-*`, or `student5-*`. |
 | NFR-08 | Configuration | Dependency URLs, timeouts, model, rates, rate date, ports, and connection string are environment/configuration driven. |
-| NFR-09 | CI | Student 4 CI tests all three services, validates Compose, builds four required images, runs an Ollama-independent smoke stack, and always tears down. |
+| NFR-09 | CI | Student 4 CI tests all three services, validates the shared Compose file, builds the shared frontend plus Student 4 images, runs model-independent health/data/route smoke checks, and always tears down. |
 | NFR-10 | Scope | Release 0 adds no authentication, cloud, MCP, RAG, multi-agent, payment/bank, live-rate, or cross-feature integration. |
 
 ## Evidence Requirements

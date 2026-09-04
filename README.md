@@ -112,12 +112,13 @@ Student 2 requirements and current readiness evidence are indexed in [`student-2
 
 ## Student 4 Budget & Expense Tracker
 
-Validate and start Student 4 from the repository root through the Student 4
-frontend package:
+Validate Student 4 source from the repository root through the Student 4
+frontend package, then start the integrated application through the shared root
+Compose path:
 
 ```powershell
 npm --prefix student-4/frontend run validation
-npm --prefix student-4/frontend run start
+./scripts/start-app.ps1
 ```
 
 Open `http://localhost:5100/budget/`. Ports `5104`, `5204`, and `5304` expose
