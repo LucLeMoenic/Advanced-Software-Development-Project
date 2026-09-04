@@ -20,7 +20,12 @@ ports do not replace shared integration.
 
 ## Commands
 
-Run these from the repository root:
+The npm aliases live in [frontend/package.json](frontend/package.json). Run
+them from the Student 4 frontend package:
+
+```powershell
+cd student-4/frontend
+```
 
 | Command | Purpose |
 |---|---|
@@ -28,9 +33,12 @@ Run these from the repository root:
 | `npm run fe-test` | Run only the 10 frontend tests. |
 | `npm run be-test` | Run only the 31 backend tests. |
 | `npm run db-test` | Run only the 12 database tests. |
-| `npm run student4:start` | Build and start Student 4 plus the shared route. |
-| `npm run student4:stop` | Stop Student 4 and the shared frontend. |
+| `npm run start` | Build and start Student 4 plus the shared route. |
+| `npm run stop` | Stop Student 4 and the shared frontend. |
 | `npm run docker-validation` | Build, start, health-check, smoke-test, and stop the containers. |
+
+From the repository root, use the same scripts with `--prefix`, for example
+`npm --prefix student-4/frontend run start`.
 
 Open `http://localhost:5100/budget/` after startup.
 

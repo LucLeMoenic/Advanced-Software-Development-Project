@@ -204,14 +204,14 @@ Files:
 
 ```powershell
 git add -- .env.example .github/workflows/student-4.yml docker-compose.yml package.json scripts/README.md scripts/start-student4.ps1 scripts/stop-student4.ps1 scripts/test-student4.ps1 scripts/validate-student4-docker.ps1 shared/vue-frontend/nginx.conf shared/vue-frontend/src/App.vue
-npm run validation
-npm run docker-validation
+npm --prefix student-4/frontend run validation
+npm --prefix student-4/frontend run docker-validation
 git diff --cached --check
 git commit -m "Integrate budget services"
 ```
 
-`npm run docker-validation` requires Docker Desktop locally. If unavailable,
-push only after `npm run validation` passes and require the Student 4 GitHub
+`npm --prefix student-4/frontend run docker-validation` requires Docker Desktop locally. If unavailable,
+push only after `npm --prefix student-4/frontend run validation` passes and require the Student 4 GitHub
 Actions job to supply the container result before approval.
 
 ### Commit 4: `Document release evidence`
@@ -237,8 +237,8 @@ git commit -m "Document release evidence"
 PR validation:
 
 ```powershell
-npm run validation
-npm run docker-validation
+npm --prefix student-4/frontend run validation
+npm --prefix student-4/frontend run docker-validation
 ```
 
 Expected source result: frontend 10, backend 31, and database 12 tests pass;

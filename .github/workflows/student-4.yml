@@ -50,11 +50,11 @@ jobs:
             shared/vue-frontend/package-lock.json
 
       - name: Validate source and tests
-        run: npm run validation
+        run: npm --prefix student-4/frontend run validation
 
       - name: Validate container integration
-        run: npm run docker-validation
+        run: npm --prefix student-4/frontend run docker-validation
 
       - name: Stop services
         if: always()
-        run: npm run student4:stop
+        run: npm --prefix student-4/frontend run stop
