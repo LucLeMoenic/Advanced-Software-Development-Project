@@ -1,24 +1,24 @@
 # Student 4 Known Issues and Limitations
 
-Status date: 2026-09-03
+Status date: 2026-09-04
 
 ## Current Verification Gaps
 
-1. Docker Desktop or the Docker CLI was not available on local `PATH` during
-   implementation. Compose parsing, image builds, container health, shared
-   route smoke tests, and containerised row counts remain unverified locally.
-   Direct .NET service startup verified health and exact 12/24 runtime counts.
-2. Live Ollama advice was not run. Fake-handler tests verify strict response
-   handling and one corrective retry. A real backend request with Ollama
-   unavailable returned deterministic fallback; live successful model evidence
-   remains a human/environment action.
+1. Docker Desktop and Docker Compose are now available, and `docker compose
+   config --quiet` passes. Student 4 no longer keeps a separate container
+   lifecycle script; CI uses direct shared-Compose commands. A 2026-09-04 run
+   confirmed shared route, health, 12/24 containerised counts, and live AI
+   advice.
+2. Forced-unavailable Ollama evidence is still pending in the Compose stack.
+   Fake-handler tests verify strict response handling and one corrective retry.
+   A direct backend request with Ollama unavailable returned deterministic
+   fallback; live successful model evidence now exists with `source: ai`.
 3. Manual browser and responsive checks have not been performed. Vitest/jsdom
    covers behavior and focus paths but does not replace visual evidence.
 4. The Student 4 GitHub Actions workflow has not run because no commit or push
    was made.
-5. The shared two-model agentic loop was not run because model/runtime
-   availability could not be established without Docker. Liam's explicit Adapt
-   decision also remains pending by design.
+5. The shared two-model agentic loop has not yet been finalised for Student 4.
+   Liam's explicit Adapt decision also remains pending by design.
 
 ## Intentional Release 0 Limitations
 
