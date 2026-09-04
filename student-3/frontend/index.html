@@ -75,7 +75,8 @@
         id="recommend-form"
         hx-post="/api/recommend"
         hx-swap="none"
-        hx-on::after-request="renderRecommendation(event)">
+        hx-on::before-request="handleRecommendStart(this)"
+        hx-on::after-request="renderRecommendation(event, this)">
         <label for="interest">Your interests</label>
         <input
           id="interest"
