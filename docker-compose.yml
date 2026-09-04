@@ -11,6 +11,8 @@ services:
         condition: service_healthy
       student2-frontend:
         condition: service_healthy
+      student4-frontend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
       interval: 10s
@@ -211,8 +213,59 @@ services:
     build:
       context: ./student-4/frontend
       dockerfile: Dockerfile
+    restart: unless-stopped
     ports:
       - "5104:80"
+    depends_on:
+      student4-backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student4-backend:
+    build:
+      context: ./student-4/backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      Services__DatabaseUrl: http://student4-database:8080
+      Services__OllamaUrl: http://ollama:11434
+      STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
+      ASPNETCORE_HTTP_PORTS: 8080
+    ports:
+      - "5204:8080"
+    depends_on:
+      student4-database:
+        condition: service_healthy
+      ollama-model-setup:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  student4-database:
+    build:
+      context: ./student-4/database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__BudgetDatabase: Data Source=/data/budget.db
+      DemoData__Seed: true
+      ASPNETCORE_HTTP_PORTS: 8080
+    ports:
+      - "5304:8080"
+    volumes:
+      - ./student-4/database/storage:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
 
   student5-frontend:
     build:
@@ -289,11 +342,12 @@ services:
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODELS: ${OLLAMA_MODELS:-llama3.2:3b qwen2.5-coder:7b}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
+      STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -eu
-        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL; do
+        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL $$STUDENT4_MODEL; do
           if ollama show "$$model" > /dev/null 2>&1; then
             echo "Ollama model already installed: $$model"
           else

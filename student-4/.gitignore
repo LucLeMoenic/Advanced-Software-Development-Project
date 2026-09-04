@@ -1,0 +1,4 @@
+# Local runtime files
+backend/Properties/launchSettings.json
+database/Properties/launchSettings.json
+database/storage/*.db
