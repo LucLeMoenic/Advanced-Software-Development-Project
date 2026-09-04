@@ -2,7 +2,7 @@
   <main class="page-shell">
     <header class="hero">
       <p class="product-label">Advanced Software Development</p>
-      <h1>Integrated application</h1>
+      <h1>Agentic AI Trip Planning & Travel Management Platform</h1>
       <p class="hero-copy">
         Choose a team feature from the shared workspace.
       </p>
@@ -66,8 +66,8 @@
             <a class="feature-card" href="http://localhost:5105">
               <span class="student-label">Student 5</span>
               <span class="feature-content">
-                <strong>Team feature</strong>
-                <span class="feature-description">Open the Student 5 application.</span>
+                <strong>Travel Logistics &amp; Advisory</strong>
+                <span class="feature-description">Check weather, visa requirements, and transit, then generate AI packing advice.</span>
               </span>
               <span class="feature-action">Open</span>
             </a>
