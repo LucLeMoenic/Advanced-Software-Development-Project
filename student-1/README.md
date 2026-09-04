@@ -32,14 +32,15 @@ The componentised traveller frontend provides search, result states, provider-im
 ## Documentation Order
 
 1. [`docs/context.md`](docs/context.md) - compact architecture and current-state handoff.
-2. [`docs/requirements.md`](docs/requirements.md) - normative, testable Release 0 requirements.
-3. [`docs/sprint-backlog.md`](docs/sprint-backlog.md) - requirement-linked implementation work, ownership, status, and exit evidence.
-4. [`docs/feature-plan.md`](docs/feature-plan.md) - dependency-ordered implementation phases and gates.
-5. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
-6. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
-7. [`docs/frontend-browser-checklist.md`](docs/frontend-browser-checklist.md) - repeatable manual Chunk 6 browser and viewport validation.
-8. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
-9. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
+2. [`docs/architecture.md`](docs/architecture.md) - current HLD for the accommodation feature, shared Ollama topology, and development agentic loop.
+3. [`docs/requirements.md`](docs/requirements.md) - normative, testable Release 0 requirements.
+4. [`docs/sprint-backlog.md`](docs/sprint-backlog.md) - requirement-linked implementation work, ownership, status, and exit evidence.
+5. [`docs/feature-plan.md`](docs/feature-plan.md) - dependency-ordered implementation phases and gates.
+6. [`docs/risk-plan.md`](docs/risk-plan.md) - scored risks, triggers, mitigations, and contingencies.
+7. [`docs/release-0-full-marks-checklist.md`](docs/release-0-full-marks-checklist.md) - individual/group obligations and evidence index.
+8. [`docs/frontend-browser-checklist.md`](docs/frontend-browser-checklist.md) - repeatable manual Chunk 6 browser and viewport validation.
+9. [`docs/prompt-log.md`](docs/prompt-log.md) and [`docs/review-record.md`](docs/review-record.md) - AI contribution and review evidence.
+10. [`../ai-services/agentic-loop/prompts/`](../ai-services/agentic-loop/prompts/) - authoritative shared implementer and reviewer prompts used by the runtime.
 
 ## Release 0 Scope Guard
 
