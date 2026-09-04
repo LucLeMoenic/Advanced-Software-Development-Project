@@ -7,7 +7,7 @@ public sealed record BudgetRequest(
     string? BaseCurrency,
     DateOnly? StartDate,
     DateOnly? EndDate);
-
+// Budget response record
 public sealed record BudgetResponse(
     int Id,
     string JourneyLabel,
