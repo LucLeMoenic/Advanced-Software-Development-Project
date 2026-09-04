@@ -18,7 +18,7 @@ Ollama runtime.
 The supported browser route is `http://localhost:5100/budget/`. The diagnostic
 ports do not replace shared integration.
 
-## Commands
+## Source Validation
 
 The npm aliases live in [frontend/package.json](frontend/package.json). Run
 them from the Student 4 frontend package:
@@ -33,12 +33,21 @@ cd student-4/frontend
 | `npm run fe-test` | Run only the 10 frontend tests. |
 | `npm run be-test` | Run only the 31 backend tests. |
 | `npm run db-test` | Run only the 12 database tests. |
-| `npm run start` | Build and start Student 4 plus the shared route. |
-| `npm run stop` | Stop Student 4 and the shared frontend. |
-| `npm run docker-validation` | Build, start, health-check, smoke-test, and stop the containers. |
 
 From the repository root, use the same scripts with `--prefix`, for example
-`npm --prefix student-4/frontend run start`.
+`npm --prefix student-4/frontend run validation`.
+
+## Integrated Startup
+
+Student 4 does not have a separate Compose file or Student 4-only startup path.
+Use the shared root Compose application for Release 0 evidence:
+
+```powershell
+./scripts/start-app.ps1
+```
+
+Use `docker compose down` from the repository root to stop the integrated
+application without deleting the SQLite file or Ollama model volume.
 
 Open `http://localhost:5100/budget/` after startup.
 
@@ -56,7 +65,8 @@ Fresh initialization creates 12 budgets and 24 expenses.
 
 ## Compose and Health
 
-The Compose file is [../docker-compose.yml](../docker-compose.yml).
+The Compose file is [../docker-compose.yml](../docker-compose.yml). It is the
+single shared Compose file for the integrated group application.
 
 Startup order is health-gated:
 

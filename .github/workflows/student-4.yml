@@ -6,14 +6,13 @@ permissions:
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/start-student4.ps1"
-      - "scripts/stop-student4.ps1"
       - "scripts/test-student4.ps1"
-      - "scripts/validate-student4-docker.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -22,10 +21,7 @@ on:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/start-student4.ps1"
-      - "scripts/stop-student4.ps1"
       - "scripts/test-student4.ps1"
-      - "scripts/validate-student4-docker.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -52,9 +48,27 @@ jobs:
       - name: Validate source and tests
         run: npm --prefix student-4/frontend run validation
 
-      - name: Validate container integration
-        run: npm --prefix student-4/frontend run docker-validation
+      - name: Validate Docker Compose config
+        run: docker compose config --quiet
+
+      - name: Build integrated Student 4 containers
+        run: docker compose build shared-frontend student4-frontend student4-backend student4-database
+
+      - name: Start Student 4 services through shared route
+        run: docker compose up --detach --no-deps --wait student4-database student4-backend student4-frontend shared-frontend
+
+      - name: Smoke test Student 4 integration
+        shell: bash
+        run: |
+          curl --fail --silent http://localhost:5100/health
+          curl --fail --silent http://localhost:5104/health
+          curl --fail --silent http://localhost:5204/health
+          curl --fail --silent http://localhost:5304/health
+          curl --fail --silent http://localhost:5304/api/data/budgets | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
+          curl --fail --silent http://localhost:5304/api/data/expenses | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
+          curl --fail --silent 'http://localhost:5204/api/dashboard?journeyLabel=Sydney%20Weekender' | python3 -c "import json,sys; value=json.load(sys.stdin); assert len(value['categories']) >= 1"
+          curl --fail --silent http://localhost:5100/budget/ | grep --quiet 'Budget &amp; Expense Tracker'
 
       - name: Stop services
         if: always()
-        run: npm --prefix student-4/frontend run stop
+        run: docker compose down
