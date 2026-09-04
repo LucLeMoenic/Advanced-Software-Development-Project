@@ -46,8 +46,8 @@
             <a class="feature-card" href="http://localhost:5103">
               <span class="student-label">Student 3</span>
               <span class="feature-content">
-                <strong>Team feature</strong>
-                <span class="feature-description">Open the Student 3 application.</span>
+                <strong>Local Attraction Recommender</strong>
+                <span class="feature-description">Browse, review, and manage local attractions, with an AI-suggested pick based on your interests.</span>
               </span>
               <span class="feature-action">Open</span>
             </a>
