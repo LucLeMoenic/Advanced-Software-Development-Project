@@ -212,6 +212,12 @@ label,
   font-weight: 600;
 }
 
+/* The explicit line-height is load-bearing, not cosmetic. <select> is given
+   line-height:normal by the UA stylesheet and does not inherit the body's,
+   so an <input> and a <select> sitting side by side in the same row resolved
+   to 42.59px and 40.32px -- visibly off, and neither of them the 40px the
+   design system specifies. Stating it here makes min-height the value that
+   actually governs all three controls. */
 input,
 select,
 textarea {
@@ -222,6 +228,16 @@ textarea {
   padding: 9px 10px;
   color: var(--color-text);
   background: #fff;
+  line-height: 1.25;
+}
+
+/* ...and Chrome renders the <select>'s own text at line-height:normal anyway,
+   ignoring the rule above, which left the dropdown 0.86px taller than the two
+   inputs beside it. Small, but at this size a hairline border makes it read as
+   a wobble. An explicit height pins the select to the same 40px box.
+   Kept as its own rule so the reason travels with it. */
+select {
+  height: 40px;
 }
 
 /* --------------------------------------------------------------------------
@@ -302,17 +318,25 @@ textarea {
    Trip composer form
    -------------------------------------------------------------------------- */
 
+/* Three grid areas, not two columns. The status row spans the full width so
+   the actions column contains nothing but the button -- align-items:end then
+   lines the button's bottom edge up with the inputs' bottom edge, because a
+   .field-group ends at its control (labels sit above, no trailing margin). */
 .advisory-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 24px;
-  padding: 8px 24px 26px;
+  grid-template-areas:
+    "fields actions"
+    "status status";
+  gap: 10px 24px;
+  padding: 8px 24px 22px;
   align-items: end;
   border-top: 1px solid var(--color-border);
 }
 
 .composer-fields {
   display: grid;
+  grid-area: fields;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 18px 16px;
   padding-top: 18px;
@@ -328,11 +352,14 @@ textarea {
 
 .trip-form-actions {
   display: flex;
+  grid-area: actions;
   min-width: 172px;
-  padding-bottom: 1px;
   flex-direction: column;
   align-items: stretch;
-  gap: 8px;
+}
+
+.advisory-status {
+  grid-area: status;
 }
 
 /* --------------------------------------------------------------------------
@@ -351,6 +378,9 @@ textarea {
   border-radius: 3px;
   padding: 10px 16px;
   font-weight: 600;
+  /* Same reason as the form controls: without this the inherited line-height
+     pushed buttons to 44.7px instead of the 42px the design system asks for. */
+  line-height: 1.25;
 }
 
 .primary-button,
@@ -491,13 +521,40 @@ textarea {
    inside it is destroyed on the first generation. The section's accessible
    name therefore has to live out here, above the swap boundary. */
 .advisory-head {
+  display: flex;
+  gap: 16px;
   padding: 22px 28px 18px;
+  align-items: flex-end;
+  justify-content: space-between;
   border-bottom: 1px solid var(--color-border);
+}
+
+.advisory-head-titles {
+  min-width: 0;
 }
 
 .advisory-head h2 {
   margin: 4px 0 0;
   font-size: 1.65rem;
+}
+
+.print-advisory {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* There is nothing to print until the model has actually answered. The backend
+   emits .advisory-result only on a real advisory (empty and error states come
+   back as .fragment-message instead), so :has() reads the true state straight
+   off the swapped-in fragment -- no flag to keep in sync from JavaScript. */
+.advisory-main:not(:has(.advisory-result)) .print-advisory {
+  display: none;
+}
+
+/* Screen: the app header already says what this page is. Paper: it does not,
+   because @media print hides it. */
+.print-dateline {
+  display: none;
 }
 
 .transit-section {
@@ -821,6 +878,7 @@ td.fragment-empty {
    the element's box (no layout jump when it appears) while removing it from
    the accessibility tree until it is real. */
 .advisory-loading {
+  margin: 0;
   color: var(--color-muted);
   font-size: 0.8rem;
   line-height: 1.35;
@@ -829,10 +887,74 @@ td.fragment-empty {
   transition: opacity 0.15s ease-in;
 }
 
+/* Note for anyone probing this with getComputedStyle: while the indicator is
+   fading in it will report opacity "0" even though the text is on screen --
+   htmx ships its own `.htmx-request .htmx-indicator { transition: opacity
+   200ms }`, which outranks the rule above, and the computed value lags the
+   compositor. Trust a screenshot here, not a sampled value. Unlike
+   .advisory-panel's dim, this transition does apply, so it stays. */
+
 .advisory-loading.htmx-request,
 .htmx-request .advisory-loading {
   opacity: 1;
   visibility: visible;
+}
+
+/* tabular-nums stops the sentence twitching sideways every time the count
+   rolls from a narrow glyph to a wide one (1 -> 2, 9 -> 10). */
+.advisory-elapsed {
+  margin-left: 6px;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Indeterminate, because there is nothing to be determinate about: the model
+   streams nothing back until it is finished, so any percentage would be a
+   lie. This says "still working", and the counter next to it says how long. */
+.advisory-progress {
+  display: block;
+  height: 2px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: var(--color-primary-soft);
+  opacity: 0;
+  overflow: hidden;
+}
+
+.advisory-progress::before {
+  content: "";
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--color-primary);
+  transform: translateX(-100%);
+}
+
+/* Adjacent sibling: htmx puts .htmx-request on the elements named in
+   hx-indicator, and the bar is not one of them -- it follows one. */
+.advisory-loading.htmx-request + .advisory-progress {
+  opacity: 1;
+}
+
+.advisory-loading.htmx-request + .advisory-progress::before {
+  animation: advisory-progress-slide 1.5s ease-in-out infinite;
+}
+
+/* 286% = the bar's own width (35% of the track) expressed as the distance
+   needed to carry its left edge all the way across: 100 / 35 * 100. */
+@keyframes advisory-progress-slide {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(286%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .advisory-loading.htmx-request + .advisory-progress::before {
+    animation: none;
+    width: 100%;
+    transform: none;
+  }
 }
 
 .advisory-panel {
@@ -927,6 +1049,10 @@ td.fragment-empty {
 
   .advisory-form {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "fields"
+      "actions"
+      "status";
     align-items: stretch;
   }
 
@@ -1001,6 +1127,7 @@ td.fragment-empty {
 
   .advisory-head {
     padding: 18px;
+    flex-wrap: wrap;
   }
 
   .advisory-head h2 {
@@ -1060,8 +1187,18 @@ td.fragment-empty {
   .trip-composer,
   .manage-section,
   .advisory-loading,
+  .advisory-progress,
+  .print-advisory,
   .panel-hint {
     display: none !important;
+  }
+
+  /* The only thing that appears on paper rather than disappearing from it. */
+  .print-dateline {
+    display: block;
+    margin: 10px 0 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
   }
 
   html,

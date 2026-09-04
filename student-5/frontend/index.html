@@ -121,9 +121,24 @@
 
       <div class="trip-form-actions">
         <button class="button-advisory" type="submit">Generate advisory</button>
-        <span class="advisory-loading htmx-indicator" id="advisory-loading" role="status">
-          Generating advisory&hellip; this takes a few seconds.
-        </span>
+      </div>
+
+      <!-- The indicator is a row of its own rather than a second child of
+           .trip-form-actions. It keeps its box when idle (visibility, not
+           display, so firing it causes no layout jump) and stacked under the
+           button that reserved space pushed the button up off the inputs'
+           baseline. Its own row keeps both the alignment and the no-jump.
+
+           The counter is aria-hidden and sits outside the sentence: this is a
+           role="status" live region, and a region that re-announces every
+           second is unusable with a screen reader. The sentence is announced
+           once; the number is a visual affordance. -->
+      <div class="advisory-status">
+        <p class="advisory-loading htmx-indicator" id="advisory-loading" role="status">
+          Generating advisory&hellip; this takes a few seconds.<span
+            class="advisory-elapsed" id="advisory-elapsed" aria-hidden="true"></span>
+        </p>
+        <span class="advisory-progress" aria-hidden="true"></span>
       </div>
     </form>
   </details>
@@ -160,8 +175,18 @@
 
     <section class="advisory-main" aria-labelledby="advisory-heading">
       <div class="advisory-head">
-        <p class="eyebrow">AI advisory</p>
-        <h2 id="advisory-heading">Packing &amp; documents</h2>
+        <div class="advisory-head-titles">
+          <p class="eyebrow">AI advisory</p>
+          <h2 id="advisory-heading">Packing &amp; documents</h2>
+          <!-- Print-only: the app header is hidden on paper, so without this
+               the sheet has nothing identifying it. -->
+          <p class="print-dateline">Travel Logistics &amp; Advisory &mdash; advisory sheet</p>
+        </div>
+        <!-- Visibility is decided in CSS by whether .advisory-result is in the
+             panel, so there is no state to keep in sync here. See style.css. -->
+        <button class="text-button print-advisory" type="button" id="print-advisory">
+          Print advisory
+        </button>
       </div>
 
       <!-- aria-live sits on the swap target itself, which htmx replaces the
@@ -226,10 +251,9 @@
   // the panel keeps whatever was already in it -- a placeholder reading
   // "Loading...", which stopped being true the moment the request failed.
   //
-  // This listener is the whole of the page's JavaScript. It writes the same
-  // .fragment-message markup the backend uses for its own notices, so a
-  // proxy-level failure and a backend-level failure look identical to the
-  // reader, and there is no second error style to maintain.
+  // It writes the same .fragment-message markup the backend uses for its own
+  // notices, so a proxy-level failure and a backend-level failure look
+  // identical to the reader, and there is no second error style to maintain.
   document.body.addEventListener("htmx:responseError", function (event) {
     var panel = event.detail.target;
     if (!panel) {
@@ -250,6 +274,77 @@
       "This panel could not be loaded (error " + event.detail.xhr.status +
       "). The travel service may be restarting \u2014 reload to try again.";
     panel.replaceChildren(message);
+  });
+
+  // Elapsed-time readout.
+  //
+  // The advisory is written by a 3B model running locally and routinely takes
+  // 20-30 seconds. A frozen "this takes a few seconds." gives the reader no
+  // way to tell a slow answer from a hung one, so the indicator counts up
+  // while it waits. The counter is decoration in the strict sense -- it is
+  // aria-hidden, and nothing depends on it -- but it is the difference
+  // between a page that looks busy and a page that looks broken.
+  var advisoryForm = document.querySelector(".advisory-form");
+  var elapsedOutput = document.getElementById("advisory-elapsed");
+  var elapsedTimer = null;
+
+  /**
+   * Render the running cost of the current generation.
+   *
+   * Called once with 0 the moment the request is sent, then once per second
+   * until it settles. The return value is dropped straight into a <span> that
+   * follows "Generating advisory... this takes a few seconds."
+   *
+   * @param {number} seconds Whole seconds since the request was sent.
+   * @returns {string} Text to show, or "" to show nothing this tick.
+   */
+  function formatElapsed(seconds) {
+    // TODO(you): decide what this says. See the note in the chat.
+    return "";
+  }
+
+  function stopElapsedTimer() {
+    if (elapsedTimer !== null) {
+      window.clearInterval(elapsedTimer);
+      elapsedTimer = null;
+    }
+  }
+
+  // Both events bubble, and the destination <select> issues its own request
+  // from inside this same form, so every handler here has to confirm the
+  // request being reported is the form's own submit. Without the guard, the
+  // page-load options fetch would start a timer that nothing ever stops.
+  function isAdvisoryRequest(event) {
+    return event.detail.elt === advisoryForm;
+  }
+
+  advisoryForm.addEventListener("htmx:beforeRequest", function (event) {
+    if (!isAdvisoryRequest(event)) {
+      return;
+    }
+    var startedAt = Date.now();
+    stopElapsedTimer();
+    elapsedOutput.textContent = formatElapsed(0);
+    elapsedTimer = window.setInterval(function () {
+      elapsedOutput.textContent =
+        formatElapsed(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+  });
+
+  // afterRequest fires on success, on a 502, and on a network drop alike, so
+  // this is the one place the timer needs stopping.
+  advisoryForm.addEventListener("htmx:afterRequest", function (event) {
+    if (!isAdvisoryRequest(event)) {
+      return;
+    }
+    stopElapsedTimer();
+  });
+
+  // Print sheet. @media print already reduces the page to the advisory and the
+  // destination details, so the action is only ever this one line. Whether the
+  // button is offered at all is decided in CSS by :has(.advisory-result).
+  document.getElementById("print-advisory").addEventListener("click", function () {
+    window.print();
   });
 </script>
 </body>
