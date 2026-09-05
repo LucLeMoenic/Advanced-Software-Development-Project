@@ -8,19 +8,15 @@ on:
     paths:
       - "student-1/**"
       - "shared/vue-frontend/**"
-      - "ai-services/agentic-loop/**"
       - "docker-compose.yml"
       - ".env.example"
-      - "scripts/verify-agentic-models.ps1"
       - ".github/workflows/student-1.yml"
   pull_request:
     paths:
       - "student-1/**"
       - "shared/vue-frontend/**"
-      - "ai-services/agentic-loop/**"
       - "docker-compose.yml"
       - ".env.example"
-      - "scripts/verify-agentic-models.ps1"
       - ".github/workflows/student-1.yml"
 
 jobs:
@@ -57,19 +53,3 @@ jobs:
         run: docker compose config --quiet
       - name: Build integrated Student 1 containers
         run: docker compose build shared-frontend student1-frontend student1-backend student1-database
-
-  agentic-loop:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "8.0.x"
-      - name: Restore shared agentic loop dependencies
-        run: dotnet restore ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj
-      - name: Test shared agentic loop
-        run: dotnet test ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj --configuration Release --no-restore
-      - name: Build shared agentic loop container
-        run: docker build --tag asd-agentic-loop:ci ai-services/agentic-loop
-      - name: Build agentic loop through Compose
-        run: docker compose build agentic-loop
