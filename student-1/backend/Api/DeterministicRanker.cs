@@ -2,6 +2,7 @@ using System.Globalization;
 
 namespace Accommodation.Backend.Api;
 
+//Test
 internal static class DeterministicRanker
 {
     public static IReadOnlyList<SearchResult> Rank(
