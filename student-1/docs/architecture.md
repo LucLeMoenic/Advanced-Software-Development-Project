@@ -1,11 +1,26 @@
-# Student 1 AI Accommodation Recommender Architecture
+# Student 1 AI Systems and Feature Architecture
 
 ## Overview
 
-Student 1 provides a traveller-facing **AI Accommodation Recommender**. One
-configured application model may rank eligible accommodation after explicit
-opt-in. The application uses the team's shared Ollama runtime and persistent
-model store, and accepts model output only after backend validation.
+Student 1 uses two separate AI workflows:
+
+1. the traveller-facing **AI Accommodation Recommender**, where one configured
+   application model may rank eligible accommodation after explicit opt-in;
+2. the shared **development agentic loop**, where distinct implementer and
+   reviewer models propose and review bounded engineering work.
+
+Both workflows use the team's single Ollama runtime and persistent model store.
+They do not share prompts, request contracts, or authority. Application model
+output is accepted only after backend validation. Development-loop output is
+advisory and requires a recorded human decision.
+
+| Concern | Accommodation recommender | Development agentic loop |
+|---|---|---|
+| User | Traveller | Developer |
+| Entry point | Vue browser interface | `AgenticLoop.dll run` terminal command |
+| Models per request | One `APPLICATION_MODEL` after opt-in | Distinct `IMPLEMENTER_MODEL` and `REVIEWER_MODEL` |
+| Output | Ranked results and reasons | Plan, proposal, review, optional revision, evidence record |
+| Final authority | ASP.NET backend validators | Human developer |
 
 ## Integrated Architecture
 
@@ -19,6 +34,8 @@ flowchart LR
     B -->|uncached destination only| L[LiteAPI sandbox]
     B -->|opt-in ranking only| O[Shared Ollama<br/>:11434]
     MS[ollama-model-setup<br/>one-shot install and preload] --> O
+    AL[Shared .NET agentic-loop] --> O
+    AL --> R[(Finalised JSON records)]
 ```
 
 The frontend calls only the backend. The backend owns validation, provider
@@ -150,12 +167,67 @@ Database requests use a three-second timeout. LiteAPI requests use a ten-second
 timeout. Database and provider failures return dependency errors; they are not
 misreported as AI fallback.
 
+## Shared Development Agentic Loop
+
+### Purpose and Boundaries
+
+The .NET 8 service under `ai-services/agentic-loop/` implements the project's
+development Plan -> Act -> Observe -> Adapt workflow. It does not run inside a
+traveller recommendation request and does not edit source code.
+
+```mermaid
+flowchart LR
+    H[Human supplies bounded task,<br/>context and pre-test evidence] --> P[Implementer model<br/>PLAN and ACT]
+    P --> O[Distinct reviewer model<br/>OBSERVE]
+    O --> V{Reviewer verdict}
+    V -->|REVISE| A[One bounded implementer revision]
+    A --> O2[Reviewer checks revision]
+    V -->|ACCEPT or REJECT| N[No model revision]
+    O2 --> E[Pending JSON evidence record]
+    N --> E
+    E --> D[Human keeps, changes or rejects]
+    D --> T[Human runs post-test]
+    T --> F[Finalised evidence record]
+```
+
+The runner:
+
+- requires different implementer and reviewer model tags;
+- loads only explicitly named, allow-listed UTF-8 context files;
+- rejects workspace escapes, escaping symbolic links, sensitive paths, binary
+  files, oversized context, and recognised secret-like content;
+- requires exactly one `[PLAN]` then `[ACT]` section;
+- requires a structured `[OBSERVE]` verdict, findings, validation gaps, and
+  scope check;
+- permits one reviewer-format correction and at most one implementer revision;
+- records model tags, Ollama version, prompt versions, hashes, generation
+  options, pre-test evidence, outputs, verdicts, and the human decision.
+
+The service records supplied validation commands and results but does not
+execute arbitrary commands. It never writes source, commits, or pushes.
+
+### Agentic-Loop Deployment
+
+The `agentic-loop` container starts in `serve` mode and exposes `/health` on
+container port `8080` and host port `5180`. Its repository mount is read-only,
+with a narrow writable mount for `docs/agentic-loop-records`.
+
+The health endpoint checks that both configured role models are distinct and
+available from Ollama. A developer executes bounded `run` and `finalise`
+subcommands inside the already-running container.
+
+Runtime prompts have one source of truth:
+
+- `ai-services/agentic-loop/prompts/implementer.md`;
+- `ai-services/agentic-loop/prompts/reviewer.md`.
+
 ## Docker Compose Topology
 
 ```mermaid
 flowchart TD
     O[ollama healthy] --> M[ollama-model-setup completes]
     M --> B[student1-backend starts]
+    M --> A[agentic-loop starts]
     D[student1-database healthy] --> B
     B --> F[student1-frontend healthy]
     F --> S[shared-frontend healthy]
@@ -164,24 +236,49 @@ flowchart TD
     H5101[Host :5101] --> F
     H5201[Host :5201] --> B
     H5301[Host :5301] --> D
+    H5180[Host :5180] --> A
     H11434[Host :11434] --> O
 ```
 
 `ollama-model-setup` is a short-lived setup job, not a second model server. It
 checks each tag in `OLLAMA_MODELS` plus `APPLICATION_MODEL`, pulls only missing
 models, preloads the application model with a 30-minute keep-alive, and exits.
-All application consumers then use `http://ollama:11434`.
+All application and development consumers then use `http://ollama:11434`.
 
 | Storage | Compose mount | Purpose |
 |---|---|---|
 | Accommodation data | `./student-1/database/storage:/data` | Repository-backed SQLite persistence |
 | Model files | `ollama-data:/root/.ollama` | Shared persistent Ollama model store |
+| Agentic evidence | `./docs/agentic-loop-records:/workspace/docs/agentic-loop-records` | Writable JSON evidence only |
 
 The main `docker-compose.yml` remains CPU-compatible.
 `docker-compose.gpu.yml` adds only `gpus: all` to the shared `ollama` service.
 `scripts/start-student1.ps1` automatically uses the GPU override when a
 Docker-accessible NVIDIA runtime is detected. `scripts/start-app.ps1 -Gpu`
 enables it explicitly for the complete integrated application.
+
+## DevOps Pipeline
+
+```mermaid
+flowchart LR
+    C[Student 1 change or PR] --> W[student-1.yml]
+    W --> FT[Frontend tests and production build]
+    W --> BT[Backend restore and xUnit tests]
+    W --> DT[Database restore and xUnit tests]
+    W --> AT[Agentic-loop restore and xUnit tests]
+    W --> CC[Compose configuration validation]
+    FT --> I[Build shared and Student 1 images]
+    BT --> I
+    DT --> I
+    AT --> AI[Build agentic-loop image directly and through Compose]
+    CC --> I
+    I --> R[Human-reviewed result]
+    AI --> R
+```
+
+CI uses test doubles rather than requiring live Ollama inference. Real
+application-model success/fallback and finalised two-model records are separate
+local demonstration evidence.
 
 ## Code References
 
@@ -199,8 +296,11 @@ enables it explicitly for the complete integrated application.
 | Database client | `student-1/backend/Clients/DatabaseApiClient.cs` | HTTP persistence boundary |
 | EF Core context | `student-1/database/Data/DatabaseContext.cs` | Accommodation and search sets |
 | Physical constraints | `student-1/database/Data/Configurations/` | Entity mappings and checks |
+| Agentic entry point | `ai-services/agentic-loop/Program.cs` | `AgenticLoopApplication.RunAsync()` |
+| Agentic workflow | `ai-services/agentic-loop/AgenticLoopApplication.cs` | `LoadContextAsync()`, `ExecuteLoopAsync()`, `FinaliseRecordAsync()` |
 | Main deployment | `docker-compose.yml` | Services, health, dependencies, environment, volumes |
 | GPU override | `docker-compose.gpu.yml` | Shared Ollama GPU access |
+| Student 1 CI | `.github/workflows/student-1.yml` | Tests, Compose validation, image builds |
 
 ## Architectural Guarantees
 
@@ -211,4 +311,7 @@ enables it explicitly for the complete integrated application.
 - Invalid model output cannot modify trusted accommodation fields.
 - AI failure produces deterministic results rather than a failed valid search.
 - Search history reopens immutable snapshots without reranking.
-- One shared Ollama runtime serves all configured application models.
+- One shared Ollama runtime serves all configured application and development
+  models.
+- The agentic loop cannot apply, validate, commit, or push its own proposal.
+
