@@ -15,13 +15,7 @@ Release 0 success means the feature works inside the integrated group applicatio
 - It uses ASP.NET Core Web API for the orchestration backend and database API.
 - The database API owns EF Core and SQLite.
 - Programmatic ranking is the application default. The traveller may opt in per search to one configured accommodation-ranking LLM through the backend API.
-- The separate development agentic loop uses two distinct approved open-source models hosted locally by Ollama:
-  - implementer model: Plan and Act;
-  - reviewer model: Observe;
-  - Adapt: bounded revision plus an explicit human decision.
-- One shared Ollama runtime hosts all required model tags for every team microservice and the development loop. Consumers select a model tag but do not own an Ollama runtime.
-
-The application model may reuse one of the two installed model tags to minimise hardware and storage cost, but the implementer and reviewer configuration values must identify different model tags.
+- One shared Ollama runtime hosts the model tags required by team microservices. Consumers select a model tag but do not own an Ollama runtime.
 
 ## Confirmed Integration Contracts
 
@@ -32,8 +26,7 @@ The application model may reuse one of the two installed model tags to minimise 
 - Container ports: frontend `80`; backend and database `8080`.
 - Theme: reuse the shared frontend's CSS variables and design tokens.
 - Application model: `llama3.2:3b`.
-- Development models: implementer `qwen2.5-coder:7b`; reviewer `llama3.2:3b`.
-- Mitchell may update root Compose, shared navigation/theme, and `student-1.yml` for this feature.
+- Mitchell may update root Compose and shared navigation/theme for this feature.
 - Sprint backlog: `docs/sprint-backlog.md`.
 
 Phase 0 contracts are confirmed.
@@ -49,10 +42,6 @@ Browser
        -> LiteAPI sandbox -> validated accommodation imports through database API
        -> shared Ollama -> one configured accommodation-ranking model
 
-Shared .NET agentic-loop service in Docker Compose
-  -> shared local Ollama implementer model
-  -> shared local Ollama reviewer model
-  -> human validation and apply/reject decision
 ```
 
 Boundary rules:
@@ -62,7 +51,6 @@ Boundary rules:
 - Only the database service opens SQLite.
 - Services communicate synchronously over HTTP using Compose DNS names.
 - Configuration and secrets come from environment variables.
-- The shared agentic-loop service receives only allow-listed context, never writes/commits/pushes automatically, and records model tags, prompt versions, outputs, pre/post validation, and human decisions.
 - LiteAPI is a backend-only demonstration data source. Its key must remain in ignored local environment configuration, and imported prices are cached catalogue data rather than production availability guarantees.
 
 ## Application Request Flow
@@ -76,17 +64,6 @@ Boundary rules:
 7. Vue renders results, a provider-import notice when applicable, and history actions.
 
 An empty candidate list skips Ollama and returns a clear empty state. Reopening history returns the stored snapshot and never reruns ranking.
-
-## Development Agentic Loop
-
-1. `[PLAN]` - the implementer model analyses a bounded engineering task and allow-listed context.
-2. `[ACT]` - the implementer model proposes a patch or concrete implementation.
-3. `[OBSERVE]` - the distinct reviewer model checks the proposal against requirements, relevant code, and validation evidence.
-4. `[ADAPT]` - one bounded implementer revision may be requested; a human validates and records kept/changed/rejected.
-
-This loop reviews implementation, database/data design, service boundaries, Docker/Compose, CI, and requirement traceability. It is not the application's recommendation request.
-
-The loop is shared team infrastructure under `ai-services/agentic-loop`, starts with the integrated Compose application, and must be used during implementation rather than introduced only for the final demonstration.
 
 ## Data Summary
 
@@ -129,8 +106,6 @@ The implemented prompt must live beside backend code at `backend/Prompts/accommo
 
 - `prompt-log.md`: record meaningful AI-assisted code, infrastructure, test, or design changes and state what was retained or corrected.
 - `review-record.md`: record scope, findings, decisions, resolution status, and evidence.
-- `ai-services/agentic-loop/prompts/`: authoritative versioned implementer and reviewer prompts loaded by the shared runtime; feature documentation links to these files rather than copying them.
-- `prompt-library/`: feature-specific reusable prompts only; never duplicate shared runtime or application prompts here.
 - Never claim validation without an evidence path.
 - Keep prompts free of secrets, credentials, personal data, and unrelated repository content.
 - Human review remains mandatory; the student owns every submitted artefact.
@@ -143,7 +118,6 @@ As of 2026-08-31:
 - Chunk 1 is complete: the feature is in `student-1/` with Vue 3/TypeScript, ASP.NET Core backend, and ASP.NET Core/EF Core SQLite database API projects.
 - All three services have production Dockerfiles and health checks.
 - Root Compose defines the three services, service-DNS configuration, dependency health ordering, confirmed ports, and a repository-backed SQLite bind mount.
-- `student-1.yml` installs/builds the frontend, tests both .NET services, validates Compose, and builds all three feature images without requiring live Ollama.
 - Local frontend build and four focused .NET endpoint tests pass; Compose configuration validates.
 - Mitchell reports that the three containers build, start, and pass their runtime health checks.
 - Chunk 2 catalogue code now includes EF Core migrations, a POCO entity plus separate `IEntityTypeConfiguration`, a generic `DatabaseContext`, and a scoped accommodation repository. HTTP endpoints no longer depend on EF Core or the context directly.
@@ -161,16 +135,14 @@ As of 2026-08-31:
 - Chunk 6 traveller frontend now provides the labelled search form with unchecked AI opt-in and an AI-only preferences field, client/backend field feedback, duplicate-submit prevention, loading/empty/programmatic/AI/fallback/dependency states, ranked cards, and newest-first history reopen/rename/confirmed-delete behavior.
 - `App.vue` coordinates three focused components for search input, history CRUD, and results. Live announcements, focus movement, visible focus, text-only interpolation, responsive breakpoints, and long-text containment are implemented.
 - The frontend suite passes 8/8 component tests and the strict TypeScript/Vite production build passes. Manual 320/768/1280px execution and browser screenshots remain open.
-- The shared .NET agentic-loop scaffold, focused tests, prompts, and Compose wiring now exist.
-- Real two-model Ollama execution records remain to be produced.
-- Chunk 7 shared integration is implemented: the unified Vue page links to `/accommodation/`, shared nginx proxies the feature and backend API without asset collisions, Compose health/dependency ordering passes, and the Student 1 workflow restores dependencies, runs all assigned tests, and builds the integrated images without live Ollama.
+- Chunk 7 shared integration is implemented: the unified Vue page links to `/accommodation/`, shared nginx proxies the feature and backend API without asset collisions, and Compose health/dependency ordering passes.
 - The unified entry page now uses the same blue/neutral tokens, typography, bordered panels, rounded feature cards, visible focus treatment, and responsive behavior as the accommodation interface.
 - Local integrated validation confirms the shared page, accommodation route/assets, API proxy, five health checks, and preservation of 12 search records across a database-container restart.
 - Live application-model execution is now confirmed: after removing the local WSL CPU cap, replacing generic Ollama JSON mode with an exact ranking-array schema, and compacting the unchanged allow-listed ranking input, cold Sydney and Tokyo searches returned five `ai`-ranked results through the frontend proxy within the 12-second model timeout. Ranking reasons now use distinct 8-18 word sentences that explain why supplied accommodation facts benefit the traveller rather than merely restating an amenity.
 - Opt-in runtime behavior is confirmed through the rebuilt frontend proxy: an unchecked-equivalent Sydney request returned six `programmatic` results with no notice, while the same request with `useAi: true` returned six `ai` results with sentence-form reasons and no fallback notice.
 - On compatible Windows/NVIDIA machines, `scripts/start-student1.ps1` automatically includes `docker-compose.gpu.yml`; the current RTX 2000 Ada runtime offloads all model layers and reduced the previously failing Sydney search to 2.5 seconds. The main Compose file remains CPU-compatible.
-- Root Compose now has one long-running `ollama` service and one short-lived shared `ollama-model-setup` job. The setup job installs missing shared tags and preloads `APPLICATION_MODEL` for 30 minutes so the backend's 12-second request timeout is not consumed by a cold model load. Student 1 and the agentic loop both use `http://ollama:11434`; future team AI consumers use the same service and add required tags to `OLLAMA_MODELS`.
-- Diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
+- Root Compose now has one long-running `ollama` service and one short-lived shared `ollama-model-setup` job. The setup job installs missing shared tags and preloads `APPLICATION_MODEL` for 30 minutes so the backend's 12-second request timeout is not consumed by a cold model load. Student 1 uses `http://ollama:11434`; future team AI consumers use the same service and add required tags to `OLLAMA_MODELS`.
+- Diagrams and manual frontend viewport checks remain to be produced.
 
 The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
 

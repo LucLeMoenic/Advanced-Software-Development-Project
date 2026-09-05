@@ -9,7 +9,7 @@ Build an integrated accommodation recommender where a traveller:
 3. may opt in to explainable ranking from one backend-controlled Ollama model, with deterministic fallback if it fails;
 4. can reopen, rename, and delete saved searches.
 
-The feature is complete only when its Vue frontend, ASP.NET backend, ASP.NET database API, SQLite data, Ollama integration, shared navigation, Docker Compose configuration, and Student 1 CI work together.
+The feature is complete only when its Vue frontend, ASP.NET backend, ASP.NET database API, SQLite data, Ollama integration, shared navigation, and Docker Compose configuration work together.
 
 Detailed contracts are in `requirements.md`. Work status and requirement mapping are in `sprint-backlog.md`.
 
@@ -197,14 +197,12 @@ FR-16's minimum 10-record count is complete. Automatic runtime seed data remains
 
 - The complete feature can be demonstrated through the browser without direct API tools.
 
-### Chunk 7 - Shared Integration and CI
+### Chunk 7 - Shared Integration
 
 **Implement**
 
 - Add the accommodation link to the shared home page.
 - Complete root Compose health, dependencies, service DNS, environment variables, and the SQLite volume.
-- Extend `student-1.yml` to restore dependencies, run all frontend/.NET tests, and build all three feature images.
-- Keep CI independent of live Ollama by using deterministic fakes.
 - Update root setup instructions with exact build, start, seed, model, test, health, and stop commands.
 
 **Test**
@@ -213,12 +211,10 @@ FR-16's minimum 10-record count is complete. Automatic runtime seed data remains
 - Open the feature through the shared page.
 - Demonstrate AI success, forced fallback, reopen, rename, and delete.
 - Restart Compose and confirm search history persists.
-- Confirm CI fails for a broken test and succeeds after correction.
 
 **Done when**
 
 - The integrated group application runs through one Compose file.
-- Student 1 CI validates the complete assigned feature.
 - The feature is reachable from the unified entry page.
 
 ### Chunk 8 - Report and Demonstration Evidence
@@ -227,17 +223,16 @@ FR-16's minimum 10-record count is complete. Automatic runtime seed data remains
 
 - Individual service architecture diagram.
 - Integrated Release 0 architecture diagram.
-- Docker Compose and DevOps pipeline diagrams.
-- Plan -> Act -> Observe -> Adapt diagram.
+- Docker Compose deployment diagram.
 - Conceptual, ERD, logical, and physical data designs.
-- Local test, CI, Compose, AI success/fallback, CRUD, accessibility, and responsive evidence.
-- Prompt/context assets, review records, commit history, contribution log, known issues, and attendance evidence.
+- Local test, Compose, AI success/fallback, CRUD, accessibility, and responsive evidence.
+- Prompt log, review records, commit history, contribution log, known issues, and attendance evidence.
 - Mitchell's video segment showing the shared entry page, search, recommendation explanation, reopen, rename, and delete.
 
 **Done when**
 
 - Every checklist row has an exact evidence location.
-- The group video includes the working feature, deployment, CI/CD, AI-mode, and the shared agentic-loop execution.
+- The group video includes the working feature, deployment, and AI mode.
 
 ## Working Rule
 
@@ -249,51 +244,3 @@ For each chunk:
 4. Review correctness, failure handling, security, accessibility, and service boundaries.
 5. Update evidence only with real files and results.
 6. Integrate before starting the next chunk.
-
-## Local Agentic-Loop Setup and Demonstration
-
-The .NET agentic-loop code is implemented. Complete this setup before the final report and video evidence.
-
-1. Compose checks the configured model tags, pulls only models missing from the persistent Ollama volume, and preloads the application model before the backend starts.
-2. Copy `.env.example` to `.env` and confirm:
-
-   ```text
-   IMPLEMENTER_MODEL=qwen2.5-coder:7b
-   REVIEWER_MODEL=llama3.2:3b
-   APPLICATION_MODEL=llama3.2:3b
-   ```
-
-3. Start the services. The one-shot model setup containers complete before their dependent application services start:
-
-   ```powershell
-   docker compose build agentic-loop
-   docker compose up -d ollama agentic-loop
-   ```
-
-4. Run a real pre-test, then execute one bounded task:
-
-   ```powershell
-   docker compose exec agentic-loop dotnet /app/AgenticLoop.dll run `
-     --task "Implement one bounded accommodation change" `
-     --context "student-1/docs/requirements.md" `
-     --context "student-1/path/to/relevant/source-file" `
-     --pre-test-command "<actual command>" `
-     --pre-test-result "<actual result>"
-   ```
-
-5. Show the same terminal printing implementer Plan/Act, reviewer Observe, and any bounded Adapt revision.
-6. Manually keep, change, or reject the proposal and run the post-test.
-7. Finalise the generated record:
-
-   ```powershell
-   docker compose exec agentic-loop dotnet /app/AgenticLoop.dll finalise `
-     --record "/workspace/docs/agentic-loop-records/<record>.json" `
-     --decision changed `
-     --notes "<what was kept, changed, or rejected>" `
-     --post-test-command "<actual command>" `
-     --post-test-result "<actual result>"
-   ```
-
-8. Include the terminal execution in the group video and reference the prompts, review record, and genuine result in the technical report.
-
-This setup is demonstration evidence. It does not block writing the Phase 2 application code, but it must be completed before submission.

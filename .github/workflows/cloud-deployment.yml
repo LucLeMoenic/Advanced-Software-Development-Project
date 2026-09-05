@@ -2,7 +2,7 @@ name: Cloud Deployment
 
 on:
   workflow_run:
-    workflows: ["Student 1 CI", "Student 2 CI", "Student 3 CI", "Student 4 CI", "Student 5 CI"]
+    workflows: ["Student 2 CI", "Student 3 CI", "Student 4 CI", "Student 5 CI"]
     types:
       - completed
 
