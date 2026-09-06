@@ -93,6 +93,7 @@
       </form>
 
       <div id="recommend-result" aria-live="polite"></div>
+      <p class="recommend-elapsed"><span id="recommend-elapsed" aria-hidden="true"></span></p>
     </section>
 
     <section id="manage" aria-labelledby="manage-heading">
@@ -128,5 +129,75 @@
   </main>
 
   <script src="app.js"></script>
+  <script>
+    // Elapsed-time readout for the "Get Recommendation" wait.
+    //
+    // app.js's handleRecommendStart comment notes the backend's Ollama call
+    // can take anywhere from a couple of seconds up to most of
+    // OLLAMA_TIMEOUT's 120s (cold model, or a retry that doubles the call
+    // count). A static "this can take up to a minute." sentence with
+    // nothing moving on screen is indistinguishable from a hang, so this
+    // counter fills that gap.
+    var recommendForm = document.getElementById('recommend-form');
+    var elapsedOutput = document.getElementById('recommend-elapsed');
+    var elapsedTimer = null;
+
+    /**
+     * Render the running wait time for the current recommend request.
+     *
+     * Called once with 0 the moment the request is sent, then once per
+     * second until it settles. The return value is dropped straight into
+     * the "#recommend-elapsed" span below the result box.
+     *
+     * Returns an empty string for the first 2 seconds, so the static
+     * loading sentence in #recommend-result lands on its own first; a
+     * compact form such as "14s" from 2 seconds; and past 45 seconds a
+     * reassurance form such as "still working - 52s" so a slow generation
+     * does not read as a hang.
+     *
+     * @param {number} seconds Whole seconds since the request was sent.
+     * @returns {string} Text to show, or "" to show nothing this tick.
+     */
+    function formatElapsed(seconds) {
+      if (seconds < 2) {
+        return '';
+      }
+      if (seconds < 45) {
+        return `${seconds}s`;
+      }
+      return `still working - ${seconds}s`;
+    }
+
+    // Assertions (not run automatically - paste into `node -e "<body>"`):
+    // console.assert(formatElapsed(0) === '', '0s should be empty');
+    // console.assert(formatElapsed(1) === '', '1s should be empty');
+    // console.assert(formatElapsed(2) === '2s', '2s should show compact form');
+    // console.assert(formatElapsed(14) === '14s', '14s should show compact form');
+    // console.assert(formatElapsed(45) === 'still working - 45s', '45s should switch to reassurance form');
+    // console.assert(formatElapsed(52) === 'still working - 52s', '52s should show reassurance form');
+
+    function stopElapsedTimer() {
+      if (elapsedTimer !== null) {
+        window.clearInterval(elapsedTimer);
+        elapsedTimer = null;
+      }
+    }
+
+    recommendForm.addEventListener('htmx:beforeRequest', function () {
+      var startedAt = Date.now();
+      stopElapsedTimer();
+      elapsedOutput.textContent = formatElapsed(0);
+      elapsedTimer = window.setInterval(function () {
+        elapsedOutput.textContent =
+          formatElapsed(Math.floor((Date.now() - startedAt) / 1000));
+      }, 1000);
+    });
+
+    // afterRequest fires on success, on a 4xx/5xx, and on a network drop
+    // alike, so this is the one place the timer needs stopping.
+    recommendForm.addEventListener('htmx:afterRequest', function () {
+      stopElapsedTimer();
+    });
+  </script>
 </body>
 </html>
