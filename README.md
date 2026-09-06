@@ -1,153 +1,194 @@
-# Advanced Software Development Project
+# Agentic AI Trip Planning & Travel Management Platform
 
-Template repository for the 2026 Advanced Software Development project. The project will grow into a containerised Agentic AI application composed of five student-owned frontend, backend/API, and database microservice sets.
+Group 45's integrated Release 0 application for Advanced Software Development.
+The platform is a containerised, microservice-based trip planning and travel
+management system: five student-owned feature sets, each of which is its own
+frontend, backend/API and SQLite database microservice, plus shared AI services
+(one Ollama runtime and a two-model agentic development loop). A single shared
+Vue home page at `http://localhost:5100` is the entry point and routes to every
+feature, and one shared `docker-compose.yml` at the repository root builds and
+runs the whole application.
 
-## Current Status
+## Features
 
-The integrated Compose application includes the shared Vue home page, the Student 1 Accommodation Recommender, the Student 2 Itinerary Planner, the Student 4 Budget & Expense Tracker, the shared Ollama runtime, and the bounded .NET agentic loop. Other student services remain independently owned.
+| # | Feature | Owner | Gateway path | Direct host ports (frontend / backend / database) |
+|---|---|---|---|---|
+| 1 | Accommodation Recommender | Mitchell Harris | `/accommodation/` | 5101 / 5201 / 5301 |
+| 2 | Itinerary Planner | See TODO below | `/itinerary/` | 5102 / 5202 / 5302 |
+| 3 | Local Experience & Attraction Recommender | Khushi (GitHub `ksshrma`) | `/attractions/` | 5103 / 5203 / 5303 |
+| 4 | Budget & Expense Tracker | Liam Zelmanowski | `/budget/` | 5104 / 5204 / 5304 |
+| 5 | Travel Logistics & Advisory | Alex Chen | `/logistics/` | 5105 / 5205 / 5305 |
 
-## Repository Structure
+Gateway paths are relative to `http://localhost:5100`. The direct host ports are
+for diagnostics; the supported browser route for every feature is through the
+shared home page.
 
-```text
-.
-├── .github/workflows/       GitHub Actions workflow templates
-├── ai-services/             Shared Ollama, MCP, RAG, and agent services
-├── docs/                    Architecture diagrams, reports, and evidence
-├── scripts/                 Build, test, and deployment scripts
-├── shared/                  Shared application assets and Vue frontend
-├── student-1/ ... student-5/ Frontend, backend, database, and tests per student
-├── docker-compose.yml       Local multi-container application configuration
-└── Project_Specifications/  Project requirements
-```
+> **TODO (owner names).** Student 2's owner name is not recorded in
+> `student-2/README.md` or `student-2/docs/`; the only source in this repository
+> is the GitHub account `LucLeMoenic` in the commit history. Student 3's docs
+> give the first name "Khushi" only (`student-3/docs/contributionlog.md`).
+> Both students should add their full names to their own `student-N/README.md`,
+> and this table should then be updated from there.
+
+Shared services: `shared-frontend` (home page and reverse proxy, port 5100),
+`ollama` (port 11434) and `agentic-loop` (port 5180).
 
 ## Prerequisites
 
+Required to run the application:
+
+- Docker Desktop, with Docker Compose
 - Git
-- Docker Desktop
-- Node.js 22 for local frontend builds and tests
-- .NET 8 SDK for local backend, database, and agentic-loop tests
 
-## Student 1 Accommodation Setup
+Required only to run tests or builds outside containers:
 
-Run these commands from the repository root in PowerShell.
+- Node.js 22 - Student 1, 2 and 4 frontend test suites and the shared Vue frontend build
+- .NET 8 SDK - Student 1 and Student 4 backend/database test suites and the agentic-loop test suite
+- Python 3.11 - Student 2, 3 and 5 backend/database pytest suites
 
-1. Configure the application and development model tags:
+## Run the whole application
+
+From the repository root:
+
+1. Create the environment file. It sets the Ollama model tags every service
+   uses; the defaults work without editing.
 
    ```powershell
    Copy-Item .env.example .env
-   docker compose config --quiet
    ```
 
-2. Restore dependencies, run every Student 1 test, and build the integrated images:
+   On bash: `cp .env.example .env`.
+
+2. Build and start every service, waiting until the healthchecks pass:
 
    ```powershell
-   npm ci --prefix student-1/frontend
-   npm test --prefix student-1/frontend
-   npm run build --prefix student-1/frontend
-   dotnet restore student-1/backend/tests/Backend.Tests.csproj
-   dotnet test student-1/backend/tests/Backend.Tests.csproj --configuration Release --no-restore
-   dotnet restore student-1/database/tests/Database.Tests.csproj
-   dotnet test student-1/database/tests/Database.Tests.csproj --configuration Release --no-restore
-   docker compose build shared-frontend student1-frontend student1-backend student1-database
+   docker compose up -d --build --wait
    ```
 
-3. Start the shared page and Student 1 services. Compose starts one shared Ollama runtime, installs any missing models from `OLLAMA_MODELS`, and preloads `APPLICATION_MODEL` before the backend starts:
+   `scripts/start-app.ps1` runs the same command and opens the browser; add
+   `-Gpu` on a machine with an NVIDIA GPU exposed to Docker to apply the
+   optional `docker-compose.gpu.yml` override.
 
-   ```powershell
-   docker compose up -d --build --wait shared-frontend
-   ```
+3. Open `http://localhost:5100` and choose a feature.
 
-   On a Windows machine with an NVIDIA GPU available to Docker, start the Student 1 services with automatic GPU acceleration:
+**First run takes a long time.** The one-shot `ollama-model-setup` container
+downloads every tag in `OLLAMA_MODELS` (several GB) into the persistent
+`ollama-data` volume and preloads `APPLICATION_MODEL` before any AI-using
+backend starts, so `--wait` will sit on the model job for a while. Later runs
+reuse the volume and skip the download.
 
-   ```powershell
-   .\scripts\start-student1.ps1
-   ```
-
-   To start the complete integrated application with GPU acceleration explicitly enabled for Ollama:
-
-   ```powershell
-   .\scripts\start-app.ps1 -Gpu
-   ```
-
-   Omit `-Gpu` to run the complete application in CPU mode.
-
-   CPU-only machines continue to use the main Compose file without the optional `docker-compose.gpu.yml` override.
-
-4. Open `http://localhost:5100` and select **Accommodation Recommender**, or open `http://localhost:5100/accommodation/` directly.
-
-5. Check service health:
-
-   ```powershell
-   Invoke-WebRequest http://localhost:5100/health
-   Invoke-WebRequest http://localhost:5101/health
-   Invoke-WebRequest http://localhost:5201/health
-   Invoke-WebRequest http://localhost:5301/health
-   docker compose ps shared-frontend student1-frontend student1-backend student1-database ollama
-   ```
-
-6. The tracked SQLite file already contains the required search-history examples. Accommodation records are intentionally not automatically seeded; create the demonstration catalogue through the database API and confirm both tables through:
-
-   ```powershell
-   Invoke-RestMethod "http://localhost:5301/api/data/accommodations"
-   Invoke-RestMethod "http://localhost:5301/api/data/searches"
-   ```
-
-7. Stop the integrated services without deleting the persistent SQLite file or Ollama models:
-
-   ```powershell
-   docker compose down
-   ```
-
-## Student 2 Itinerary Planner
-
-Start the shared page and Student 2 services from the repository root:
+Useful checks and shutdown:
 
 ```powershell
-docker compose up -d --build shared-frontend
+docker compose ps
+docker compose down
 ```
 
-Open `http://localhost:5100` and select **Itinerary Planner**, or open `http://localhost:5100/itinerary/` directly. Ports `5102`, `5202`, and `5302` expose the individual services for diagnostics only.
+`docker compose down` keeps the Ollama model volume and the SQLite files, which
+are bind-mounted from each student's `database/storage/` directory.
 
-Student 2 requirements and current readiness evidence are indexed in [`student-2/docs/README.md`](student-2/docs/README.md).
+Optional configuration: `LITEAPI_KEY` in `.env` enables the Student 1 backend's
+LiteAPI sandbox catalogue import. Everything else runs without it.
 
-## Student 4 Budget & Expense Tracker
+## Repository structure
 
-Validate Student 4 source from the repository root through the Student 4
-frontend package, then start the integrated application through the shared root
-Compose path:
-
-```powershell
-npm --prefix student-4/frontend run validation
-./scripts/start-app.ps1
+```text
+.
+├── .github/workflows/           student-1.yml .. student-5.yml, cloud-deployment.yml
+├── ai-services/
+│   ├── agentic-loop/            .NET 8 two-model Plan/Act/Observe/Adapt service
+│   └── README.md
+├── docs/
+│   ├── Project_Specifications/  Project specification and Release 0 brief
+│   ├── agentic-loop-records/    Finalised JSON records from the agentic loop
+│   ├── release-0/               Release 0 deliverable index and architecture docs
+│   └── README.md
+├── scripts/                     PowerShell startup and validation helpers
+├── shared/
+│   └── vue-frontend/            Shared home page and nginx gateway (port 5100)
+├── student-1/ .. student-5/     One feature each:
+│   ├── frontend/                nginx-served UI
+│   ├── backend/                 Backend/API service
+│   ├── database/                SQLite database API service and storage/
+│   └── docs/                    That student's Release 0 documentation
+├── docker-compose.yml           The single shared Compose configuration
+├── docker-compose.gpu.yml       Optional NVIDIA GPU override for Ollama
+└── .env.example                 Model tags and optional API keys
 ```
 
-Open `http://localhost:5100/budget/`. Ports `5104`, `5204`, and `5304` expose
-the individual services for diagnostics. Student 4 setup, validation, and
-evidence instructions are in [`student-4/README.md`](student-4/README.md).
+Test locations vary by stack: Students 1, 2, 4 and 5 keep tests under
+`backend/tests/` and `database/tests/`, while Student 3 keeps a single
+`student-3/tests/` suite covering both of its services.
 
-## Shared Release 0 Agentic Loop
+## AI services
 
-The shared .NET service under `ai-services/agentic-loop/` uses two distinct models from the same shared Ollama runtime used by application microservices:
+- **Ollama runtime** - one `ollama/ollama:latest` container serves every model
+  for the whole group, published on port 11434 with a persistent `ollama-data`
+  volume. No frontend calls it; every AI request goes
+  frontend -> backend/API -> Ollama -> LLM.
+- **Model setup** - `ollama-model-setup` is a one-shot init container. It runs
+  `ollama show` for each configured tag, pulls only what is missing, preloads
+  `APPLICATION_MODEL`, then exits. Every AI-using backend depends on it with
+  `condition: service_completed_successfully`.
+- **Approved models in use** (from `.env.example` and `docker-compose.yml`):
 
-- Qwen implementer for Plan and Act;
-- Llama reviewer for Observe;
-- one bounded implementer revision plus a human-controlled Adapt decision.
+  | Tag | Used by |
+  |---|---|
+  | `llama3.2:3b` | `APPLICATION_MODEL` for Students 1, 2 and 5; `STUDENT4_MODEL` for Student 4; reviewer role in the agentic loop |
+  | `qwen2.5:3b` | `STUDENT3_MODEL` for Student 3's `/api/recommend` |
+  | `qwen2.5-coder:7b` | implementer role in the agentic loop |
 
-Configure the shared model list and each consumer's selected model tags, then start the service. The single `ollama-model-setup` job pulls only models missing from the shared persistent Ollama volume and preloads the application model:
+- **Shared agentic loop** - `ai-services/agentic-loop/` is a .NET 8 container
+  implementing Plan -> Act -> Observe -> Adapt with two distinct models from the
+  same Ollama runtime: the implementer (`IMPLEMENTER_MODEL`) plans and acts, the
+  reviewer (`REVIEWER_MODEL`) observes, and the Adapt decision is made by a
+  human. The service never writes source files or runs commands; it writes
+  auditable JSON records to `docs/agentic-loop-records/`. Run and finalisation
+  commands are in [`ai-services/agentic-loop/README.md`](ai-services/agentic-loop/README.md).
 
-```powershell
-Copy-Item .env.example .env
-docker compose up -d agentic-loop
-```
+## Continuous integration
 
-See [`ai-services/agentic-loop/README.md`](ai-services/agentic-loop/README.md) for the run/finalisation commands and evidence format.
+Five workflows in `.github/workflows/`, each triggered by pushes and pull
+requests touching its own paths.
 
-## Development Workflow
+| Workflow | Triggering paths | What it validates |
+|---|---|---|
+| `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/verify-agentic-models.ps1`, the workflow file | Job 1: Vue frontend `npm test` and production build, `dotnet test` for the backend and database APIs, `docker compose config --quiet`, and Compose builds of the shared and Student 1 images. Job 2: `dotnet test` for the agentic loop plus a direct and a Compose build of its image. |
+| `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Frontend Vitest suite, backend and database pytest suites, Compose config validation, Compose builds, then starts the three Student 2 services and smoke-tests their `/health` endpoints and `/api/trips`. |
+| `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Single `pytest tests` run covering both services, Compose config validation, Compose builds, a `student3-db-init` run to create and seed the schema, service startup with health waits, and a smoke test of the three `/health` endpoints and `/api/attractions`. |
+| `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test-student4.ps1`, `.env.example`, `docker-compose.yml`, the workflow file | `npm run validation` (frontend, backend and database suites plus both frontend builds), Compose config validation and builds, then starts the Student 4 services behind the shared frontend and smoke-tests `/health`, seeded budgets and expenses, the dashboard endpoint, and the `/budget/` page through the gateway. Push runs are restricted to `main`; pull requests run on any branch. |
+| `student-5.yml` | `student-5/**`, `docker-compose.yml`, the workflow file | Database and backend pytest suites run as separate steps (both services define a module named `app`), Compose config validation, and Compose builds of the three Student 5 images. |
+
+No workflow starts Ollama or pulls a model, so AI behaviour is evidenced by
+local Compose runs rather than by CI.
+
+`.github/workflows/cloud-deployment.yml` also exists. It triggers after the five
+student workflows complete successfully and currently only echoes a placeholder
+message; cloud deployment is not Release 0 work.
+
+## Documentation
+
+- [Release 0 deliverable index](docs/release-0/README.md) - integrated architecture, Compose architecture and DevOps pipeline diagrams, and the evidence map
+- [Project specification](docs/Project_Specifications/Project_Specifications.md) and [Release 0 brief](docs/Project_Specifications/Release_0_brief.md)
+- [Shared AI services](ai-services/README.md)
+
+Per-student documentation:
+
+| Student | Feature | Docs |
+|---|---|---|
+| 1 | Accommodation Recommender | [`student-1/docs/`](student-1/docs/) |
+| 2 | Itinerary Planner | [`student-2/docs/`](student-2/docs/README.md) |
+| 3 | Local Experience & Attraction Recommender | [`student-3/docs/`](student-3/docs/) |
+| 4 | Budget & Expense Tracker | [`student-4/docs/`](student-4/docs/) |
+| 5 | Travel Logistics & Advisory | [`student-5/docs/`](student-5/docs/) |
+
+## Development workflow
 
 1. Create a feature branch from `main`.
-2. Implement changes in the relevant `student-x/`, `shared/`, or service directory.
+2. Implement changes in the relevant `student-N/`, `shared/`, or service directory.
 3. Run the relevant local build or tests.
 4. Commit with a meaningful message and open a pull request.
-5. Update documentation and testing evidence in `docs/`.
+5. Update documentation and evidence under `student-N/docs/` or `docs/`.
 
-See [`Project_Specifications/Project_Specifications.md`](Project_Specifications/Project_Specifications.md) for the full release requirements and assessment criteria.
+Release 1 (MCP, RAG), Release 2 (multi-agent services) and cloud deployment are
+out of scope for Release 0 and are not implemented in this repository.
