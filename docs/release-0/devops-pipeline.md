@@ -1,7 +1,7 @@
 # Release 0 DevOps Pipeline Architecture
 
 How a change travels from a developer's machine to validated, buildable
-containers: GitHub as the shared repository, five path-filtered GitHub Actions
+containers: GitHub as the shared repository, six path-filtered GitHub Actions
 workflows, and local Docker Compose execution where AI-Mode is actually
 exercised.
 
@@ -20,6 +20,7 @@ flowchart TD
         w3["<b>student-3.yml</b> - Student 3 CI<br/>pytest tests, compose config, compose build,<br/>run student3-db-init, compose up the 3 services,<br/>smoke: 3 health endpoints,<br/>plus /api/attractions returns at least 10 rows"]
         w4["<b>student-4.yml</b> - Student 4 CI<br/>npm run validation, compose config, compose build,<br/>compose up 3 services + shared-frontend,<br/>smoke: health, budgets, expenses, dashboard,<br/>and the /budget/ page through the gateway"]
         w5["<b>student-5.yml</b> - Student 5 CI<br/>pytest database, pytest backend,<br/>compose config, compose build"]
+        wi["<b>integration-ci.yml</b> - Integrated Compose CI<br/>compose config, all image builds,<br/>model-independent service health smoke test"]
     end
 
     cd["<b>cloud-deployment.yml</b><br/>workflow_run after the five CI workflows<br/>echo placeholder only - not Release 0 work"]
@@ -43,6 +44,7 @@ flowchart TD
     paths -->|"student-3 paths"| w3
     paths -->|"student-4 paths"| w4
     paths -->|"student-5 paths"| w5
+    paths -->|"shared/integration paths"| wi
     w1 --> cd
     w2 --> cd
     w3 --> cd
@@ -59,27 +61,30 @@ Work happens on a feature branch cut from `main`, is pushed to the shared GitHub
 repository, and reaches `main` through a pull request. Both events matter to the
 pipeline: every student workflow declares `push` and `pull_request` triggers, so
 a branch push validates work in progress and the pull request validates the
-merge candidate. All five workflows run on `ubuntu-latest` with
+merge candidate. All six workflows run on `ubuntu-latest` with
 `permissions: contents: read` and nothing more.
 
 ## Path filters
 
 Each workflow watches only the paths it owns, so an unrelated change does not
-spend CI minutes on all five features.
+spend CI minutes on all five feature workflows. The integration workflow watches
+the shared application surfaces and runs the cross-service smoke gate.
 
 | Workflow | Watched paths |
 |---|---|
-| `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/verify-agentic-models.ps1`, itself |
+| `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/test/verify-agentic-models.ps1`, `scripts/test/student-1.ps1`, itself |
 | `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 | `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
-| `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test-student4.ps1`, `.env.example`, `docker-compose.yml`, itself |
+| `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test/student-4.ps1`, `.env.example`, `docker-compose.yml`, itself |
 | `student-5.yml` | `student-5/**`, `docker-compose.yml`, itself |
+| `integration-ci.yml` | `student-*/**`, `shared/**`, `ai-services/**`, `docker-compose.yml`, `.env.example`, itself |
 
 Two consequences are deliberate. First, `docker-compose.yml` is on every list:
 ports, dependency conditions and bind mounts live in one shared file, so a change
 there re-runs everyone's checks rather than silently breaking another feature.
-Second, `shared/vue-frontend/**` is on four of the five lists, so a gateway or
-home-page change is validated against those features' builds.
+Second, `shared/vue-frontend/**` is on four of the five feature-workflow lists,
+so a gateway or home-page change is validated against those feature builds; the
+integration workflow separately covers the shared gateway smoke path.
 
 Two differences between the workflows are worth stating because they are
 asymmetries rather than design decisions this document can justify:
@@ -87,6 +92,11 @@ asymmetries rather than design decisions this document can justify:
 `workflow_dispatch`), while the other four run on a push to any branch; and
 `student-5.yml` does not list `shared/vue-frontend/**`, so a gateway-only change
 does not re-run Student 5's checks.
+
+The integration workflow starts services with `--no-deps` so CI does not pull or
+run the large Ollama model set. It therefore proves image buildability, process
+health, and gateway availability; the real Compose dependency ordering and
+frontend-to-backend-to-Ollama behaviour remain local demonstration evidence.
 
 ## What each workflow builds and validates
 
