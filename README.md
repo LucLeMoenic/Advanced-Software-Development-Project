@@ -14,21 +14,14 @@ runs the whole application.
 | # | Feature | Owner | Gateway path | Direct host ports (frontend / backend / database) |
 |---|---|---|---|---|
 | 1 | Accommodation Recommender | Mitchell Harris | `/accommodation/` | 5101 / 5201 / 5301 |
-| 2 | Itinerary Planner | See TODO below | `/itinerary/` | 5102 / 5202 / 5302 |
-| 3 | Local Experience & Attraction Recommender | Khushi (GitHub `ksshrma`) | `/attractions/` | 5103 / 5203 / 5303 |
+| 2 | Itinerary Planner | Luc Le Moenic | `/itinerary/` | 5102 / 5202 / 5302 |
+| 3 | Local Experience & Attraction Recommender | Khushi Sharma | `/attractions/` | 5103 / 5203 / 5303 |
 | 4 | Budget & Expense Tracker | Liam Zelmanowski | `/budget/` | 5104 / 5204 / 5304 |
 | 5 | Travel Logistics & Advisory | Alex Chen | `/logistics/` | 5105 / 5205 / 5305 |
 
 Gateway paths are relative to `http://localhost:5100`. The direct host ports are
 for diagnostics; the supported browser route for every feature is through the
 shared home page.
-
-> **TODO (owner names).** Student 2's owner name is not recorded in
-> `student-2/README.md` or `student-2/docs/`; the only source in this repository
-> is the GitHub account `LucLeMoenic` in the commit history. Student 3's docs
-> give the first name "Khushi" only (`student-3/docs/contributionlog.md`).
-> Both students should add their full names to their own `student-N/README.md`,
-> and this table should then be updated from there.
 
 Shared services: `shared-frontend` (home page and reverse proxy, port 5100),
 `ollama` (port 11434) and `agentic-loop` (port 5180).
@@ -156,8 +149,8 @@ requests touching its own paths.
 | `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/verify-agentic-models.ps1`, the workflow file | Job 1: Vue frontend `npm test` and production build, `dotnet test` for the backend and database APIs, `docker compose config --quiet`, and Compose builds of the shared and Student 1 images. Job 2: `dotnet test` for the agentic loop plus a direct and a Compose build of its image. |
 | `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Frontend Vitest suite, backend and database pytest suites, Compose config validation, Compose builds, then starts the three Student 2 services and smoke-tests their `/health` endpoints and `/api/trips`. |
 | `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Single `pytest tests` run covering both services, Compose config validation, Compose builds, a `student3-db-init` run to create and seed the schema, service startup with health waits, and a smoke test of the three `/health` endpoints and `/api/attractions`. |
-| `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test-student4.ps1`, `.env.example`, `docker-compose.yml`, the workflow file | `npm run validation` (frontend, backend and database suites plus both frontend builds), Compose config validation and builds, then starts the Student 4 services behind the shared frontend and smoke-tests `/health`, seeded budgets and expenses, the dashboard endpoint, and the `/budget/` page through the gateway. Push runs are restricted to `main`; pull requests run on any branch. |
-| `student-5.yml` | `student-5/**`, `docker-compose.yml`, the workflow file | Database and backend pytest suites run as separate steps (both services define a module named `app`), Compose config validation, and Compose builds of the three Student 5 images. |
+| `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test-student4.ps1`, `.env.example`, `docker-compose.yml`, the workflow file | `npm run validation` (frontend, backend and database suites plus both frontend builds), Compose config validation and builds, then starts the Student 4 services behind the shared frontend and smoke-tests `/health`, seeded budgets and expenses, the dashboard endpoint, and the `/budget/` page through the gateway. Also exposes `workflow_dispatch` for manual runs. |
+| `student-5.yml` | `student-5/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Database and backend pytest suites run as separate steps (both services define a module named `app`), Compose config validation, and Compose builds of the three Student 5 images. |
 
 No workflow starts Ollama or pulls a model, so AI behaviour is evidenced by
 local Compose runs rather than by CI.
