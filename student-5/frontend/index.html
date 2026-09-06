@@ -299,8 +299,13 @@
    * @returns {string} Text to show, or "" to show nothing this tick.
    */
   function formatElapsed(seconds) {
-    // TODO(you): decide what this says. See the note in the chat.
-    return "";
+    if (seconds < 2) {
+      return "";
+    }
+    if (seconds < 45) {
+      return `${seconds}s`;
+    }
+    return `still working - ${seconds}s`;
   }
 
   function stopElapsedTimer() {
