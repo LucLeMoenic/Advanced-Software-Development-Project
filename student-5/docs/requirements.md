@@ -21,7 +21,7 @@ a SQLite file. Every requirement below is implemented in Release 0.
 | TL-FR-03 | The traveller can read the recorded entry/visa requirement and entry notes. | `GET /ui/visa?destination_id=N` into `<div id="visa-panel">`; JSON `GET /api/destinations/<id>`. | The panel shows `visa_requirement` verbatim from the stored row plus the stored notes. An unknown id renders the database service's own error text, not an invented one. |
 | TL-FR-04 | The traveller can read the recorded transit options for the chosen destination. | `GET /ui/transit?destination_id=N` into `<div id="transit-panel">`; JSON `GET /api/transit-options?destination_id=N`. | Options render as a table of `type` and `details`. A destination with no options (Fiji, id 12 on a fresh database) says so. |
 | TL-FR-05 | The traveller can generate an AI advisory grounded in the stored rows. This is the marked Frontend -> Backend/API -> Ollama -> LLM workflow. | `POST /ui/advisory` (form fields) into `<div id="advisory-panel">`, and `POST /api/advisory` (JSON); both call `advisory.generate_advisory`. | The prompt built by `advisory.build_prompt` contains the destination row, its weather notes and its transit options verbatim before the model is called. The JSON response carries the advisory text, the model tag actually used, and the destination row. `destination_id` is required and coerced to `int`; an unknown id forwards the database service's 404. |
-| TL-FR-06 | The traveller can tell a slow generation from a hung one. | `formatElapsed(seconds)` in `frontend/index.html`, rendering into `<span id="advisory-elapsed">` inside the `role="status"` indicator. | Empty for the first 2 seconds, `Ns` from 2 seconds, `still working - Ns` past 45 seconds. The counter is `aria-hidden`, so the live region is announced once rather than once per second. |
+| TL-FR-06 | The traveller can tell a slow generation from a hung one. | `formatElapsed(seconds)` in `frontend/index.html`, rendering into `<span id="advisory-elapsed">` inside the `role="status"` indicator. | Empty for the first 2 seconds, `Ns` from 2 seconds, `still working - Ns` past 45 seconds. The counter is `aria-hidden`, so the live region is announced once rather than once per second. Seen on screen at `17s` in `docs/evidence/ui-advisory-loading.png`; all three branches asserted in `docs/evidence/formatelapsed-assertions.txt`. |
 | TL-FR-07 | An admin can add a destination. | `POST /ui/destinations` from the manage form; JSON `POST /api/destinations`. | `country` and `visa_requirement` are required, `notes` optional. A blank notes box is omitted entirely so the row stores `NULL`, not an empty string. The fragment route returns the refreshed table; the JSON route returns `201` and the created row. |
 | TL-FR-08 | An admin can edit a destination in place. | `POST /ui/destinations/<id>` from the row's inline form; JSON `PUT /api/destinations/<id>`. | `PUT` is a partial merge - omitted columns keep their stored value. An emptied notes box is sent as JSON `null`, because the database rejects an empty string but accepts null for that one nullable column; without this, notes could be edited but never cleared. A rejected edit re-renders the table carrying the database service's own message. |
 | TL-FR-09 | An admin can delete a destination, and its child rows go with it. | `POST /ui/destinations/<id>/delete` (behind `hx-confirm`); JSON `DELETE /api/destinations/<id>`. | The JSON route returns `204` with no body. Deleting a destination removes its `weather_notes` and `transit_options` rows through `ON DELETE CASCADE`, which works because every connection issues `PRAGMA foreign_keys = ON`. |
@@ -58,8 +58,11 @@ whether the model chooses to write it.
   `docs/evidence/pytest-database.txt` (`26 passed in 0.84s`) and
   `docs/evidence/pytest-backend.txt` (`68 passed in 0.54s`). Commands in
   `testing-evidence.md`.
-- A successful `student-5.yml` run.
-  **TODO: attach CI run screenshot or URL** - obtain from the Actions tab, workflow "Student 5 CI".
+- A successful `student-5.yml` run - captured in `docs/evidence/ci-run-green.png`:
+  workflow "Student 5 CI", run `AC/complete-documentation #92`, job
+  `logistics-services` `succeeded now in 24s` with every step green, including
+  both pytest steps, `Validate Docker Compose config` and
+  `Build integrated Student 5 containers`.
 - `docker compose build` output - captured in `docs/evidence/compose-build.txt`,
   ending in `Image ...-student5-database Built`, `... -student5-backend Built`
   and `... -student5-frontend Built`. `docker compose config --quiet` produces no
@@ -68,8 +71,14 @@ whether the model chooses to write it.
   `docs/evidence/compose-ps.txt`, which shows `student5-database`,
   `student5-backend` and `student5-frontend` each `Up About an hour (healthy)`
   on host ports 5305, 5205 and 5105.
-- Browser screenshots of the detail panels, a generated advisory, and the manage table.
-  **TODO: attach application screenshots** - `http://localhost:5105/`.
+- Browser screenshots of the detail panels, a generated advisory, and the manage
+  table - captured at `http://localhost:5105/` in `docs/evidence/`:
+  `ui-filled-panels.png` (TL-FR-01..04: weather, visa and transit panels
+  populated for Indonesia), `ui-advisory-output.png` (TL-FR-05: a Japan advisory
+  with the footer `Generated by llama3.2:3b`), `ui-advisory-loading.png`
+  (TL-FR-06: `17s` on the elapsed readout mid-generation) and
+  `ui-manage-table.png` (TL-FR-07..09: the created row id 13 `Testlandia` with
+  the inline edit and delete controls).
 - A genuine finalised Plan/Act/Observe/Adapt record - held in
   `docs/evidence/agentic-loop-run-final-record.json` with the three terminal
   screenshots beside it, described in `prompt-log.md` and `review-record.md`.

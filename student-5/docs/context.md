@@ -82,7 +82,7 @@ travels over HTTP through `backend/db_client.py`.
 | `backend/advisory.py` | Grounding + prompt assembly + both advisory endpoints |
 | `backend/ui.py`, `backend/templates/` | Server-rendered HTMX fragments |
 | `frontend/index.html`, `style.css`, `nginx.conf` | The page, its CSS, the edge |
-| `docs/evidence/` | Agentic-loop artefacts - see `testing-evidence.md` |
+| `docs/evidence/` | All 17 evidence artefacts - agentic loop, tests, build, stack, CI run, screenshots. Indexed in `testing-evidence.md` |
 | `docs/prompt-library/` | `reviewer-llama32-v2.md`, my custom reviewer prompt |
 
 ## Running it

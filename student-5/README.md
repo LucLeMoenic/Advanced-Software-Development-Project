@@ -41,8 +41,11 @@ anyone working on this feature.
 | [known-issues.md](docs/known-issues.md) | Honest limitations of the delivered feature |
 | [contribution-log.md](docs/contribution-log.md) | Commits and pull requests, by date |
 
-Supporting material: [`docs/evidence/`](docs/evidence) (agentic-loop artefacts)
-and [`docs/prompt-library/reviewer-llama32-v2.md`](docs/prompt-library/reviewer-llama32-v2.md)
+Supporting material: [`docs/evidence/`](docs/evidence) - seventeen artefacts
+covering the agentic-loop run, both pytest suites, the image build, the healthy
+Compose stack, the green CI run and four screenshots of the running application,
+each one indexed in [testing-evidence.md](docs/testing-evidence.md) - and
+[`docs/prompt-library/reviewer-llama32-v2.md`](docs/prompt-library/reviewer-llama32-v2.md)
 (the custom reviewer prompt).
 
 ## Run it

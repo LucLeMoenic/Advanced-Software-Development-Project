@@ -27,6 +27,9 @@ the PR number traceable.
 | 2026-09-04 | `3286e20` | PR #44 (`7acd2e4`) | Aligned the shared home page label with the feature's own product name. |
 | 2026-09-06 | `6dd3fd2` | PR #50 (`dbbb3e6`) | **`formatElapsed` elapsed-time readout, built through the agentic loop.** The function itself, its timer wiring (`htmx:beforeRequest` / `htmx:afterRequest` with the `isAdvisoryRequest` guard, so the page-load options fetch cannot start a timer nothing stops), and my custom reviewer prompt `docs/prompt-library/reviewer-llama32-v2.md`. Produced through a full Plan -> Act -> Observe -> Adapt cycle with a recorded human decision; record `20260906T053024Z-ad4b32c67df446e8af9e1fca8cc22044.json`. 3 files, 143 lines. |
 | 2026-09-06 | `cdf8942` | (on `AC/complete-documentation`) | **Agentic-loop evidence captured.** Three terminal screenshots, the finalised record JSON, and three supporting text captures, into `student-5/docs/evidence/`. 7 files. |
+| 2026-09-06 | `a0f5ae0` | (on `AC/complete-documentation`) | **Release 0 documentation pack.** Context, requirements, feature plan, risk plan, sprint backlog, data design, architecture, prompt log, review record, prompt engineering, testing evidence, known issues and contribution log, plus the README rewrite; and the pytest, build and `compose ps` captures into `docs/evidence/`. 18 files, 1669 insertions. |
+| 2026-09-06 | `5adfd3f` | (on `AC/complete-documentation`) | **Evidence index reconciled and the three required diagrams added.** Every pytest / Compose TODO replaced by a reference to the committed capture with its result line quoted; Mermaid diagrams for the Compose architecture, the DevOps pipeline and the Plan/Act/Observe/Adapt workflow in `architecture.md`; the `student-5.yml` step-by-step description in `testing-evidence.md`. 5 files, 281 insertions. |
+| 2026-09-06 | (working tree) | (on `AC/complete-documentation`) | **Final evidence capture and documentation close-out.** The green CI run (`ci-run-green.png`) and four application screenshots (`ui-filled-panels.png`, `ui-advisory-output.png`, `ui-advisory-loading.png`, `ui-manage-table.png`) into `docs/evidence/`; the last two TODOs replaced across `testing-evidence.md`, `requirements.md`, `feature-plan.md` and `sprint-backlog.md`; evidence-completeness mapping added. No documentation item is outstanding. |
 
 ## Pull requests
 
@@ -51,10 +54,10 @@ the PR number traceable.
 | Backend service | HTTP database client, JSON passthrough, Ollama client, grounded advisory workflow, HTMX fragment blueprint with 7 templates, 68 tests |
 | Frontend service | Single-page HTMX application, nginx edge with same-origin proxying, own stylesheet, print sheet, client-side failure handling |
 | Integration | Three Compose services with healthchecks and dependency ordering; shared home page entry |
-| CI | `student-5.yml` - two test suites, Compose validation, three image builds |
+| CI | `student-5.yml` - two test suites, Compose validation, three image builds; green run captured (`ci-run-green.png`) |
 | Group infrastructure | Agentic-loop context-extension fix, token-limit increase, `[OBSERVE]` regex fix |
-| AI workflow evidence | One completed and finalised Plan/Act/Observe/Adapt record, custom reviewer prompt, seven evidence artefacts |
-| Documentation | This `docs/` folder - 13 documents |
+| AI workflow evidence | One completed and finalised Plan/Act/Observe/Adapt record, custom reviewer prompt, six artefacts covering the run |
+| Documentation | This `docs/` folder - 13 documents, three architecture diagrams, and 17 indexed evidence artefacts with nothing outstanding |
 
 ## Note on the record
 
