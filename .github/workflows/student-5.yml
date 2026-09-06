@@ -7,12 +7,14 @@ on:
   push:
     paths:
       - "student-5/**"
+      - "shared/vue-frontend/**"
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"
   pull_request:
     paths:
       - "student-5/**"
+      - "shared/vue-frontend/**"
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"

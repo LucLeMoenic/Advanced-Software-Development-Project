@@ -76,7 +76,7 @@ the shared application surfaces and runs the cross-service smoke gate.
 | `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 | `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 | `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test/student-4.ps1`, `.env.example`, `docker-compose.yml`, itself |
-| `student-5.yml` | `student-5/**`, `docker-compose.yml`, itself |
+| `student-5.yml` | `student-5/**`, `shared/vue-frontend/**`, `docker-compose.yml`, `scripts/test/student-5.ps1`, itself |
 | `integration-ci.yml` | `student-*/**`, `shared/**`, `ai-services/**`, `docker-compose.yml`, `.env.example`, itself |
 
 Two consequences are deliberate. First, `docker-compose.yml` is on every list:
@@ -88,10 +88,9 @@ integration workflow separately covers the shared gateway smoke path.
 
 Two differences between the workflows are worth stating because they are
 asymmetries rather than design decisions this document can justify:
-`student-4.yml` restricts its `push` trigger to the `main` branch (and adds
-`workflow_dispatch`), while the other four run on a push to any branch; and
-`student-5.yml` does not list `shared/vue-frontend/**`, so a gateway-only change
-does not re-run Student 5's checks.
+`student-4.yml` exposes `workflow_dispatch` for manual runs; all five feature
+workflows run on `push` and `pull_request`, while the integration workflow also
+supports manual dispatch.
 
 The integration workflow starts services with `--no-deps` so CI does not pull or
 run the large Ollama model set. It therefore proves image buildability, process

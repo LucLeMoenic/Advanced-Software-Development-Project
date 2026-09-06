@@ -11,7 +11,11 @@ services:
         condition: service_healthy
       student2-frontend:
         condition: service_healthy
+      student3-frontend:
+        condition: service_healthy
       student4-frontend:
+        condition: service_healthy
+      student5-frontend:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/health"]
@@ -343,11 +347,12 @@ services:
       OLLAMA_MODELS: ${OLLAMA_MODELS:-llama3.2:3b qwen2.5-coder:7b}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
       STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
+      STUDENT3_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
         set -eu
-        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL $$STUDENT4_MODEL; do
+        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL $$STUDENT4_MODEL $$STUDENT3_MODEL; do
           if ollama show "$$model" > /dev/null 2>&1; then
             echo "Ollama model already installed: $$model"
           else
