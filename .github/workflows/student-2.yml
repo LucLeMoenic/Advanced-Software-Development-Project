@@ -10,12 +10,14 @@ on:
       - "shared/vue-frontend/**"
       - ".github/workflows/student-2.yml"
       - "docker-compose.yml"
+      - "scripts/test/student-2.ps1"
   pull_request:
     paths:
       - "student-2/**"
       - "shared/vue-frontend/**"
       - ".github/workflows/student-2.yml"
       - "docker-compose.yml"
+      - "scripts/test/student-2.ps1"
 
 jobs:
   build:
@@ -31,27 +33,8 @@ jobs:
           cache: npm
           cache-dependency-path: student-2/frontend/package-lock.json
 
-      - name: Install frontend test dependencies
-        working-directory: student-2/frontend
-        run: npm ci
-
-      - name: Test frontend behavior
-        working-directory: student-2/frontend
-        run: npm test
-
-      - name: Install backend test dependencies
-        run: pip install -r student-2/backend/requirements.txt pytest
-
-      - name: Test backend orchestration
-        working-directory: student-2/backend
-        run: python -m pytest tests
-
-      - name: Install database test dependencies
-        run: pip install -r student-2/database/requirements.txt
-
-      - name: Test database API
-        working-directory: student-2/database
-        run: python -m pytest tests
+      - name: Test Student 2 services
+        run: pwsh -NoProfile -File scripts/test/student-2.ps1
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

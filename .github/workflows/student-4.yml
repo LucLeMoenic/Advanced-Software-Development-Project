@@ -12,7 +12,7 @@ on:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/test-student4.ps1"
+      - "scripts/test/student-4.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -21,7 +21,7 @@ on:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/test-student4.ps1"
+      - "scripts/test/student-4.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -46,7 +46,7 @@ jobs:
             shared/vue-frontend/package-lock.json
 
       - name: Validate source and tests
-        run: npm --prefix student-4/frontend run validation
+        run: pwsh -NoProfile -File scripts/test/student-4.ps1 -Area All
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

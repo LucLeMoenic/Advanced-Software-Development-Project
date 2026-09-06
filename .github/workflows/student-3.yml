@@ -10,12 +10,14 @@ on:
       - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
+      - 'scripts/test/student-3.ps1'
   pull_request:
     paths:
       - 'student-3/**'
       - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
+      - 'scripts/test/student-3.ps1'
 
 jobs:
   build:
@@ -26,15 +28,8 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install backend test dependencies
-        run: pip install -r student-3/backend/requirements.txt
-
-      - name: Install database test dependencies
-        run: pip install -r student-3/database/requirements.txt pytest
-
-      - name: Test backend and database
-        working-directory: student-3
-        run: python -m pytest tests
+      - name: Test Student 3 services
+        run: pwsh -NoProfile -File scripts/test/student-3.ps1
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

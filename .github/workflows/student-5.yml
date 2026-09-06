@@ -8,11 +8,13 @@ on:
     paths:
       - "student-5/**"
       - "docker-compose.yml"
+      - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"
   pull_request:
     paths:
       - "student-5/**"
       - "docker-compose.yml"
+      - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"
 
 jobs:
@@ -28,19 +30,8 @@ jobs:
             student-5/database/requirements.txt
             student-5/backend/requirements.txt
 
-      - name: Install database test dependencies
-        run: pip install -r student-5/database/requirements.txt
-
-      - name: Install backend test dependencies
-        run: pip install -r student-5/backend/requirements.txt
-
-      - name: Test database API
-        working-directory: student-5/database
-        run: python -m pytest tests
-
-      - name: Test backend orchestration
-        working-directory: student-5/backend
-        run: python -m pytest tests
+      - name: Test Student 5 services
+        run: pwsh -NoProfile -File scripts/test/student-5.ps1
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

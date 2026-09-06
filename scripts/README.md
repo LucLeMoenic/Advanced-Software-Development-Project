@@ -1,7 +1,9 @@
 # Scripts
 
-- `verify-agentic-models.ps1`: checks that the configured application, implementer, and reviewer models already exist locally. It never downloads models.
-- `start-student1.ps1`: builds and starts the Student 1 Compose dependency chain, then prints service status and localhost URLs.
-- `test-student4.ps1`: runs all Student 4 source validation or one .NET test suite.
+Scripts are grouped by purpose:
 
-Use `start-app.ps1` or root `docker compose` commands for integrated container startup and shutdown. Feature build, test, and deployment scripts should be added only when their corresponding implementation exists.
+- `build/`: build automation. No standalone build script is currently required; service builds are run through Compose and CI.
+- `test/`: one runner per student (`student-1.ps1` through `student-5.ps1`) plus `verify-agentic-models.ps1`.
+- `deploy/`: `start-app.ps1` and `start-student1.ps1` for local startup.
+
+Use the root `docker compose` commands for integrated container startup and shutdown. Add scripts only when their corresponding implementation exists.
