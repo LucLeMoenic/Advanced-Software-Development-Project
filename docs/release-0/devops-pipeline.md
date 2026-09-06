@@ -73,20 +73,17 @@ spend CI minutes on all five features.
 | `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 | `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 | `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test-student4.ps1`, `.env.example`, `docker-compose.yml`, itself |
-| `student-5.yml` | `student-5/**`, `docker-compose.yml`, itself |
+| `student-5.yml` | `student-5/**`, `shared/vue-frontend/**`, `docker-compose.yml`, itself |
 
-Two consequences are deliberate. First, `docker-compose.yml` is on every list:
-ports, dependency conditions and bind mounts live in one shared file, so a change
-there re-runs everyone's checks rather than silently breaking another feature.
-Second, `shared/vue-frontend/**` is on four of the five lists, so a gateway or
-home-page change is validated against those features' builds.
+Two entries are on every list, and both are deliberate. `docker-compose.yml`
+holds every feature's ports, dependency conditions and bind mounts in one shared
+file, so a change there re-runs all five sets of checks rather than silently
+breaking another feature. `shared/vue-frontend/**` is the gateway and home page
+every feature is reached through, so a change there is validated against all five
+features' builds.
 
-Two differences between the workflows are worth stating because they are
-asymmetries rather than design decisions this document can justify:
-`student-4.yml` restricts its `push` trigger to the `main` branch (and adds
-`workflow_dispatch`), while the other four run on a push to any branch; and
-`student-5.yml` does not list `shared/vue-frontend/**`, so a gateway-only change
-does not re-run Student 5's checks.
+Aside from paths, the five triggers are uniform: `push` and `pull_request` on any
+branch. `student-4.yml` additionally exposes `workflow_dispatch` for manual runs.
 
 ## What each workflow builds and validates
 

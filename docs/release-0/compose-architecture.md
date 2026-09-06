@@ -73,7 +73,9 @@ flowchart TD
 
     gw -->|"healthy"| f1
     gw -->|"healthy"| f2
+    gw -->|"healthy"| f3
     gw -->|"healthy"| f4
+    gw -->|"healthy"| f5
 
     f1 -->|"healthy"| b1
     f2 -->|"healthy"| b2
@@ -116,7 +118,7 @@ Arrows from the developer machine are published host ports.
 
 | Service | Image or build context | Ports | depends_on | Healthcheck | Volumes |
 |---|---|---|---|---|---|
-| `shared-frontend` | `./shared/vue-frontend` | 5100 : 80 | `student1-frontend`, `student2-frontend`, `student4-frontend` healthy | `wget --quiet --spider http://127.0.0.1/health` | - |
+| `shared-frontend` | `./shared/vue-frontend` | 5100 : 80 | all five student frontends healthy | `wget --quiet --spider http://127.0.0.1/health` | - |
 | `student1-frontend` | `./student-1/frontend` | 5101 : 80 | `student1-backend` healthy | `wget --spider` on `/health` | - |
 | `student1-backend` | `./student-1/backend` | 5201 : 8080 | `student1-database` healthy, `ollama-model-setup` completed | `curl --fail --silent localhost:8080/health` | - |
 | `student1-database` | `./student-1/database` | 5301 : 8080 | - | `curl --fail --silent localhost:8080/health` | `./student-1/database/storage:/data` |
@@ -149,7 +151,8 @@ Two containers in the stack exist only to run once and exit, and dependents gate
 on `service_completed_successfully` rather than on health.
 
 **`ollama-model-setup`** is the model provisioner. It receives `OLLAMA_HOST`,
-`OLLAMA_MODELS`, `APPLICATION_MODEL` and `STUDENT4_MODEL`, waits for `ollama` to
+`OLLAMA_MODELS`, `APPLICATION_MODEL`, `STUDENT4_MODEL` and `STUDENT3_MODEL`,
+waits for `ollama` to
 report healthy, then loops over those tags: `ollama show` first, and `ollama pull`
 only when the tag is missing from the persistent `ollama-data` volume. It
 finishes by running the application model once with `--keepalive 30m` so the
@@ -169,13 +172,14 @@ separate init container.
 
 ## Two properties worth knowing before a demo
 
-- `shared-frontend` declares `depends_on` for the Student 1, 2 and 4 frontends
-  only. Starting the gateway by name (`docker compose up shared-frontend`) does
-  not pull in the Student 3 or Student 5 containers, and `/attractions/` and
-  `/logistics/` return a proxy error until those are started. `docker compose up`
-  with no service names starts everything and is the supported path.
-- The model-setup loop iterates `OLLAMA_MODELS`, `APPLICATION_MODEL` and
-  `STUDENT4_MODEL`. `STUDENT3_MODEL` is not in that list, so Student 3's
-  `qwen2.5:3b` is pulled only because `.env.example` includes it in
-  `OLLAMA_MODELS`. Running without copying `.env.example` to `.env` falls back to
-  the Compose default `OLLAMA_MODELS` value, which does not contain it.
+- `shared-frontend` declares `depends_on` for all five student frontends, so
+  starting the gateway by name (`docker compose up shared-frontend`) pulls in
+  every feature and its dependency chain. The gateway becomes reachable only
+  after all five features report healthy, which is deliberate: a gateway that is
+  up while `/attractions/` or `/logistics/` still returns a proxy error is worse
+  than one that is not up yet.
+- The model-setup loop iterates `OLLAMA_MODELS`, `APPLICATION_MODEL`,
+  `STUDENT4_MODEL` and `STUDENT3_MODEL`, so every tag a service actually selects
+  is provisioned even when it is not listed in `OLLAMA_MODELS`. `.env.example`
+  also lists `qwen2.5:3b` in `OLLAMA_MODELS`; the duplication is harmless because
+  the loop runs `ollama show` before every pull.
