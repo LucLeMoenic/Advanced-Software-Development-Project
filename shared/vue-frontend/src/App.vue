@@ -43,7 +43,7 @@
             </a>
           </li>
           <li>
-            <a class="feature-card" href="http://localhost:5103">
+            <a class="feature-card" href="/attractions/">
               <span class="student-label">Student 3</span>
               <span class="feature-content">
                 <strong>Local Attraction Recommender</strong>
@@ -63,7 +63,7 @@
             </a>
           </li>
           <li>
-            <a class="feature-card" href="http://localhost:5105">
+            <a class="feature-card" href="/logistics/">
               <span class="student-label">Student 5</span>
               <span class="feature-content">
                 <strong>Travel Logistics &amp; Advisory</strong>
