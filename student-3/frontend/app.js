@@ -96,7 +96,7 @@ function attractionCardHtml(attraction) {
       <p class="description">${escapeHtml(attraction.description)}</p>
       <div class="card-actions">
         <button type="button"
-                hx-post="/api/itinerary"
+                hx-post="/attractions-api/itinerary"
                 hx-vals='{"attraction_id": ${attraction.id}}'
                 hx-swap="none"
                 hx-on::after-request="this.textContent = 'Added'; this.disabled = true;">
@@ -105,7 +105,7 @@ function attractionCardHtml(attraction) {
         <button type="button" hx-on:click="showEditForm(${attraction.id})">Edit</button>
         <button type="button"
                 class="danger"
-                hx-delete="/api/attractions/${attraction.id}"
+                hx-delete="/attractions-api/attractions/${attraction.id}"
                 hx-confirm="Delete this attraction?"
                 hx-swap="none"
                 hx-on::after-request="handleDeleteAttraction(event, ${attraction.id})">
@@ -134,7 +134,7 @@ function editFormHtml(id) {
   return `
     <form class="edit-form"
           hx-ext="json-body"
-          hx-put="/api/attractions/${id}"
+          hx-put="/attractions-api/attractions/${id}"
           hx-swap="none"
           hx-on::after-request="handleUpdateAttraction(event, ${id})">
       <label for="edit-name-${id}">Name</label>
@@ -215,7 +215,7 @@ function reviewFormHtml(attractionId) {
   return `
     <form class="review-form-fields"
           hx-ext="json-body"
-          hx-post="/api/reviews"
+          hx-post="/attractions-api/reviews"
           hx-vals='{"attraction_id": ${attractionId}}'
           hx-swap="none"
           hx-on::after-request="handleCreateReview(event, ${attractionId})">
@@ -296,8 +296,8 @@ function renderAttractionsData(status, attractions) {
 /** Re-fetches the currently filtered attraction list after a create, update, or delete. */
 function refreshAttractions() {
   const url = currentCategory
-    ? `/api/attractions?category=${encodeURIComponent(currentCategory)}`
-    : '/api/attractions';
+    ? `/attractions-api/attractions?category=${encodeURIComponent(currentCategory)}`
+    : '/attractions-api/attractions';
 
   fetch(url)
     .then((response) => response.json().then((data) => ({ status: response.status, data })))

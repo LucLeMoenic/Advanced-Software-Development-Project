@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Local Experience &amp; Attraction Recommender</title>
-  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="style.css">
   <script
     src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"
     integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
@@ -17,9 +17,12 @@
     minimal rework: section markup is self-contained, and styling should
     move to the shared CSS theme rather than living only in style.css.
   -->
-  <header>
-    <h1>Local Experience &amp; Attraction Recommender</h1>
-    <p class="tagline">Browse attractions or ask the AI for a suggestion.</p>
+  <header style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;">
+    <div>
+      <h1>Local Experience &amp; Attraction Recommender</h1>
+      <p class="tagline">Browse attractions or ask the AI for a suggestion.</p>
+    </div>
+    <a href="/" style="color: inherit;">All features</a>
   </header>
 
   <main>
@@ -29,7 +32,7 @@
       <div class="filters" role="group" aria-label="Filter by category">
         <button
           type="button"
-          hx-get="/api/attractions"
+          hx-get="/attractions-api/attractions"
           hx-trigger="load, click"
           hx-swap="none"
           hx-on:click="currentCategory = null"
@@ -38,7 +41,7 @@
         </button>
         <button
           type="button"
-          hx-get="/api/attractions?category=sight"
+          hx-get="/attractions-api/attractions?category=sight"
           hx-swap="none"
           hx-on:click="currentCategory = 'sight'"
           hx-on::after-request="renderAttractions(event)">
@@ -46,7 +49,7 @@
         </button>
         <button
           type="button"
-          hx-get="/api/attractions?category=restaurant"
+          hx-get="/attractions-api/attractions?category=restaurant"
           hx-swap="none"
           hx-on:click="currentCategory = 'restaurant'"
           hx-on::after-request="renderAttractions(event)">
@@ -54,7 +57,7 @@
         </button>
         <button
           type="button"
-          hx-get="/api/attractions?category=activity"
+          hx-get="/attractions-api/attractions?category=activity"
           hx-swap="none"
           hx-on:click="currentCategory = 'activity'"
           hx-on::after-request="renderAttractions(event)">
@@ -73,7 +76,7 @@
 
       <form
         id="recommend-form"
-        hx-post="/api/recommend"
+        hx-post="/attractions-api/recommend"
         hx-swap="none"
         hx-on::before-request="handleRecommendStart(this)"
         hx-on::after-request="renderRecommendation(event, this)">
@@ -98,7 +101,7 @@
       <form
         id="create-attraction-form"
         hx-ext="json-body"
-        hx-post="/api/attractions"
+        hx-post="/attractions-api/attractions"
         hx-swap="none"
         hx-on::after-request="handleCreateAttraction(event)">
         <label for="create-name">Name</label>
@@ -124,6 +127,6 @@
     </section>
   </main>
 
-  <script src="/app.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
