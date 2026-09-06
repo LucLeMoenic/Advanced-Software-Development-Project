@@ -321,9 +321,27 @@ function handleCreateAttraction(event) {
   refreshAttractions();
 }
 
-function renderRecommendation(event) {
+/**
+ * The backend's Plan -> Act -> Observe -> Adapt loop calls Ollama
+ * synchronously and can take anywhere from a couple of seconds (warm
+ * model) to most of OLLAMA_TIMEOUT's 120s (cold model, or a retry that
+ * doubles the call count) - observed directly in student3-backend's logs.
+ * Without this, the form gives no feedback for that whole window, which
+ * reads as broken rather than slow: nothing changes on screen and a
+ * user has no reason not to click "Get Recommendation" again.
+ */
+function handleRecommendStart(form) {
+  document.getElementById('recommend-result').innerHTML =
+    '<p class="loading">Thinking of a recommendation... this can take up to a minute.</p>';
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = true;
+}
+
+function renderRecommendation(event, form) {
   const box = document.getElementById('recommend-result');
   const data = parseJsonResponse(event);
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = false;
 
   if (event.detail.xhr.status >= 400 || data === null) {
     const message = (data && data.message) || 'Something went wrong, please try again.';
