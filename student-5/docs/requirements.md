@@ -31,11 +31,11 @@ a SQLite file. Every requirement below is implemented in Release 0.
 
 | ID | Requirement | How it is verified |
 |---|---|---|
-| TL-NFR-01 | Only `student5-database` opens a SQLite file. The backend reaches all data over HTTP through `db_client.py`, and no service touches another student's database. | `grep -rn "sqlite3" student-5/backend` returns nothing. The 68-test backend suite runs entirely against mocked HTTP using `responses`, which is only possible because there is no file access to stub. |
+| TL-NFR-01 | Only `student5-database` opens a SQLite file. The backend reaches all data over HTTP through `db_client.py`, and no service touches another student's database. | `grep -rn "sqlite3" student-5/backend` returns nothing. The 68-test backend suite runs entirely against mocked HTTP using `responses`, which is only possible because there is no file access to stub (`docs/evidence/pytest-backend.txt`). |
 | TL-NFR-02 | Every outbound call is bounded, and the bound differs by dependency. | `db_client.DEFAULT_TIMEOUT_SECONDS = 5.0`; `ollama_client.DEFAULT_TIMEOUT_SECONDS = 120.0`; nginx `proxy_read_timeout 180s` on `/ui/` and `/api/`. A slow generation is still an answer; a dead database must not hang a backend worker. |
 | TL-NFR-03 | Every failure is visible to the reader and attributable to one dependency. | JSON API returns `503 {"error": "database service unavailable"}` and `503 {"error": "ai service unavailable"}` as distinct bodies. Fragment routes render a readable notice at `200`, because HTMX does not swap a non-2xx response and a silent no-swap is the worst possible feedback. A failure the backend never received - its container down, nginx answering 502 - is caught by the `htmx:responseError` listener in `index.html`, which replaces the stale placeholder with the same `.fragment-message` markup the backend uses. Covered by tests in `backend/tests/test_advisory.py` and `backend/tests/test_ui_fragments.py`. |
 | TL-NFR-04 | All environment-specific values come from environment variables. No model tag or service URL is a literal in calling code, and nothing secret is committed. | `DATABASE_API_URL`, `OLLAMA_URL` and `APPLICATION_MODEL` (backend) and `DATABASE_PATH`, `PORT` (database) are read once in each `create_app`. `OllamaClient` is constructed with the configured tag, so no request-building code names a model. `docker compose config --quiet` resolves every value. |
-| TL-NFR-05 | The feature is verifiable by repeatable commands and re-verified on every push. | `.github/workflows/student-5.yml` installs both requirement sets, runs the database suite (26 tests) and the backend suite (68 tests) as separate steps, runs `docker compose config --quiet`, then builds all three images - with no live model required. Restarting the database container against the existing bind mount does not duplicate rows, because `init_db` runs the seed only when `destinations` is empty. |
+| TL-NFR-05 | The feature is verifiable by repeatable commands and re-verified on every push. | `.github/workflows/student-5.yml` installs both requirement sets, runs the database suite (26 tests) and the backend suite (68 tests) as separate steps, runs `docker compose config --quiet`, then builds all three images - with no live model required. Step-by-step description in `testing-evidence.md`; local captures of the same commands in `docs/evidence/pytest-database.txt`, `pytest-backend.txt` and `compose-build.txt`. Restarting the database container against the existing bind mount does not duplicate rows, because `init_db` runs the seed only when `destinations` is empty. |
 
 ## Data requirements
 
@@ -54,12 +54,22 @@ whether the model chooses to write it.
 
 ## Evidence required
 
-- Both pytest suites, run separately - see `testing-evidence.md`.
+- Both pytest suites, run separately - captured in
+  `docs/evidence/pytest-database.txt` (`26 passed in 0.84s`) and
+  `docs/evidence/pytest-backend.txt` (`68 passed in 0.54s`). Commands in
+  `testing-evidence.md`.
 - A successful `student-5.yml` run.
   **TODO: attach CI run screenshot or URL** - obtain from the Actions tab, workflow "Student 5 CI".
-- `docker compose config --quiet` and `docker compose build` output.
-  **TODO: attach Docker Compose build output** - `docker compose build student5-database student5-backend student5-frontend`.
+- `docker compose build` output - captured in `docs/evidence/compose-build.txt`,
+  ending in `Image ...-student5-database Built`, `... -student5-backend Built`
+  and `... -student5-frontend Built`. `docker compose config --quiet` produces no
+  output on success by design; it runs as its own step in the CI workflow.
+- All three services healthy in the integrated stack - captured in
+  `docs/evidence/compose-ps.txt`, which shows `student5-database`,
+  `student5-backend` and `student5-frontend` each `Up About an hour (healthy)`
+  on host ports 5305, 5205 and 5105.
 - Browser screenshots of the detail panels, a generated advisory, and the manage table.
   **TODO: attach application screenshots** - `http://localhost:5105/`.
-- A genuine finalised Plan/Act/Observe/Adapt record - held in `docs/evidence/`,
-  described in `prompt-log.md` and `review-record.md`.
+- A genuine finalised Plan/Act/Observe/Adapt record - held in
+  `docs/evidence/agentic-loop-run-final-record.json` with the three terminal
+  screenshots beside it, described in `prompt-log.md` and `review-record.md`.
