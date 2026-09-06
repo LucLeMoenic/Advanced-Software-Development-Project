@@ -45,7 +45,7 @@ jobs:
             student4-backend student5-backend
           docker compose up -d --wait --wait-timeout 180 --no-deps \
             student1-frontend student2-frontend student3-frontend \
-            student4-frontend student5-frontend shared-frontend agentic-loop
+            student4-frontend student5-frontend shared-frontend
 
           for url in \
             http://localhost:5100/health \
@@ -54,7 +54,6 @@ jobs:
             http://localhost:5103/health \
             http://localhost:5104/health \
             http://localhost:5105/health \
-            http://localhost:5180/health \
             http://localhost:5201/health \
             http://localhost:5202/health \
             http://localhost:5203/health \
@@ -68,4 +67,6 @@ jobs:
             curl --fail --silent --show-error "$url" > /dev/null
           done
 
-          curl --fail --silent http://localhost:5100/ | grep -q "Accommodation Recommender"
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            --retry-all-errors http://localhost:5100/accommodation/ | grep -q \
+            '<title>Accommodation Recommender</title>'

@@ -20,7 +20,7 @@ flowchart TD
         w3["<b>student-3.yml</b> - Student 3 CI<br/>pytest tests, compose config, compose build,<br/>run student3-db-init, compose up the 3 services,<br/>smoke: 3 health endpoints,<br/>plus /api/attractions returns at least 10 rows"]
         w4["<b>student-4.yml</b> - Student 4 CI<br/>npm run validation, compose config, compose build,<br/>compose up 3 services + shared-frontend,<br/>smoke: health, budgets, expenses, dashboard,<br/>and the /budget/ page through the gateway"]
         w5["<b>student-5.yml</b> - Student 5 CI<br/>pytest database, pytest backend,<br/>compose config, compose build"]
-        wi["<b>integration-ci.yml</b> - Integrated Compose CI<br/>compose config, all image builds,<br/>model-independent service health smoke test"]
+        wi["<b>integration-ci.yml</b> - Integrated Compose CI<br/>compose config, all image builds,<br/>model-independent application health smoke test"]
     end
 
     cd["<b>cloud-deployment.yml</b><br/>workflow_run after the five CI workflows<br/>echo placeholder only - not Release 0 work"]
@@ -92,10 +92,12 @@ asymmetries rather than design decisions this document can justify:
 workflows run on `push` and `pull_request`, while the integration workflow also
 supports manual dispatch.
 
-The integration workflow starts services with `--no-deps` so CI does not pull or
-run the large Ollama model set. It therefore proves image buildability, process
-health, and gateway availability; the real Compose dependency ordering and
-frontend-to-backend-to-Ollama behaviour remain local demonstration evidence.
+The integration workflow starts the application services with `--no-deps` so CI
+does not pull or run the large Ollama model set. It therefore proves image
+buildability, application process health, and gateway availability. The
+model-dependent `agentic-loop` is covered by `student-1.yml`; real Compose
+dependency ordering and frontend-to-backend-to-Ollama behaviour remain local
+demonstration evidence.
 
 ## What each workflow builds and validates
 
