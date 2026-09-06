@@ -3,35 +3,41 @@
 Student 5 (Alex Chen), Release 0. Three containerised services plus the team's
 shared Ollama runtime.
 
-## Runtime topology
-
+## Architecture Diagram
 ```mermaid
-flowchart TD
-    browser["Browser<br/>http://localhost:5105"]
+flowchart LR
+    traveller["Traveller"]
+    shared["Shared frontend :5100"]
+    frontend["Student 5 frontend<br/>nginx + static<br/>HTML/CSS/HTMX"]
+    backend["Student 5 backend<br/>Flask proxy + fragments<br/>+ advisory API"]
+    database["Student 5 database API<br/>Flask"]
+    sqlite[("SQLite logistics.db")]
+    ollama["Shared Ollama"]
+    llm["llama3.2:3b"]
 
-    subgraph feature["Student 5 feature"]
-        frontend["student5-frontend<br/>nginx : container 80 / host 5105<br/>static page + HTMX, proxies /ui/ and /api/"]
-        backend["student5-backend<br/>Flask : container 8080 / host 5205<br/>JSON passthrough, HTMX fragments, advisory"]
-        database["student5-database<br/>Flask + SQLite : container 8080 / host 5305<br/>sole owner of /data/logistics.db"]
-        sqlite[("SQLite<br/>/data/logistics.db<br/>bind mount")]
-    end
-
-    subgraph shared["Shared team infrastructure"]
-        ollama["ollama<br/>container + host 11434"]
-        llm["LLM<br/>tag from APPLICATION_MODEL<br/>(Compose default llama3.2:3b)"]
-    end
-
-    browser -->|"HTTP: page, /ui/ fragments, /api/ JSON"| frontend
-    frontend -->|"proxy_pass, same-origin"| backend
-    backend -->|"HTTP JSON only, 5s timeout"| database
-    database -->|"stdlib sqlite3, this service only"| sqlite
-    backend -->|"POST /api/generate, 120s timeout"| ollama
+    traveller --> shared
+    shared -->|"/logistics/"| frontend
+    traveller -->|"direct :5105"| frontend
+    frontend -->|"/ui/*  /api/*"| backend
+    backend -->|"HTTP CRUD"| database
+    database --> sqlite
+    backend -->|"/api/generate"| ollama
     ollama --> llm
-
-    browser -.->|"never"| database
-    browser -.->|"never"| ollama
-    backend -.->|"never opens a SQLite file"| sqlite
 ```
+
+Host ports: shared frontend `5100`, Student 5 frontend `5105`, backend `5205`,
+database `5305`, Ollama `11434`. Inside Compose each service is reached by DNS
+name on its container port - `80` for the frontend, `8080` for the backend and
+database. The model tag comes from `APPLICATION_MODEL`; `llama3.2:3b` is the
+Compose default, not a literal in the code.
+
+Two routing details the single line hides. The shared gateway proxies
+`/logistics/` (stripping the prefix), plus `/ui/` and `/style.css` at its root,
+to `student5-frontend` - so the fragment traffic works through the gateway, but
+the gateway's own `/api/` belongs to Student 1, which means Student 5's JSON API
+is reachable only on `:5105` or `:5205` directly. And `student5-frontend` is the
+only proxy the browser ever crosses to reach the backend, which is what keeps
+the backend free of CORS.
 
 ## The services
 
