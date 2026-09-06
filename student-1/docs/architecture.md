@@ -253,8 +253,8 @@ All application and development consumers then use `http://ollama:11434`.
 
 The main `docker-compose.yml` remains CPU-compatible.
 `docker-compose.gpu.yml` adds only `gpus: all` to the shared `ollama` service.
-`scripts/start-student1.ps1` automatically uses the GPU override when a
-Docker-accessible NVIDIA runtime is detected. `scripts/start-app.ps1 -Gpu`
+`scripts/deploy/start-student1.ps1` automatically uses the GPU override when a
+Docker-accessible NVIDIA runtime is detected. `scripts/deploy/start-app.ps1 -Gpu`
 enables it explicitly for the complete integrated application.
 
 ## DevOps Pipeline

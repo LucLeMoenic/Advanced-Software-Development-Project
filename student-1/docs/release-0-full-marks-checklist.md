@@ -37,7 +37,7 @@ If a feature is not integrated, the brief states that it receives 0 marks.
 | Two-model agentic loop | Shared Compose service, distinct local implementation/review models, specialised prompts, records across development phases, terminal demonstration, and report evidence. |
 | One Compose stack | Root Compose builds/runs all services with correct networking, volumes, configuration, models, and health. |
 | Cross-feature data boundary | Other services access a database owner's data only through its API. |
-| Five workflows | `student-1.yml` through `student-5.yml` build and validate assigned services. |
+| Required student workflows and integration gate | `student-1.yml` through `student-5.yml` build and validate assigned services; `integration-ci.yml` builds the shared Compose images and runs the model-independent cross-service smoke gate. |
 | Technical report | One PDF contains every required individual/group section and evidence item. |
 | Video | Published, at most 10 minutes, all members participate, integrated software/AI/loop/CI/deployment shown, URL in report. |
 | Attendance | All members attend Week 6; absence results in 0 for that member. |

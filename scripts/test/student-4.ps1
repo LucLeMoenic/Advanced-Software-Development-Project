@@ -7,7 +7,7 @@ Runs Student 4 tests and source builds.
 Selects all checks or one service test suite.
 
 .EXAMPLE
-./scripts/test-student4.ps1 -Area All
+./scripts/test/student-4.ps1 -Area All
 #>
 [CmdletBinding()]
 param(
@@ -61,7 +61,7 @@ function Invoke-CheckedCommand {
     }
 
 function Invoke-Student4Validation {
-    $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot ".."))
+    $repositoryRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot "../.."))
     $frontendPath = Join-Path $repositoryRoot "student-4/frontend"
     $sharedFrontendPath = Join-Path $repositoryRoot "shared/vue-frontend"
     $backendTests = Join-Path $repositoryRoot "student-4/backend/tests/Backend.Tests.csproj"

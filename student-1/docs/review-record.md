@@ -1,5 +1,15 @@
 # Review Record
 
+## 2026-09-06 - Release 0 CI and Script Changes Review
+
+**Scope:** Student 1-5 GitHub Actions workflows, the added integrated Compose workflow, moved PowerShell scripts, Student 4 package metadata, Release 0 CI documentation, and current worktree safety.
+
+**Findings:** No broken script references, content loss in the moved startup/model-verification scripts, YAML parse errors, invalid Student 4 JSON, Compose configuration errors, or diff-format errors were found. The new integration workflow is model-independent and builds the Compose-defined services before starting the database, API, frontend, gateway, and agentic-loop containers for health checks. Because it uses `--no-deps`, it does not validate the actual Compose dependency graph or Ollama setup path; it is a smoke gate rather than complete integrated-runtime evidence. The CI inventory documentation still describes five workflows and does not list `integration-ci.yml`; the root README also omits the newly added Student 1 runner from its Student 1 trigger-path description.
+
+**Resolution:** The script relocation and per-student runner changes are relevant to Release 0 CI and preserve the existing test commands. The CI inventories now list the sixth workflow and the Student 1 runner path. The integration workflow's model-independent smoke-gate boundary is documented, while local Compose remains responsible for full dependency ordering and AI-mode evidence. No unrelated implementation files were changed during this review.
+
+**Status:** Static validation passed: changed workflow YAML and Student 4 package JSON parse, `docker compose config --quiet` passes, and `git diff --check` passes. Documentation findings are resolved. GitHub Actions execution and a clean-runner smoke test remain pending.
+
 ## 2026-09-01 - AI Ranking Explanation Quality Review
 
 **Scope:** Application ranking prompt, structured Ollama output schema, backend reason validation, and focused contract tests.

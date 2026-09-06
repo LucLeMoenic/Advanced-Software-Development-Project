@@ -43,7 +43,7 @@ Student 4 does not have a separate Compose file or Student 4-only startup path.
 Use the shared root Compose application for Release 0 evidence:
 
 ```powershell
-./scripts/start-app.ps1
+./scripts/deploy/start-app.ps1
 ```
 
 Use `docker compose down` from the repository root to stop the integrated

@@ -195,12 +195,12 @@ Files:
 - `docker-compose.yml`
 - `package.json`
 - `scripts/README.md`
-- `scripts/test-student4.ps1`
+- `scripts/test/student-4.ps1`
 - `shared/vue-frontend/nginx.conf`
 - `shared/vue-frontend/src/App.vue`
 
 ```powershell
-git add -- .env.example .github/workflows/student-4.yml docker-compose.yml package.json scripts/README.md scripts/test-student4.ps1 shared/vue-frontend/nginx.conf shared/vue-frontend/src/App.vue
+git add -- .env.example .github/workflows/student-4.yml docker-compose.yml package.json scripts/README.md scripts/test/student-4.ps1 shared/vue-frontend/nginx.conf shared/vue-frontend/src/App.vue
 npm --prefix student-4/frontend run validation
 docker compose config --quiet
 docker compose build shared-frontend student4-frontend student4-backend student4-database

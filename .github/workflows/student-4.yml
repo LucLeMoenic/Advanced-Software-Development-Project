@@ -10,7 +10,7 @@ on:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/test-student4.ps1"
+      - "scripts/test/student-4.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -19,7 +19,7 @@ on:
       - "student-4/**"
       - "shared/vue-frontend/**"
       - "package.json"
-      - "scripts/test-student4.ps1"
+      - "scripts/test/student-4.ps1"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -44,7 +44,7 @@ jobs:
             shared/vue-frontend/package-lock.json
 
       - name: Validate source and tests
-        run: npm --prefix student-4/frontend run validation
+        run: pwsh -NoProfile -File scripts/test/student-4.ps1 -Area All
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
@@ -65,7 +65,8 @@ jobs:
           curl --fail --silent http://localhost:5304/api/data/budgets | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
           curl --fail --silent http://localhost:5304/api/data/expenses | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
           curl --fail --silent 'http://localhost:5204/api/dashboard?journeyLabel=Sydney%20Weekender' | python3 -c "import json,sys; value=json.load(sys.stdin); assert len(value['categories']) >= 1"
-          curl --fail --silent http://localhost:5100/budget/ | grep --quiet 'Budget &amp; Expense Tracker'
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            --retry-all-errors http://localhost:5100/budget/ | grep --quiet 'Budget &amp; Expense Tracker'
 
       - name: Stop services
         if: always()

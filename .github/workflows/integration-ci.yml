@@ -1,0 +1,72 @@
+name: Integrated Compose CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - "student-*/**"
+      - "shared/**"
+      - "ai-services/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - ".github/workflows/integration-ci.yml"
+  pull_request:
+    paths:
+      - "student-*/**"
+      - "shared/**"
+      - "ai-services/**"
+      - "docker-compose.yml"
+      - ".env.example"
+      - ".github/workflows/integration-ci.yml"
+  workflow_dispatch:
+
+jobs:
+  integrated-compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Compose configuration
+        run: docker compose config --quiet
+
+      - name: Build all Compose images
+        run: docker compose build --parallel
+
+      - name: Start services without model dependencies
+        run: |
+          trap 'docker compose down --remove-orphans' EXIT
+          docker compose up -d --wait --wait-timeout 180 --no-deps \
+            student1-database student2-database student3-database \
+            student4-database student5-database
+          docker compose up -d --wait --wait-timeout 180 --no-deps \
+            student1-backend student2-backend student3-backend \
+            student4-backend student5-backend
+          docker compose up -d --wait --wait-timeout 180 --no-deps \
+            student1-frontend student2-frontend student3-frontend \
+            student4-frontend student5-frontend shared-frontend
+
+          for url in \
+            http://localhost:5100/health \
+            http://localhost:5101/health \
+            http://localhost:5102/health \
+            http://localhost:5103/health \
+            http://localhost:5104/health \
+            http://localhost:5105/health \
+            http://localhost:5201/health \
+            http://localhost:5202/health \
+            http://localhost:5203/health \
+            http://localhost:5204/health \
+            http://localhost:5205/health \
+            http://localhost:5301/health \
+            http://localhost:5302/health \
+            http://localhost:5303/health \
+            http://localhost:5304/health \
+            http://localhost:5305/health; do
+            curl --fail --silent --show-error "$url" > /dev/null
+          done
+
+          curl --fail --silent --show-error --retry 5 --retry-delay 2 \
+            --retry-all-errors http://localhost:5100/accommodation/ | grep -q \
+            '<title>Accommodation Recommender</title>'
