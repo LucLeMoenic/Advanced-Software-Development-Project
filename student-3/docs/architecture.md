@@ -147,4 +147,4 @@ flowchart LR
     H --> R[Finalised evidence record under docs/agentic-loop-records/]
 ```
 
-This development-loop diagram describes the shared `ai-services/agentic-loop` tool used to review my own engineering work (e.g. the PR #38 change). It is separate from the application-level `/api/recommend` Plan → Act → Observe → Adapt loop diagrammed above, which reviews traveller-facing recommendations, not code. As of this document, no finalised record exists yet for student-3 specifically — tracked in `known-issues.md`.
+This development-loop diagram describes the shared `ai-services/agentic-loop` tool used to review my own engineering work (e.g. the PR #38 change). It is separate from the application-level `/api/recommend` Plan → Act → Observe → Adapt loop diagrammed above, which reviews traveller-facing recommendations, not code. Student-3's finalised record is `docs/agentic-loop-records/20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json` (the `formatElapsed` recommend-wait indicator, PR #55), analysed phase by phase in `reviewrecord.md`'s 2026-09-25 entry.

@@ -76,7 +76,7 @@ Boundary rules:
 
 **To produce**
 - This documentation set (`requirements.md`, `feature-plan.md`, `risk-plan.md`, `architecture.md`, `review-record.md`, `contribution-log.md`, `known-issues.md`).
-- A finalised agentic-loop record under `docs/agentic-loop-records/` for a real piece of student-3 work (see `known-issues.md`).
+- A finalised agentic-loop record under `docs/agentic-loop-records/` for a real piece of student-3 work — done: `20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json` (`formatElapsed`, PR #55), reviewed in `reviewrecord.md`.
 - Screenshots: browse/filter, create/edit/delete in the browser, review submission, AI success, AI fallback, `student-3.yml` green run, `docker compose up` output.
 - My segment of the group showcase video.
 
