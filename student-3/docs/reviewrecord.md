@@ -95,3 +95,47 @@
 - `node -e` against the merged `formatElapsed` (inputs 0, 1, 2, 14, 45, 52) — 6/6 assertions pass.
 
 **Verdict (as of 2026-09-25):** The record is complete and finalised, and it satisfies every field the `docs/agentic-loop-records/README.md` checklist requires. It shows the loop working as designed: the gates caught a malformed reviewer output, the loop refused to apply its own verdict, and the human Adapt phase fixed a real defect the reviewer missed while rejecting two findings that were not real. The gaps are around the record, not in it: stale docs (fixed here), no screenshots, and a borrowed reviewer prompt. The last two carry into Release 1 as actions.
+
+## 2026-09-25 — Agentic Loop Record Review (record `20260925T085024Z`, Stage 1 `attractions.search`)
+
+**Scope:** The finalised Release 1 agentic-loop record `docs/agentic-loop-records/20260925T085024Z-68a0be4d595440b99e2275569c55786f.json`, produced with the loop's own `run`/`finalise` commands to add a `total_matches` field to the new `attractions.search` MCP tool in `ai-services/mcp-server/tools/attractions.py` (Stage 1, branch `KSS/r1-knowledge-and-tools`). This is the first live run of `reviewer-student3-v1.md` (`student3-reviewer-llama32-v1`) on a real task. Reviewed by reading the record's fields directly and re-running the pre/post-test commands, not from the prompt-log summary alone.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Record file | `20260925T085024Z-68a0be4d595440b99e2275569c55786f.json` |
+| Created / finalised | 2026-09-25T08:50:24Z / 2026-09-25T13:04:06Z |
+| Task | Add a `total_matches` field to `attractions.search`'s returned dict, equal to the post-filter, pre-limit match count, at a `TODO(you)` marker |
+| Context files | `ai-services/mcp-server/tools/attractions.py` only |
+| Implementer | `qwen2.5:3b`, prompt `shared-implementer-v1` |
+| Reviewer | `llama3.2:3b`, prompt `student3-reviewer-llama32-v1` (first live use) |
+| Ollama / options | 0.34.3; temperature 0, context 16,384, max output 4,096 |
+| Pre-test | `python -m pytest tests -v` (`ai-services/mcp-server`) — 2 failed / 13 passed, both failures `KeyError: total_matches` |
+| Post-test | Same command — 16 passed |
+
+### Phase-by-phase
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | Restated the goal, requirements, one file, two steps, two risks, and validation against the stated examples. | Accurate paraphrase of the task; no scope drift. |
+| Act (round 1) | `total_matches = len(attractions)`, returned alongside the existing sliced `attractions` list. | **Correct.** Matches both worked examples in the task exactly; `len()` on an empty list is `0`, which is the right value for a zero-match search. |
+| Observe (1st pass) | `REVISE`, one BLOCKING finding: "`total_matches = len(attractions)` does not check if `attractions` is empty before calculating the length ... will be 0, which is not the expected behavior." Also a "Validation gaps" note that no test covers a zero-matches count. | **The BLOCKING finding is hallucinated.** `len([])` being `0` is correct Python and is exactly the expected value here — there is nothing to check. Confirmed by direct inspection and by running `python -c "print(len([]))"`. The Validation gaps note is separately genuine: the test suite at that point had no zero-matches case. |
+| Adapt (machine) | Implementer added a redundant `if attractions: total_matches = len(attractions) else: total_matches = 0` — functionally identical to round 1. Reviewer's second pass returned the identical BLOCKING finding, verbatim, against the revised code. | **The reviewer did not re-evaluate.** Repeating the same finding word-for-word against code that already "fixes" it (when there was nothing to fix) suggests the reviewer model is pattern-matching on the presence of `len(attractions)` in the diff rather than re-checking the logic. Distinct from the `student5-reviewer-llama32-v2` failure mode in the `20260906T104055Z` record (echoing a worked example from the prompt) — this is a new failure mode: a real but wrong finding repeated unchanged after a targeted revision. |
+| Adapt (human) | Decision `changed`. Applied round 1's simpler code, not round 2's redundant `if/else`. Rejected the BLOCKING finding as hallucinated. Kept and acted on the genuine Validation gaps note by adding `test_search_reports_zero_total_matches_when_nothing_matches`. | **Correct.** Re-verified: `python -m pytest tests -v` — 16 passed, including the new zero-matches test. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| No action needed | Reviewer's BLOCKING finding was factually wrong (`len([])` misdescribed as unsafe). | Correctly rejected in the human Adapt phase; not a code defect. |
+| Resolved | Test suite had no explicit zero-matches case for `attractions.search`. | Fixed: `test_search_reports_zero_total_matches_when_nothing_matches` added, 16/16 passing. |
+| Open | `student3-reviewer-llama32-v1`'s grounding rule (every `Evidence:` line must quote the proposal) does not by itself prevent a technically-quoting-but-substantively-wrong finding, and does not stop the reviewer repeating an unchanged verdict against a revised proposal. | Release 1 action: consider a v2 of the reviewer prompt that also asks the reviewer to state whether the ADAPT-stage code differs from what a BLOCKING finding required, before repeating that finding. Note for `prompt-engineering.md`. |
+
+### Automated Evidence
+
+- Pre-test and post-test re-run directly: `python -m pytest tests -v` from `ai-services/mcp-server` — 2 failed/13 passed before, 16 passed after, matching the record's `preTest`/`postTest` fields exactly.
+- `python -c "print(len([]))"` confirms `0`, supporting the rejection of the BLOCKING finding.
+- Full terminal transcript: `student-3/docs/evidence/release-1/loop/stage1-attractions-search-total-matches-terminal.txt`.
+
+**Verdict (as of 2026-09-25):** The record is complete and finalised. It is useful negative evidence for the new student-3 reviewer prompt: the grounding-in-evidence rule stopped the reviewer from citing code that doesn't exist (an improvement over the borrowed v2 prompt's behaviour in the earlier record), but did not stop it from being confidently wrong about code that does exist, or from repeating that wrong verdict unchanged after a revision. Both are logged as an open action for a future prompt revision, not silently absorbed.

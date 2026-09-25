@@ -89,6 +89,15 @@ def test_search_reports_total_matches_before_limit_is_applied(server, monkeypatc
     assert len(result.structured_content["attractions"]) == 3
 
 
+def test_search_reports_zero_total_matches_when_nothing_matches(server, monkeypatch):
+    monkeypatch.setattr(attractions.requests, "get", lambda *a, **k: FakeResponse(SAMPLE_ATTRACTIONS))
+
+    result = call(server, "attractions.search", {"min_rating": 5.0})
+
+    assert result.structured_content["total_matches"] == 0
+    assert result.structured_content["attractions"] == []
+
+
 def test_search_reports_total_matches_after_min_rating_filter(server, monkeypatch):
     monkeypatch.setattr(attractions.requests, "get", lambda *a, **k: FakeResponse(SAMPLE_ATTRACTIONS))
 

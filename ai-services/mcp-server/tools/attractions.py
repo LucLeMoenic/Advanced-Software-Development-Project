@@ -87,11 +87,8 @@ def register(mcp: MCPServer) -> None:
         if params.min_rating is not None:
             attractions = [a for a in attractions if (a.get("rating") or 0) >= params.min_rating]
 
-        # TODO(you): add a "total_matches" field to the returned dict, equal
-        # to len(attractions) counted AFTER the category/min_rating filters
-        # above but BEFORE the params.limit slice below. Keep "attractions"
-        # sliced to params.limit exactly as it is now.
-        return {"attractions": attractions[: params.limit]}
+        total_matches = len(attractions)
+        return {"attractions": attractions[: params.limit], "total_matches": total_matches}
 
     @mcp.tool(name="attractions.get_reviews")
     def get_reviews(params: GetReviewsParams) -> dict[str, Any]:
