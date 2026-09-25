@@ -30,9 +30,23 @@ KNOWLEDGE_ROOT = Path(os.environ.get("RAG_KNOWLEDGE_ROOT", Path(__file__).parent
 
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
+# Without stripping these, an unrelated question (e.g. "What is the capital
+# of France?") scores close to 0.25 purely from sharing "what/is/the/of"
+# with real chunks — too close to genuine topical matches (0.27-0.40 in this
+# knowledge base) to leave room for a clean "insufficient" threshold. IDF
+# already discounts common words, but not enough on a 33-chunk corpus this
+# small, so an explicit stopword list is needed as well.
+_STOPWORDS = frozenset(
+    """
+    a an and are as at be by can do does did for from had has have how i if
+    in into is it its of on or so than that the their there these this to
+    was we were what when where which who why will with you your
+    """.split()
+)
+
 
 def _tokenize(text: str) -> List[str]:
-    return _TOKEN_RE.findall(text.lower())
+    return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS]
 
 
 @dataclass

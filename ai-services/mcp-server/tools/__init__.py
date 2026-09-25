@@ -14,10 +14,11 @@ from typing import Callable, List
 
 from mcp.server.mcpserver import MCPServer
 
-# Populated by each feature's Stage 1 branch, e.g.:
-#   from . import attractions
-#   REGISTRARS.append(attractions.register)
-REGISTRARS: List[Callable[[MCPServer], None]] = []
+from . import attractions
+
+REGISTRARS: List[Callable[[MCPServer], None]] = [
+    attractions.register,
+]
 
 
 def register_all(mcp: MCPServer) -> None:
