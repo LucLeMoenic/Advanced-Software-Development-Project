@@ -6,7 +6,7 @@
 - ~~No browser-based visual verification has been performed on PR #38's UI~~ **Resolved 2026-09-04.** Card layout, the edit-form inline swap, the review-toggle expand/collapse, empty-name/out-of-range-rating client-side validation, and responsive behaviour at 375px were all click-tested against the integrated app with Playwright and pass — see `review-record.md`'s 2026-09-04 entry and `docs/evidence/03-*.png` through `10-*.png`. Not covered by this pass: the "Ask the AI" recommendation flow (success/fallback screenshots).
 - ~~`refreshAttractions()`'s attempt to preserve the active category filter... not yet confirmed either way~~ **Resolved 2026-09-04.** Confirmed broken in a real browser (filtering to "Restaurants" then deleting a card reset the list to "All"), fixed by capturing the category at each filter button's own `hx-on:click`, and re-verified. See `riskplan.md` R-06 and `review-record.md`.
 - No successful `student-3.yml` GitHub Actions run URL/screenshot has been captured for the PR #38 branch specifically (earlier workflow runs on `main` have passed). Still open — not addressed by the 2026-09-04 verification pass, which ran `pytest` and the live containers locally, not GitHub Actions itself.
-- No finalised agentic-loop development record (`docs/agentic-loop-records/<record>.json`) exists for student-3. Checked again on 2026-09-04 (`ls docs/agentic-loop-records/`) — still only `README.md`, no student-3 record. This is a gap shared by the whole team (no team member has one yet), but it blocks Release 0 marking criteria 4 and 5 for my submission specifically until it's produced.
+- ~~No finalised agentic-loop development record (`docs/agentic-loop-records/<record>.json`) exists for student-3.~~ **Resolved 2026-09-06.** Record `20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json` was produced and finalised (`humanDecision: changed`) for the `formatElapsed` recommend-wait indicator and merged in PR #55 (`eb40659`). Phase-by-phase analysis added to `reviewrecord.md` on 2026-09-25. Still open against it: no terminal screenshots of the `run`/`finalise` invocations were captured at the time, so the JSON record and `prompt-log.md` are the only evidence of the run itself.
 - Integrated-app screenshots for CRUD and review submission now exist (`docs/evidence/`, 2026-09-04). Still pending: AI-recommendation screenshots (success + fallback), the attendance checkpoint, and my segment of the group showcase video.
 - The project specification lists Release 0 as due 30 August 2026; the latest repository commit is still dated 3 September 2026 as of 2026-09-04. Not yet confirmed with the tutor whether an extension applies.
 
@@ -25,7 +25,7 @@
 - [x] Filter to "Restaurants," delete an attraction, confirm the list stays filtered — done 2026-09-04, bug found and fixed (`riskplan.md` R-06).
 - [x] Click through: create, edit, delete an attraction; submit a review — all against the integrated app — done 2026-09-04 (`review-record.md`).
 - [ ] Capture a green `student-3.yml` Actions run for the merged branch.
-- [ ] Produce and finalise a student-3 agentic-loop record.
+- [x] Produce and finalise a student-3 agentic-loop record — done 2026-09-06, record `20260906T104055Z`, PR #55; analysed in `reviewrecord.md` 2026-09-25.
 - [x] Capture CRUD/review/validation/responsive screenshots — done 2026-09-04, see `docs/evidence/`.
 - [ ] Capture AI-recommendation screenshots (success + fallback) — not covered by the 2026-09-04 pass.
 - [ ] Record the Week 6 attendance checkpoint.

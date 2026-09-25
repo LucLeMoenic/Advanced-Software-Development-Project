@@ -9,6 +9,7 @@ Do not claim a commit, pull request, review, attendance event, or demonstration 
 | 2026-09-01 | Implemented the `/api/recommend` Plan → Act → Observe → Adapt loop against Ollama/Qwen, with closed-context prompting, an on-topic usability check, a narrower-prompt retry, and a deterministic fallback. | `student-3/backend/recommend.py` | `test_recommend.py` (mocked Ollama) plus live verification against a real `qwen2.5:3b` container | `0d11095` (PR #24) |
 | 2026-09-03 | Finished attraction card rendering (browse/filter read view) and hardened `student-3.yml`: pytest stage, Compose config validation, image builds, db-init run, service startup with health waits, and a live smoke test asserting all three `/health` endpoints and ≥10 seeded attractions. | `student-3/frontend/`, `.github/workflows/student-3.yml` | CI workflow run (see Human Evidence To Add) | `7e8578d` (PR #35) |
 | 2026-09-03 | Closed the frontend CRUD gap: added create/edit/delete UI for attractions and a review-submission form, plus an inline `json-body` htmx extension fixing a discovered request-encoding bug against the JSON-only backend endpoints. | `student-3/frontend/app.js`, `index.html`, `style.css` | `pytest tests` 29/29 pass (unmodified); manual curl round-trip against live containers (create/update/review/delete, plus both validation-error paths) | `517a92a` (PR #38, open as of this log) |
+| 2026-09-06 | Used the shared two-model agentic loop (implementer `qwen2.5:3b`, reviewer `llama3.2:3b`) to implement `formatElapsed(seconds)` for the "Get Recommendation" wait indicator. Rejected both hallucinated reviewer REQUIRED findings and fixed the implementer's arithmetic bug in the human Adapt phase; finalised the record as `changed`. | `student-3/frontend/index.html`, `docs/agentic-loop-records/20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json`, `student-3/docs/prompt-log.md` | `node -e` post-test, 6/6 assertions pass (0, 1, 2, 14, 45, 52); phase-by-phase analysis in `reviewrecord.md` 2026-09-25 | `eb40659` (PR #55) |
 
 Branch: `KSS/Documentation` (PR #38 — CRUD UI change; despite the branch name, documentation was added in a separate pass, see below).
 
@@ -23,6 +24,6 @@ Branch: `KSS/Documentation` (PR #38 — CRUD UI change; despite the branch name,
 - Pull request #38 merge decision and reviewer sign-off.
 - Successful `student-3.yml` GitHub Actions run URL/screenshot for the PR #38 branch.
 - Manual browser verification of the PR #38 UI (see `review-record.md` and `known-issues.md`).
-- A finalised shared agentic-loop record referencing real student-3 work.
+- Terminal screenshots of the agentic-loop `run` and `finalise` invocations (the finalised record itself is logged above under PR #55).
 - Week 6 attendance checkpoint.
 - Group showcase video URL and my (Khushi's) segment timestamp.
