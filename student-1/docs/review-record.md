@@ -1,5 +1,19 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 4 Self-Review (Assistant Panel Lookup Mode)
+
+**Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `App.vue`, `api.ts`, `style.css`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | Reusing `.submit-button` made the existing "prevents duplicate submission" App test read the wrong button. | Gave the assistant button its own `.assistant-submit` class; all 9 original tests pass unchanged. |
+| Required | The global `input` rule (full width, 2.75rem height, padding) distorted the radio chips. | Added a chip-local override, matching the existing `.ranking-option input` override. |
+| Required | Tool data is untrusted. | Text interpolation only; a test renders `<img onerror>` in a name and asserts no `img` element exists. `grep v-html` finds nothing. |
+| Accepted | The mode chips are native radios inside a `fieldset`/`legend`, so keyboard and screen-reader behaviour is standard. | Kept. |
+| Open | Integrated-app check at `http://localhost:5100/accommodation/` and a live model-backed lookup are blocked by Docker and Ollama. | Recorded in the prompt log. |
+
+**Verdict:** accepted with the open environment gates.
+
 ## 2026-09-27 - Release 1 Chunk 3 Self-Review (Backend Catalogue Lookup)
 
 **Scope:** `AssistantEndpoints.cs`, `AssistantContracts.cs`,
