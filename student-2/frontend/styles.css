@@ -1,3 +1,16 @@
+ [hidden] { display: none !important; }
+ .integration-section { border-top: 1px solid var(--color-border); margin-top: 24px; padding: 20px 28px; }
+ .integration-section .trip-metrics { margin-top: 16px; }
+ .integration-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+ .integration-heading h3 { margin: 0; font-size: 16px; }
+ #advice-form { display: grid; gap: 10px; margin-top: 16px; }
+ #advice-form button { justify-self: start; }
+ #advice-question { width: 100%; box-sizing: border-box; resize: vertical; }
+ .advice-answer { white-space: pre-wrap; overflow-wrap: anywhere; }
+ #advice-citations details { padding: 10px 0; border-top: 1px solid #d7dfe7; overflow-wrap: anywhere; }
+ #advice-citations summary { cursor: pointer; }
+ #advice-citations p { white-space: pre-wrap; }
+ button:disabled { cursor: not-allowed; opacity: 0.55; }
 :root {
   --color-primary: #24536b;
   --color-primary-dark: #173d51;

@@ -1,5 +1,6 @@
 const apiBase = "/itinerary-api";
 const state = { trips: [], currentTrip: null, editingTripId: null };
+const integrations = { capabilities: {}, summaryVersion: 0, adviceVersion: 0, summaryBusy: false, adviceBusy: false };
 
 const elements = {
   form: document.querySelector("#trip-form"), tripList: document.querySelector("#trip-list"),
@@ -65,6 +66,9 @@ async function api(path, options = {}) {
     ...options,
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
+  if (response.ok && ["POST", "PUT", "DELETE"].includes(options.method) && !path.endsWith("/mcp-summary") && path !== "/itinerary-advice") {
+    invalidateSummary();
+  }
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) {
@@ -73,6 +77,93 @@ async function api(path, options = {}) {
   }
   return body;
 }
+
+function updateIntegrationControls() {
+  document.querySelector("#mcp-summary").disabled = !integrations.capabilities.mcpEnabled || !state.currentTrip || integrations.summaryBusy;
+  document.querySelector("#advice-question").disabled = !integrations.capabilities.ragEnabled || integrations.adviceBusy;
+  document.querySelector("#advice-submit").disabled = !integrations.capabilities.ragEnabled || integrations.adviceBusy;
+}
+
+function invalidateSummary() {
+  integrations.summaryVersion++;
+  integrations.summaryBusy = false;
+  document.querySelector("#mcp-result").hidden = true;
+  document.querySelector("#mcp-status").textContent = integrations.capabilities.mcpEnabled ? "" : "MCP is disabled.";
+  updateIntegrationControls();
+}
+
+async function loadCapabilities() {
+  try {
+    const capabilities = await api("/capabilities");
+    if (!["aiEnabled", "mcpEnabled", "ragEnabled"].every((name) => typeof capabilities[name] === "boolean")) {
+      throw new Error("Could not read service availability.");
+    }
+    integrations.capabilities = capabilities;
+    document.querySelector("#mcp-status").textContent = capabilities.mcpEnabled ? "" : "MCP is disabled.";
+    document.querySelector("#advice-status").textContent = capabilities.ragEnabled ? "" : "RAG is disabled.";
+    document.querySelector("#reload-capabilities").hidden = true;
+  } catch (error) {
+    integrations.capabilities = {};
+    document.querySelector("#advice-status").textContent = "Could not read service availability.";
+    document.querySelector("#reload-capabilities").hidden = false;
+  }
+  updateIntegrationControls();
+}
+
+document.querySelector("#reload-capabilities").addEventListener("click", loadCapabilities);
+document.querySelector("#mcp-summary").addEventListener("click", async () => {
+  if (integrations.summaryBusy || !state.currentTrip || !integrations.capabilities.mcpEnabled) return;
+  const tripId = state.currentTrip.id;
+  const version = ++integrations.summaryVersion;
+  integrations.summaryBusy = true;
+  updateIntegrationControls();
+  document.querySelector("#mcp-result").hidden = true;
+  document.querySelector("#mcp-status").textContent = "Inspecting saved itinerary...";
+  try {
+    const result = await api(`/trips/${tripId}/mcp-summary`, { method: "POST", signal: AbortSignal.timeout(10000) });
+    if (version !== integrations.summaryVersion || state.currentTrip?.id !== tripId) return;
+    const summary = result.summary;
+    const metrics = [
+      ["Stops", summary.stopCount], ["Planned days", `${summary.plannedDayCount} / ${summary.dayCount}`],
+      ["Unplanned days", summary.unplannedDays.join(", ") || "None"],
+      ["Daily allocation (AUD)", Number(summary.dailyBudgetAllocation).toFixed(2)],
+    ];
+    document.querySelector("#mcp-result").innerHTML = metrics.map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("");
+    document.querySelector("#mcp-result").hidden = false;
+    document.querySelector("#mcp-status").textContent = "Saved itinerary inspected.";
+  } catch (error) {
+    if (version === integrations.summaryVersion) document.querySelector("#mcp-status").textContent = error.name === "TimeoutError" ? "The summary request timed out." : error.message;
+  } finally {
+    if (version === integrations.summaryVersion) integrations.summaryBusy = false;
+    updateIntegrationControls();
+  }
+});
+
+document.querySelector("#advice-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (integrations.adviceBusy || !integrations.capabilities.ragEnabled) return;
+  const question = document.querySelector("#advice-question").value.trim();
+  if (!question) return;
+  const version = ++integrations.adviceVersion;
+  integrations.adviceBusy = true;
+  updateIntegrationControls();
+  document.querySelector("#advice-result").hidden = true;
+  document.querySelector("#advice-status").textContent = "Retrieving planning advice...";
+  try {
+    const result = await api("/itinerary-advice", { method: "POST", body: JSON.stringify({ question }), signal: AbortSignal.timeout(35000) });
+    if (version !== integrations.adviceVersion) return;
+    document.querySelector("#advice-answer").textContent = result.answer;
+    document.querySelector("#advice-confidence").textContent = `Confidence: ${result.confidence}`;
+    document.querySelector("#advice-citations").innerHTML = result.citations.map((citation) => `<details><summary>${escapeHtml(citation.source)}</summary><p>${escapeHtml(citation.chunk_id)}</p><p>${escapeHtml(citation.snippet)}</p></details>`).join("");
+    document.querySelector("#advice-result").hidden = false;
+    document.querySelector("#advice-status").textContent = result.confidence === "insufficient" ? "Insufficient context." : "Planning advice received.";
+  } catch (error) {
+    if (version === integrations.adviceVersion) document.querySelector("#advice-status").textContent = error.name === "TimeoutError" ? "The advice request timed out." : error.message;
+  } finally {
+    if (version === integrations.adviceVersion) integrations.adviceBusy = false;
+    updateIntegrationControls();
+  }
+});
 
 function setStatus(message, isError = false) {
   elements.status.textContent = message;
@@ -114,6 +205,7 @@ function renderTripList() {
 
 function renderTrip(trip) {
   state.currentTrip = trip;
+  invalidateSummary();
   elements.empty.hidden = true;
   elements.content.hidden = false;
   document.querySelector("#trip-title").textContent = `${trip.destination} itinerary`;
@@ -203,6 +295,7 @@ elements.form.addEventListener("submit", async (event) => {
 elements.tripList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-trip-id]");
   if (!button) return;
+  invalidateSummary();
   try {
     renderTrip(await api(`/trips/${button.dataset.tripId}`));
     resetTripForm();
@@ -353,6 +446,7 @@ document.querySelector("#delete-trip").addEventListener("click", async () => {
     await api(`/trips/${state.currentTrip.id}`, { method: "DELETE" });
     if (state.editingTripId === state.currentTrip.id) resetTripForm();
     state.currentTrip = null;
+    invalidateSummary();
     elements.content.hidden = true;
     elements.empty.hidden = false;
     await loadTrips();
@@ -361,3 +455,4 @@ document.querySelector("#delete-trip").addEventListener("click", async () => {
 });
 
 window.addEventListener("load", loadTrips);
+window.addEventListener("load", loadCapabilities);
