@@ -63,6 +63,8 @@ From the repository root:
    ```
 
   `scripts/deploy/start-app.ps1` runs the same command and opens the browser.
+  `scripts/deploy/start-release1.ps1` starts native Ollama, MCP and RAG, then
+  every Compose service with MCP/RAG enabled; `-Stop` shuts all of them down.
    Native Ollama controls GPU use; the old GPU override contains no services.
 
 3. Open `http://localhost:5100` and choose a feature.

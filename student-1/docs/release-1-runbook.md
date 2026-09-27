@@ -33,6 +33,25 @@ Run every command from the repository root.
   ..\venv-rag\Scripts\python -m pip install -r ai-services/rag-server/requirements.txt
   ```
 
+## One-command start
+
+`scripts/deploy/start-release1.ps1` does sections 2 and 3 in one step:
+
+1. Starts native Ollama if it is not already running, pulls `APPLICATION_MODEL` if it is missing, and preloads it.
+2. Creates the MCP and RAG virtual environments on first use (`../venv-mcp` and `../venv-rag`).
+3. Starts the MCP and RAG servers in the background.
+4. Starts every Compose service (with the empty GPU override) with `MCP_ENABLED`/`RAG_ENABLED=true`.
+5. Checks that the backend container can reach the native services.
+
+```powershell
+pwsh -File scripts/deploy/start-release1.ps1
+pwsh -File scripts/deploy/start-release1.ps1 -Stop
+```
+
+Native logs and process IDs are kept in `$env:TEMPsd-release1`. `-Stop` stops
+only the native processes the script started, then runs `docker compose down`
+(volumes are kept).
+
 ## 2. Start the native services
 
 Start each service in its own terminal. They bind to loopback only:
