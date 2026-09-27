@@ -1,5 +1,20 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 8 Self-Review (Assistant Panel Guide Mode)
+
+**Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `SearchForm.vue`,
+`App.vue`, `App.test.ts`, `api.ts`, `style.css`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | Answers contain untrusted model text. | Interpolation only; a test puts `<b>` in the answer and asserts no `b` element exists and markers remain literal text. |
+| Required | City mapping must not trust arbitrary sources. | Exact match against the 10 catalogue guide titles; a test shows `Bali — Where to Stay` gets no action. |
+| Required | RAG answers must not feed ranking. | Pre-fill sets only the destination field and focus; an App test asserts no search request is sent (2 fetch calls: history and assistant). |
+| Accepted | Stale answers under a newly selected chip would be confusing. | Changing mode clears the previous outcome; tested. |
+| Accepted | The insufficient state lists the covered cities so the traveller knows what to ask. | Kept; the list comes from the same constant as the mapping. |
+
+**Verdict:** accepted; integrated-app screenshots remain an environment gate.
+
 ## 2026-09-27 - Release 1 Chunk 7 Self-Review (Backend Destination Guide)
 
 **Scope:** `RagClient.cs`, `GuideResponseValidator.cs`, `AssistantContracts.cs`,

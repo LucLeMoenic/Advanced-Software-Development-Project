@@ -260,6 +260,30 @@ describe('App', () => {
   })
 })
 
+describe('App trip assistant', () => {
+  it('pre-fills the search destination from a cited guide city without searching', async () => {
+    mockFetch(jsonResponse([]), jsonResponse({
+      mode: 'guide',
+      answer: 'Rome is generally safe. [rome#3]',
+      citations: [{ source: 'Rome — Where to Stay', chunk_id: 'rome#3', snippet: 'Rome safety: Rome is generally safe.', score: 0.41 }],
+      confidence: 'high',
+    }))
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Is Rome safe?')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+    await wrapper.get('.guide-actions button').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get<HTMLInputElement>('#destination').element.value).toBe('Rome')
+    expect(document.activeElement?.id).toBe('destination')
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+})
+
 function mockFetch(...responses: Array<Response | Promise<Response>>) {
   const fetchMock = vi.mocked(fetch)
   for (const response of responses) {

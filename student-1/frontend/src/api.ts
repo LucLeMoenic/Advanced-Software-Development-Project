@@ -164,9 +164,25 @@ export type LookupResponse =
       result: { ok: true; search: SavedSearchLookup }
     }
 
+export interface GuideCitation {
+  source: string
+  chunk_id: string
+  snippet: string
+  score: number
+}
+
+export interface GuideResponse {
+  mode: 'guide'
+  answer: string
+  citations: GuideCitation[]
+  confidence: 'high' | 'medium' | 'low' | 'insufficient'
+}
+
+export type AssistantResponse = LookupResponse | GuideResponse
+
 export const assistantApi = {
   ask(mode: AssistantMode, question: string) {
-    return request<LookupResponse>('/api/assistant', {
+    return request<AssistantResponse>('/api/assistant', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mode, question }),

@@ -62,6 +62,11 @@ async function submitSearch(search: SearchRequest) {
   }
 }
 
+async function prefillSearch(city: string) {
+  await searchForm.value?.prefillDestination(city)
+  statusMessage.value = `Destination set to ${city}. Add dates and budget to search.`
+}
+
 function showSearch(search: SearchResponse) {
   pageError.value = ''
   currentSearch.value = search
@@ -136,7 +141,10 @@ async function focusError() {
       <span>{{ pageError }}</span>
     </div>
 
-    <AssistantPanel @status="statusMessage = $event" />
+    <AssistantPanel
+      @status="statusMessage = $event"
+      @prefill="prefillSearch"
+    />
 
     <SearchForm
       ref="searchForm"

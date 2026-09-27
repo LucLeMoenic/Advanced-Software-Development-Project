@@ -47,6 +47,23 @@ const searchResponse = {
   },
 }
 
+const groundedResponse = {
+  mode: 'guide',
+  answer: 'Tokyo is generally considered very safe. <b>Bold</b> [tokyo#3]\n\nBarcelona nightlife starts late. [barcelona#2]',
+  citations: [
+    { source: 'Tokyo — Where to Stay', chunk_id: 'tokyo#3', snippet: 'Tokyo safety: Tokyo is generally considered a very safe city.', score: 0.4632 },
+    { source: 'Barcelona — Where to Stay', chunk_id: 'barcelona#2', snippet: 'Barcelona who it suits: nightlife starts late.', score: 0.281 },
+  ],
+  confidence: 'low',
+}
+
+const insufficientResponse = {
+  mode: 'guide',
+  answer: 'Not enough information in the knowledge base to answer this.',
+  citations: [],
+  confidence: 'insufficient',
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn())
 })
@@ -56,13 +73,111 @@ afterEach(() => {
 })
 
 describe('AssistantPanel', () => {
-  it('labels the panel as single-question with lookup active and guide coming soon', () => {
+  it('labels the panel as single-question with two explicit modes and lookup selected', () => {
     const wrapper = mount(AssistantPanel)
 
     expect(wrapper.text()).toContain('Single question, no memory')
     expect(wrapper.get<HTMLInputElement>('input[value="lookup"]').element.checked).toBe(true)
-    expect(wrapper.get('input[value="guide"]').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('Coming soon')
+    expect(wrapper.get('input[value="guide"]').attributes('disabled')).toBeUndefined()
+  })
+
+  it('sends a guide question and renders the answer, markers as text, citations and badge', async () => {
+    respond(groundedResponse)
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Is Tokyo safe? Barcelona nightlife?')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+
+    const [, init] = vi.mocked(fetch).mock.calls[0]!
+    expect(JSON.parse(init?.body as string)).toEqual({ mode: 'guide', question: 'Is Tokyo safe? Barcelona nightlife?' })
+    const answer = wrapper.get('.guide-answer')
+    expect(answer.text()).toContain('[tokyo#3]')
+    expect(answer.text()).toContain('<b>Bold</b>')
+    expect(answer.find('b').exists()).toBe(false)
+    expect(wrapper.get('.confidence-badge').text()).toBe('low confidence')
+    expect(wrapper.get('.confidence-badge').classes()).toContain('confidence-low')
+    const citations = wrapper.findAll('.guide-citations li')
+    expect(citations).toHaveLength(2)
+    expect(citations[0]!.text()).toContain('Tokyo — Where to Stay')
+    expect(citations[0]!.text()).toContain('[tokyo#3]')
+    expect(citations[0]!.text()).toContain('Tokyo safety: Tokyo is generally considered a very safe city.')
+    expect(wrapper.emitted('status')!.at(-1)).toEqual(['Answer ready with low confidence and 2 sources.'])
+  })
+
+  it('offers one pre-fill action per cited catalogue city', async () => {
+    respond(groundedResponse)
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Is Tokyo safe?')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+
+    const actions = wrapper.findAll('.guide-actions button')
+    expect(actions.map((button) => button.text())).toEqual([
+      'Search accommodation in Tokyo',
+      'Search accommodation in Barcelona',
+    ])
+    await actions[1]!.trigger('click')
+    expect(wrapper.emitted('prefill')).toEqual([['Barcelona']])
+  })
+
+  it('does not map sources that are not exact catalogue guide titles', async () => {
+    respond({
+      ...groundedResponse,
+      citations: [{ source: 'Bali — Where to Stay', chunk_id: 'bali#1', snippet: 'Bali.', score: 0.3 }],
+      answer: 'Bali. [bali#1]',
+    })
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Bali?')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('.guide-actions').exists()).toBe(false)
+  })
+
+  it('shows a distinct insufficient-context state without citations', async () => {
+    respond(insufficientResponse)
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Tell me about Bali')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('.guide-insufficient').text()).toContain('Not covered by the destination guides.')
+    expect(wrapper.get('.guide-insufficient').text()).toContain('Not enough information in the knowledge base')
+    expect(wrapper.find('.guide-citations').exists()).toBe(false)
+    expect(wrapper.find('.confidence-badge').exists()).toBe(false)
+    expect(wrapper.emitted('status')!.at(-1)).toEqual(['The destination guides do not cover that question.'])
+  })
+
+  it('clears the previous answer when the mode changes', async () => {
+    respond(findResponse)
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('#assistant-question').setValue('Stays in Tokyo')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+    await wrapper.get('input[value="guide"]').setValue(true)
+
+    expect(wrapper.find('.lookup-result').exists()).toBe(false)
+  })
+
+  it('names the disabled guide mode', async () => {
+    respond({ error: { code: 'mode_disabled', message: 'Destination guide is disabled.', fields: {} } }, 503)
+    const wrapper = mount(AssistantPanel)
+
+    await wrapper.get('input[value="guide"]').setValue(true)
+    await wrapper.get('#assistant-question').setValue('Is Tokyo safe?')
+    await wrapper.get('.assistant-submit').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Destination guide is turned off in this environment.')
   })
 
   it('sends one lookup question and renders the tool, arguments and results as text', async () => {
