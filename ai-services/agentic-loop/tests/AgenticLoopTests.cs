@@ -8,6 +8,55 @@ namespace AgenticLoop.Tests;
 public sealed class AgenticLoopTests
 {
     [Fact]
+    public void WorkspaceResolution_FindsRepositoryFromProjectWorkingDirectory()
+    {
+        var workspace = CreateTemporaryDirectory();
+        try
+        {
+            var projectDirectory = Path.Combine(workspace, "ai-services", "agentic-loop");
+            Directory.CreateDirectory(projectDirectory);
+            File.WriteAllText(Path.Combine(projectDirectory, "AgenticLoop.csproj"), "<Project />");
+            Assert.Equal(workspace, AgenticLoopApplication.ResolveWorkspace(null, projectDirectory));
+            Assert.Equal(workspace, AgenticLoopApplication.ResolveWorkspace(workspace, projectDirectory));
+        }
+        finally { Directory.Delete(workspace, true); }
+    }
+
+    [Fact]
+    public async Task DocumentedValidationContexts_FitSafetyLimits()
+    {
+        var workspace = AgenticLoopApplication.ResolveWorkspace(null, AppContext.BaseDirectory);
+        var context = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/mcp-server/tools/itinerary.py", "ai-services/rag-server/knowledge/student-2/budget-basics.md"]);
+        Assert.Equal(2, context.Paths.Count);
+    }
+
+    [Fact]
+    public void ValidationModes_CheckStructuredResultsAndRejectInsufficientAsGroundedSuccess()
+    {
+        Assert.True(ServiceValidation.IsValid("mcp", """
+            {"tool":"itinerary.get_summary","summary":{"tripId":10,"dayCount":2,"plannedDayCount":1,"stopCount":2,"unplannedDays":[2]}}
+            """, 10));
+        Assert.False(ServiceValidation.IsValid("mcp", "{}", 10));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Not enough information","citations":[],"confidence":"insufficient"}
+            """, 10));
+        Assert.True(ServiceValidation.IsValid("rag", """
+            {"answer":"Budget is total. [budget#1]","confidence":"high","citations":[{"source":"Budget","chunk_id":"budget#1","snippet":"Budget is total.","score":0.5}]}
+            """, 10));
+    }
+
+    [Theory]
+    [InlineData("https://example.org")]
+    [InlineData("http://127.0.0.1:5202/api/trips")]
+    [InlineData("http://user:password@localhost:5202")]
+    public async Task ValidationModes_RejectNonlocalOrNonoriginUrls(string url)
+    {
+        using var client = new HttpClient();
+        await Assert.ThrowsAsync<LoopException>(() => ServiceValidation.CaptureAsync(client, "mcp", url, 10, "budget"));
+    }
+
+    [Fact]
     public void ValidateRunInput_RejectsEqualModels()
     {
         var exception = Assert.Throws<LoopException>(() =>
