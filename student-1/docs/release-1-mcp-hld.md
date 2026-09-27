@@ -3,7 +3,7 @@
 Status: design for Release 1 chunks 1-5, 27 September 2026. Implementation
 evidence is recorded in [prompt-log.md](prompt-log.md),
 [review-record.md](review-record.md) and the
-Release 1 runbook (`release-1-runbook.md`, added in chunk 9). This document does not claim that any
+[Release 1 runbook](release-1-runbook.md). This document does not claim that any
 live check passed.
 
 Companion design: [Release 1 RAG HLD](release-1-rag-hld.md).

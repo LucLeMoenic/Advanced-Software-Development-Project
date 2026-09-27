@@ -11,9 +11,12 @@ internal static class ServiceValidation
     internal static string DefaultBackendUrl(string feature) =>
         feature == "student-1" ? "http://127.0.0.1:5201" : "http://127.0.0.1:5202";
 
-    internal static string DefaultQuestion(string feature, string mode) => feature == "student-1"
-        ? "Find stays in Tokyo for 2 guests under $200"
-        : "Is budget the total for the trip?";
+    internal static string DefaultQuestion(string feature, string mode) => (feature, mode) switch
+    {
+        ("student-1", "mcp") => "Find stays in Tokyo for 2 guests under $200",
+        ("student-1", _) => "Is Tokyo safe for families?",
+        _ => "Is budget the total for the trip?"
+    };
 
     internal static async Task<TestEvidence> CaptureAsync(
         HttpClient client, string mode, string backendUrl, int tripId, string question, string feature = "student-2")
@@ -22,8 +25,6 @@ internal static class ServiceValidation
             throw new LoopException("Validation mode must be mcp or rag.");
         if (feature is not ("student-1" or "student-2"))
             throw new LoopException("Validation feature must be student-1 or student-2.");
-        if (feature == "student-1" && mode == "rag")
-            throw new LoopException("Student 1 RAG validation is not available yet.");
         if (!Uri.TryCreate(backendUrl, UriKind.Absolute, out var backend)
             || backend.Scheme != "http" || !backend.IsLoopback
             || backend.AbsolutePath != "/" || backend.UserInfo.Length != 0
@@ -71,6 +72,8 @@ internal static class ServiceValidation
             var root = document.RootElement;
             if (feature == "student-1" && mode == "mcp")
                 return IsValidStudent1Lookup(root);
+            if (feature == "student-1" && root.GetProperty("mode").GetString() != "guide")
+                return false;
             if (mode == "mcp")
             {
                 var summary = root.GetProperty("summary");
