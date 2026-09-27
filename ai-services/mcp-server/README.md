@@ -1,7 +1,8 @@
 # Shared MCP Server (Release 1)
 
-Registered tools include Student 3 attractions search/reviews and Student 2's
-read-only `itinerary.get_summary`. One shared native process serves these tools.
+Registered tools include Student 3 attractions search/reviews, Student 2's
+read-only `itinerary.get_summary`, and Student 1's read-only `accommodation.find`
+and `accommodation.get_search`. One shared native process serves these tools.
 Student 2's real native SDK invocation was verified; container-to-host access on
 the current VM-backed Windows environment remains unresolved.
 
@@ -38,6 +39,20 @@ and omits traveller names, interests and stop notes. Success is
 `{ok:true,summary:...}`; controlled domain failures use `{ok:false,error:{code,message}}`.
 SDK callers must handle protocol `is_error` as well as domain errors.
 
+Student 1's tools (annotated `readOnlyHint`) issue only `GET` requests to the
+Student 1 database API with a 3-second timeout and validate every record:
+
+- `accommodation.find` accepts `{"params":{"destination":"Tokyo","guests":2,"max_nightly_price":200}}`
+  (`destination` 1-100 non-blank characters is required; `guests` 1-20 and
+  `max_nightly_price` > 0 and <= 100000 are optional). Returns
+  `{ok:true,count,accommodations:[{id,name,destination,nightlyPrice,maxGuests,amenities}]}`,
+  active records only, cheapest first, at most 20.
+- `accommodation.get_search` accepts `{"params":{"search_id":11}}` and returns
+  `{ok:true,search:{id,title,criteria,rankingMode,results:[{rank,accommodationId,name,nightlyPrice,reason}]}}`.
+  Saved free-text preferences are omitted. A missing search returns `search_not_found`.
+
+See the [Student 1 MCP HLD](../../student-1/docs/release-1-mcp-hld.md).
+
 ## Running it
 
 ```powershell
@@ -52,6 +67,7 @@ python ai-services/mcp-server/server.py
 | `MCP_HOST` | `127.0.0.1` | Bind address |
 | `MCP_PORT` | `5400` | Bind port |
 | `STUDENT2_DATABASE_API_URL` | `http://127.0.0.1:5302` | Fixed database API origin for itinerary reads |
+| `STUDENT1_DATABASE_API_URL` | `http://127.0.0.1:5301` | Fixed database API origin for accommodation reads |
 
 Backends consume `MCP_SERVER_URL` / `MCP_ENABLED`. Itinerary database reads have
 a 3-second socket timeout; the backend SDK session has a 5-second outer deadline.

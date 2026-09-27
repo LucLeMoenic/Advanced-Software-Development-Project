@@ -1,5 +1,22 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 2 Self-Review (Accommodation MCP Tools)
+
+**Scope:** `ai-services/mcp-server/tools/accommodation.py`, `tools/__init__.py`,
+`tests/test_accommodation_tools.py` and the MCP README.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A whitespace-only destination passed `min_length=1`, would strip to an empty filter and return the whole catalogue. | A field validator now rejects blank destinations; covered by a test. |
+| Required | Tools must not leak traveller free text. | `get_search` omits `preferences`; a test asserts it is absent. |
+| Accepted | Validation re-checks the database's own filters (guest and price bounds, destination match) and rejects inconsistent data instead of passing it on. | Kept: cheap, and it proves the tool's result matches its arguments. |
+| Accepted | Registration is additive. Existing Student 2 and Student 3 tests still pass. | Full shared MCP suite 67/67. |
+
+**Security:** GET only, fixed base URL from the environment, 3 s timeout, no
+dependency details in error messages, strict arguments at both levels.
+
+**Verdict:** accepted. Live SDK calls against the native database API are recorded in the prompt log.
+
 ## 2026-09-27 - Release 1 Chunk 1 Self-Review (Flags and Connectivity)
 
 **Scope:** `AssistantModes.cs`, `Program.cs`, `AssistantModesTests.cs`,
