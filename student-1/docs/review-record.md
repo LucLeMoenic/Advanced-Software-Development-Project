@@ -1,5 +1,21 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 6 Self-Review (Destination Knowledge Base)
+
+**Scope:** `ai-services/rag-server/knowledge/student-1/*.md`,
+`tests/grounding-questions.json` (additive), `tests/test_student1_retrieval.py`,
+RAG README, RAG HLD.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | Cross-city leaks: "Is Tokyo good for kids and children?" retained `barcelona#4` because it repeated "children" and used "good". | Reworded; a 70-question matrix now shows 0 leaks, and tests assert single-city retention for 10 relevant questions. |
+| Required | The HLD claimed every unsupported-city question retrieves nothing, but measurement disproved it for questions sharing generic words. | Corrected R1-RAG-06 and added a calibration note; a regression test pins those cases below medium confidence. |
+| Required | The shared grounding test requires every case's candidate to be retained, so pure no-overlap questions cannot be listed there. | Those cases (Bali, Mars, France, injection) are asserted insufficient in the Student 1 test file; the shared dataset holds overlap cases with `answerable:false` for live abstention. |
+| Required | The module fixture changed `retrieval.KNOWLEDGE_ROOT` globally. | Restored after the module. |
+| Accepted | Content is general and non-time-sensitive, with no prices or named hotels, and states it is demonstration content. | Kept. Human source review of generated claims is still required when live evaluation runs. |
+
+**Verdict:** accepted. The shared retrieval code and thresholds are untouched, and the other features' retrieval tests still pass.
+
 ## 2026-09-27 - Release 1 Chunk 5 Self-Review (Loop Fixture and CI)
 
 **Scope:** `ServiceValidation.cs`, `AgenticLoopApplication.cs`, loop README and
