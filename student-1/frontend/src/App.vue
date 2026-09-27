@@ -6,6 +6,7 @@ import {
   type SearchRequest,
   type SearchResponse,
 } from './api'
+import AssistantPanel from './components/AssistantPanel.vue'
 import SearchForm from './components/SearchForm.vue'
 import SearchHistory from './components/SearchHistory.vue'
 import SearchResults from './components/SearchResults.vue'
@@ -134,6 +135,8 @@ async function focusError() {
       <strong>We could not complete that action.</strong>
       <span>{{ pageError }}</span>
     </div>
+
+    <AssistantPanel @status="statusMessage = $event" />
 
     <SearchForm
       ref="searchForm"

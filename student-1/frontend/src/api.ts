@@ -42,6 +42,7 @@ export interface SearchResponse extends SearchSummary {
 
 interface ErrorEnvelope {
   error?: {
+    code?: string
     message?: string
     fields?: Record<string, string>
   }
@@ -49,13 +50,16 @@ interface ErrorEnvelope {
 
 export class ApiRequestError extends Error {
   readonly fields: Record<string, string>
+  readonly code: string | undefined
 
   constructor(
     message: string,
     fields: Record<string, string> = {},
+    code?: string,
   ) {
     super(message)
     this.fields = fields
+    this.code = code
   }
 }
 
@@ -73,6 +77,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new ApiRequestError(
       error?.error?.message ?? 'The accommodation service could not complete the request.',
       error?.error?.fields,
+      error?.error?.code,
     )
   }
 
@@ -110,5 +115,61 @@ export const searchesApi = {
 
   delete(id: number) {
     return request<void>(`/api/searches/${id}`, { method: 'DELETE' })
+  },
+}
+
+export type AssistantMode = 'lookup' | 'guide'
+
+export interface CatalogueStay {
+  id: number
+  name: string
+  destination: string
+  nightlyPrice: number
+  maxGuests: number
+  amenities: string[]
+}
+
+export interface SavedSearchLookup {
+  id: number
+  title: string
+  criteria: {
+    destination: string
+    checkIn: string
+    checkOut: string
+    guests: number
+    minimumPrice: number
+    maximumPrice: number
+  }
+  rankingMode: 'ai' | 'fallback' | 'programmatic'
+  results: Array<{
+    rank: number
+    accommodationId: number
+    name: string
+    nightlyPrice: number
+    reason: string
+  }>
+}
+
+export type LookupResponse =
+  | {
+      mode: 'lookup'
+      tool: 'accommodation.find'
+      arguments: Record<string, string | number>
+      result: { ok: true; count: number; accommodations: CatalogueStay[] }
+    }
+  | {
+      mode: 'lookup'
+      tool: 'accommodation.get_search'
+      arguments: Record<string, string | number>
+      result: { ok: true; search: SavedSearchLookup }
+    }
+
+export const assistantApi = {
+  ask(mode: AssistantMode, question: string) {
+    return request<LookupResponse>('/api/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode, question }),
+    })
   },
 }
