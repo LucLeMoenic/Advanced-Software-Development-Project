@@ -1,5 +1,24 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 3 Self-Review (Backend Catalogue Lookup)
+
+**Scope:** `AssistantEndpoints.cs`, `AssistantContracts.cs`,
+`LookupResultValidator.cs`, `OllamaLookupExtractor.cs`, `McpToolClient.cs`,
+`Prompts/assistant-lookup-v1.txt`, `Program.cs`, `Backend.csproj` and the new tests.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | `required` members in System.Text.Json do not reject explicit `null`, so `"criteria": null` could cause a null dereference and a 500. | Added explicit null guards; a test covers `criteria: null`. |
+| Required | Tool arguments must never be unvalidated. | The extractor enforces the field set, types, bounds, tool-specific required arguments, and a destination/search ID that appear in the question; the MCP client re-checks the allow-list. |
+| Required | Error messages must not leak dependency detail. | Fixed public messages; a test asserts "mcp" is absent from them. Logs record the stage, dependency and failure category, never the question text. |
+| Accepted | Wrong-typed optional values (e.g. `"guests":"2"`) return a 422 rephrase rather than a 502. | They are within the schema's intent; the traveller can rephrase. |
+| Accepted | Worst case is 12 s extraction plus the 5 s MCP deadline, under the 18 s target. | Matches the HLD. |
+| Open | End-to-end live lookup success requires native Ollama, which is not installed on this machine. | Recorded; rerun with Ollama using the runbook in chunk 9. |
+
+**Release 0:** all 69 original backend tests pass; `/api/searches` is unchanged.
+
+**Verdict:** accepted with the open live-model gap.
+
 ## 2026-09-27 - Release 1 Chunk 2 Self-Review (Accommodation MCP Tools)
 
 **Scope:** `ai-services/mcp-server/tools/accommodation.py`, `tools/__init__.py`,
