@@ -1,5 +1,24 @@
 # Review Record
 
+## 2026-09-27 - Calendar-Dependent Frontend CI Failure
+
+**Evidence:** [Student 1 CI run 36289255755](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36289255755)
+failed in Test Student 1 feature. Four App test failures show the form rejecting
+September 10 check-in as before the current date, so search requests never ran.
+These fixed fixtures were not changed by the Release 1 implementation. The shared
+loop job and the latest Student 2, 3, 4, 5 and Integrated Compose workflows passed.
+
+**Correction:** [App.test.ts](../frontend/src/App.test.ts) now freezes Date to
+September 1 for each test, without faking asynchronous timers, then restores the
+clock after each test. A separate case advances the clock past the fixture's
+check-in and asserts field feedback with no search request. The required
+current-date application validation is unchanged.
+
+**Verification:** Frontend 9/9 pass. The exact feature runner completes locally,
+including the production build and backend/database tests (database 20/20).
+Editor diagnostics are clear. No commit/push or remote rerun is claimed for this
+correction; the failed run remains historical evidence until the fix is pushed.
+
 ## 2026-09-27 - Student 2 Release 1 Defect-Fix Follow-Up
 
 Four reproducible defects are corrected: native loop workspace/example context,

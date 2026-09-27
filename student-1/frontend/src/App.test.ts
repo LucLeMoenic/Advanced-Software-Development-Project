@@ -42,6 +42,8 @@ const summary = {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date(2026, 8, 1, 12))
   vi.stubGlobal('fetch', vi.fn())
   vi.stubGlobal('confirm', vi.fn(() => true))
 })
@@ -49,6 +51,7 @@ beforeEach(() => {
 afterEach(() => {
   document.body.innerHTML = ''
   vi.unstubAllGlobals()
+  vi.useRealTimers()
 })
 
 describe('App', () => {
@@ -61,6 +64,20 @@ describe('App', () => {
 
     expect(wrapper.text()).toContain('Use between 2 and 100 characters.')
     expect(wrapper.get('#destination').attributes('aria-invalid')).toBe('true')
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects check-in dates before the current local date', async () => {
+    vi.setSystemTime(new Date(2026, 8, 11, 12))
+    mockFetch(jsonResponse([]))
+    const wrapper = mount(App)
+    await flushPromises()
+    await fillValidForm(wrapper)
+
+    await wrapper.get('form').trigger('submit')
+
+    expect(wrapper.text()).toContain('Choose today or a future date.')
+    expect(wrapper.get('#check-in').attributes('aria-invalid')).toBe('true')
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
