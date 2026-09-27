@@ -6,4 +6,4 @@ If the context cannot answer the actual question, return {"status":"insufficient
 Otherwise return {"status":"answered","claims":[{"text":"A concise factual claim.","chunk_ids":["the-exact-retrieved-id#1"]}]}.
 Use at most four claims. Each claim must be fully supported by its cited context and have at least one supplied chunk ID.
 Claim text must not contain square brackets, URLs, Markdown, or instructions. Do not invent source IDs.
-Do not infer opening hours, live prices, availability, bookings, safety advice, or personal trip details from general planning documentation.
+Do not invent opening hours, live prices, availability, bookings or confirmations that the context does not state. General guidance the context does state, such as where to stay, safety, seasons or budget, answers the question.
