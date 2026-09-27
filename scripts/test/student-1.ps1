@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 # On Windows, npm may resolve to an npm.ps1 shim that mis-parses splatted arguments.
 $npm = if ($IsWindows) { "npm.cmd" } else { "npm" }
+# CI uses the runner's python; locally, point STUDENT1_PYTHON at a virtual environment's interpreter.
+$python = if ($env:STUDENT1_PYTHON) { $env:STUDENT1_PYTHON } else { "python" }
 
 function Invoke-Checked {
     param([string]$FilePath, [string[]]$Arguments, [string]$FailureMessage)
@@ -24,6 +26,9 @@ if ($Area -in @("Feature", "All")) {
     Invoke-Checked "dotnet" @("test", "$repositoryRoot/student-1/backend/tests/Backend.Tests.csproj", "--configuration", "Release", "--no-restore") "Student 1 backend tests failed."
     Invoke-Checked "dotnet" @("restore", "$repositoryRoot/student-1/database/tests/Database.Tests.csproj") "Student 1 database restore failed."
     Invoke-Checked "dotnet" @("test", "$repositoryRoot/student-1/database/tests/Database.Tests.csproj", "--configuration", "Release", "--no-restore") "Student 1 database tests failed."
+    Invoke-Checked $python @("-m", "pip", "install", "--quiet", "-r", "$repositoryRoot/ai-services/mcp-server/requirements.txt") "Shared MCP server dependency installation failed."
+    Push-Location "$repositoryRoot/ai-services/mcp-server"
+    try { Invoke-Checked $python @("-m", "pytest", "tests/test_accommodation_tools.py") "Student 1 MCP tool tests failed." } finally { Pop-Location }
 }
 
 if ($Area -in @("AgenticLoop", "All")) {

@@ -73,6 +73,16 @@ dotnet run --project ai-services/agentic-loop -- validate-rag `
   --question 'Is budget the total for the trip?'
 ```
 
+Pass `--feature student-1` to validate the Accommodation Recommender (the default is `student-2`, so existing commands are unchanged). Student 1 posts to `POST /api/assistant` on `http://127.0.0.1:5201` and rejects `--trip-id`. The MCP contract passes only for an allow-listed `accommodation.find` or `accommodation.get_search` result whose shape matches its arguments:
+
+```powershell
+dotnet run --project ai-services/agentic-loop -- validate-mcp --feature student-1 `
+  --task 'Validate the accommodation lookup tool boundary and captured result against the MCP HLD.' `
+  --context ai-services/mcp-server/tools/accommodation.py `
+  --context student-1/backend/Prompts/assistant-lookup-v1.txt `
+  --question 'Find stays in Tokyo for 2 guests under $200'
+```
+
 These commands capture timestamped HTTP status, exact response and deterministic contract outcome as pre-test evidence before the normal Plan/Act/Observe/Adapt cycle. Only a loopback HTTP origin is accepted; paths and read-only POST bodies are fixed. Redirects are disabled, response size is bounded to 16000 bytes, and each observation has a 35-second deadline. Dependency failures and insufficient context must not be described as successful grounded answers. The models' verdicts do not override a failed contract check or prove entailment. Native Ollama is required to complete either loop mode.
 
 Records include `validationMode` while retaining the existing finalisation schema. Finalise only after human verification and real post-test evidence. A backend observation does not replace protocol discovery, frontend screenshots, or manual source-support checks. Do not submit unit-test model doubles as live loop evidence.
