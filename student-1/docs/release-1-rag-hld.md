@@ -50,7 +50,7 @@ Out of scope:
 | R1-RAG-03 | Citations are valid. | The backend accepts only 1-3 unique citations. Each `chunk_id` matches `^[a-zA-Z0-9_-]+#\d+$`, each score is in (0, 1], and the `[chunk_id]` markers in the answer exactly equal the citation set. | Grounding and traceability |
 | R1-RAG-04 | An insufficient answer is exact. | `confidence` is `insufficient`, `citations` is `[]` and the answer equals the fixed server string; anything else returns 502. | Grounding |
 | R1-RAG-05 | Retrieval is city-accurate. | For every relevant single-city dataset question, all retained chunks come from that city's file. Cross-city questions retain chunks from both named cities. | Grounding |
-| R1-RAG-06 | Unsupported questions retrieve nothing. | Unsupported-city and off-topic dataset questions retain no chunk scoring 0.15 or more, so the server skips generation. | Grounding, reliability |
+| R1-RAG-06 | Unsupported questions are insufficient. | Unsupported or off-topic questions with no catalogue vocabulary (e.g. "Tell me about Bali", "What are the visa rules for Mars?") retain no chunk scoring 0.15 or more, so the server skips generation. Unsupported-city questions that share generic words ("Where should I stay in Bali?") stay below 0.30 (low), and the live evaluation requires the model to abstain on them. | Grounding, reliability |
 | R1-RAG-07 | Deadlines and size are bounded. | Backend RAG call 30 s outer deadline (server: 25 s query, 20 s model). Response read in chunks and capped at 16000 bytes. | Performance, reliability |
 | R1-RAG-08 | Disabled mode is explicit. | With `RAG_ENABLED=false`, guide returns `503 mode_disabled` and makes no RAG call. | Configuration, CI |
 | R1-RAG-09 | Rendering is safe. | Answer and snippets render as text; markers stay literal text; no `v-html`. | Security |
@@ -252,6 +252,14 @@ they are `OLLAMA_URL` and `RAG_MODEL=llama3.2:3b`.
 | Single-generation limit on the RAG server | Concurrent questions get 503 busy | Single-question panel with duplicate-submit prevention; 503 message says to try again | Documented behaviour |
 | Cold model load exceeds the 20 s model deadline | 504 on the first guide question | Warm the model (the lookup path uses the same model) | Retry after warm-up |
 | Container-to-host networking | Live guide fails | As in the MCP HLD | Known limitation |
+
+### Calibration note (measured in chunk 6)
+
+Measured with the shared, unchanged thresholds:
+
+- **Relevance:** a city × topic matrix of 70 templated questions ranks the intended paragraph first 68 times. The 2 misses still keep it in the top three, and no question retains another city's chunk.
+- **What made that work:** a consistent city weight per paragraph. Two-word city names repeat only in the prefix and the first sentence, and topic words appear in their own paragraph (for example "safe" in safety paragraphs).
+- **Unsupported cities:** questions that share generic words ("stay", "safe", "cheap") still retain other cities' paragraphs at low confidence. Retrieval therefore cannot reject them alone, and the live evaluation relies on the grounding prompt's abstention. This is recorded as a known limitation.
 
 ## 10. Delivery Chunks
 
