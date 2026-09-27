@@ -1,0 +1,14 @@
+[
+  {"question":"Is my budget for the entire trip or each night?","relevant":true,"split":"calibration"},
+  {"question":"Does duration include both start and end dates?","relevant":true,"split":"calibration"},
+  {"question":"How many stops does initial generation create?","relevant":true,"split":"calibration"},
+  {"question":"Does reopening saved trips call the AI model again?","relevant":true,"split":"calibration"},
+  {"question":"What happens when AI is unavailable?","relevant":true,"split":"held-out"},
+  {"question":"Can I shorten dates if stops fall outside the new duration?","relevant":true,"split":"held-out"},
+  {"question":"Does deleting a trip delete its stops?","relevant":true,"split":"held-out"},
+  {"question":"Does editing a stop change its trip ownership?","relevant":true,"split":"held-out"},
+  {"question":"Who won the cricket championship?","relevant":false,"split":"calibration"},
+  {"question":"What is the capital of France?","relevant":false,"split":"calibration"},
+  {"question":"Explain quantum entanglement and particle spin.","relevant":false,"split":"held-out"},
+  {"question":"Predict tomorrow's stock exchange performance.","relevant":false,"split":"held-out"}
+]

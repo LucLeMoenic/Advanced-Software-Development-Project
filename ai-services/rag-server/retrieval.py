@@ -46,7 +46,7 @@ _STOPWORDS = frozenset(
 
 
 def _tokenize(text: str) -> List[str]:
-    return [t for t in _TOKEN_RE.findall(text.lower()) if t not in _STOPWORDS]
+    return [token for token in _TOKEN_RE.findall(text.lower()) if len(token) > 1 and token not in _STOPWORDS]
 
 
 @dataclass
@@ -129,6 +129,8 @@ _indexes: Dict[str, FeatureIndex] = {}
 
 def get_index(feature: str) -> FeatureIndex:
     """Load (and cache) the TF-IDF index for one feature's knowledge folder."""
+    if feature not in {"student-1", "student-2", "student-3", "student-4", "student-5"}:
+        return FeatureIndex([])
     if feature in _indexes:
         return _indexes[feature]
 
