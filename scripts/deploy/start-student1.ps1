@@ -1,18 +1,11 @@
 $ErrorActionPreference = "Stop"
 
-$repositoryRoot = Split-Path -Parent $PSScriptRoot
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 Push-Location $repositoryRoot
 
 try {
     $composeFiles = @("-f", "docker-compose.yml")
-    $dockerRuntimes = docker info --format "{{json .Runtimes}}"
-    $hasNvidiaGpu = (Get-Command nvidia-smi -ErrorAction SilentlyContinue) `
-        -and $dockerRuntimes -match '"nvidia"'
-
-    if ($hasNvidiaGpu) {
-        $composeFiles += @("-f", "docker-compose.gpu.yml")
-        Write-Host "NVIDIA GPU detected. Starting Ollama with GPU acceleration."
-    }
+    Write-Host "AI Mode requires the shared native Ollama runtime on port 11434."
 
     Write-Host "Starting Student 1 services. Docker may take a few minutes to build images and pass health checks..."
     docker compose @composeFiles up -d --build --wait student1-frontend
@@ -33,8 +26,7 @@ try {
     docker compose @composeFiles ps `
         student1-frontend `
         student1-backend `
-        student1-database `
-        ollama
+        student1-database
 }
 finally {
     Pop-Location

@@ -1,13 +1,14 @@
 # Agentic AI Trip Planning & Travel Management Platform
 
-Group 45's integrated Release 0 application for Advanced Software Development.
+Group 45's Release 0 application with Release 1 integration in progress for Advanced Software Development.
 The platform is a containerised, microservice-based trip planning and travel
 management system: five student-owned feature sets, each of which is its own
 frontend, backend/API and SQLite database microservice, plus shared AI services
 (one Ollama runtime and a two-model agentic development loop). A single shared
 Vue home page at `http://localhost:5100` is the entry point and routes to every
 feature, and one shared `docker-compose.yml` at the repository root builds and
-runs the whole application.
+runs the feature microservices. Shared AI services now run natively on the host;
+see the [Release 1 runbook](student-2/docs/release-1-runbook.md) for setup and current validation gaps.
 
 ## Features
 
@@ -24,7 +25,8 @@ for diagnostics; the supported browser route for every feature is through the
 shared home page.
 
 Shared services: `shared-frontend` (home page and reverse proxy, port 5100),
-`ollama` (port 11434) and `agentic-loop` (port 5180).
+native Ollama (port 11434), native MCP (5400), native RAG (5500), and the native
+agentic-loop CLI. Only the shared frontend is a Compose service.
 
 ## Prerequisites
 
@@ -32,6 +34,8 @@ Required to run the application:
 
 - Docker Desktop, with Docker Compose
 - Git
+- Native Ollama and the configured model tags
+- Native Python 3.11+ for MCP/RAG and .NET 8 for the shared loop
 
 Required only to run tests or builds outside containers:
 
@@ -43,32 +47,29 @@ Required only to run tests or builds outside containers:
 
 From the repository root:
 
-1. Create the environment file. It sets the Ollama model tags every service
-   uses; the defaults work without editing.
+1. Create an environment file only if one does not already exist. Configure native
+  services and private host access using the [runbook](student-2/docs/release-1-runbook.md).
 
    ```powershell
-   Copy-Item .env.example .env
+  if (!(Test-Path .env)) { Copy-Item .env.example .env }
    ```
 
-   On bash: `cp .env.example .env`.
+  On bash: `test -f .env || cp .env.example .env`.
 
-2. Build and start every service, waiting until the healthchecks pass:
+2. Start native MCP/RAG/Ollama separately, then build the feature services:
 
    ```powershell
    docker compose up -d --build --wait
    ```
 
-  `scripts/deploy/start-app.ps1` runs the same command and opens the browser; add
-   `-Gpu` on a machine with an NVIDIA GPU exposed to Docker to apply the
-   optional `docker-compose.gpu.yml` override.
+  `scripts/deploy/start-app.ps1` runs the same command and opens the browser.
+   Native Ollama controls GPU use; the old GPU override contains no services.
 
 3. Open `http://localhost:5100` and choose a feature.
 
-**First run takes a long time.** The one-shot `ollama-model-setup` container
-downloads every tag in `OLLAMA_MODELS` (several GB) into the persistent
-`ollama-data` volume and preloads `APPLICATION_MODEL` before any AI-using
-backend starts, so `--wait` will sit on the model job for a while. Later runs
-reuse the volume and skip the download.
+Pull required model tags explicitly with native `ollama pull` before demonstrating
+AI paths. Compose no longer downloads models or verifies native AI readiness.
+Healthy feature containers alone do not prove MCP/RAG/model connectivity.
 
 Useful checks and shutdown:
 
@@ -77,7 +78,7 @@ docker compose ps
 docker compose down
 ```
 
-`docker compose down` keeps the Ollama model volume and the SQLite files, which
+`docker compose down` does not stop native AI processes and keeps SQLite files, which
 are bind-mounted from each student's `database/storage/` directory.
 
 Optional configuration: `LITEAPI_KEY` in `.env` enables the Student 1 backend's
@@ -105,7 +106,7 @@ LiteAPI sandbox catalogue import. Everything else runs without it.
 │   ├── database/                SQLite database API service and storage/
 │   └── docs/                    That student's Release 0 documentation
 ├── docker-compose.yml           The single shared Compose configuration
-├── docker-compose.gpu.yml       Optional NVIDIA GPU override for Ollama
+├── docker-compose.gpu.yml       Empty compatibility override; GPU is host-native
 └── .env.example                 Model tags and optional API keys
 ```
 
@@ -115,14 +116,14 @@ Test locations vary by stack: Students 1, 2, 4 and 5 keep tests under
 
 ## AI services
 
-- **Ollama runtime** - one `ollama/ollama:latest` container serves every model
-  for the whole group, published on port 11434 with a persistent `ollama-data`
-  volume. No frontend calls it; every AI request goes
+- **Ollama runtime** - one native host runtime serves every model
+  for the whole group on port 11434. No frontend calls it; every AI request goes
   frontend -> backend/API -> Ollama -> LLM.
-- **Model setup** - `ollama-model-setup` is a one-shot init container. It runs
-  `ollama show` for each configured tag, pulls only what is missing, preloads
-  `APPLICATION_MODEL`, then exits. Every AI-using backend depends on it with
-  `condition: service_completed_successfully`.
+- **Model setup** - install and pull the configured models natively. No model
+  provisioning container or Compose dependency remains.
+- **Shared MCP/RAG** - native services expose read-only tools and generated,
+  cited feature-knowledge answers through feature backends. See their
+  [MCP](ai-services/mcp-server/README.md) and [RAG](ai-services/rag-server/README.md) contracts.
 - **Approved models in use** (from `.env.example` and `docker-compose.yml`):
 
   | Tag | Used by |
@@ -131,11 +132,12 @@ Test locations vary by stack: Students 1, 2, 4 and 5 keep tests under
   | `qwen2.5:3b` | `STUDENT3_MODEL` for Student 3's `/api/recommend` |
   | `qwen2.5-coder:7b` | implementer role in the agentic loop |
 
-- **Shared agentic loop** - `ai-services/agentic-loop/` is a .NET 8 container
+- **Shared agentic loop** - `ai-services/agentic-loop/` is a native .NET 8 CLI
   implementing Plan -> Act -> Observe -> Adapt with two distinct models from the
   same Ollama runtime: the implementer (`IMPLEMENTER_MODEL`) plans and acts, the
   reviewer (`REVIEWER_MODEL`) observes, and the Adapt decision is made by a
-  human. The service never writes source files or runs commands; it writes
+  human. Release 1 adds MCP/RAG validation modes using bounded read-only backend
+  observations. The service never writes source files or runs shell commands; it writes
   auditable JSON records to `docs/agentic-loop-records/`. Run and finalisation
   commands are in [`ai-services/agentic-loop/README.md`](ai-services/agentic-loop/README.md).
 
@@ -146,7 +148,7 @@ requests touching its own paths.
 
 | Workflow | Triggering paths | What it validates |
 |---|---|---|
-| `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/test/verify-agentic-models.ps1`, `scripts/test/student-1.ps1`, the workflow file | Job 1: Vue frontend `npm test` and production build, `dotnet test` for the backend and database APIs, `docker compose config --quiet`, and Compose builds of the shared and Student 1 images. Job 2: `dotnet test` for the agentic loop plus a direct and a Compose build of its image. |
+| `student-1.yml` | `student-1/**`, `shared/vue-frontend/**`, `ai-services/agentic-loop/**`, `docker-compose.yml`, `.env.example`, `scripts/test/verify-agentic-models.ps1`, `scripts/test/student-1.ps1`, the workflow file | Feature tests and container builds; shared loop tests and native .NET publishing. |
 | `student-2.yml` | `student-2/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Frontend Vitest suite, backend and database pytest suites, Compose config validation, Compose builds, then starts the three Student 2 services and smoke-tests their `/health` endpoints and `/api/trips`. |
 | `student-3.yml` | `student-3/**`, `shared/vue-frontend/**`, `docker-compose.yml`, the workflow file | Single `pytest tests` run covering both services, Compose config validation, Compose builds, a `student3-db-init` run to create and seed the schema, service startup with health waits, and a smoke test of the three `/health` endpoints and `/api/attractions`. |
 | `student-4.yml` | `student-4/**`, `shared/vue-frontend/**`, `package.json`, `scripts/test/student-4.ps1`, `.env.example`, `docker-compose.yml`, the workflow file | `scripts/test/student-4.ps1` runs the frontend, backend, and database suites plus both frontend builds; the workflow validates Compose, builds the containers, starts the Student 4 services behind the shared frontend, and smoke-tests `/health`, seeded budgets and expenses, the dashboard endpoint, and the `/budget/` page through the gateway. It also exposes `workflow_dispatch` for manual runs. |
@@ -154,7 +156,8 @@ requests touching its own paths.
 | `integration-ci.yml` | `student-*/**`, `shared/**`, `ai-services/**`, `docker-compose.yml`, `.env.example`, the workflow file | Builds all Compose-defined images and runs a model-independent smoke gate against database, API, frontend, and shared gateway health endpoints. The model-dependent agentic loop remains covered by `student-1.yml`; local full-stack AI evidence is separate. |
 
 No workflow starts Ollama or pulls a model, so AI behaviour is evidenced by
-local Compose runs rather than by CI.
+local native-service integration runs rather than by CI. Student 2 smoke tests
+explicitly disable AI/MCP/RAG; other feature teams must verify their own mode controls.
 
 `.github/workflows/cloud-deployment.yml` also exists. It triggers after the five
 student workflows complete successfully and currently only echoes a placeholder

@@ -4,22 +4,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$repositoryRoot = Split-Path -Parent $PSScriptRoot
+$repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $entryUrl = "http://localhost:5100"
 Push-Location $repositoryRoot
 
 try {
     $composeFiles = @("-f", "docker-compose.yml")
     if ($Gpu) {
-        $dockerRuntimes = docker info --format "{{json .Runtimes}}"
-        $gpuAvailable = (Get-Command nvidia-smi -ErrorAction SilentlyContinue) `
-            -and $dockerRuntimes -match '"nvidia"'
-        if (-not $gpuAvailable) {
-            throw "GPU mode requires an NVIDIA GPU available through Docker."
-        }
-
-        $composeFiles += @("-f", "docker-compose.gpu.yml")
-        Write-Host "Starting Ollama with NVIDIA GPU acceleration."
+        Write-Host "Release 1 uses native Ollama; configure GPU acceleration in the host runtime."
     }
 
     docker compose @composeFiles up -d --build --wait

@@ -25,6 +25,10 @@ on:
 jobs:
   integrated-compose:
     runs-on: ubuntu-latest
+    env:
+      AI_ENABLED: "false"
+      MCP_ENABLED: "false"
+      RAG_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 
