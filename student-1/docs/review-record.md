@@ -1,5 +1,20 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Start Script Self-Review
+
+**Scope:** `scripts/deploy/start-release1.ps1`, README and runbook additions.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | Services must bind to loopback and never run in Compose. | MCP and RAG use their loopback defaults; Ollama, MCP and RAG are started natively. |
+| Required | Stopping must not kill processes the script did not start, or delete data. | Only recorded PIDs are stopped (an already-running Ollama is left alone); `docker compose down` runs without `--volumes`. |
+| Required | A second start while running would orphan processes. | The script refuses to start while its state file exists. |
+| Accepted | A missing Ollama is a warning, not a failure. | The non-AI paths and the insufficient-context guide still work; the warning says what will be unavailable. |
+
+**Evidence:** the first container-to-host and integrated-gateway checks on this machine passed (details in the prompt log). This closes the chunk 1 connectivity gate; the model-backed gates still need Ollama.
+
+**Verdict:** accepted.
+
 ## 2026-09-27 - Release 1 Chunk 9 Self-Review and Release 1 Summary
 
 **Scope:** `ServiceValidation.cs`, loop tests and README, `student-1.yml`,
