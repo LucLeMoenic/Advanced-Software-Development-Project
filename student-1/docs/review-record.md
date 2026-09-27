@@ -1,5 +1,25 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 9 Self-Review and Release 1 Summary
+
+**Scope:** `ServiceValidation.cs`, loop tests and README, `student-1.yml`,
+`scripts/test/student-1.ps1`, `release-1-runbook.md`, HLD and context links.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A lookup-shaped body with RAG fields must not pass Student 1 RAG validation. | `mode` must be `guide`; tested. |
+| Required | CI triggers must stay narrow and must not start live services. | Only the Student 1 knowledge, tests, dataset and the retrieval/confidence modules trigger it; `RAG_LIVE_EVAL` is never set. |
+| Required | The runbook must not over-claim. | The known-issues table lists every gate that was not run and the reason. |
+| Accepted | MCP and RAG requirements are installed into one CI interpreter, as Student 2's runner does. | Verified locally: both pinned sets install together and all suites pass. |
+
+**Release 1 status across chunks 0-9:**
+
+- **Implemented and automated-test gated:** MCP tools, backend lookup and guide modes, the assistant panel with both modes, the knowledge base, loop fixtures, and CI with the modes disabled.
+- **Live native evidence:** MCP SDK tool calls from Python and C#; the insufficient-context path through the backend and the browser.
+- **Open environment gates:** Docker container and integrated-app checks (Docker Desktop crash), and model-backed extraction, grounded answers, the `RAG_LIVE_EVAL` run and the loop records (native Ollama absent).
+
+**Verdict:** accepted for merge review with the open gates recorded in the runbook.
+
 ## 2026-09-27 - Release 1 Chunk 8 Self-Review (Assistant Panel Guide Mode)
 
 **Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `SearchForm.vue`,

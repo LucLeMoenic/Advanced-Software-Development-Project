@@ -32,6 +32,9 @@ public sealed class AgenticLoopTests
         var student1 = await AgenticLoopApplication.LoadContextAsync(workspace,
             ["ai-services/mcp-server/tools/accommodation.py", "student-1/backend/Prompts/assistant-lookup-v1.txt"]);
         Assert.Equal(2, student1.Paths.Count);
+        var student1Guide = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/rag-server/knowledge/student-1/tokyo.md"]);
+        Assert.Single(student1Guide.Paths);
     }
 
     [Fact]
@@ -108,9 +111,38 @@ public sealed class AgenticLoopTests
         Assert.Equal("http://127.0.0.1:5202", ServiceValidation.DefaultBackendUrl("student-2"));
     }
 
+    [Fact]
+    public async Task Student1GuideValidation_ReusesRagContractAndRejectsInsufficient()
+    {
+        const string grounded = """
+            {"mode":"guide","answer":"Tokyo is very safe. [tokyo#3]","citations":[{"source":"Tokyo — Where to Stay","chunk_id":"tokyo#3","snippet":"Tokyo safety: safe.","score":0.46}],"confidence":"high"}
+            """;
+        Assert.True(ServiceValidation.IsValid("rag", grounded, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"guide","answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"lookup","answer":"Tokyo is very safe. [tokyo#3]","citations":[{"source":"T","chunk_id":"tokyo#3","snippet":"s","score":0.46}],"confidence":"high"}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"guide","answer":"Tokyo is very safe.","citations":[{"source":"T","chunk_id":"tokyo#3","snippet":"s","score":0.46}],"confidence":"high"}
+            """, 1, "student-1"));
+
+        var handler = new RecordingHandler(grounded);
+        using var client = new HttpClient(handler);
+        var evidence = await ServiceValidation.CaptureAsync(client, "rag", "http://127.0.0.1:5201", 1, "Is Tokyo safe?", "student-1");
+
+        Assert.Equal("http://127.0.0.1:5201/api/assistant", handler.Uri);
+        Assert.Equal("""{"mode":"guide","question":"Is Tokyo safe?"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("Is Tokyo safe for families?", ServiceValidation.DefaultQuestion("student-1", "rag"));
+        Assert.Equal("Is budget the total for the trip?", ServiceValidation.DefaultQuestion("student-2", "rag"));
+    }
+
     [Theory]
     [InlineData("student-3", "mcp")]
-    [InlineData("student-1", "rag")]
+    [InlineData("student-3", "rag")]
     public async Task ValidationModes_RejectUnsupportedFeatureFixtures(string feature, string mode)
     {
         using var client = new HttpClient(new RecordingHandler("{}"));

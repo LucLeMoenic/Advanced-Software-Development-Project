@@ -26,9 +26,12 @@ if ($Area -in @("Feature", "All")) {
     Invoke-Checked "dotnet" @("test", "$repositoryRoot/student-1/backend/tests/Backend.Tests.csproj", "--configuration", "Release", "--no-restore") "Student 1 backend tests failed."
     Invoke-Checked "dotnet" @("restore", "$repositoryRoot/student-1/database/tests/Database.Tests.csproj") "Student 1 database restore failed."
     Invoke-Checked "dotnet" @("test", "$repositoryRoot/student-1/database/tests/Database.Tests.csproj", "--configuration", "Release", "--no-restore") "Student 1 database tests failed."
-    Invoke-Checked $python @("-m", "pip", "install", "--quiet", "-r", "$repositoryRoot/ai-services/mcp-server/requirements.txt") "Shared MCP server dependency installation failed."
+    Invoke-Checked $python @("-m", "pip", "install", "--quiet", "-r", "$repositoryRoot/ai-services/mcp-server/requirements.txt", "-r", "$repositoryRoot/ai-services/rag-server/requirements.txt") "Shared MCP/RAG server dependency installation failed."
     Push-Location "$repositoryRoot/ai-services/mcp-server"
     try { Invoke-Checked $python @("-m", "pytest", "tests/test_accommodation_tools.py") "Student 1 MCP tool tests failed." } finally { Pop-Location }
+    # Offline only: retrieval and dataset-candidate checks; live model evaluation is skipped unless RAG_LIVE_EVAL=1.
+    Push-Location "$repositoryRoot/ai-services/rag-server"
+    try { Invoke-Checked $python @("-m", "pytest", "tests/test_student1_retrieval.py", "tests/test_retrieval.py") "Student 1 RAG retrieval tests failed." } finally { Pop-Location }
 }
 
 if ($Area -in @("AgenticLoop", "All")) {

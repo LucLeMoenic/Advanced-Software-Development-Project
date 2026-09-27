@@ -18,6 +18,13 @@ on:
       - "ai-services/mcp-server/tools/__init__.py"
       - "ai-services/mcp-server/tools/accommodation.py"
       - "ai-services/mcp-server/tests/test_accommodation_tools.py"
+      - "ai-services/rag-server/requirements.txt"
+      - "ai-services/rag-server/retrieval.py"
+      - "ai-services/rag-server/confidence.py"
+      - "ai-services/rag-server/knowledge/student-1/**"
+      - "ai-services/rag-server/tests/test_retrieval.py"
+      - "ai-services/rag-server/tests/test_student1_retrieval.py"
+      - "ai-services/rag-server/tests/grounding-questions.json"
   pull_request:
     paths:
       - "student-1/**"
@@ -32,6 +39,13 @@ on:
       - "ai-services/mcp-server/tools/__init__.py"
       - "ai-services/mcp-server/tools/accommodation.py"
       - "ai-services/mcp-server/tests/test_accommodation_tools.py"
+      - "ai-services/rag-server/requirements.txt"
+      - "ai-services/rag-server/retrieval.py"
+      - "ai-services/rag-server/confidence.py"
+      - "ai-services/rag-server/knowledge/student-1/**"
+      - "ai-services/rag-server/tests/test_retrieval.py"
+      - "ai-services/rag-server/tests/test_student1_retrieval.py"
+      - "ai-services/rag-server/tests/grounding-questions.json"
 
 jobs:
   accommodation-services:

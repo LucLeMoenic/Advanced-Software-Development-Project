@@ -178,6 +178,7 @@ As of 2026-08-31:
 
 - Ollama, the shared MCP server, the shared RAG server and the shared agentic loop run natively on the host. None of them is a Compose service. `student1-backend` reaches them through `host.docker.internal`, which Compose maps to `${LOCAL_AI_HOST:-host-gateway}`.
 - Release 1 adds a stateless, single-question Trip assistant with two explicit modes: Catalogue lookup (MCP) and Destination guide (RAG). Designs: [release-1-mcp-hld.md](release-1-mcp-hld.md) and [release-1-rag-hld.md](release-1-rag-hld.md).
+- Start, enable, demo and known limitations: [release-1-runbook.md](release-1-runbook.md).
 - Delivery uses ten stacked `BCP/R1_*` branches, listed in the [feature plan](feature-plan.md#release-1---mcp-and-rag). Progress and evidence are recorded per chunk in `prompt-log.md` and `review-record.md`.
 
 The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
