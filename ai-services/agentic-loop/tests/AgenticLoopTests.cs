@@ -29,6 +29,12 @@ public sealed class AgenticLoopTests
         var context = await AgenticLoopApplication.LoadContextAsync(workspace,
             ["ai-services/mcp-server/tools/itinerary.py", "ai-services/rag-server/knowledge/student-2/budget-basics.md"]);
         Assert.Equal(2, context.Paths.Count);
+        var student1 = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/mcp-server/tools/accommodation.py", "student-1/backend/Prompts/assistant-lookup-v1.txt"]);
+        Assert.Equal(2, student1.Paths.Count);
+        var student1Guide = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/rag-server/knowledge/student-1/tokyo.md"]);
+        Assert.Single(student1Guide.Paths);
     }
 
     [Fact]
@@ -54,6 +60,94 @@ public sealed class AgenticLoopTests
     {
         using var client = new HttpClient();
         await Assert.ThrowsAsync<LoopException>(() => ServiceValidation.CaptureAsync(client, "mcp", url, 10, "budget"));
+    }
+
+    [Fact]
+    public void Student1LookupValidation_ChecksAllowListedToolAndResultShape()
+    {
+        Assert.True(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"accommodation.find","arguments":{"destination":"Tokyo","guests":2},"result":{"ok":true,"count":1,"accommodations":[{"id":55,"name":"Lodge","destination":"Tokyo","nightlyPrice":145,"maxGuests":4,"amenities":["Free WiFi"]}]}}
+            """, 1, "student-1"));
+        Assert.True(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"accommodation.get_search","arguments":{"search_id":11},"result":{"ok":true,"search":{"id":11,"title":"Tokyo","results":[{"rank":1},{"rank":2}]}}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"itinerary.get_summary","arguments":{},"result":{"ok":true}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"accommodation.find","arguments":{"destination":"Tokyo"},"result":{"ok":true,"count":2,"accommodations":[]}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"accommodation.find","arguments":{"destination":"Tokyo"},"result":{"ok":true,"count":1,"accommodations":[{"id":1,"name":"X","destination":"Paris","nightlyPrice":1,"maxGuests":2,"amenities":[]}]}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"mode":"lookup","tool":"accommodation.get_search","arguments":{"search_id":11},"result":{"ok":true,"search":{"id":12,"title":"T","results":[]}}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"error":{"code":"lookup_not_understood","message":"Please rephrase"}}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"tool":"itinerary.get_summary","summary":{"tripId":10,"dayCount":2,"plannedDayCount":1,"stopCount":2,"unplannedDays":[2]}}
+            """, 10, "student-1"));
+    }
+
+    [Fact]
+    public async Task Student1Validation_PostsLookupQuestionToAssistantEndpoint()
+    {
+        var handler = new RecordingHandler("""
+            {"mode":"lookup","tool":"accommodation.find","arguments":{"destination":"Tokyo"},"result":{"ok":true,"count":0,"accommodations":[]}}
+            """);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "mcp", "http://127.0.0.1:5201", 1, "Stays in Tokyo", "student-1");
+
+        Assert.Equal("http://127.0.0.1:5201/api/assistant", handler.Uri);
+        Assert.Equal("""{"mode":"lookup","question":"Stays in Tokyo"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("student-1", result.RootElement.GetProperty("feature").GetString());
+        Assert.Equal("http://127.0.0.1:5201", ServiceValidation.DefaultBackendUrl("student-1"));
+        Assert.Equal("http://127.0.0.1:5202", ServiceValidation.DefaultBackendUrl("student-2"));
+    }
+
+    [Fact]
+    public async Task Student1GuideValidation_ReusesRagContractAndRejectsInsufficient()
+    {
+        const string grounded = """
+            {"mode":"guide","answer":"Tokyo is very safe. [tokyo#3]","citations":[{"source":"Tokyo — Where to Stay","chunk_id":"tokyo#3","snippet":"Tokyo safety: safe.","score":0.46}],"confidence":"high"}
+            """;
+        Assert.True(ServiceValidation.IsValid("rag", grounded, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"guide","answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"lookup","answer":"Tokyo is very safe. [tokyo#3]","citations":[{"source":"T","chunk_id":"tokyo#3","snippet":"s","score":0.46}],"confidence":"high"}
+            """, 1, "student-1"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"mode":"guide","answer":"Tokyo is very safe.","citations":[{"source":"T","chunk_id":"tokyo#3","snippet":"s","score":0.46}],"confidence":"high"}
+            """, 1, "student-1"));
+
+        var handler = new RecordingHandler(grounded);
+        using var client = new HttpClient(handler);
+        var evidence = await ServiceValidation.CaptureAsync(client, "rag", "http://127.0.0.1:5201", 1, "Is Tokyo safe?", "student-1");
+
+        Assert.Equal("http://127.0.0.1:5201/api/assistant", handler.Uri);
+        Assert.Equal("""{"mode":"guide","question":"Is Tokyo safe?"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("Is Tokyo safe for families?", ServiceValidation.DefaultQuestion("student-1", "rag"));
+        Assert.Equal("Is budget the total for the trip?", ServiceValidation.DefaultQuestion("student-2", "rag"));
+    }
+
+    [Theory]
+    [InlineData("student-3", "mcp")]
+    [InlineData("student-3", "rag")]
+    public async Task ValidationModes_RejectUnsupportedFeatureFixtures(string feature, string mode)
+    {
+        using var client = new HttpClient(new RecordingHandler("{}"));
+        await Assert.ThrowsAsync<LoopException>(() =>
+            ServiceValidation.CaptureAsync(client, mode, "http://127.0.0.1:5201", 1, "Tokyo", feature));
     }
 
     [Fact]
@@ -619,4 +713,17 @@ public sealed class AgenticLoopTests
     }
 
     private sealed record ModelCall(string Model, string Prompt);
+
+    private sealed class RecordingHandler(string body) : HttpMessageHandler
+    {
+        public string? Uri { get; private set; }
+        public string? Body { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Uri = request.RequestUri?.ToString();
+            Body = request.Content is null ? null : await request.Content.ReadAsStringAsync(cancellationToken);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(body) };
+        }
+    }
 }

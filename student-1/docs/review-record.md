@@ -1,5 +1,168 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 9 Self-Review and Release 1 Summary
+
+**Scope:** `ServiceValidation.cs`, loop tests and README, `student-1.yml`,
+`scripts/test/student-1.ps1`, `release-1-runbook.md`, HLD and context links.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A lookup-shaped body with RAG fields must not pass Student 1 RAG validation. | `mode` must be `guide`; tested. |
+| Required | CI triggers must stay narrow and must not start live services. | Only the Student 1 knowledge, tests, dataset and the retrieval/confidence modules trigger it; `RAG_LIVE_EVAL` is never set. |
+| Required | The runbook must not over-claim. | The known-issues table lists every gate that was not run and the reason. |
+| Accepted | MCP and RAG requirements are installed into one CI interpreter, as Student 2's runner does. | Verified locally: both pinned sets install together and all suites pass. |
+
+**Release 1 status across chunks 0-9:**
+
+- **Implemented and automated-test gated:** MCP tools, backend lookup and guide modes, the assistant panel with both modes, the knowledge base, loop fixtures, and CI with the modes disabled.
+- **Live native evidence:** MCP SDK tool calls from Python and C#; the insufficient-context path through the backend and the browser.
+- **Open environment gates:** Docker container and integrated-app checks (Docker Desktop crash), and model-backed extraction, grounded answers, the `RAG_LIVE_EVAL` run and the loop records (native Ollama absent).
+
+**Verdict:** accepted for merge review with the open gates recorded in the runbook.
+
+## 2026-09-27 - Release 1 Chunk 8 Self-Review (Assistant Panel Guide Mode)
+
+**Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `SearchForm.vue`,
+`App.vue`, `App.test.ts`, `api.ts`, `style.css`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | Answers contain untrusted model text. | Interpolation only; a test puts `<b>` in the answer and asserts no `b` element exists and markers remain literal text. |
+| Required | City mapping must not trust arbitrary sources. | Exact match against the 10 catalogue guide titles; a test shows `Bali — Where to Stay` gets no action. |
+| Required | RAG answers must not feed ranking. | Pre-fill sets only the destination field and focus; an App test asserts no search request is sent (2 fetch calls: history and assistant). |
+| Accepted | Stale answers under a newly selected chip would be confusing. | Changing mode clears the previous outcome; tested. |
+| Accepted | The insufficient state lists the covered cities so the traveller knows what to ask. | Kept; the list comes from the same constant as the mapping. |
+
+**Verdict:** accepted; integrated-app screenshots remain an environment gate.
+
+## 2026-09-27 - Release 1 Chunk 7 Self-Review (Backend Destination Guide)
+
+**Scope:** `RagClient.cs`, `GuideResponseValidator.cs`, `AssistantContracts.cs`,
+`AssistantEndpoints.cs`, `Program.cs`, `GuideModeTests.cs`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A .NET `$` anchor accepts a trailing newline, so `tokyo#3\n` would pass as a chunk ID. | Anchored with `\z`; test added. |
+| Required | The RAG envelope must reach the loop validator unchanged at the root. | `GuideResponse` serialises `answer`, `citations[].chunk_id`, `confidence` at the root plus `mode`; a test asserts the wire names. |
+| Required | Duplicate or extra JSON fields must not be accepted. | Exact field-count checks for the envelope and each citation; tests cover extra `url` and `extra` fields. |
+| Accepted | `HttpClient.Timeout` is infinite and the client enforces a 30 s deadline, so the deadline is tested with a 200 ms setting and the production value is asserted separately. | Kept. |
+| Accepted | Guide answers are returned to the UI only; nothing flows into ranking or persistence. | Matches the HLD scope. |
+
+**Verdict:** accepted; the live grounded-answer gate stays open until Ollama is available.
+
+## 2026-09-27 - Release 1 Chunk 6 Self-Review (Destination Knowledge Base)
+
+**Scope:** `ai-services/rag-server/knowledge/student-1/*.md`,
+`tests/grounding-questions.json` (additive), `tests/test_student1_retrieval.py`,
+RAG README, RAG HLD.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | Cross-city leaks: "Is Tokyo good for kids and children?" retained `barcelona#4` because it repeated "children" and used "good". | Reworded; a 70-question matrix now shows 0 leaks, and tests assert single-city retention for 10 relevant questions. |
+| Required | The HLD claimed every unsupported-city question retrieves nothing, but measurement disproved it for questions sharing generic words. | Corrected R1-RAG-06 and added a calibration note; a regression test pins those cases below medium confidence. |
+| Required | The shared grounding test requires every case's candidate to be retained, so pure no-overlap questions cannot be listed there. | Those cases (Bali, Mars, France, injection) are asserted insufficient in the Student 1 test file; the shared dataset holds overlap cases with `answerable:false` for live abstention. |
+| Required | The module fixture changed `retrieval.KNOWLEDGE_ROOT` globally. | Restored after the module. |
+| Accepted | Content is general and non-time-sensitive, with no prices or named hotels, and states it is demonstration content. | Kept. Human source review of generated claims is still required when live evaluation runs. |
+
+**Verdict:** accepted. The shared retrieval code and thresholds are untouched, and the other features' retrieval tests still pass.
+
+## 2026-09-27 - Release 1 Chunk 5 Self-Review (Loop Fixture and CI)
+
+**Scope:** `ServiceValidation.cs`, `AgenticLoopApplication.cs`, loop README and
+tests, `.github/workflows/student-1.yml`, `scripts/test/student-1.ps1`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The documented `validate-mcp` example used a context file over the loop's 16000-byte limit, so the command failed. | Example and test now use `tools/accommodation.py` and `assistant-lookup-v1.txt`. |
+| Required | The shared loop must stay backward compatible. | `feature` defaults to `student-2` in the CLI, `CaptureAsync` and `IsValid`; all original tests pass unmodified. |
+| Required | CI must keep the integration but disable it. | Job-level flags set to `"false"`; only fakes and offline pytest run; no model, MCP or RAG process starts. |
+| Accepted | The Python step installs the pinned `mcp-server/requirements.txt` in CI, the same as Student 2's runner. | Kept. |
+| Open | A live pending loop record needs native Ollama for the implementer and reviewer models. | Recorded; rerun after installing Ollama. |
+
+**Verdict:** accepted; the Student 2 loop behaviour is unchanged.
+
+## 2026-09-27 - Release 1 Chunk 4 Self-Review (Assistant Panel Lookup Mode)
+
+**Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `App.vue`, `api.ts`, `style.css`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | Reusing `.submit-button` made the existing "prevents duplicate submission" App test read the wrong button. | Gave the assistant button its own `.assistant-submit` class; all 9 original tests pass unchanged. |
+| Required | The global `input` rule (full width, 2.75rem height, padding) distorted the radio chips. | Added a chip-local override, matching the existing `.ranking-option input` override. |
+| Required | Tool data is untrusted. | Text interpolation only; a test renders `<img onerror>` in a name and asserts no `img` element exists. `grep v-html` finds nothing. |
+| Accepted | The mode chips are native radios inside a `fieldset`/`legend`, so keyboard and screen-reader behaviour is standard. | Kept. |
+| Open | Integrated-app check at `http://localhost:5100/accommodation/` and a live model-backed lookup are blocked by Docker and Ollama. | Recorded in the prompt log. |
+
+**Verdict:** accepted with the open environment gates.
+
+## 2026-09-27 - Release 1 Chunk 3 Self-Review (Backend Catalogue Lookup)
+
+**Scope:** `AssistantEndpoints.cs`, `AssistantContracts.cs`,
+`LookupResultValidator.cs`, `OllamaLookupExtractor.cs`, `McpToolClient.cs`,
+`Prompts/assistant-lookup-v1.txt`, `Program.cs`, `Backend.csproj` and the new tests.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | `required` members in System.Text.Json do not reject explicit `null`, so `"criteria": null` could cause a null dereference and a 500. | Added explicit null guards; a test covers `criteria: null`. |
+| Required | Tool arguments must never be unvalidated. | The extractor enforces the field set, types, bounds, tool-specific required arguments, and a destination/search ID that appear in the question; the MCP client re-checks the allow-list. |
+| Required | Error messages must not leak dependency detail. | Fixed public messages; a test asserts "mcp" is absent from them. Logs record the stage, dependency and failure category, never the question text. |
+| Accepted | Wrong-typed optional values (e.g. `"guests":"2"`) return a 422 rephrase rather than a 502. | They are within the schema's intent; the traveller can rephrase. |
+| Accepted | Worst case is 12 s extraction plus the 5 s MCP deadline, under the 18 s target. | Matches the HLD. |
+| Open | End-to-end live lookup success requires native Ollama, which is not installed on this machine. | Recorded; rerun with Ollama using the runbook in chunk 9. |
+
+**Release 0:** all 69 original backend tests pass; `/api/searches` is unchanged.
+
+**Verdict:** accepted with the open live-model gap.
+
+## 2026-09-27 - Release 1 Chunk 2 Self-Review (Accommodation MCP Tools)
+
+**Scope:** `ai-services/mcp-server/tools/accommodation.py`, `tools/__init__.py`,
+`tests/test_accommodation_tools.py` and the MCP README.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A whitespace-only destination passed `min_length=1`, would strip to an empty filter and return the whole catalogue. | A field validator now rejects blank destinations; covered by a test. |
+| Required | Tools must not leak traveller free text. | `get_search` omits `preferences`; a test asserts it is absent. |
+| Accepted | Validation re-checks the database's own filters (guest and price bounds, destination match) and rejects inconsistent data instead of passing it on. | Kept: cheap, and it proves the tool's result matches its arguments. |
+| Accepted | Registration is additive. Existing Student 2 and Student 3 tests still pass. | Full shared MCP suite 67/67. |
+
+**Security:** GET only, fixed base URL from the environment, 3 s timeout, no
+dependency details in error messages, strict arguments at both levels.
+
+**Verdict:** accepted. Live SDK calls against the native database API are recorded in the prompt log.
+
+## 2026-09-27 - Release 1 Chunk 1 Self-Review (Flags and Connectivity)
+
+**Scope:** `AssistantModes.cs`, `Program.cs`, `AssistantModesTests.cs`,
+`docker-compose.yml` (`student1-backend`), `.env.example` and
+`scripts/test/student-1.ps1`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The first compose edit replaced a text block that also appears in `student4-backend`, which silently changed another student's service. | Reverted the Student 4 hunk; the diff now touches only `student1-backend`. |
+| Required | Flag parsing must match Student 2 (exact `true`/`false`). | `"True"`, `"yes"`, `"1"` and `""` all stop startup; tests cover each. |
+| Accepted | `GET /` now reports `modes`. | Useful live evidence of the flags and additive to the existing response; existing tests still pass. |
+| Open | Container-to-host connectivity and native Ollama are unverified. Docker Desktop crashes on a stale `sailor-ingest.sock`, and Ollama is not installed. | Recorded as known limitations. Later live checks use natively run backend and database processes, labelled as such. Rerun `docker compose exec student1-backend curl http://host.docker.internal:5500/health` after a reboot. |
+
+**Verdict:** accepted with open environment limitations. Release 0 suites are unchanged and passing.
+
+## 2026-09-27 - Release 1 Chunk 0 HLD Self-Review
+
+**Scope:** `release-1-mcp-hld.md`, `release-1-rag-hld.md`, and the Release 1
+updates to `feature-plan.md`, `requirements.md` and `context.md`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The first draft linked `release-1-runbook.md`, which does not exist until chunk 9, so the chunk 0 "links resolve" gate would fail. | Replaced the link with plain text naming the future file. |
+| Required | `context.md` still described Ollama and the agentic loop as Compose services, which contradicts the Release 1 brief and the current `docker-compose.yml`. | Corrected the architecture sketch, the communication rule and the loop description, and marked the Release 0 Compose Ollama entry as superseded. |
+| Accepted | Plain TF-IDF gives unknown words zero weight, so an unsupported-city question can still match another city's generic paragraph. | Recorded as a RAG risk with a mitigation (city-prefixed paragraphs) and measurement in chunk 6. The shared thresholds are unchanged. |
+| Accepted | The destination-in-question check will reject abbreviations such as "NYC". | Kept: it prevents invented destinations, and the rephrase response gives an example. |
+
+**Evidence:** a local link and anchor check passes. The design covers only the
+§3 scope: no chat history, new tables, write tools or Release 2 work.
+
+**Verdict:** accepted for chunk 0.
+
 ## 2026-09-27 - Calendar-Dependent Frontend CI Failure
 
 **Evidence:** [Student 1 CI run 36289255755](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36289255755)

@@ -6,6 +6,7 @@ import {
   type SearchRequest,
   type SearchResponse,
 } from './api'
+import AssistantPanel from './components/AssistantPanel.vue'
 import SearchForm from './components/SearchForm.vue'
 import SearchHistory from './components/SearchHistory.vue'
 import SearchResults from './components/SearchResults.vue'
@@ -59,6 +60,11 @@ async function submitSearch(search: SearchRequest) {
   } finally {
     submitting.value = false
   }
+}
+
+async function prefillSearch(city: string) {
+  await searchForm.value?.prefillDestination(city)
+  statusMessage.value = `Destination set to ${city}. Add dates and budget to search.`
 }
 
 function showSearch(search: SearchResponse) {
@@ -134,6 +140,11 @@ async function focusError() {
       <strong>We could not complete that action.</strong>
       <span>{{ pageError }}</span>
     </div>
+
+    <AssistantPanel
+      @status="statusMessage = $event"
+      @prefill="prefillSearch"
+    />
 
     <SearchForm
       ref="searchForm"

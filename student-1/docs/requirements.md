@@ -30,7 +30,7 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 
 - Live booking, payments, accounts, authentication, maps, reviews, and price guarantees.
 - Production hotel availability, date-specific price guarantees, and booking-provider service levels. LiteAPI data is a demonstration cache, not a production quote.
-- MCP, RAG, multi-agent systems, cloud deployment, and production-scale availability. These belong to later releases.
+- Release 0 only: MCP, RAG, multi-agent systems, cloud deployment, and production-scale availability. MCP and RAG are added by Release 1 (section 11); the others remain out of scope.
 - Scraping accommodation websites.
 
 ## 2. Actors and System Boundaries
@@ -264,3 +264,23 @@ The model is advisory. The backend, not the model, owns validation, fallback, pe
 ## 10. Definition of Done
 
 Release 0 is done only when every mandatory FR, NFR, and EV item above is satisfied in the integrated group application. A standalone feature, placeholder service, echo-only CI workflow, unpopulated table, direct SQLite access from the backend, or feature absent from the unified home page is not done and risks zero for the affected criterion.
+
+## 11. Release 1 Requirements Summary
+
+Release 1 extends Release 0 with MCP and RAG. The designs contain the full
+contracts, measurable targets and traceability:
+
+- [Release 1 MCP HLD - Catalogue Lookup](release-1-mcp-hld.md) (R1-MCP-01 to R1-MCP-14)
+- [Release 1 RAG HLD - Destination Guide](release-1-rag-hld.md) (R1-RAG-01 to R1-RAG-12)
+
+| Release 1 obligation | Feature response |
+|---|---|
+| One shared native MCP server, RAG server, agentic loop and Ollama; none of them are Compose services | The backend reaches them through `host.docker.internal`, mapped by `${LOCAL_AI_HOST:-host-gateway}`. This supersedes the Release 0 wording in FR-19, FR-25 and section 2 that placed Ollama and the loop in Compose. |
+| Frontend -> backend -> MCP returns a structured tool result shown in the UI | Trip assistant **Catalogue lookup** mode calls `POST /api/assistant` with `mode: "lookup"`, which calls `accommodation.find` or `accommodation.get_search`. |
+| Frontend -> backend -> RAG returns a grounded answer with citations and confidence, or insufficient context | Trip assistant **Destination guide** mode calls `POST /api/assistant` with `mode: "guide"`, which calls `POST /query` with `feature: "student-1"`. |
+| Compose still deploys every containerised service | `student1-backend` gains `MCP_ENABLED` and `RAG_ENABLED` (default `false`); no service is added. |
+| `student-1.yml` validates with MCP and RAG retained but disabled | Tests use fakes; no live model, MCP or RAG call is made in CI. |
+| Loop MCP and RAG validation modes | `validate-mcp` and `validate-rag` accept `--feature student-1`. |
+
+Release 1 constraints: no chat history, no new tables or migrations, read-only
+tools only, and guide answers never feed ranking.
