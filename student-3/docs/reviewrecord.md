@@ -139,3 +139,52 @@
 - Full terminal transcript: `student-3/docs/evidence/release-1/loop/stage1-attractions-search-total-matches-terminal.txt`.
 
 **Verdict (as of 2026-09-25):** The record is complete and finalised. It is useful negative evidence for the new student-3 reviewer prompt: the grounding-in-evidence rule stopped the reviewer from citing code that doesn't exist (an improvement over the borrowed v2 prompt's behaviour in the earlier record), but did not stop it from being confidently wrong about code that does exist, or from repeating that wrong verdict unchanged after a revision. Both are logged as an open action for a future prompt revision, not silently absorbed.
+
+## 2026-09-27 — Agentic Loop Record Review (record `20260927T151638Z`, Stage 2 `RagResponseError.code`, rejected)
+
+**Scope:** Two agentic-loop attempts on the same Stage 2 task (add a `.code` attribute to `RagResponseError` in `student-3/backend/rag_client.py`), using `reviewer-student3-v1.md`. The first attempt errored with no record written; the second produced `docs/agentic-loop-records/20260927T151638Z-f93383dbd3e04763b10832401dcff520.json`, finalised `rejected`. Reviewed by reading the record's fields directly, reading the actual proposed code line by line, and running the pre/post-test commands, not from the prompt-log summary alone.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Record file | `20260927T151638Z-f93383dbd3e04763b10832401dcff520.json` (attempt 2; attempt 1 produced no record) |
+| Created / finalised | 2026-09-27T15:16:38Z / 2026-09-27T15:23:45Z |
+| Task | Add a `.code` attribute to `RagResponseError`, extracted from the RAG server's error body, defaulting to `"unknown"` |
+| Context files | `student-3/backend/rag_client.py` only |
+| Implementer | `qwen2.5:3b`, prompt `shared-implementer-v1` |
+| Reviewer | `llama3.2:3b`, prompt `student3-reviewer-llama32-v1` |
+| Ollama / options | 0.34.3; temperature 0, context 16,384, max output 4,096 |
+| Pre-test | `python -m pytest tests/test_rag_client.py -v` — 2 failed / 7 passed, both `AttributeError: no attribute 'code'` |
+| Post-test | `python -m pytest tests -q` (full suite) — 64 passed |
+
+### Attempt 1 (no record written)
+
+The task description for this attempt was longer and more detailed (two worked examples, explicit constraints on which functions not to touch). The implementer's Act phase degenerated into repeating an identical `def __init__(self, message, code="unknown"): self.code = code` block several hundred times instead of producing a coherent proposal. The reviewer's Observe phase on this malformed input itself came out malformed (failed the loop's own "exactly one Validation gaps: section" check), the loop's single format-correction retry also failed the same check, and the run exited with a `LoopException` before `WriteRecordAsync` — no JSON record exists for this attempt, only the terminal transcript (`stage2-ragresponseerror-code-attempt1-failed-terminal.txt`). Retried with a much shorter task description (561 vs. 1294 characters) covering the same requirement, which is attempt 2 below.
+
+### Phase-by-phase (attempt 2)
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | Restated the goal, requirements, one file, five steps, two risks, and validation. | Accurate paraphrase; no scope drift. |
+| Act | `RagResponseError.__init__(self, message, code="unknown")` does set `self.code = code` — contradicting the reviewer's later finding. But `from_response()`'s branch order checks `isinstance(error.get("message"), str)` and returns `code="message_missing"` **before** ever checking `error.get("code")`, so the real code field is unreachable for any body that also has a message (i.e. almost every real error body). And in `ask()`, `raise response_error(response_error.code)` calls an already-constructed `RagResponseError` **instance** as a function, passing its own `.code` as the argument. | **Defective in two independent ways.** Verified against the task's own Example 1 (`{"error": {"code": "dependency_unavailable", "message": "busy"}}`): the backwards branch order yields `.code == "message_missing"`, not `"dependency_unavailable"` — fails the stated example directly. Separately, `response_error(response_error.code)` is not valid Python for calling an instance's method or re-raising it; it raises `TypeError: 'RagResponseError' object is not callable`, which would fire on every non-200 response with a truthy `error` key — the normal case this code exists to handle. |
+| Observe (1st pass) | `REVISE`, one BLOCKING finding: "`RagResponseError` object has no attribute code, which breaks the expected behavior." | **Hallucinated**, and it misses both real defects above. The class plainly has a `.code` attribute in this proposal; verified by inspection. The "Validation gaps" note ("no test covers a count of zero") is also copy-pasted from a different task (Stage 1's `total_matches`, which was about counting attractions, not RAG error codes) — a new failure mode: an entire section reused verbatim from an unrelated prior task rather than describing this one. |
+| Adapt (machine) | Implementer's revision is **byte-identical** to its first Act output. Reviewer's second-pass Observe repeats the identical BLOCKING finding and the identical (still unrelated) Validation gaps text, unchanged. | Checked by direct comparison of the record's `planAct`/`adaptedProposal` and `observe`/`adaptedProposalReview` fields. Same non-engagement pattern as the `total_matches` record: a wrong verdict repeated verbatim against unchanged code. |
+| Adapt (human) | Decision `rejected`. Neither the implementer's proposal nor the reviewer's assessment of it was usable — the code fails the task's own example and contains a fatal `TypeError`, while the review is both wrong about what exists and reused text from a different task. Implemented by hand: `_error_code()` mirroring `_error_message()`'s existing pattern, wired into `RagResponseError` and `ask()`. | **Correct.** Re-verified: `python -m pytest tests -q` — 64 passed, including two new tests asserting `.code == "dependency_unavailable"` for a well-formed error body and `.code == "unknown"` for a malformed one. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| No action needed | Reviewer's BLOCKING finding ("no `.code` attribute") was factually wrong; the attribute exists in the reviewed proposal. | Correctly rejected in the human Adapt phase; not why the code was rejected. |
+| Resolved | The implementer's actual code had two real defects (backwards branch order producing a wrong code value; calling an instance as a function) that the reviewer did not catch. | Both fixed in the hand-written replacement; verified against the task's worked examples and the full test suite. |
+| Open | A local implementer model can degenerate into token-repetition on a longer, multi-constraint task description, which then cascades into an unparseable reviewer output and an unrecoverable run (no record, wasted ~5-15 min and a model load cycle). Shortening the task text avoided it here, but this is model behaviour, not something the reviewer prompt controls. | Release 1 action: keep loop task descriptions short and example-light where possible; note in `prompt-engineering.md` as an operational constraint distinct from reviewer-prompt quality. |
+| Open | The reviewer's "Validation gaps" text in this record was reused verbatim from an unrelated prior task (`total_matches`, a counting bug, not an error-code extraction task), not just a repeated verdict on the same code. | Widens the known reviewer-repetition failure mode already logged for the `total_matches` record: it can also reuse unrelated boilerplate, not only its own worked example or its own prior verdict. Worth a v2 reviewer-prompt note. |
+
+### Automated Evidence
+
+- Pre-test and post-test re-run directly: `python -m pytest tests -q` from `student-3` — 2 failed/7 passed before (scoped to `test_rag_client.py`), 64 passed after (full suite), matching the record's `preTest`/`postTest` fields.
+- Manual inspection of `from_response()`'s branch order and the `response_error(response_error.code)` call against the task's Example 1, confirming both defects independently of the reviewer's (wrong) finding.
+- Full terminal transcripts: `student-3/docs/evidence/release-1/loop/stage2-ragresponseerror-code-attempt1-failed-terminal.txt` (degenerate repetition, no record) and `...-attempt2-terminal.txt` (this record).
+
+**Verdict (as of 2026-09-27):** The record is complete and finalised as `rejected`, which is the correct outcome — this is the first Stage 2 case where the reviewer's error wasn't just a false positive on working code (as in the `total_matches` record) but a genuine miss of implementer-introduced bugs that would have shipped a broken `.code` extraction and a crash-on-error-path defect had they been accepted. The loop surfaced a real proposal to evaluate, evaluating it caught what the reviewer didn't, and the human Adapt phase replaced it entirely rather than patching around it.

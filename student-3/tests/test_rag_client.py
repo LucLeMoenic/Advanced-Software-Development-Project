@@ -84,6 +84,25 @@ def test_ask_raises_response_error_on_non_200_status(monkeypatch):
         rag_client.ask("anything")
 
 
+def test_ask_raises_response_error_with_code_attribute_from_server_body(monkeypatch):
+    error_body = {"error": {"code": "dependency_unavailable", "message": "The local model is busy."}}
+    monkeypatch.setattr(rag_client.requests, "post", lambda *a, **k: FakeResponse(error_body, status_code=503))
+
+    with pytest.raises(rag_client.RagResponseError) as excinfo:
+        rag_client.ask("anything")
+
+    assert excinfo.value.code == "dependency_unavailable"
+
+
+def test_ask_raises_response_error_with_unknown_code_when_body_malformed(monkeypatch):
+    monkeypatch.setattr(rag_client.requests, "post", lambda *a, **k: FakeResponse({}, status_code=503))
+
+    with pytest.raises(rag_client.RagResponseError) as excinfo:
+        rag_client.ask("anything")
+
+    assert excinfo.value.code == "unknown"
+
+
 def test_ask_raises_response_error_on_unexpected_body_shape(monkeypatch):
     monkeypatch.setattr(rag_client.requests, "post", lambda *a, **k: FakeResponse({"unexpected": True}))
 

@@ -98,6 +98,11 @@ async def _with_session(coroutine_fn, *args):
         unwrapped = _unwrap_exception_group(exc)
         if unwrapped is not None:
             raise unwrapped from None
+        # An ExceptionGroup's own str() is an uninformative "unhandled
+        # errors in a TaskGroup (1 sub-exception)" — verified live against
+        # an unreachable server. Surface the real underlying message.
+        while isinstance(exc, BaseExceptionGroup):
+            exc = exc.exceptions[0]
         raise McpUnavailableError(str(exc)) from exc
 
 

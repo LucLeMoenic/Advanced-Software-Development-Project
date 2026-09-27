@@ -26,6 +26,10 @@ class RagResponseError(Exception):
     reported its own domain error (a validation error, an unavailable or
     busy local model, and so on)."""
 
+    def __init__(self, message, code="unknown"):
+        super().__init__(message)
+        self.code = code
+
 
 def _enabled():
     # Read fresh each call (not cached at import time) so tests can toggle
@@ -44,6 +48,17 @@ def _error_message(response):
     return f"RAG server returned status {response.status_code}."
 
 
+def _error_code(response):
+    try:
+        body = response.json()
+    except ValueError:
+        return "unknown"
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, dict) and isinstance(error.get("code"), str):
+        return error["code"]
+    return "unknown"
+
+
 def ask(question):
     if not _enabled():
         raise RagDisabledError("RAG is disabled.")
@@ -58,7 +73,7 @@ def ask(question):
         raise RagUnavailableError(str(exc)) from exc
 
     if response.status_code != 200:
-        raise RagResponseError(_error_message(response))
+        raise RagResponseError(_error_message(response), code=_error_code(response))
 
     try:
         body = response.json()

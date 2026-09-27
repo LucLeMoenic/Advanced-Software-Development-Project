@@ -145,3 +145,40 @@ def test_call_tool_raises_unavailable_on_timeout(monkeypatch):
 
     with pytest.raises(mcp_client.McpUnavailableError):
         mcp_client.call_tool("attractions.search", {})
+
+
+def test_call_tool_unwraps_tool_error_from_exception_group(monkeypatch):
+    """Regression test: anyio's TaskGroup wraps a task's exception in a
+    BaseExceptionGroup. Verified live against the real MCP server: an
+    invalid-category call originally surfaced as "unhandled errors in a
+    TaskGroup (1 sub-exception)" (misreported as McpUnavailableError)
+    instead of the actual McpToolError, before _unwrap_exception_group
+    was added to _with_session.
+    """
+
+    def raise_group(url):
+        raise BaseExceptionGroup(
+            "unhandled errors in a TaskGroup",
+            [mcp_client.McpToolError("category must be one of [...]")],
+        )
+
+    monkeypatch.setattr(mcp_client, "streamable_http_client", raise_group)
+
+    with pytest.raises(mcp_client.McpToolError, match="category must be one of"):
+        mcp_client.call_tool("attractions.search", {"category": "museum"})
+
+
+def test_call_tool_falls_back_to_unavailable_for_unrelated_exception_group(monkeypatch):
+    """Regression test: str(ExceptionGroup) is an uninformative "unhandled
+    errors in a TaskGroup (1 sub-exception)" — verified live against an
+    unreachable MCP server. The fallback must surface the real underlying
+    message ("refused"), not the group's own generic summary.
+    """
+
+    def raise_group(url):
+        raise BaseExceptionGroup("unhandled errors in a TaskGroup", [ConnectionError("refused")])
+
+    monkeypatch.setattr(mcp_client, "streamable_http_client", raise_group)
+
+    with pytest.raises(mcp_client.McpUnavailableError, match="refused"):
+        mcp_client.call_tool("attractions.search", {})

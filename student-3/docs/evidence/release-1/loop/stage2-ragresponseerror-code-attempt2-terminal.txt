@@ -1,0 +1,202 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+Add a `.code` attribute to `RagResponseError` and update its `__init__` to accept `code="unknown"` and store `self.code = code`. Extract the "code" string from the RAG server's JSON error body, defaulting to "unknown" if missing or malformed. Pass this code into `RagResponseError` where it is raised for a non-200 status, at the TODO(you) comment in `ask()`. Example: body {"error": {"code": "...", "message": "..."}} -> `RagResponseError.code == "..."`.
+
+Requirements:
+- The `RagResponseError` class should have a `.code` attribute.
+- The `RagResponseError` class should accept `code="unknown"` in its `__init__` method.
+- The `RagResponseError` class should raise a `RagResponseError` with the extracted "code" string from the RAG server's error body if the body is missing, not JSON, or has no string "code" field.
+- The `ask()` method should raise a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+Files:
+- `student-3/backend/rag_client.py`
+
+Steps:
+1. Add a `.code` attribute to `RagResponseError`.
+2. Update the `__init__` method of `RagResponseError` to accept `code="unknown"` and store `self.code = code`.
+3. Extract the "code" string from the RAG server's JSON error body, defaulting to "unknown" if missing or malformed.
+4. Pass this code into `RagResponseError` where it is raised for a non-200 status, at the TODO(you) comment in `ask()`.
+5. Test the changes to ensure the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+Risks:
+- Introducing a new attribute to `RagResponseError` might break existing code that expects `RagResponseError` to have only a `message` attribute.
+- The `RagResponseError` class might not be used in other parts of the codebase, so the changes might not have any immediate impact.
+
+Validation:
+- Verify that the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+- Run the tests to ensure that the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+[ACT]
+Proposed change:
+```python
+import json
+
+class RagResponseError(Exception):
+    def __init__(self, message, code="unknown"):
+        super().__init__(message)
+        self.code = code
+
+    @classmethod
+    def from_response(cls, response):
+        try:
+            body = response.json()
+        except ValueError:
+            return cls("RAG server returned invalid JSON.", code="invalid_json")
+
+        error = body.get("error") if isinstance(body, dict) else None
+        if isinstance(error, dict) and isinstance(error.get("message"), str):
+            return cls(error["message"], code="message_missing")
+        if isinstance(error, dict) and isinstance(error.get("code"), str):
+            return cls(error["message"], code=error["code"])
+
+        return cls("RAG server returned an unexpected result shape.", code="unexpected_shape")
+
+def ask(question):
+    if not _enabled():
+        raise RagDisabledError("RAG is disabled.")
+
+    try:
+        response = requests.post(
+            f"{RAG_SERVER_URL}/query",
+            json={"feature": FEATURE, "question": question},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.exceptions.RequestException as exc:
+        raise RagUnavailableError(str(exc)) from exc
+
+    if response.status_code != 200:
+        # TODO(you): Extract the "code" string from the RAG server's error body, defaulting to "unknown" if missing or malformed.
+        error = response.json().get("error")
+        if error:
+            response_error = RagResponseError.from_response(response)
+            raise response_error(response_error.code)
+
+    try:
+        body = response.json()
+    except ValueError as exc:
+        raise RagResponseError("RAG server returned invalid JSON.") from exc
+
+    if not isinstance(body, dict) or set(body) != {"answer", "citations", "confidence"}:
+        raise RagResponseError("RAG server returned an unexpected result shape.")
+
+    return body
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `RagResponseError` object has no attribute code, which breaks the expected behavior.
+  Failure mode: The code will not be able to extract the "code" string from the RAG server's error body.
+  Required correction: Add a `.code` attribute to `RagResponseError` and update its `__init__` method to accept `code="unknown"` and store `self.code = code`.
+
+Validation gaps:
+The pre-test only confirms the stub existed; no test covers a count of zero.
+
+Scope check:
+Only the requested change was added; nothing else changed.
+[ADAPT] Implementer model producing one bounded revision.
+```text
+[PLAN]
+Goal:
+Add a `.code` attribute to `RagResponseError` and update its `__init__` to accept `code="unknown"` and store `self.code = code`. Extract the "code" string from the RAG server's JSON error body, defaulting to "unknown" if missing or malformed. Pass this code into `RagResponseError` where it is raised for a non-200 status, at the TODO(you) comment in `ask()`. Example: body {"error": {"code": "...", "message": "..."}} -> `RagResponseError.code == "..."`.
+
+Requirements:
+- The `RagResponseError` class should have a `.code` attribute.
+- The `RagResponseError` class should accept `code="unknown"` in its `__init__` method.
+- The `RagResponseError` class should raise a `RagResponseError` with the extracted "code" string from the RAG server's error body if the body is missing, not JSON, or has no string "code" field.
+- The `ask()` method should raise a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+Files:
+- `student-3/backend/rag_client.py`
+
+Steps:
+1. Add a `.code` attribute to `RagResponseError`.
+2. Update the `__init__` method of `RagResponseError` to accept `code="unknown"` and store `self.code = code`.
+3. Extract the "code" string from the RAG server's JSON error body, defaulting to "unknown" if missing or malformed.
+4. Pass this code into `RagResponseError` where it is raised for a non-200 status, at the TODO(you) comment in `ask()`.
+5. Test the changes to ensure the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+Risks:
+- Introducing a new attribute to `RagResponseError` might break existing code that expects `RagResponseError` to have only a `message` attribute.
+- The `RagResponseError` class might not be used in other parts of the codebase, so the changes might not have any immediate impact.
+
+Validation:
+- Verify that the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+- Run the tests to ensure that the `RagResponseError` class now raises a `RagResponseError` with the extracted "code" string from the RAG server's error body if the response status is not 200.
+
+[ACT]
+Proposed change:
+```python
+import json
+
+class RagResponseError(Exception):
+    def __init__(self, message, code="unknown"):
+        super().__init__(message)
+        self.code = code
+
+    @classmethod
+    def from_response(cls, response):
+        try:
+            body = response.json()
+        except ValueError:
+            return cls("RAG server returned invalid JSON.", code="invalid_json")
+
+        error = body.get("error") if isinstance(body, dict) else None
+        if isinstance(error, dict) and isinstance(error.get("message"), str):
+            return cls(error["message"], code="message_missing")
+        if isinstance(error, dict) and isinstance(error.get("code"), str):
+            return cls(error["message"], code=error["code"])
+
+        return cls("RAG server returned an unexpected result shape.", code="unexpected_shape")
+
+def ask(question):
+    if not _enabled():
+        raise RagDisabledError("RAG is disabled.")
+
+    try:
+        response = requests.post(
+            f"{RAG_SERVER_URL}/query",
+            json={"feature": FEATURE, "question": question},
+            timeout=REQUEST_TIMEOUT,
+        )
+    except requests.exceptions.RequestException as exc:
+        raise RagUnavailableError(str(exc)) from exc
+
+    if response.status_code != 200:
+        # TODO(you): Extract the "code" string from the RAG server's error body, defaulting to "unknown" if missing or malformed.
+        error = response.json().get("error")
+        if error:
+            response_error = RagResponseError.from_response(response)
+            raise response_error(response_error.code)
+
+    try:
+        body = response.json()
+    except ValueError as exc:
+        raise RagResponseError("RAG server returned invalid JSON.") from exc
+
+    if not isinstance(body, dict) or set(body) != {"answer", "citations", "confidence"}:
+        raise RagResponseError("RAG server returned an unexpected result shape.")
+
+    return body
+```
+[OBSERVE] Reviewer model assessing the adapted proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `RagResponseError` object has no attribute code, which breaks the expected behavior.
+  Failure mode: The code will not be able to extract the "code" string from the RAG server's error body.
+  Required correction: Add a `.code` attribute to `RagResponseError` and update its `__init__` method to accept `code="unknown"` and store `self.code = code`.
+
+Validation gaps:
+The pre-test only confirms the stub existed; no test covers a count of zero.
+
+Scope check:
+Only the requested change was added; nothing else changed.
+Agentic-loop record awaiting human finalisation: C:\Users\khush\sources\Repos\Advanced-Software-Development-Project\docs\agentic-loop-records\20260927T151638Z-f93383dbd3e04763b10832401dcff520.json

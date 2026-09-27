@@ -1,0 +1,134 @@
+Stage 2 live end-to-end verification: student-3 database -> shared MCP server -> student-3 backend
+Date: 2026-09-27
+
+=== GET /api/mcp/tools ===
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:57 GMT
+Content-Type: application/json
+Content-Length: 59
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"tools":["attractions.search","attractions.get_reviews"]}
+
+
+=== POST /api/mcp/invoke (attractions.search, real seeded data) ===
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:57 GMT
+Content-Type: application/json
+Content-Length: 566
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"result":{"attractions":[{"category":"activity","description":"6km clifftop walking track past Sydney's most famous beaches.","id":2,"name":"Bondi to Coogee Coastal Walk","rating":4.8},{"category":"activity","description":"Harbourside zoo with ferry access and views back to the city skyline.","id":4,"name":"Taronga Zoo Sydney","rating":4.5},{"category":"activity","description":"Guided walk through Hosier Lane and nearby graffiti-covered laneways.","id":8,"name":"Melbourne Street Art Laneway Tour","rating":4.6}],"total_matches":4},"tool":"attractions.search"}
+
+
+=== POST /api/mcp/invoke (attractions.get_reviews, real seeded data) ===
+HTTP/1.1 200 OK
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:57 GMT
+Content-Type: application/json
+Content-Length: 295
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"result":{"attraction_id":1,"name":"Sydney Opera House","reviews":[{"attraction_id":1,"comment":"Breathtaking at sunset, worth the hype.","id":1,"rating":5.0},{"attraction_id":1,"comment":"Very crowded but the architecture is stunning.","id":2,"rating":4.0}]},"tool":"attractions.get_reviews"}
+
+
+=== POST /api/mcp/invoke (invalid category -> 400 validation_error) ===
+HTTP/1.1 400 BAD REQUEST
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:57 GMT
+Content-Type: application/json
+Content-Length: 157
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"validation_error","message":"Error executing tool attractions.search: category must be one of ['activity', 'restaurant', 'sight'], got 'museum'."}
+
+
+=== POST /api/mcp/invoke (unknown field -> 400 validation_error) ===
+HTTP/1.1 400 BAD REQUEST
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:58 GMT
+Content-Type: application/json
+Content-Length: 325
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"validation_error","message":"Error executing tool attractions.get_reviews: 1 validation error for get_reviewsArguments\nparams.verbose\n  Extra inputs are not permitted [type=extra_forbidden, input_value=True, input_type=bool]\n    For further information visit https://errors.pydantic.dev/2.13/v/extra_forbidden"}
+
+
+=== POST /api/mcp/invoke (disallowed tool -> 400 validation_error) ===
+HTTP/1.1 400 BAD REQUEST
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:58 GMT
+Content-Type: application/json
+Content-Length: 112
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"validation_error","message":"tool must be one of ['attractions.get_reviews', 'attractions.search']."}
+
+
+=== GET /api/mcp/tools, MCP_ENABLED=false -> 503 mcp_disabled ===
+HTTP/1.1 503 SERVICE UNAVAILABLE
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:58 GMT
+Content-Type: application/json
+Content-Length: 54
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"mcp_disabled","message":"MCP is disabled."}
+
+
+=== POST /api/mcp/invoke, MCP_ENABLED=false -> 503 mcp_disabled ===
+HTTP/1.1 503 SERVICE UNAVAILABLE
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:58 GMT
+Content-Type: application/json
+Content-Length: 54
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"mcp_disabled","message":"MCP is disabled."}
+
+
+=== POST /api/rag/ask, RAG_ENABLED=false -> 503 rag_disabled ===
+HTTP/1.1 503 SERVICE UNAVAILABLE
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:45:58 GMT
+Content-Type: application/json
+Content-Length: 54
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"rag_disabled","message":"RAG is disabled."}
+
+
+=== GET /api/mcp/tools, MCP server unreachable -> 502 mcp_unavailable ===
+HTTP/1.1 502 BAD GATEWAY
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:46:00 GMT
+Content-Type: application/json
+Content-Length: 71
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"mcp_unavailable","message":"All connection attempts failed"}
+
+
+=== POST /api/rag/ask, RAG server unreachable -> 502 rag_unavailable ===
+HTTP/1.1 502 BAD GATEWAY
+Server: Werkzeug/3.1.8 Python/3.14.0
+Date: Sun, 27 Sep 2026 14:46:03 GMT
+Content-Type: application/json
+Content-Length: 338
+Access-Control-Allow-Origin: *
+Connection: close
+
+{"error":"rag_unavailable","message":"HTTPConnectionPool(host='127.0.0.1', port=5998): Max retries exceeded with url: /query (Caused by NewConnectionError(\"HTTPConnection(host='127.0.0.1', port=5998): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"}
+
