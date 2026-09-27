@@ -897,11 +897,6 @@ textarea[aria-invalid="true"] {
   font-size: 0.76rem;
 }
 
-.mode-chip-disabled {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 .assistant-question textarea {
   width: 100%;
   min-height: 4.2rem;
@@ -985,6 +980,87 @@ textarea[aria-invalid="true"] {
 .lookup-table thead th {
   color: var(--color-muted);
   font-size: 0.75rem;
+}
+
+.guide-result {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.guide-answer-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guide-answer {
+  margin: 0;
+  line-height: 1.55;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.confidence-badge {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 730;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.confidence-high {
+  color: var(--color-success);
+}
+
+.confidence-medium {
+  color: var(--color-primary-dark);
+}
+
+.confidence-low {
+  color: var(--color-warning);
+}
+
+.guide-sources-heading {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.guide-citations {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.82rem;
+}
+
+.guide-citations li {
+  display: grid;
+  gap: 0.2rem;
+  overflow-wrap: anywhere;
+}
+
+.guide-citations q {
+  color: var(--color-muted);
+}
+
+.citation-score {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+.guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.guide-insufficient {
+  margin: 0;
 }
 
 .raw-result summary {

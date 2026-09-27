@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import {
   ApiRequestError,
   assistantApi,
   type AssistantMode,
+  type GuideResponse,
   type LookupResponse,
 } from '../api'
 
 const emit = defineEmits<{
   status: [message: string]
+  prefill: [city: string]
 }>()
+
+// Catalogue destinations that have a destination guide; a citation maps to a city only on an exact source match.
+const GUIDE_CITIES = ['Tokyo', 'Paris', 'New York', 'Rome', 'Barcelona', 'Singapore', 'Vancouver', 'Cape Town', 'Reykjavik', 'Dubai']
 
 const currency = new Intl.NumberFormat('en-AU', {
   style: 'currency',
@@ -23,8 +28,24 @@ const loading = ref(false)
 const inputError = ref('')
 const failure = ref<{ kind: 'rephrase' | 'disabled' | 'error'; message: string } | null>(null)
 const lookup = ref<LookupResponse | null>(null)
+const guide = ref<GuideResponse | null>(null)
 const outcome = ref<HTMLElement | null>(null)
 
+const citedCities = computed(() =>
+  GUIDE_CITIES.filter((city) =>
+    guide.value?.citations.some((citation) => citation.source === `${city} — Where to Stay`),
+  ),
+)
+
+watch(mode, () => {
+  failure.value = null
+  lookup.value = null
+  guide.value = null
+})
+
+const placeholder = computed(() => mode.value === 'guide'
+  ? 'e.g. Is Tokyo safe for families? or Is Barcelona or Dubai better for nightlife?'
+  : 'e.g. Find stays in Tokyo for 2 guests under $200, or show saved search 11')
 const rawResult = computed(() => (lookup.value ? JSON.stringify(lookup.value.result, null, 2) : ''))
 const argumentEntries = computed(() => Object.entries(lookup.value?.arguments ?? {}))
 
@@ -43,12 +64,19 @@ async function ask() {
   inputError.value = ''
   failure.value = null
   lookup.value = null
+  guide.value = null
   loading.value = true
-  emit('status', 'Looking up the catalogue.')
+  emit('status', mode.value === 'guide' ? 'Checking the destination guides.' : 'Looking up the catalogue.')
 
   try {
-    lookup.value = await assistantApi.ask(mode.value, text)
-    emit('status', lookupStatus(lookup.value))
+    const response = await assistantApi.ask(mode.value, text)
+    if (response.mode === 'guide') {
+      guide.value = response
+      emit('status', guideStatus(response))
+    } else {
+      lookup.value = response
+      emit('status', lookupStatus(response))
+    }
   } catch (error) {
     failure.value = describeFailure(error)
     emit('status', failure.value.message)
@@ -66,6 +94,14 @@ function lookupStatus(response: LookupResponse) {
   return `${response.result.count} catalogue ${response.result.count === 1 ? 'stay' : 'stays'} found.`
 }
 
+function guideStatus(response: GuideResponse) {
+  if (response.confidence === 'insufficient') {
+    return 'The destination guides do not cover that question.'
+  }
+  const sources = response.citations.length === 1 ? 'source' : 'sources'
+  return `Answer ready with ${response.confidence} confidence and ${response.citations.length} ${sources}.`
+}
+
 function describeFailure(error: unknown) {
   const code = error instanceof ApiRequestError ? error.code : undefined
   const message = error instanceof Error ? error.message : 'The assistant could not answer.'
@@ -73,7 +109,8 @@ function describeFailure(error: unknown) {
     return { kind: 'rephrase' as const, message }
   }
   if (code === 'mode_disabled') {
-    return { kind: 'disabled' as const, message: 'Catalogue lookup is turned off in this environment.' }
+    const name = mode.value === 'guide' ? 'Destination guide' : 'Catalogue lookup'
+    return { kind: 'disabled' as const, message: `${name} is turned off in this environment.` }
   }
   return { kind: 'error' as const, message }
 }
@@ -109,11 +146,11 @@ function formatArgument(name: string, value: string | number) {
             <small>Find stays or open a saved search</small>
           </span>
         </label>
-        <label class="mode-chip mode-chip-disabled">
-          <input type="radio" name="assistant-mode" value="guide" disabled>
+        <label class="mode-chip">
+          <input v-model="mode" type="radio" name="assistant-mode" value="guide">
           <span>
             <strong>Destination guide</strong>
-            <small>Coming soon</small>
+            <small>Where to stay, safety, seasons and budget</small>
           </span>
         </label>
       </fieldset>
@@ -125,7 +162,7 @@ function formatArgument(name: string, value: string | number) {
           v-model="question"
           rows="2"
           maxlength="1000"
-          placeholder="e.g. Find stays in Tokyo for 2 guests under $200, or show saved search 11"
+          :placeholder="placeholder"
           :aria-invalid="Boolean(inputError)"
           :aria-describedby="inputError ? 'assistant-question-error' : undefined"
         />
@@ -158,6 +195,45 @@ function formatArgument(name: string, value: string | number) {
         >
           <strong>{{ failure.kind === 'rephrase' ? 'Try asking another way.' : 'The assistant could not answer.' }}</strong>
           <span>{{ failure.message }}</span>
+        </div>
+
+        <div v-if="guide && guide.confidence === 'insufficient'" class="notice notice-information guide-insufficient">
+          <strong>Not covered by the destination guides.</strong>
+          <span>{{ guide.answer }}</span>
+          <span>Guides cover {{ GUIDE_CITIES.join(', ') }}.</span>
+        </div>
+
+        <div v-else-if="guide" class="guide-result">
+          <div class="guide-answer-header">
+            <h3 class="lookup-title">Destination guide answer</h3>
+            <span class="confidence-badge" :class="`confidence-${guide.confidence}`">
+              {{ guide.confidence }} confidence
+            </span>
+          </div>
+          <p class="guide-answer">{{ guide.answer }}</p>
+          <p class="field-help">General guidance from curated demonstration guides, not live prices or guarantees.</p>
+
+          <h4 class="guide-sources-heading">Sources</h4>
+          <ol class="guide-citations">
+            <li v-for="citation in guide.citations" :key="citation.chunk_id">
+              <strong>{{ citation.source }}</strong>
+              <code>[{{ citation.chunk_id }}]</code>
+              <span class="citation-score">relevance {{ citation.score.toFixed(2) }}</span>
+              <q>{{ citation.snippet }}</q>
+            </li>
+          </ol>
+
+          <div v-if="citedCities.length" class="guide-actions">
+            <button
+              v-for="city in citedCities"
+              :key="city"
+              class="button button-secondary button-small"
+              type="button"
+              @click="emit('prefill', city)"
+            >
+              Search accommodation in {{ city }}
+            </button>
+          </div>
         </div>
 
         <div v-if="lookup" class="lookup-result">
