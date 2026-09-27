@@ -106,3 +106,16 @@ def register(mcp: MCPServer) -> None:
             "name": attraction["name"],
             "reviews": attraction.get("reviews", []),
         }
+
+    # The SDK wraps a single-model tool parameter in a synthesised outer
+    # model (here, one "params" field); that outer model does NOT inherit
+    # SearchParams'/GetReviewsParams' own extra="forbid" — an extra
+    # TOP-LEVEL key alongside "params" is silently dropped rather than
+    # rejected (verified by calling MCPServer.call_tool directly with a
+    # bogus top-level key and inspecting the result). Force it on the outer
+    # model too, for both tools, so any unexpected field is rejected.
+    for tool_name in ("attractions.search", "attractions.get_reviews"):
+        tool = mcp._tool_manager.get_tool(tool_name)
+        tool.fn_metadata.arg_model.model_config["extra"] = "forbid"
+        tool.fn_metadata.arg_model.model_rebuild(force=True)
+        tool.parameters = tool.fn_metadata.arg_model.model_json_schema(by_alias=True)
