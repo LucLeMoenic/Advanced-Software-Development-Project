@@ -6,6 +6,8 @@ from pathlib import Path
 import requests
 from flask import Flask, g, jsonify, request
 
+from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_summary
+
 
 class DependencyError(Exception):
     pass
@@ -178,12 +180,34 @@ def validate_stop(payload, trip_id=None):
     return fields, cleaned
 
 
-def create_app(database_client=None, generator=None):
+def create_app(database_client=None, generator=None, *, settings=None, mcp_client=None, rag_client=None):
     app = Flask(__name__)
+    settings = settings or {}
+
+    def enabled(name, default):
+        value = settings.get(name, os.getenv(name, default))
+        if isinstance(value, bool):
+            return value
+        if value not in ("true", "false"):
+            raise ValueError(f"{name} must be true or false.")
+        return value == "true"
+
+    modes = {
+        "aiEnabled": enabled("AI_ENABLED", "true"),
+        "mcpEnabled": enabled("MCP_ENABLED", "false"),
+        "ragEnabled": enabled("RAG_ENABLED", "false"),
+    }
+    mcp_client = mcp_client or McpClient(os.getenv("MCP_SERVER_URL", "http://host.docker.internal:5400/mcp"))
+    rag_client = rag_client or RagClient(os.getenv("RAG_SERVER_URL", "http://host.docker.internal:5500"))
     database = database_client or DatabaseClient(os.getenv("DATABASE_URL", "http://student2-database:8080"))
     itinerary_generator = generator or ItineraryGenerator(
         os.getenv("OLLAMA_URL", "http://ollama:11434"), os.getenv("APPLICATION_MODEL", "llama3.2:3b")
     )
+
+    def generate(trip, existing_stops=None, target_day=None):
+        if not modes["aiEnabled"]:
+            return ItineraryGenerator.fallback(trip, target_day), "fallback"
+        return itinerary_generator.generate(trip, existing_stops, target_day)
 
     def respond(body, status):
         return ("", 204) if status == 204 else (jsonify(body), status)
@@ -217,6 +241,39 @@ def create_app(database_client=None, generator=None):
     def health():
         return jsonify({"status": "healthy"})
 
+    @app.get("/api/capabilities")
+    def capabilities():
+        return jsonify(modes)
+
+    @app.errorhandler(IntegrationError)
+    def integration_error(exception):
+        return jsonify({"error": {"code": exception.code, "message": exception.message, "fields": {}}}), exception.status
+
+    def invalid_integration_input():
+        return jsonify({"error": {"code": "validation_error", "message": "Check the request details.", "fields": {}}}), 400
+
+    @app.post("/api/trips/<int:trip_id>/mcp-summary")
+    def mcp_summary(trip_id):
+        if not modes["mcpEnabled"]:
+            raise IntegrationError("mode_disabled")
+        if trip_id < 1 or (request.get_data() and request.get_json(silent=True) != {}):
+            return invalid_integration_input()
+        return jsonify({"tool": "itinerary.get_summary", "summary": validate_summary(mcp_client.summary(trip_id), trip_id)})
+
+    @app.post("/api/itinerary-advice")
+    def itinerary_advice():
+        if not modes["ragEnabled"]:
+            raise IntegrationError("mode_disabled")
+        if request.content_length is not None and request.content_length > 8192:
+            return invalid_integration_input()
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict) or set(payload) != {"question"}:
+            return invalid_integration_input()
+        question = payload["question"]
+        if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1000:
+            return invalid_integration_input()
+        return jsonify(validate_advice(rag_client.advice(question.strip())))
+
     @app.get("/api/trips")
     def list_trips():
         try:
@@ -231,7 +288,7 @@ def create_app(database_client=None, generator=None):
         if fields:
             return jsonify({"error": {"code": "validation_error", "message": "Check the trip details.", "fields": fields}}), 400
         try:
-            stops, mode = itinerary_generator.generate(trip)
+            stops, mode = generate(trip)
             saved_trip, status = database.request("POST", "/api/data/itineraries", {"trip": trip, "stops": stops})
             if status != 201:
                 return respond(saved_trip, status)
@@ -322,7 +379,7 @@ def create_app(database_client=None, generator=None):
             trip, trip_status = database.request("GET", f"/api/data/trips/{stop['tripId']}")
             if trip_status != 200:
                 return respond(trip, trip_status)
-            generated, mode = itinerary_generator.generate(trip, trip.get("stops", []), stop["day"])
+            generated, mode = generate(trip, trip.get("stops", []), stop["day"])
             replacement = {**generated[0], "tripId": stop["tripId"], "sortOrder": stop["sortOrder"]}
             saved, status = database.request("PUT", f"/api/data/stops/{stop_id}", replacement)
             if status != 200:
@@ -337,7 +394,7 @@ def create_app(database_client=None, generator=None):
             trip, status = database.request("GET", f"/api/data/trips/{trip_id}")
             if status != 200:
                 return respond(trip, status)
-            stops, mode = itinerary_generator.generate(trip)
+            stops, mode = generate(trip)
             saved, replace_status = database.request("PUT", f"/api/data/trips/{trip_id}/stops", {"stops": stops})
             if replace_status != 200:
                 return respond(saved, replace_status)

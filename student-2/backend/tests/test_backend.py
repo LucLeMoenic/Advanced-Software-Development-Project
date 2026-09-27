@@ -1,8 +1,134 @@
 import json
 
 import pytest
+import httpx
 
 from app import ItineraryGenerator, create_app
+from ai_clients import IntegrationError, INSUFFICIENT_ANSWER, RagClient, validate_summary
+
+
+@pytest.fixture(autouse=True)
+def isolated_modes(monkeypatch):
+    monkeypatch.setenv("AI_ENABLED", "true")
+    monkeypatch.setenv("MCP_ENABLED", "false")
+    monkeypatch.setenv("RAG_ENABLED", "false")
+
+
+def test_summary_rejects_zero_duration_before_decimal_allocation():
+    summary = FakeIntegrations().summary(12)
+    summary.update(endDate="2026-10-09", totalBudget=0, dailyBudgetAllocation=0)
+    with pytest.raises(IntegrationError) as caught:
+        validate_summary(summary, 12)
+    assert caught.value.status == 502
+
+
+@pytest.mark.parametrize("status,expected", [(503, 503), (504, 504), (404, 502), (200, 200)])
+def test_rag_http_client_uses_fixed_feature_and_maps_status(monkeypatch, status, expected):
+    def respond(request):
+        assert request.url.path == "/query"
+        assert json.loads(request.content) == {"feature": "student-2", "question": "Budget?"}
+        return httpx.Response(status, json={"answer": INSUFFICIENT_ANSWER, "citations": [], "confidence": "insufficient"})
+
+    client_type = httpx.AsyncClient
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: client_type(transport=httpx.MockTransport(respond), **kwargs))
+    client = RagClient("http://rag.invalid/")
+    if expected == 200:
+        assert client.advice("Budget?")["confidence"] == "insufficient"
+    else:
+        with pytest.raises(IntegrationError) as caught:
+            client.advice("Budget?")
+        assert caught.value.status == expected
+
+
+def test_rag_client_stops_and_closes_oversized_response(monkeypatch):
+    class LargeStream(httpx.AsyncByteStream):
+        consumed = 0
+        closed = False
+
+        async def __aiter__(self):
+            for index in range(100):
+                self.consumed += 1024
+                yield b"x" * 1024
+
+        async def aclose(self):
+            self.closed = True
+
+    stream = LargeStream()
+    client_type = httpx.AsyncClient
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, stream=stream))
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: client_type(transport=transport, **kwargs))
+    with pytest.raises(IntegrationError) as caught:
+        RagClient("http://rag.invalid").advice("Budget?")
+    assert caught.value.status == 502
+    assert stream.consumed == 16384
+    assert stream.closed
+
+
+class FakeIntegrations:
+    def __init__(self):
+        self.calls = []
+
+    def summary(self, trip_id):
+        self.calls.append(trip_id)
+        return {"tripId": trip_id, "destination": "Tokyo", "startDate": "2026-10-10", "endDate": "2026-10-12",
+                "dayCount": 3, "stopCount": 4, "plannedDayCount": 2, "unplannedDays": [3],
+                "totalBudget": 900, "dailyBudgetAllocation": 300}
+
+    def advice(self, question):
+        self.calls.append(question)
+        return {"answer": "Budget is the trip total. [budget#1]", "confidence": "high",
+                "citations": [{"source": "Budget", "chunk_id": "budget#1", "snippet": "Trip total", "score": 0.8}]}
+
+
+def test_integrations_are_disabled_without_upstream_calls():
+    fake = FakeIntegrations()
+    client = create_app(mcp_client=fake, rag_client=fake).test_client()
+    for path in ("/api/trips/12/mcp-summary", "/api/itinerary-advice"):
+        response = client.post(path)
+        assert response.status_code == 503
+        assert response.json["error"]["code"] == "mode_disabled"
+    assert fake.calls == []
+
+
+def test_enabled_integrations_use_fixed_contracts():
+    fake = FakeIntegrations()
+    client = create_app(mcp_client=fake, rag_client=fake, settings={"MCP_ENABLED": True, "RAG_ENABLED": True}).test_client()
+    assert client.post("/api/trips/12/mcp-summary").json["summary"]["tripId"] == 12
+    assert client.post("/api/itinerary-advice", json={"question": " Budget? "}).json["confidence"] == "high"
+    assert fake.calls == [12, "Budget?"]
+
+
+@pytest.mark.parametrize("payload", [None, [], {}, {"question": True}, {"question": " "}, {"question": "a" * 1001}, {"question": "Budget?", "feature": "student-3"}])
+def test_advice_rejects_invalid_input_before_call(payload):
+    fake = FakeIntegrations()
+    response = create_app(rag_client=fake, settings={"RAG_ENABLED": True}).test_client().post("/api/itinerary-advice", json=payload)
+    assert response.status_code == 400
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize("code,status", [("dependency_unavailable", 503), ("dependency_timeout", 504), ("trip_not_found", 404)])
+def test_integration_failure_mapping(code, status):
+    class FailedClient:
+        def summary(self, trip_id):
+            raise IntegrationError(code)
+
+    response = create_app(mcp_client=FailedClient(), settings={"MCP_ENABLED": True}).test_client().post("/api/trips/12/mcp-summary")
+    assert response.status_code == status
+    assert response.headers["X-Correlation-ID"]
+
+
+@pytest.mark.parametrize("body,status", [
+    ({"answer": INSUFFICIENT_ANSWER, "citations": [], "confidence": "insufficient"}, 200),
+    ({"answer": "Unsupported advice", "citations": [], "confidence": "high"}, 502),
+    ({"answer": "A guess", "citations": [], "confidence": "insufficient"}, 502),
+])
+def test_advice_validates_upstream_results(body, status):
+    class Client:
+        def advice(self, question):
+            return body
+
+    response = create_app(rag_client=Client(), settings={"RAG_ENABLED": True}).test_client().post("/api/itinerary-advice", json={"question": "Budget?"})
+    assert response.status_code == status
 
 
 class FakeDatabase:
@@ -41,6 +167,30 @@ class FakeGenerator:
 
 def valid_trip():
     return {"user": "Alex", "destination": "Osaka", "startDate": "2026-10-10", "endDate": "2026-10-11", "budget": 1500, "interests": "food"}
+
+
+@pytest.mark.parametrize("path,payload", [
+    ("/api/trips", valid_trip()),
+    ("/api/trips/11/regenerate", None),
+    ("/api/stops/7/regenerate", None),
+])
+def test_disabled_ai_never_calls_generator(path, payload):
+    class ForbiddenGenerator:
+        def generate(self, *args):
+            raise AssertionError("Disabled AI must not call the generator")
+
+    client = create_app(FakeDatabase(), ForbiddenGenerator(), settings={"AI_ENABLED": False}).test_client()
+    response = client.post(path, json=payload)
+    assert response.status_code in (200, 201)
+    assert response.get_json()["generationMode"] == "fallback"
+    assert client.get("/api/capabilities").get_json() == {
+        "aiEnabled": False, "mcpEnabled": False, "ragEnabled": False,
+    }
+
+
+def test_invalid_mode_configuration_fails_at_startup():
+    with pytest.raises(ValueError, match="MCP_ENABLED"):
+        create_app(settings={"MCP_ENABLED": "yes"})
 
 
 def test_create_runs_orchestration_and_persists_stops():
