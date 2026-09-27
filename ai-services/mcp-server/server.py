@@ -11,6 +11,7 @@ Run directly: ``python server.py``
 import os
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.transport_security import TransportSecuritySettings
 
 from tools import register_all
 
@@ -22,4 +23,12 @@ mcp = MCPServer("asd-shared-mcp-server")
 register_all(mcp)
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http", host=HOST, port=PORT)
+    mcp.run(
+        transport="streamable-http", host=HOST, port=PORT,
+        max_request_body_size=8192, max_sessions=64, session_idle_timeout=30,
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=True,
+            allowed_hosts=["127.0.0.1:*", "localhost:*", "host.docker.internal:*", f"{HOST}:*"],
+            allowed_origins=["http://127.0.0.1:*", "http://localhost:*"],
+        ),
+    )
