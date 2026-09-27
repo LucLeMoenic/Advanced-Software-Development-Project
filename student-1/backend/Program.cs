@@ -11,12 +11,14 @@ var liteApiUrl = builder.Configuration["Services:LiteApiUrl"]
 var liteApiKey = builder.Configuration["LITEAPI_KEY"] ?? string.Empty;
 var applicationModel = builder.Configuration["APPLICATION_MODEL"]
     ?? "llama3.2:3b";
+var assistantModes = AssistantModes.FromConfiguration(builder.Configuration);
 var rankingPrompt = File.ReadAllText(Path.Combine(
     builder.Environment.ContentRootPath,
     "Prompts",
     "accommodation-ranking-v1.txt"));
 
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton(assistantModes);
 builder.Services.AddSingleton(new OllamaRankingSettings(applicationModel, rankingPrompt));
 builder.Services.AddSingleton(new LiteApiSettings(liteApiKey));
 builder.Services
@@ -49,6 +51,11 @@ app.MapGet("/", () => Results.Ok(new
         database = databaseUrl,
         ollama = ollamaUrl,
         accommodationProvider = liteApiUrl
+    },
+    modes = new
+    {
+        lookup = assistantModes.LookupEnabled,
+        guide = assistantModes.GuideEnabled
     }
 }));
 

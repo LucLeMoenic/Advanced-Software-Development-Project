@@ -7,6 +7,8 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
+# On Windows, npm may resolve to an npm.ps1 shim that mis-parses splatted arguments.
+$npm = if ($IsWindows) { "npm.cmd" } else { "npm" }
 
 function Invoke-Checked {
     param([string]$FilePath, [string[]]$Arguments, [string]$FailureMessage)
@@ -15,9 +17,9 @@ function Invoke-Checked {
 }
 
 if ($Area -in @("Feature", "All")) {
-    Invoke-Checked "npm" @("ci", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend dependency installation failed."
-    Invoke-Checked "npm" @("test", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend tests failed."
-    Invoke-Checked "npm" @("run", "build", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend build failed."
+    Invoke-Checked $npm @("ci", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend dependency installation failed."
+    Invoke-Checked $npm @("test", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend tests failed."
+    Invoke-Checked $npm @("run", "build", "--prefix", "$repositoryRoot/student-1/frontend") "Student 1 frontend build failed."
     Invoke-Checked "dotnet" @("restore", "$repositoryRoot/student-1/backend/tests/Backend.Tests.csproj") "Student 1 backend restore failed."
     Invoke-Checked "dotnet" @("test", "$repositoryRoot/student-1/backend/tests/Backend.Tests.csproj", "--configuration", "Release", "--no-restore") "Student 1 backend tests failed."
     Invoke-Checked "dotnet" @("restore", "$repositoryRoot/student-1/database/tests/Database.Tests.csproj") "Student 1 database restore failed."
