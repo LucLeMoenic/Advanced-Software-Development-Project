@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Accommodation.Backend.Api;
 
 public static class AssistantTools
@@ -36,3 +38,15 @@ public sealed record LookupResponse(
     string Tool,
     IReadOnlyDictionary<string, object> Arguments,
     object Result);
+
+public sealed record GuideCitation(
+    string Source,
+    [property: JsonPropertyName("chunk_id")] string ChunkId,
+    string Snippet,
+    double Score);
+
+public sealed record GuideResponse(
+    string Mode,
+    string Answer,
+    IReadOnlyList<GuideCitation> Citations,
+    string Confidence);

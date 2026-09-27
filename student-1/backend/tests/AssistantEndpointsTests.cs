@@ -87,7 +87,7 @@ public sealed class AssistantEndpointsTests
         { """["lookup","Tokyo"]""", "body" },
         { """{"mode":"lookup","question":""", "body" },
         { """{"mode":"chat","question":"Tokyo"}""", "mode" },
-        { """{"mode":"guide","question":"Tokyo"}""", "mode" },
+        { """{"mode":"Guide","question":"Tokyo"}""", "mode" },
         { """{"mode":1,"question":"Tokyo"}""", "mode" },
         { """{"mode":"lookup","question":"   "}""", "question" },
         { """{"mode":"lookup","question":7}""", "question" },
