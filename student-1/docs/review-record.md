@@ -1,5 +1,20 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 5 Self-Review (Loop Fixture and CI)
+
+**Scope:** `ServiceValidation.cs`, `AgenticLoopApplication.cs`, loop README and
+tests, `.github/workflows/student-1.yml`, `scripts/test/student-1.ps1`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The documented `validate-mcp` example used a context file over the loop's 16000-byte limit, so the command failed. | Example and test now use `tools/accommodation.py` and `assistant-lookup-v1.txt`. |
+| Required | The shared loop must stay backward compatible. | `feature` defaults to `student-2` in the CLI, `CaptureAsync` and `IsValid`; all original tests pass unmodified. |
+| Required | CI must keep the integration but disable it. | Job-level flags set to `"false"`; only fakes and offline pytest run; no model, MCP or RAG process starts. |
+| Accepted | The Python step installs the pinned `mcp-server/requirements.txt` in CI, the same as Student 2's runner. | Kept. |
+| Open | A live pending loop record needs native Ollama for the implementer and reviewer models. | Recorded; rerun after installing Ollama. |
+
+**Verdict:** accepted; the Student 2 loop behaviour is unchanged.
+
 ## 2026-09-27 - Release 1 Chunk 4 Self-Review (Assistant Panel Lookup Mode)
 
 **Scope:** `AssistantPanel.vue`, `AssistantPanel.test.ts`, `App.vue`, `api.ts`, `style.css`.
