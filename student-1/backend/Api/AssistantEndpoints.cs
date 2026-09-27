@@ -7,7 +7,7 @@ namespace Accommodation.Backend.Api;
 public static class AssistantEndpoints
 {
     private const int MaximumBodyBytes = 8192;
-    private static readonly HashSet<string> Modes = ["lookup"];
+    private static readonly HashSet<string> Modes = ["lookup", "guide"];
 
     public static IEndpointRouteBuilder MapAssistantEndpoints(this IEndpointRouteBuilder endpoints)
     {
@@ -20,6 +20,7 @@ public static class AssistantEndpoints
         AssistantModes modes,
         ILookupArgumentExtractor extractor,
         IMcpToolClient mcp,
+        IRagClient rag,
         ILoggerFactory loggerFactory)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -31,19 +32,27 @@ public static class AssistantEndpoints
             return error!;
         }
 
-        if (!modes.LookupEnabled)
+        var guide = request.Mode == "guide";
+        if (guide ? !modes.GuideEnabled : !modes.LookupEnabled)
         {
             Log(logger, context, request.Mode, "flags", "mode_disabled", stopwatch);
             return SearchEndpoints.Error(
                 context,
                 StatusCodes.Status503ServiceUnavailable,
                 "mode_disabled",
-                "Catalogue lookup is disabled.");
+                guide ? "Destination guide is disabled." : "Catalogue lookup is disabled.");
         }
 
-        var stage = "extraction";
+        var stage = guide ? "retrieval" : "extraction";
         try
         {
+            if (guide)
+            {
+                var answer = GuideResponseValidator.Validate(await rag.AskAsync(request.Question, context.RequestAborted));
+                Log(logger, context, request.Mode, answer.Confidence, "success", stopwatch);
+                return Results.Ok(answer);
+            }
+
             var call = await extractor.ExtractAsync(request.Question, context.RequestAborted);
             stage = "tool_call";
             var body = await mcp.CallAsync(call, context.RequestAborted);
@@ -138,7 +147,7 @@ public static class AssistantEndpoints
             var mode = root.GetProperty("mode");
             if (mode.ValueKind != JsonValueKind.String || !Modes.Contains(mode.GetString()!))
             {
-                return Invalid(context, "mode", "Must be lookup.");
+                return Invalid(context, "mode", "Must be lookup or guide.");
             }
 
             var question = root.GetProperty("question");

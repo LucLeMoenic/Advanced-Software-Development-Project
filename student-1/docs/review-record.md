@@ -1,5 +1,20 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 7 Self-Review (Backend Destination Guide)
+
+**Scope:** `RagClient.cs`, `GuideResponseValidator.cs`, `AssistantContracts.cs`,
+`AssistantEndpoints.cs`, `Program.cs`, `GuideModeTests.cs`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | A .NET `$` anchor accepts a trailing newline, so `tokyo#3\n` would pass as a chunk ID. | Anchored with `\z`; test added. |
+| Required | The RAG envelope must reach the loop validator unchanged at the root. | `GuideResponse` serialises `answer`, `citations[].chunk_id`, `confidence` at the root plus `mode`; a test asserts the wire names. |
+| Required | Duplicate or extra JSON fields must not be accepted. | Exact field-count checks for the envelope and each citation; tests cover extra `url` and `extra` fields. |
+| Accepted | `HttpClient.Timeout` is infinite and the client enforces a 30 s deadline, so the deadline is tested with a 200 ms setting and the production value is asserted separately. | Kept. |
+| Accepted | Guide answers are returned to the UI only; nothing flows into ranking or persistence. | Matches the HLD scope. |
+
+**Verdict:** accepted; the live grounded-answer gate stays open until Ollama is available.
+
 ## 2026-09-27 - Release 1 Chunk 6 Self-Review (Destination Knowledge Base)
 
 **Scope:** `ai-services/rag-server/knowledge/student-1/*.md`,
