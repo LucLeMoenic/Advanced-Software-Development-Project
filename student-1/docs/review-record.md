@@ -1,5 +1,20 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 1 Self-Review (Flags and Connectivity)
+
+**Scope:** `AssistantModes.cs`, `Program.cs`, `AssistantModesTests.cs`,
+`docker-compose.yml` (`student1-backend`), `.env.example` and
+`scripts/test/student-1.ps1`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The first compose edit replaced a text block that also appears in `student4-backend`, which silently changed another student's service. | Reverted the Student 4 hunk; the diff now touches only `student1-backend`. |
+| Required | Flag parsing must match Student 2 (exact `true`/`false`). | `"True"`, `"yes"`, `"1"` and `""` all stop startup; tests cover each. |
+| Accepted | `GET /` now reports `modes`. | Useful live evidence of the flags and additive to the existing response; existing tests still pass. |
+| Open | Container-to-host connectivity and native Ollama are unverified. Docker Desktop crashes on a stale `sailor-ingest.sock`, and Ollama is not installed. | Recorded as known limitations. Later live checks use natively run backend and database processes, labelled as such. Rerun `docker compose exec student1-backend curl http://host.docker.internal:5500/health` after a reboot. |
+
+**Verdict:** accepted with open environment limitations. Release 0 suites are unchanged and passing.
+
 ## 2026-09-27 - Release 1 Chunk 0 HLD Self-Review
 
 **Scope:** `release-1-mcp-hld.md`, `release-1-rag-hld.md`, and the Release 1
