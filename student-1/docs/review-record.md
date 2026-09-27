@@ -1,5 +1,22 @@
 # Review Record
 
+## 2026-09-27 - Release 1 Chunk 0 HLD Self-Review
+
+**Scope:** `release-1-mcp-hld.md`, `release-1-rag-hld.md`, and the Release 1
+updates to `feature-plan.md`, `requirements.md` and `context.md`.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The first draft linked `release-1-runbook.md`, which does not exist until chunk 9, so the chunk 0 "links resolve" gate would fail. | Replaced the link with plain text naming the future file. |
+| Required | `context.md` still described Ollama and the agentic loop as Compose services, which contradicts the Release 1 brief and the current `docker-compose.yml`. | Corrected the architecture sketch, the communication rule and the loop description, and marked the Release 0 Compose Ollama entry as superseded. |
+| Accepted | Plain TF-IDF gives unknown words zero weight, so an unsupported-city question can still match another city's generic paragraph. | Recorded as a RAG risk with a mitigation (city-prefixed paragraphs) and measurement in chunk 6. The shared thresholds are unchanged. |
+| Accepted | The destination-in-question check will reject abbreviations such as "NYC". | Kept: it prevents invented destinations, and the rephrase response gives an example. |
+
+**Evidence:** a local link and anchor check passes. The design covers only the
+§3 scope: no chat history, new tables, write tools or Release 2 work.
+
+**Verdict:** accepted for chunk 0.
+
 ## 2026-09-27 - Calendar-Dependent Frontend CI Failure
 
 **Evidence:** [Student 1 CI run 36289255755](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36289255755)
