@@ -113,16 +113,7 @@ function toDateInputValue(date: Date) {
   return `${year}-${month}-${day}`
 }
 
-async function prefillDestination(city: string) {
-  form.destination = city
-  clientErrors.value = Object.fromEntries(
-    Object.entries(clientErrors.value).filter(([field]) => field !== 'destination'),
-  )
-  await nextTick()
-  document.getElementById('destination')?.focus()
-}
-
-defineExpose({ focusFirstInvalid, prefillDestination })
+defineExpose({ focusFirstInvalid })
 </script>
 
 <template>

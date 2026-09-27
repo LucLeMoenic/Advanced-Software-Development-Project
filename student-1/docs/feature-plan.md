@@ -44,7 +44,7 @@ Boundary rules:
 
 ## Implementation Sequence
 
-Complete each chunk before starting the next. Release 0 only: Amadeus, authentication, cloud deployment, MCP, RAG, queues, caches and additional services were excluded from Chunks 1-8. Release 1 adds MCP and RAG under the [Release 1 section](#release-1---mcp-and-rag).
+Complete each chunk before starting the next. Do not add Amadeus, authentication, cloud deployment, MCP, RAG, queues, caches, or additional services during Release 0.
 
 ### Chunk 1 - Standard Folder and Runnable Services
 
@@ -297,37 +297,3 @@ The .NET agentic-loop code is implemented. Complete this setup before the final 
 8. Include the terminal execution in the group video and reference the prompts, review record, and genuine result in the technical report.
 
 This setup is demonstration evidence. It does not block writing the Phase 2 application code, but it must be completed before submission.
-
-## Release 1 - MCP and RAG
-
-Release 1 adds one stateless, single-question **Trip assistant** above the
-search form. It has two explicit modes, with no automatic routing between them:
-
-- **Catalogue lookup** (MCP): the backend extracts validated arguments with the
-  application model, then calls a read-only `accommodation.*` tool on the shared
-  MCP server. Design: [release-1-mcp-hld.md](release-1-mcp-hld.md).
-- **Destination guide** (RAG): the backend asks the shared RAG server about
-  Student 1's curated destination guides and shows a cited answer with
-  confidence, or an insufficient-context state. Design:
-  [release-1-rag-hld.md](release-1-rag-hld.md).
-
-The work is delivered as ten stacked branches, merged strictly in order with
-merge commits:
-
-| # | Branch | Done when |
-|---|---|---|
-| 0 | `BCP/R1_Chunk_0-MCP_And_RAG_HLDs` | Docs only; links resolve |
-| 1 | `BCP/R1_MCP_Chunk_1-Native_Host_Connectivity_And_Flags` | Existing suites pass; container-to-host connectivity verified or recorded as a limitation |
-| 2 | `BCP/R1_MCP_Chunk_2-Accommodation_MCP_Tools` | MCP suite passes; live tool call captured |
-| 3 | `BCP/R1_MCP_Chunk_3-Backend_Catalogue_Lookup` | Backend suite passes, including failure cases; live `curl` through the container |
-| 4 | `BCP/R1_MCP_Chunk_4-Assistant_Panel_Lookup_Mode` | Frontend tests and strict build pass; panel works in the integrated app |
-| 5 | `BCP/R1_MCP_Chunk_5-Agentic_Loop_And_CI_Validation` | Loop tests pass; local CI script passes with the modes disabled; live `validate-mcp` captured |
-| 6 | `BCP/R1_RAG_Chunk_1-Destination_Knowledge_Base` | RAG suite passes; relevant and unsupported questions behave as expected |
-| 7 | `BCP/R1_RAG_Chunk_2-Backend_Destination_Guide` | Backend suite passes; live grounded and insufficient answers through the container |
-| 8 | `BCP/R1_RAG_Chunk_3-Assistant_Panel_Guide_Mode` | Frontend tests and build pass; demo questions work in the integrated app |
-| 9 | `BCP/R1_RAG_Chunk_4-Agentic_Loop_And_CI_Validation` | All Student 1, MCP, RAG and loop suites and `docker compose config` pass; live `validate-rag` captured; runbook added |
-
-Release 1 constraints: no chat history, no new tables or migrations, no MCP
-tools that write data, RAG answers never feed the ranking prompt, no Release 2
-multi-agent work, and no knowledge for cities outside the catalogue. Release 0
-search, ranking, history CRUD and CI must keep passing after every chunk.

@@ -47,8 +47,6 @@ services:
     environment:
       Services__DatabaseUrl: http://student1-database:8080
       Services__OllamaUrl: http://host.docker.internal:11434
-      MCP_ENABLED: ${MCP_ENABLED:-false}
-      RAG_ENABLED: ${RAG_ENABLED:-false}
       MCP_SERVER_URL: http://host.docker.internal:5400/mcp
       RAG_SERVER_URL: http://host.docker.internal:5500
       Services__LiteApiUrl: https://api.liteapi.travel

@@ -47,11 +47,9 @@ Browser
   -> ASP.NET Core accommodation backend/API
        -> ASP.NET Core database API -> EF Core -> SQLite volume
        -> LiteAPI sandbox -> validated accommodation imports through database API
-       -> native host Ollama (host.docker.internal:11434) -> one configured accommodation-ranking model
-       -> native shared MCP server (Release 1 catalogue lookup)
-       -> native shared RAG server (Release 1 destination guide)
+       -> shared Ollama -> one configured accommodation-ranking model
 
-Shared native .NET agentic-loop CLI (not a Compose service)
+Shared .NET agentic-loop service in Docker Compose
   -> shared local Ollama implementer model
   -> shared local Ollama reviewer model
   -> human validation and apply/reject decision
@@ -62,7 +60,7 @@ Boundary rules:
 - The frontend calls only the backend/API.
 - The backend validates input, retrieves cached candidates, optionally imports a previously unseen destination from LiteAPI through the database API, ranks deterministically, calls the one application model only when requested, validates AI output, applies fallback after AI failure, and persists through the database API.
 - Only the database service opens SQLite.
-- Containerised services communicate synchronously over HTTP using Compose DNS names. Native host services (Ollama, MCP, RAG) are reached through `host.docker.internal`.
+- Services communicate synchronously over HTTP using Compose DNS names.
 - Configuration and secrets come from environment variables.
 - The shared agentic-loop service receives only allow-listed context, never writes/commits/pushes automatically, and records model tags, prompt versions, outputs, pre/post validation, and human decisions.
 - LiteAPI is a backend-only demonstration data source. Its key must remain in ignored local environment configuration, and imported prices are cached catalogue data rather than production availability guarantees.
@@ -88,7 +86,7 @@ An empty candidate list skips Ollama and returns a clear empty state. Reopening 
 
 This loop reviews implementation, database/data design, service boundaries, Docker/Compose, CI, and requirement traceability. It is not the application's recommendation request.
 
-The loop is shared team infrastructure under `ai-services/agentic-loop`. Since Release 1 it runs as a native .NET CLI (`dotnet run --project ai-services/agentic-loop -- <mode>`), not as a Compose service, and must be used during implementation rather than introduced only for the final demonstration.
+The loop is shared team infrastructure under `ai-services/agentic-loop`, starts with the integrated Compose application, and must be used during implementation rather than introduced only for the final demonstration.
 
 ## Data Summary
 
@@ -171,18 +169,11 @@ As of 2026-08-31:
 - Live application-model execution is now confirmed: after removing the local WSL CPU cap, replacing generic Ollama JSON mode with an exact ranking-array schema, and compacting the unchanged allow-listed ranking input, cold Sydney and Tokyo searches returned five `ai`-ranked results through the frontend proxy within the 12-second model timeout. Ranking reasons now use distinct 8-18 word sentences that explain why supplied accommodation facts benefit the traveller rather than merely restating an amenity.
 - Opt-in runtime behavior is confirmed through the rebuilt frontend proxy: an unchecked-equivalent Sydney request returned six `programmatic` results with no notice, while the same request with `useAi: true` returned six `ai` results with sentence-form reasons and no fallback notice.
 - On compatible Windows/NVIDIA machines, `scripts/deploy/start-student1.ps1` automatically includes `docker-compose.gpu.yml`; the current RTX 2000 Ada runtime offloads all model layers and reduced the previously failing Sydney search to 2.5 seconds. The main Compose file remains CPU-compatible.
-- Superseded by Release 1: Release 0 root Compose had one long-running `ollama` service and one short-lived shared `ollama-model-setup` job. The setup job installs missing shared tags and preloads `APPLICATION_MODEL` for 30 minutes so the backend's 12-second request timeout is not consumed by a cold model load. Student 1 and the agentic loop both use `http://ollama:11434`; future team AI consumers use the same service and add required tags to `OLLAMA_MODELS`.
+- Root Compose now has one long-running `ollama` service and one short-lived shared `ollama-model-setup` job. The setup job installs missing shared tags and preloads `APPLICATION_MODEL` for 30 minutes so the backend's 12-second request timeout is not consumed by a cold model load. Student 1 and the agentic loop both use `http://ollama:11434`; future team AI consumers use the same service and add required tags to `OLLAMA_MODELS`.
 - Diagrams, manual frontend viewport checks, a GitHub Actions run, and final execution evidence remain to be produced.
-
-### Release 1 (from 2026-09-27)
-
-- Ollama, the shared MCP server, the shared RAG server and the shared agentic loop run natively on the host. None of them is a Compose service. `student1-backend` reaches them through `host.docker.internal`, which Compose maps to `${LOCAL_AI_HOST:-host-gateway}`.
-- Release 1 adds a stateless, single-question Trip assistant with two explicit modes: Catalogue lookup (MCP) and Destination guide (RAG). Designs: [release-1-mcp-hld.md](release-1-mcp-hld.md) and [release-1-rag-hld.md](release-1-rag-hld.md).
-- Start, enable, demo and known limitations: [release-1-runbook.md](release-1-runbook.md).
-- Delivery uses ten stacked `BCP/R1_*` branches, listed in the [feature plan](feature-plan.md#release-1---mcp-and-rag). Progress and evidence are recorded per chunk in `prompt-log.md` and `review-record.md`.
 
 The browser and backend implementations now cover the traveller search and history workflow. Integrated runtime and manual viewport evidence are still required before the frontend chunk is complete.
 
 ## Immediate Next Gate
 
-Release 1: implement the stacked chunks in the order given in the [feature plan](feature-plan.md#release-1---mcp-and-rag). Release 0 evidence gate (still open): run the Chunk 6 browser checklist against the populated Compose application and capture ranking, history, and responsive screenshots. Preserve one forced-fallback example alongside the confirmed live AI success.
+Run the Chunk 6 browser checklist against the populated Compose application and capture ranking, history, and responsive screenshots. Preserve one forced-fallback example alongside the confirmed live AI success.

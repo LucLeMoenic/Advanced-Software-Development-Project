@@ -430,7 +430,7 @@ public static class SearchEndpoints
             "The accommodation provider is unavailable.");
     }
 
-    internal static IResult Error(
+    private static IResult Error(
         HttpContext context,
         int statusCode,
         string code,

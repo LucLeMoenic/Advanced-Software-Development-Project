@@ -1,8 +1,8 @@
 # Shared RAG Server (Release 1)
 
 One native shared service retrieves feature-isolated Markdown knowledge and
-uses native Ollama for constrained grounded generation. Student 1, Student 2 and
-Student 3 knowledge is present. Automated model-double tests pass; native model generation
+uses native Ollama for constrained grounded generation. Student 2 and Student 3
+knowledge is present. Automated model-double tests pass; native model generation
 and cross-feature grounding evaluation remain release gates, not completed evidence.
 
 ## Contract
@@ -85,13 +85,6 @@ alone do not pass that gate. Retain the output and human decisions with the
 commit/model identity, and evaluate a separately authored, untouched hold-out set
 before accepting or recalibrating the shared thresholds. Normal CI skips these
 nine live cases explicitly and never downloads a model.
-
-Student 1's ten destination guides (`knowledge/student-1/`, one per catalogue city)
-keep review metadata in the heading paragraph so it is never indexed, and start
-every paragraph with `<City> <topic>:`. `tests/test_student1_retrieval.py` checks
-city-accurate retrieval offline. Unsupported cities that share generic words
-still retrieve at low confidence; see the
-[Student 1 RAG HLD](../../student-1/docs/release-1-rag-hld.md) calibration note.
 
 ## Adding a feature's knowledge base
 

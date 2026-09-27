@@ -181,15 +181,11 @@ public static partial class AgenticLoopApplication
         {
             using var handler = new HttpClientHandler { AllowAutoRedirect = false };
             using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
-            var feature = arguments.SingleOrDefault("feature") ?? "student-2";
-            if (feature == "student-1" && arguments.SingleOrDefault("trip-id") is not null)
-                throw new LoopException("--trip-id applies only to --feature student-2.");
             var evidence = await ServiceValidation.CaptureAsync(
                 validationClient, validationMode,
-                arguments.SingleOrDefault("backend-url") ?? ServiceValidation.DefaultBackendUrl(feature),
+                arguments.SingleOrDefault("backend-url") ?? "http://127.0.0.1:5202",
                 arguments.OptionalPositiveInt("trip-id", 1),
-                arguments.SingleOrDefault("question") ?? ServiceValidation.DefaultQuestion(feature, validationMode),
-                feature);
+                arguments.SingleOrDefault("question") ?? "Is budget the total for the trip?");
             preTestCommand = evidence.Command;
             preTestResult = evidence.Result;
         }
