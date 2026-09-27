@@ -4,6 +4,7 @@ Do not claim a commit, pull request, review, attendance event, or demonstration 
 
 | Date | Contribution | Files/scope | Validation or review evidence | Commit/PR |
 |---|---|---|---|---|
+| 2026-09-27 | Implemented Release 1 itinerary summary/advice paths, shared MCP/RAG foundation, native loop validation modes, mode flags, CI/deployment changes and regression coverage with AI assistance. | Student 2, shared AI services, Compose, gateway DNS and associated workflows/docs | Backend 34, frontend 9, MCP 24, RAG 21, loop 36 tests pass; Linux database 5. Native SDK summary and RAG abstention pass; integrated UI loads with ten trips. Native AI connectivity/model and report gates remain open; see runbook. | Uncommitted work on main; no PR or remote CI evidence claimed |
 | 2026-09-01 | Added the SQLite database API, seed data, CRUD, cascade delete, atomic itinerary writes, and regression tests. | `student-2/database/` | Database tests pass 3/3 | `cb55d8f` |
 | 2026-09-01 | Added backend validation, database API client, constrained Ollama generation, deterministic fallback, CRUD orchestration, and tests. | `student-2/backend/` | Backend tests pass 6/6 | `5e10e37` |
 | 2026-09-01 | Built the shared-style itinerary interface, saved trips, stop controls, local assets, and jsdom tests. | `student-2/frontend/` | Frontend tests pass 2/2 | `2abd328` |
@@ -14,7 +15,7 @@ Do not claim a commit, pull request, review, attendance event, or demonstration 
 | 2026-09-02 | Reconciled Release 0 evidence documentation. | Student 2 documentation | Documentation review completed | `4294cd9` |
 | 2026-09-02 | Made stop ownership immutable, preserved stop ordering, cleared stale progress errors, constrained Ollama output, and added a Compose smoke stage. | Student 2 frontend/backend/database, tests, and `student-2.yml` | Frontend 6/6, backend 10/10, database 5/5; live AI and Compose smoke checks pass locally | Pending commit |
 
-Branch: `feature/student2-release0-improvements`.
+Historical Release 0 branch: `feature/student2-release0-improvements`. Release 1 working changes are currently uncommitted on `main`.
 
 ## Human Evidence To Add
 

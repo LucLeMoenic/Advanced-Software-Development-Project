@@ -31,6 +31,83 @@ beforeEach(() => {
 });
 
 describe("Itinerary Planner", () => {
+  test("ignores a pending summary after a successful 204 stop deletion", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900,
+      stops: [{ id: 1, tripId: 12, day: 1, activity: "Walk", notes: "", sortOrder: 0 }] };
+    let resolveSummary;
+    let deleted = false;
+    vi.stubGlobal("fetch", vi.fn((url, options) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/mcp-summary")) return new Promise((resolve) => { resolveSummary = resolve; });
+      if (options?.method === "DELETE") { deleted = true; return jsonResponse(null, 204); }
+      if (url.endsWith("/trips/12")) return deleted ? new Promise(() => {}) : jsonResponse(trip);
+      return jsonResponse([trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    document.querySelector("[data-remove-stop='1']").click();
+    document.querySelector("#feedback-confirm").click();
+    await vi.waitFor(() => expect(deleted).toBe(true));
+    resolveSummary(await jsonResponse({ summary: { stopCount: 1, dayCount: 3, plannedDayCount: 1, unplannedDays: [2, 3], dailyBudgetAllocation: 300 } }));
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    expect(document.querySelector("#mcp-result").hidden).toBe(true);
+  });
+
+  test("locks the pending advice question and restores controls after an error", async () => {
+    let resolveAdvice;
+    const fetchMock = vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: false, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) return new Promise((resolve) => { resolveAdvice = resolve; });
+      return jsonResponse([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("#advice-submit").disabled).toBe(false));
+    document.querySelector("#advice-question").value = "Budget?";
+    document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    expect(document.querySelector("#advice-question").disabled).toBe(true);
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/itinerary-advice"))).toHaveLength(1);
+    resolveAdvice(await jsonResponse({ error: { message: "The local model is unavailable." } }, 503));
+    await vi.waitFor(() => expect(document.querySelector("#advice-question").disabled).toBe(false));
+    expect(document.querySelector("#advice-status").textContent).toContain("unavailable");
+    expect(document.querySelector("#advice-result").hidden).toBe(true);
+    expect(document.querySelector("#mcp-summary").disabled).toBe(true);
+  });
+
+  test("shows MCP summary and safely renders cited RAG answers and insufficient context", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    let insufficient = false;
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/mcp-summary")) return jsonResponse({ summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 } });
+      if (url.endsWith("/itinerary-advice")) return jsonResponse(insufficient
+        ? { answer: "Not enough information in the knowledge base to answer this.", confidence: "insufficient", citations: [] }
+        : { answer: "Budget is total. [budget#1]", confidence: "high", citations: [{ source: "<img src=x onerror=alert(1)>", chunk_id: "budget#1", snippet: "Trip budget" }] });
+      if (url.endsWith("/trips/12")) return jsonResponse(trip);
+      return jsonResponse([trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-result").hidden).toBe(false));
+    expect(document.querySelector("#mcp-result").textContent).toContain("1, 2, 3");
+    document.querySelector("#advice-question").value = "Budget?";
+    document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
+    expect(document.querySelector("#advice-confidence").textContent).toBe("Confidence: high");
+    expect(document.querySelector("#advice-citations img")).toBeNull();
+    insufficient = true;
+    document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector("#advice-status").textContent).toBe("Insufficient context."));
+    expect(document.querySelector("#advice-citations").textContent).toBe("");
+  });
+
   test("loads saved trips through the same-origin backend route", async () => {
     const fetchMock = vi.fn(() => jsonResponse([
       { id: 4, user: "Alex", destination: "Kyoto", startDate: "2026-10-10", endDate: "2026-10-12" },

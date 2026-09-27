@@ -1,5 +1,75 @@
 # Review Record
 
+## 2026-09-27 - Calendar-Dependent Frontend CI Failure
+
+**Evidence:** [Student 1 CI run 36289255755](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36289255755)
+failed in Test Student 1 feature. Four App test failures show the form rejecting
+September 10 check-in as before the current date, so search requests never ran.
+These fixed fixtures were not changed by the Release 1 implementation. The shared
+loop job and the latest Student 2, 3, 4, 5 and Integrated Compose workflows passed.
+
+**Correction:** [App.test.ts](../frontend/src/App.test.ts) now freezes Date to
+September 1 for each test, without faking asynchronous timers, then restores the
+clock after each test. A separate case advances the clock past the fixture's
+check-in and asserts field feedback with no search request. The required
+current-date application validation is unchanged.
+
+**Verification:** Frontend 9/9 pass. The exact feature runner completes locally,
+including the production build and backend/database tests (database 20/20).
+Editor diagnostics are clear. No commit/push or remote rerun is claimed for this
+correction; the failed run remains historical evidence until the fix is pushed.
+
+## 2026-09-27 - Student 2 Release 1 Defect-Fix Follow-Up
+
+Four reproducible defects are corrected: native loop workspace/example context,
+strict itinerary top-level MCP arguments, incremental Python RAG response limits,
+and malformed database JSON error mapping. Fresh focused suites pass 130 tests;
+nine new live grounding cases are explicitly skipped. Native MCP discovery,
+extra-key rejection and persisted summary/session cleanup pass. Both loop CLI
+modes now reach missing Ollama, not a context-loading error.
+
+Real-corpus Student 2/3 and adversarial fixtures plus an opt-in source-review
+workflow improve coverage but do not prove actual grounding. VM-to-host networking,
+native model setup, generated answers/live-loop outputs and human hold-out/source
+review remain open. No firewall changes, data mutations, commits or pushes were
+performed. Details: [Student 2 resolution record](../../student-2/docs/review-record.md).
+
+## 2026-09-27 - Student 2 Release 1 Documentation-Conformance Review
+
+**Scope:** User-requested evaluation of the current implementation against the Student 2 Release 1 design/runbook, feature requirements and governing brief. Full findings and coverage are in the [Student 2 review record](../../student-2/docs/review-record.md#L3).
+
+**Findings:** Both fresh integrated MCP/RAG requests return 504. The documented loop command first fails context-path resolution and, with explicit workspace, rejects its oversized context file. Installed SDK tool invocation accepts an extra top-level argument and still reads the database. RAG byte checks run after buffering; a 102400-byte test stream was fully consumed before rejection. Shared calibration and genuine grounding evaluation remain incomplete. Requests JSON-decoding errors are incorrectly classified as unavailable rather than invalid dependency responses.
+
+**Verification:** Fresh backend 34, MCP 24, RAG 21, frontend 9 and loop 36 tests pass (124 total). Database tests were not rerun. Findings distinguish real gateway/CLI observations from mocked SDK/HTTP probes and missing acceptance evidence. The ignored extra URL was not followed. No runtime fixes, model installation, firewall changes, data writes, commits or pushes were made.
+
+**Decision:** Implementation broadly follows the component design but is not acceptance-ready. Correct the reproducible contract/runbook defects and complete private-host/model integration plus real source-support, loop and release evidence gates before claiming completion.
+
+## 2026-09-27 - Student 2 Release 1 Implementation Checkpoint
+
+**Scope:** Implementation-local review and validation of Student 2's summary/advice paths, shared itinerary tool, RAG generation validation, native deployment and loop modes. Not a complete review of every student feature.
+
+**Resolved findings:** The backend image omitted its new client module; malformed non-object model responses and zero-duration summaries could bypass controlled error handling; successful 204 mutations did not invalidate pending summaries; CSS grid styling overrode hidden result regions; shared-loop CI still referenced a removed Compose service; gateway DNS assumed Docker's resolver on a different engine. Focused tests, builds or browser checks now cover these fixes. The gateway uses the official nginx local-resolver template mechanism.
+
+**Verification:** Backend 34, frontend 9, MCP 24, RAG 21 and shared loop 36 tests passed. Database 5 tests passed on Linux; its existing Windows temporary-file locking issue remains. Native loop publish, nginx syntax, Compose topology, PowerShell parsing and documentation links passed. Integrated containers are healthy and the gateway returns ten saved trips. Integrated 320/768/1280px checks had no measured horizontal overflow or JavaScript page exceptions. Native SDK summary and native RAG insufficient-context requests succeeded.
+
+**Open gates:** Container-to-native AI calls still fail on this VM-backed Windows setup; native Ollama was not found in its standard installation location. No genuine generated answer or completed live two-model validation mode is claimed. Cross-feature retrieval calibration, adversarial source-support evaluation, protocol failure/cleanup coverage and full five-feature behavior remain incomplete. Citation shape/ID checks do not prove entailment; model HTTP size checks occur after buffering. Remote CI, report/showcase and human finalisation evidence remain pending. No changes were committed or pushed.
+
+## 2026-09-27 - Student 2 Release 1 Design Assessment
+
+**Scope:** Source-grounded [Student 2 implementation design](../../student-2/docs/release-1-design.md), recorded here under the workspace review-log rule. Checked the existing backend generator/factory, frontend entry points, MCP parameter/registry convention, RAG retrieval, and test runner to select compatible extension points.
+
+**Decision:** Proposed a read-only itinerary summary tool and separate grounded-advice path with no database migration. Retain shared services and existing RAG response fields; add generated claim/source validation, explicit mode flags, bounded clients, UI stale-response protection, and focused acceptance tests. Citation ID validation is explicitly not proof of semantic grounding.
+
+**Status:** Design only. Shared contracts/owners, SDK compatibility, confidence thresholds, and container-to-host reachability remain verification gates. Documentation validation passed for 45 local links, three JSON examples, consistent tables, and balanced fences. No runtime code was changed and no application tests or live-service validation were executed.
+
+## 2026-09-27 - Student 2 Release 1 Planning Assessment
+
+**Scope:** Source/document baseline for the [Student 2 Release 1 plan](../../student-2/docs/release-1-plan.md), recorded here under the workspace review-log rule. This was planning, not a complete code review or runtime assessment.
+
+**Findings:** Student 2 needs itinerary MCP/RAG endpoints and UI integration. The shared MCP registry currently contains Student 3 tools only. Shared RAG returns extractive text and its confidence function raises `NotImplementedError`; generated grounded responses and calibrated confidence remain shared dependencies. Compose still directs Student 2 to containerised Ollama. The Release 1 brief requires host-native AI services and gives a different deadline from the general specifications.
+
+**Decision and status:** Created a seven-phase plan covering individual/shared ownership, protocol contracts, native deployment, MCP/RAG interactions, loop modes, CI disablement, and all ten evidence criteria. Shared ownership, proposed feature contracts, and the deadline need human confirmation; implementation gates remain pending. Planning-document checks passed for 27 local links, table/fence consistency, seven phases, and ten marking criteria. No application tests, live services, or remote workflows were executed for this assessment.
+
 ## 2026-09-06 - Release 0 CI and Script Changes Review
 
 **Scope:** Student 1-5 GitHub Actions workflows, the added integrated Compose workflow, moved PowerShell scripts, Student 4 package metadata, Release 0 CI documentation, and current worktree safety.

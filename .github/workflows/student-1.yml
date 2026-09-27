@@ -54,7 +54,5 @@ jobs:
           dotnet-version: "8.0.x"
       - name: Test shared agentic loop
         run: pwsh -NoProfile -File scripts/test/student-1.ps1 -Area AgenticLoop
-      - name: Build shared agentic loop container
-        run: docker build --tag asd-agentic-loop:ci ai-services/agentic-loop
-      - name: Build agentic loop through Compose
-        run: docker compose build agentic-loop
+      - name: Publish native shared agentic loop
+        run: dotnet publish ai-services/agentic-loop/AgenticLoop.csproj --configuration Release --output /tmp/asd-agentic-loop

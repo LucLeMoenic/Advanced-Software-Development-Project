@@ -17,6 +17,10 @@ Only the database API opens SQLite. The frontend calls only the backend through 
 
 Release 0 planning, architecture, data design, risks, and evidence status are indexed in [`docs/README.md`](docs/README.md).
 
+Release 1 adds a read-only MCP saved-itinerary summary and RAG planning advice
+with citations/confidence. Follow the [native-service runbook](docs/release-1-runbook.md)
+for setup, strict mode flags, and current live-integration limitations.
+
 ## Services
 
 Open the feature through the unified application at `http://localhost:5100/itinerary/`. The shared home page at `http://localhost:5100` is the supported user entry point.
@@ -34,6 +38,9 @@ These direct host ports are retained for service diagnostics and are not the nor
 - Trips: `GET/POST /api/trips`, `GET/PUT/DELETE /api/trips/{id}`
 - Stops: `POST /api/trips/{id}/stops`, `PUT/DELETE /api/stops/{id}`
 - AI adaptation: `POST /api/trips/{id}/regenerate`, `POST /api/stops/{id}/regenerate`
+- Mode availability: `GET /api/capabilities`
+- MCP summary: `POST /api/trips/{id}/mcp-summary`
+- Grounded advice: `POST /api/itinerary-advice` with `{question}`
 - Database CRUD mirrors these resources under `/api/data/`
 - Atomic database operations: `POST /api/data/itineraries`, `PUT /api/data/trips/{id}/stops`
 

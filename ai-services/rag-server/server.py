@@ -9,21 +9,37 @@ Run directly: ``uvicorn server:app --host 127.0.0.1 --port 5500``
 """
 
 import os
+from typing import Literal
 
+import anyio
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 import confidence
 import retrieval
+import generation
 
 TOP_K = int(os.environ.get("RAG_TOP_K", "3"))
+if not 1 <= TOP_K <= 3:
+    raise ValueError("RAG_TOP_K must be between one and three.")
 
 app = FastAPI(title="asd-shared-rag-server")
 
 
 class QueryRequest(BaseModel):
-    feature: str
-    question: str
+    model_config = ConfigDict(extra="forbid", strict=True)
+    feature: Literal["student-1", "student-2", "student-3", "student-4", "student-5"]
+    question: str = Field(min_length=1, max_length=1000)
+
+    @field_validator("question")
+    @classmethod
+    def clean_question(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("Question must not be blank.")
+        return value
 
 
 class Citation(BaseModel):
@@ -43,33 +59,37 @@ INSUFFICIENT_ANSWER = "Not enough information in the knowledge base to answer th
 
 
 @app.post("/query", response_model=QueryResponse)
-def query(request: QueryRequest):
-    index = retrieval.get_index(request.feature)
-    ranked = index.top_k(request.question, k=TOP_K)
+async def query(request: QueryRequest):
+    try:
+        with anyio.fail_after(25):
+            index = retrieval.get_index(request.feature)
+            ranked = []
+            length = 0
+            for chunk, score in index.top_k(request.question, k=TOP_K):
+                if (confidence.categorize(score) != "insufficient" and len(chunk.text) <= 2000
+                        and len(chunk.source) <= 200 and len(chunk.chunk_id) <= 160
+                        and length + len(chunk.text) <= 6000):
+                    ranked.append((chunk, score))
+                    length += len(chunk.text)
+            if not ranked:
+                return generation.insufficient()
+            return await generation.generate(request.question, ranked)
+    except TimeoutError:
+        raise generation.GenerationError(504, "dependency_timeout", "The grounded response timed out.") from None
 
-    if not ranked:
-        return QueryResponse(answer=INSUFFICIENT_ANSWER, citations=[], confidence="insufficient")
 
-    top_score = float(ranked[0][1])
-    second_score = float(ranked[1][1]) if len(ranked) > 1 else None
-    level = confidence.categorize(top_score, second_score)
+@app.exception_handler(generation.GenerationError)
+async def generation_error(request, exception):
+    return JSONResponse(status_code=exception.status, content={"error": {
+        "code": exception.code, "message": exception.message, "fields": {},
+    }})
 
-    if level == "insufficient":
-        return QueryResponse(answer=INSUFFICIENT_ANSWER, citations=[], confidence="insufficient")
 
-    citations = [
-        Citation(
-            source=chunk.source,
-            chunk_id=chunk.chunk_id,
-            snippet=chunk.text[:280],
-            score=round(float(score), 4),
-        )
-        for chunk, score in ranked
-    ]
-    # Extractive, not generative: the answer is the best-matching chunk
-    # verbatim, so every claim in it is directly traceable to a citation.
-    # No LLM call here — keeps this server independent of Ollama/loop RAM.
-    return QueryResponse(answer=ranked[0][0].text, citations=citations, confidence=level)
+@app.exception_handler(RequestValidationError)
+async def validation_error(request, exception):
+    return JSONResponse(status_code=400, content={"error": {
+        "code": "validation_error", "message": "Supply a known feature and a question of 1-1000 characters.", "fields": {},
+    }})
 
 
 @app.get("/health")

@@ -1,5 +1,60 @@
 # Student 2 Review Record
 
+## 2026-09-27 - Release 1 Defect-Fix Follow-Up
+
+The original six findings below are retained. Their current status:
+
+| Finding | Resolution and evidence |
+|---|---|
+| 1: Integrated native-service success | Blocked at the VM-to-Windows boundary. Podman's default route matches the private Windows listener, but a direct VM RAG health request times out. Native calls succeed. No Ollama executable on PATH or model listener was found. Requires administrator network investigation and native model setup; no privileged changes attempted. |
+| 2: Loop command/context | Fixed. Repository-root discovery handles dotnet run --project; README uses bounded itinerary source. Two new tests preserve context caps. Both actual CLI modes now reach the unavailable Ollama connection after loading context/prompts. No live-model record claimed. |
+| 3: Extra MCP arguments | Fixed for the itinerary tool's generated argument model and discovery schema. Regression asserts no database call; native protocol discovery rejects the extra key and still accepts a valid persisted-trip request. Configuration uses pinned MCP 2.2.0 registration internals: retain schema/execution regressions on SDK upgrades. |
+| 4: Buffered limits | Fixed in both Python RAG clients with incremental reads. Each oversized-stream regression consumes 16384 bytes of a 102400-byte response, rejects it and closes the stream; the 16000-byte body limit and outer deadlines remain. |
+| 5: Grounding evaluation | Partially addressed. Nine real Student 2/3 supported/adversarial cases verify retrieval candidates; opt-in live tests emit answer/source/rubric evidence and require abstention on unsupported questions. Live generation, human entailment checks and independent held-out evaluation remain open. High-scoring unanswerable budget questions demonstrate why thresholds remain provisional. |
+| 6: Malformed database JSON | Fixed. The actual requests JSONDecodeError now maps to invalid_dependency_response, covered by regression. |
+
+Fresh suites: backend 35, MCP 26, RAG 31, loop 38: **130 passed**, with nine live
+RAG cases explicitly skipped. Updated native services were restarted; the backend
+image rebuilt and became healthy. Native MCP protocol and no-context RAG checks
+pass. No saved data was mutated, no model output was fabricated, and no commit/push
+was made. See the [runbook](release-1-runbook.md) for remaining machine setup and
+genuine acceptance gates. Release 1 is still not acceptance-ready.
+
+## 2026-09-27 - Release 1 Implementation Against Documentation
+
+**Verdict:** Substantial implementation alignment, but not Release 1 acceptance-ready. This review compares current code with the [implementation design](release-1-design.md), [runbook](release-1-runbook.md), [feature requirements](requirements.md), and [Release 1 brief](../../docs/Project_Specifications/Release_1_brief.md). It does not assign marks or certify other students' features. No runtime code was changed.
+
+### Verified Findings
+
+1. **Blocking acceptance: neither new interaction succeeds through the integrated backend.** Fresh read-only POSTs to `http://localhost:5100/itinerary-api/trips/10/mcp-summary` and `/itinerary-advice` both returned HTTP 504 with `dependency_timeout`. The latter used the documented budget question. The brief requires successful frontend/backend MCP and generated, cited RAG demonstrations; native-only SDK success and an insufficient-context response do not satisfy those gates. The runbook acknowledges the connectivity/model setup problem accurately. Resolve private host routing and native model setup, then capture both success paths and live loop evidence.
+
+2. **High: documented loop execution cannot reach validation.** The [MCP example](../../ai-services/agentic-loop/README.md#L65), run from the repository root with explicit distinct model tags, failed with `Context file does not exist: student-2/docs/release-1-design.md`. [Workspace resolution](../../ai-services/agentic-loop/AgenticLoopApplication.cs#L156) relies on the process working directory, which does not resolve that path in this `dotnet run --project` invocation. Repeating with `--workspace` set to the repository root failed with `Context file exceeds 16000 bytes`. The [per-file cap](../../ai-services/agentic-loop/AgenticLoopApplication.cs#L364) therefore also rejects the example's chosen document. Use an explicit supported workspace and bounded context fixtures; test the documented CLI commands, not only loop internals. Do not remove the safety cap simply to fit this document.
+
+3. **Medium: the MCP top-level input boundary is not strict.** The [registered tool](../../ai-services/mcp-server/tools/itinerary.py#L56) forbids extra keys inside `params`, but not at the SDK argument-envelope level. An in-process call through the installed official MCP server with `{"params":{"trip_id":12},"url":"http://unexpected"}` succeeded and made one mocked database read. The design specifically requires this SDK-dependent case to be checked; [current tests](../../ai-services/mcp-server/tests/test_itinerary_tools.py#L47) cover only nested extras. Reject unknown top-level keys before the tool executes and add protocol coverage. The extra URL was ignored, not followed: this is not evidence of URL injection, and the browser backend currently sends only fixed arguments.
+
+4. **Medium: response-size checks are post-buffer checks, not memory bounds.** [RAG generation](../../ai-services/rag-server/generation.py#L81) awaits a fully buffered HTTP response before checking 16000 bytes; the [backend RAG adapter](../backend/ai_clients.py#L142) uses the same pattern. A synthetic HTTP stream supplied 102400 bytes and all were consumed before generation raised its controlled 502. This does not meet the design's bounded-upstream-output intent, although the runbook/shared README disclose the limitation. Enforce the byte limit while reading and test early stream closure; retain the outer time deadlines.
+
+5. **Medium acceptance gap: calibration and grounding validation are incomplete.** The design requires labelled evaluation across available feature corpora, irrelevant keyword overlap, adversarial questions, and held-out claim-to-source checks. The [retrieval fixture test](../../ai-services/rag-server/tests/test_retrieval.py#L79) evaluates only Student 2's twelve questions; the four irrelevant examples do not exercise misleading itinerary-keyword overlap. Existing Student 3 fixture tests are not a calibration of the real shared corpus. [Generation tests](../../ai-services/rag-server/tests/test_query.py#L21) use test doubles and validate structure/references, not actual model entailment. Treat confidence thresholds as provisional and do not equate valid citation IDs with supported claims.
+
+6. **Low: malformed database JSON receives the wrong public error category.** A mocked database HTTP 200 whose JSON parser raised `requests.exceptions.JSONDecodeError` produced `dependency_unavailable` from the itinerary tool. That exception is caught by [RequestException](../../ai-services/mcp-server/tools/itinerary.py#L67) before the invalid-data branch. The backend consequently maps it to 503 rather than the design's `invalid_dependency_response`/502. Separate JSON decoding errors from network failures and add a regression for an actual requests JSON-decoding exception.
+
+### Design Coverage
+
+| Slice | Assessment |
+|---|---|
+| Configuration and adapters | Largely aligned: strict flags, capabilities without probes, disabled zero-call tests, fixed tool/feature routes, response validation and controlled dependency errors. Size limiting and one error mapping need correction. |
+| MCP vertical slice | Read-only database ownership, privacy filtering, inclusive day coverage and decimal allocation implemented. Live container path, top-level argument rejection, discovery/handshake/cleanup coverage remain open. |
+| RAG foundation and advice | Six feature documents, feature isolation, filtered retrieval, constrained generation, citation assembly and abstention implemented. Live generation, cross-feature calibration and adversarial/semantic grounding checks remain open. |
+| Frontend | Summary/advice controls, safe text rendering, disabled/busy/error states and deletion-race coverage implemented. Prior viewport results are documented; keyboard/focus and broader navigation races were not independently browser-tested in this review. |
+| Host deployment and CI | Native-only AI topology and Student 2 CI disable flags are present; gateway integration was previously verified. Current live AI requests fail. A successful remote workflow for the final commit is not evidenced here. |
+| Assessment validation | Separate native loop modes exist but documented invocation fails. Genuine model outputs, human finalisation, full group behavior, contribution commits and report/showcase evidence remain pending. |
+
+### Verification and Scope
+
+Fresh suites: backend 34/34, MCP 24/24, RAG 21/21, frontend 9/9, shared loop 36/36: **124 passed**. The five database tests were not rerun; their prior Linux pass and Windows temporary-file limitation remain historical evidence. Python probes used the explicit portable Python 3.11.9 runtime, not a claimed editor-selected interpreter.
+
+Additional checks: two real gateway HTTP outcomes; two expected CLI failure reproductions; installed-SDK extra-argument and malformed-JSON probes; a synthetic oversized HTTP stream. These probes did not mutate saved trips or invoke a model. Remote GitHub Actions, live model quality, all other features and firewall configuration were not independently validated. Review entries are the only repository edits for this request.
+
 ## 2026-09-01 - Release 0 Readiness Review
 
 **Scope:** Student 2 frontend, backend, database API, SQLite seed data, shared navigation, root Docker configuration, Student 2 CI, development-agent workflow evidence, planning artefacts, and Release 0 report/showcase requirements.

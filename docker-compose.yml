@@ -46,18 +46,20 @@ services:
     restart: unless-stopped
     environment:
       Services__DatabaseUrl: http://student1-database:8080
-      Services__OllamaUrl: http://ollama:11434
+      Services__OllamaUrl: http://host.docker.internal:11434
+      MCP_SERVER_URL: http://host.docker.internal:5400/mcp
+      RAG_SERVER_URL: http://host.docker.internal:5500
       Services__LiteApiUrl: https://api.liteapi.travel
       LITEAPI_KEY: ${LITEAPI_KEY:-}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
       ASPNETCORE_HTTP_PORTS: 8080
     ports:
       - "5201:8080"
+    extra_hosts:
+      - "host.docker.internal:${LOCAL_AI_HOST:-host-gateway}"
     depends_on:
       student1-database:
         condition: service_healthy
-      ollama-model-setup:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
       interval: 10s
@@ -105,16 +107,21 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_URL: http://student2-database:8080
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: http://host.docker.internal:11434
+      AI_ENABLED: ${AI_ENABLED:-true}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      RAG_ENABLED: ${RAG_ENABLED:-false}
+      MCP_SERVER_URL: ${MCP_SERVER_URL:-http://host.docker.internal:5400/mcp}
+      RAG_SERVER_URL: ${RAG_SERVER_URL:-http://host.docker.internal:5500}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
       PORT: 8080
     ports:
       - "5202:8080"
+    extra_hosts:
+      - "host.docker.internal:${LOCAL_AI_HOST:-host-gateway}"
     depends_on:
       student2-database:
         condition: service_healthy
-      ollama-model-setup:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
@@ -162,15 +169,17 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_API_URL: http://student3-database:8080
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: http://host.docker.internal:11434
+      MCP_SERVER_URL: http://host.docker.internal:5400/mcp
+      RAG_SERVER_URL: http://host.docker.internal:5500
       OLLAMA_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
     ports:
       - "5203:8080"
+    extra_hosts:
+      - "host.docker.internal:${LOCAL_AI_HOST:-host-gateway}"
     depends_on:
       student3-database:
         condition: service_healthy
-      ollama-model-setup:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
@@ -236,16 +245,18 @@ services:
     restart: unless-stopped
     environment:
       Services__DatabaseUrl: http://student4-database:8080
-      Services__OllamaUrl: http://ollama:11434
+      Services__OllamaUrl: http://host.docker.internal:11434
+      MCP_SERVER_URL: http://host.docker.internal:5400/mcp
+      RAG_SERVER_URL: http://host.docker.internal:5500
       STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
       ASPNETCORE_HTTP_PORTS: 8080
     ports:
       - "5204:8080"
+    extra_hosts:
+      - "host.docker.internal:${LOCAL_AI_HOST:-host-gateway}"
     depends_on:
       student4-database:
         condition: service_healthy
-      ollama-model-setup:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health"]
       interval: 10s
@@ -294,15 +305,17 @@ services:
     restart: unless-stopped
     environment:
       DATABASE_API_URL: http://student5-database:8080
-      OLLAMA_URL: http://ollama:11434
+      OLLAMA_URL: http://host.docker.internal:11434
+      MCP_SERVER_URL: http://host.docker.internal:5400/mcp
+      RAG_SERVER_URL: http://host.docker.internal:5500
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
     ports:
       - "5205:8080"
+    extra_hosts:
+      - "host.docker.internal:${LOCAL_AI_HOST:-host-gateway}"
     depends_on:
       student5-database:
         condition: service_healthy
-      ollama-model-setup:
-        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
       interval: 10s
@@ -325,69 +338,3 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
-
-  ollama:
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-
-  ollama-model-setup:
-    image: ollama/ollama:latest
-    restart: "no"
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODELS: ${OLLAMA_MODELS:-llama3.2:3b qwen2.5-coder:7b}
-      APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
-      STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
-      STUDENT3_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        set -eu
-        for model in $$OLLAMA_MODELS $$APPLICATION_MODEL $$STUDENT4_MODEL $$STUDENT3_MODEL; do
-          if ollama show "$$model" > /dev/null 2>&1; then
-            echo "Ollama model already installed: $$model"
-          else
-            ollama pull "$$model"
-          fi
-        done
-        echo "Preloading application model: $$APPLICATION_MODEL"
-        ollama run "$$APPLICATION_MODEL" "Return only OK." --keepalive 30m > /dev/null
-    depends_on:
-      ollama:
-        condition: service_healthy
-
-  agentic-loop:
-    build:
-      context: ./ai-services/agentic-loop
-    restart: unless-stopped
-    environment:
-      OLLAMA_URL: http://ollama:11434
-      IMPLEMENTER_MODEL: ${IMPLEMENTER_MODEL:-qwen2.5-coder:7b}
-      REVIEWER_MODEL: ${REVIEWER_MODEL:-llama3.2:3b}
-      ASPNETCORE_URLS: http://+:8080
-      AGENTIC_LOOP_HEALTH_URL: http://localhost:8080/health
-    ports:
-      - "5180:8080"
-    volumes:
-      - ./:/workspace:ro
-      - ./docs/agentic-loop-records:/workspace/docs/agentic-loop-records
-    depends_on:
-      ollama-model-setup:
-        condition: service_completed_successfully
-    healthcheck:
-      test: ["CMD", "dotnet", "/app/AgenticLoop.dll", "healthcheck"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-
-volumes:
-  ollama-data:

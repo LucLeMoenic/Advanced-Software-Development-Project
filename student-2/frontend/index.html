@@ -110,9 +110,34 @@
             <div><dt>Daily budget</dt><dd id="metric-budget"></dd></div>
             <div><dt>Planned days</dt><dd id="metric-days"></dd></div>
           </dl>
+          <section class="integration-section" aria-labelledby="summary-heading">
+            <div class="integration-heading">
+              <h3 id="summary-heading">Saved itinerary summary</h3>
+              <button id="mcp-summary" class="secondary-button" type="button" disabled>Inspect itinerary</button>
+            </div>
+            <p id="mcp-status" class="muted" role="status">MCP is disabled.</p>
+            <dl id="mcp-result" class="trip-metrics" hidden></dl>
+          </section>
           <div id="days" class="days"></div>
           <button id="add-stop" class="add-button" type="button">+ Add a stop</button>
         </div>
+        <section class="integration-section" aria-labelledby="advice-heading">
+          <div class="integration-heading">
+            <h3 id="advice-heading">Planning advice</h3>
+            <button id="reload-capabilities" class="text-button" type="button">Retry connection</button>
+          </div>
+          <form id="advice-form">
+            <label for="advice-question">Planning question</label>
+            <textarea id="advice-question" maxlength="1000" rows="2" required disabled></textarea>
+            <button id="advice-submit" class="secondary-button" type="submit" disabled>Ask question</button>
+          </form>
+          <p id="advice-status" class="muted" role="status">RAG is disabled.</p>
+          <div id="advice-result" hidden>
+            <p id="advice-confidence" class="mode-badge"></p>
+            <p id="advice-answer" class="advice-answer"></p>
+            <div id="advice-citations"></div>
+          </div>
+        </section>
       </section>
     </div>
   </main>

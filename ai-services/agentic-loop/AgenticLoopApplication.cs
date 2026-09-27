@@ -34,6 +34,8 @@ public static partial class AgenticLoopApplication
                 "serve" => await ServeAsync(),
                 "healthcheck" => await CheckHealthAsync(),
                 "run" => await RunLoopAsync(ParsedArguments.Parse(args[1..])),
+                "validate-mcp" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "mcp"),
+                "validate-rag" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "rag"),
                 "finalise" => await FinaliseAsync(ParsedArguments.Parse(args[1..])),
                 _ => throw new LoopException($"Unknown command: {args[0]}")
             };
@@ -102,7 +104,7 @@ public static partial class AgenticLoopApplication
                 IModelClient ollama = new OllamaClient(
                     client,
                     Environment.GetEnvironmentVariable("OLLAMA_URL")
-                        ?? "http://ollama:11434");
+                        ?? "http://127.0.0.1:11434");
                 var models = await ollama.GetAvailableModelsAsync();
                 var missing = new[] { implementerModel, reviewerModel }
                     .Where(model => !models.Contains(NormaliseModelName(model)))
@@ -147,11 +149,11 @@ public static partial class AgenticLoopApplication
         return response.IsSuccessStatusCode ? 0 : 1;
     }
 
-    private static async Task<int> RunLoopAsync(ParsedArguments arguments)
+    private static async Task<int> RunLoopAsync(ParsedArguments arguments, string? validationMode = null)
     {
         var task = arguments.RequiredSingle("task");
         var contextPaths = arguments.RequiredMany("context");
-        var workspace = Path.GetFullPath(arguments.SingleOrDefault("workspace") ?? "/workspace");
+        var workspace = ResolveWorkspace(arguments.SingleOrDefault("workspace"), Directory.GetCurrentDirectory());
         var recordDirectory = Path.GetFullPath(
             arguments.SingleOrDefault("record-directory")
             ?? Path.Combine(workspace, "docs", "agentic-loop-records"));
@@ -160,20 +162,33 @@ public static partial class AgenticLoopApplication
         var reviewerModel = arguments.SingleOrDefault("reviewer-model")
             ?? Environment.GetEnvironmentVariable("REVIEWER_MODEL");
         var implementerPromptPath = arguments.SingleOrDefault("implementer-prompt")
-            ?? "/app/prompts/implementer.md";
+            ?? Path.Combine(workspace, "ai-services", "agentic-loop", "prompts", "implementer.md");
         var reviewerPromptPath = arguments.SingleOrDefault("reviewer-prompt")
-            ?? "/app/prompts/reviewer.md";
-        var preTestCommand = arguments.RequiredSingle("pre-test-command");
-        var preTestResult = arguments.RequiredSingle("pre-test-result");
+            ?? Path.Combine(workspace, "ai-services", "agentic-loop", "prompts", "reviewer.md");
+        var preTestCommand = validationMode is null ? arguments.RequiredSingle("pre-test-command") : "";
+        var preTestResult = validationMode is null ? arguments.RequiredSingle("pre-test-result") : "";
         var ollamaUrl = arguments.SingleOrDefault("ollama-url")
             ?? Environment.GetEnvironmentVariable("OLLAMA_URL")
-            ?? "http://ollama:11434";
+            ?? "http://127.0.0.1:11434";
         var timeoutSeconds = arguments.OptionalPositiveInt("timeout-seconds", 600);
 
         ValidateRunInput(task, contextPaths, implementerModel, reviewerModel);
         var context = await LoadContextAsync(workspace, contextPaths);
         var implementerPrompt = await ReadRequiredTextAsync(implementerPromptPath, "Implementer prompt");
         var reviewerPrompt = await ReadRequiredTextAsync(reviewerPromptPath, "Reviewer prompt");
+
+        if (validationMode is not null)
+        {
+            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
+            var evidence = await ServiceValidation.CaptureAsync(
+                validationClient, validationMode,
+                arguments.SingleOrDefault("backend-url") ?? "http://127.0.0.1:5202",
+                arguments.OptionalPositiveInt("trip-id", 1),
+                arguments.SingleOrDefault("question") ?? "Is budget the total for the trip?");
+            preTestCommand = evidence.Command;
+            preTestResult = evidence.Result;
+        }
 
         using var httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(timeoutSeconds) };
         IModelClient ollama = new OllamaClient(httpClient, ollamaUrl);
@@ -191,6 +206,7 @@ public static partial class AgenticLoopApplication
                 preTestResult),
             ollama);
 
+        record = record with { ValidationMode = validationMode };
         var recordPath = await WriteRecordAsync(recordDirectory, record);
         Console.WriteLine($"Agentic-loop record awaiting human finalisation: {recordPath}");
         return 0;
@@ -198,7 +214,8 @@ public static partial class AgenticLoopApplication
 
     private static async Task<int> FinaliseAsync(ParsedArguments arguments)
     {
-        var recordPath = Path.GetFullPath(arguments.RequiredSingle("record"));
+        var workspace = ResolveWorkspace(arguments.SingleOrDefault("workspace"), Directory.GetCurrentDirectory());
+        var recordPath = Path.GetFullPath(arguments.RequiredSingle("record"), workspace);
         var decision = arguments.RequiredSingle("decision");
         var notes = arguments.RequiredSingle("notes");
         var postTestCommand = arguments.RequiredSingle("post-test-command");
@@ -271,6 +288,18 @@ public static partial class AgenticLoopApplication
         await WriteTextAtomicallyAsync(
             recordPath,
             JsonSerializer.Serialize(finalised, JsonOptions) + Environment.NewLine);
+    }
+
+    internal static string ResolveWorkspace(string? requested, string startingDirectory)
+    {
+        if (requested is not null)
+            return Path.GetFullPath(requested, startingDirectory);
+        for (var directory = new DirectoryInfo(startingDirectory); directory is not null; directory = directory.Parent)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "ai-services", "agentic-loop", "AgenticLoop.csproj")))
+                return directory.FullName;
+        }
+        throw new LoopException("Cannot locate the repository root. Supply --workspace with an absolute path.");
     }
 
     internal static void ValidateRunInput(
@@ -838,7 +867,7 @@ public static partial class AgenticLoopApplication
 
     private static void WriteUsage()
     {
-        Console.Error.WriteLine("Usage: AgenticLoop <serve|healthcheck|run|finalise> [options]");
+        Console.Error.WriteLine("Usage: AgenticLoop <serve|healthcheck|run|validate-mcp|validate-rag|finalise> [options]");
     }
 
     [GeneratedRegex(
@@ -1127,7 +1156,8 @@ internal sealed record AgenticLoopRecord(
     string? HumanDecision,
     string? HumanNotes,
     TestEvidence? PostTest,
-    DateTimeOffset? FinalisedAt);
+    DateTimeOffset? FinalisedAt,
+    string? ValidationMode = null);
 
 internal sealed record OllamaTagsResponse(IReadOnlyList<OllamaModel>? Models);
 internal sealed record OllamaModel(string Name);

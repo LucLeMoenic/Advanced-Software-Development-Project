@@ -1,0 +1,3 @@
+# Generation and fallback
+
+Regenerating an itinerary replaces all its current stops after a complete replacement has been generated and validated. The database commits the replacement atomically, so an invalid replacement does not delete the previous stops. Regenerating one stop preserves its identity, day, and ordering. If AI is disabled, unavailable, or returns invalid output, deterministic fallback creates a starter itinerary instead. Generated activities are suggestions, not confirmed opening hours, availability, reservations, or live prices.
