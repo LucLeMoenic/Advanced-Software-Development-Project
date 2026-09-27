@@ -4,9 +4,16 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 
 import database_client as db
+import mcp_client
+import rag_client
 from recommend import get_recommendation
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+# Second boundary on top of the MCP server's own tool registration: even if
+# the shared server later exposes more student-3 tools, this backend only
+# ever invokes the ones explicitly allow-listed here.
+ALLOWED_MCP_TOOLS = {"attractions.search", "attractions.get_reviews"}
 
 app = Flask(__name__)
 CORS(app)  # Release 0: frontend and backend are served from different origins/ports.
@@ -117,6 +124,59 @@ def add_to_itinerary():
     payload = request.get_json(silent=True) or request.form.to_dict() or {}
     app.logger.info("Add-to-itinerary requested: %s", payload)
     return jsonify({"status": "logged", "received": payload}), 202
+
+
+@app.get("/api/mcp/tools")
+def list_mcp_tools():
+    try:
+        tools = mcp_client.list_tools()
+    except mcp_client.McpDisabledError:
+        return jsonify({"error": "mcp_disabled", "message": "MCP is disabled."}), 503
+    except (mcp_client.McpUnavailableError, mcp_client.McpResponseError) as exc:
+        return jsonify({"error": "mcp_unavailable", "message": str(exc)}), 502
+    return jsonify({"tools": tools})
+
+
+@app.post("/api/mcp/invoke")
+def invoke_mcp_tool():
+    # hx-vals is sent as x-www-form-urlencoded by default, so accept both.
+    payload = request.get_json(silent=True) or request.form.to_dict() or {}
+    tool = payload.get("tool")
+    arguments = payload.get("arguments", {})
+    if tool not in ALLOWED_MCP_TOOLS:
+        return jsonify({
+            "error": "validation_error",
+            "message": f"tool must be one of {sorted(ALLOWED_MCP_TOOLS)}.",
+        }), 400
+    if not isinstance(arguments, dict):
+        return jsonify({"error": "validation_error", "message": "arguments must be an object."}), 400
+
+    try:
+        result = mcp_client.call_tool(tool, arguments)
+    except mcp_client.McpDisabledError:
+        return jsonify({"error": "mcp_disabled", "message": "MCP is disabled."}), 503
+    except mcp_client.McpToolError as exc:
+        return jsonify({"error": "validation_error", "message": str(exc)}), 400
+    except (mcp_client.McpUnavailableError, mcp_client.McpResponseError) as exc:
+        return jsonify({"error": "mcp_unavailable", "message": str(exc)}), 502
+    return jsonify({"tool": tool, "result": result})
+
+
+@app.post("/api/rag/ask")
+def rag_ask():
+    # hx-vals is sent as x-www-form-urlencoded by default, so accept both.
+    payload = request.get_json(silent=True) or request.form.to_dict() or {}
+    question = (payload.get("question") or "").strip()
+    if not question:
+        return jsonify({"error": "validation_error", "message": "question is required."}), 400
+
+    try:
+        result = rag_client.ask(question)
+    except rag_client.RagDisabledError:
+        return jsonify({"error": "rag_disabled", "message": "RAG is disabled."}), 503
+    except (rag_client.RagUnavailableError, rag_client.RagResponseError) as exc:
+        return jsonify({"error": "rag_unavailable", "message": str(exc)}), 502
+    return jsonify(result)
 
 
 if __name__ == "__main__":

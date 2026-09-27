@@ -59,6 +59,24 @@ def test_search_rejects_unknown_category(server):
         call(server, "attractions.search", {"category": "museum"})
 
 
+def test_search_rejects_extra_top_level_field(server):
+    """Regression test: a key alongside "params" (not nested inside it) was
+    silently dropped before the outer arg_model's extra="forbid" patch in
+    register(), since only the inner SearchParams model set extra="forbid".
+    """
+    with pytest.raises(ToolError):
+        asyncio.run(
+            server.call_tool("attractions.search", {"params": {"category": "sight"}, "bogus": 1})
+        )
+
+
+def test_get_reviews_rejects_extra_top_level_field(server):
+    with pytest.raises(ToolError):
+        asyncio.run(
+            server.call_tool("attractions.get_reviews", {"params": {"attraction_id": 1}, "bogus": 1})
+        )
+
+
 @pytest.mark.parametrize("limit", [0, 11, -1])
 def test_search_rejects_limit_out_of_range(server, limit):
     with pytest.raises(ToolError):
