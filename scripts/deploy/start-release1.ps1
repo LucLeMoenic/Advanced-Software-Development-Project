@@ -11,7 +11,9 @@ contains no services.
 
 The first run creates the MCP and RAG Python virtual environments (outside the
 repository by default) and pulls the application model if it is missing.
-Native process IDs and logs are kept under $env:TEMP\asd-release1.
+Services that are already running are reused, so the script is safe to rerun.
+-Stop shuts down every Compose service, the MCP and RAG servers and Ollama
+(installed models stay on disk). Native logs are kept under $env:TEMP\asd-release1.
 
 .EXAMPLE
 pwsh -File scripts/deploy/start-release1.ps1
@@ -31,7 +33,6 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot "../..")).Path
 $stateDirectory = Join-Path $env:TEMP "asd-release1"
-$stateFile = Join-Path $stateDirectory "processes.json"
 $composeFiles = @("-f", "docker-compose.yml", "-f", "docker-compose.gpu.yml")
 $binDirectory = if ($IsWindows) { "Scripts" } else { "bin" }
 
@@ -58,11 +59,22 @@ function Wait-Url([string]$Name, [string]$Url, [int]$Seconds = 30) {
 }
 
 function Start-Native([string]$Name, [string]$FilePath, [string[]]$Arguments) {
-    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $repositoryRoot `
+    Start-Process -FilePath $FilePath -ArgumentList $Arguments -WorkingDirectory $repositoryRoot `
         -RedirectStandardOutput (Join-Path $stateDirectory "$Name.log") `
         -RedirectStandardError (Join-Path $stateDirectory "$Name.err.log") `
-        -WindowStyle Hidden -PassThru
-    return $process.Id
+        -WindowStyle Hidden | Out-Null
+}
+
+# Stops whatever is listening on the port, with its child processes. Stopping by port rather
+# than by a saved process ID also catches services left over from an earlier session, and the
+# venv python launcher's child interpreter.
+function Stop-Port([string]$Name, [int]$Port) {
+    $owners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($owner in $owners) {
+        taskkill /T /F /PID $owner *> $null
+        Write-Host "  Stopped $Name (port $Port)."
+    }
 }
 
 function Get-VenvPython([string]$Venv, [string]$Requirements) {
@@ -83,30 +95,31 @@ try {
     & (Join-Path $PSScriptRoot "start-docker.ps1")
 
     if ($Stop) {
-        if (Test-Path $stateFile) {
-            $started = Get-Content $stateFile -Raw | ConvertFrom-Json
-            foreach ($entry in $started.PSObject.Properties) {
-                Stop-Process -Id $entry.Value -Force -ErrorAction SilentlyContinue
-                Write-Host "Stopped $($entry.Name) (process $($entry.Value))."
-            }
-            Remove-Item $stateFile
-        }
+        Write-Host "Stopping Docker Compose services..."
         docker compose @composeFiles down
+        if ($LASTEXITCODE -ne 0) { throw "docker compose down failed." }
+
+        Write-Host "Stopping native services..."
+        Stop-Port "MCP server" 5400
+        Stop-Port "RAG server" 5500
+        # Stop the Ollama tray app first so it cannot restart the server.
+        Get-Process "ollama app" -ErrorAction SilentlyContinue | Stop-Process -Force
+        Stop-Port "Ollama" 11434
+        Write-Host "Release 1 is stopped. Installed Ollama models stay on disk." -ForegroundColor Green
         return
     }
 
     New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
-    if (Test-Path $stateFile) {
-        throw "Release 1 native services may already be running. Run with -Stop first."
-    }
-    $started = [ordered]@{}
 
     Write-Host "Starting native services (not containerised)..."
     if (Test-Url "http://127.0.0.1:11434/api/tags") {
         Write-Host "  Ollama is already running." -ForegroundColor Green
     }
     elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
-        $started.ollama = Start-Native "ollama" "ollama" @("serve")
+        # The tray app can be running with a server that failed to start; it would hold the port.
+        Get-Process "ollama app" -ErrorAction SilentlyContinue | Stop-Process -Force
+        Stop-Port "unresponsive Ollama" 11434
+        Start-Native "ollama" "ollama" @("serve")
         Wait-Url "Ollama" "http://127.0.0.1:11434/api/tags"
     }
     else {
@@ -128,11 +141,20 @@ try {
 
     $mcpPython = Get-VenvPython $McpVenv "ai-services/mcp-server/requirements.txt"
     $ragPython = Get-VenvPython $RagVenv "ai-services/rag-server/requirements.txt"
-    $started.mcp = Start-Native "mcp" $mcpPython @("ai-services/mcp-server/server.py")
-    $started.rag = Start-Native "rag" $ragPython @("-m", "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "5500", "--app-dir", "ai-services/rag-server")
-    $started | ConvertTo-Json | Set-Content $stateFile
-    Wait-Url "MCP server" "http://127.0.0.1:5400/mcp"
-    Wait-Url "RAG server" "http://127.0.0.1:5500/health"
+    if (Test-Url "http://127.0.0.1:5400/mcp") {
+        Write-Host "  MCP server is already running." -ForegroundColor Green
+    }
+    else {
+        Start-Native "mcp" $mcpPython @("ai-services/mcp-server/server.py")
+        Wait-Url "MCP server" "http://127.0.0.1:5400/mcp"
+    }
+    if (Test-Url "http://127.0.0.1:5500/health") {
+        Write-Host "  RAG server is already running." -ForegroundColor Green
+    }
+    else {
+        Start-Native "rag" $ragPython @("-m", "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "5500", "--app-dir", "ai-services/rag-server")
+        Wait-Url "RAG server" "http://127.0.0.1:5500/health"
+    }
 
     Write-Host "Starting all Docker Compose services with MCP and RAG enabled (first build takes a few minutes)..."
     $env:MCP_ENABLED = "true"
