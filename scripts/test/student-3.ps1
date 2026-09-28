@@ -15,3 +15,6 @@ Invoke-Checked "pip" @("install", "-r", "$repositoryRoot/student-3/backend/requi
 Invoke-Checked "pip" @("install", "-r", "$repositoryRoot/student-3/database/requirements.txt", "pytest") "Student 3 database dependency installation failed."
 Push-Location "$repositoryRoot/student-3"
 try { Invoke-Checked "python" @("-m", "pytest", "tests") "Student 3 tests failed." } finally { Pop-Location }
+
+Push-Location "$repositoryRoot"
+try { Invoke-Checked "docker" @("compose", "config", "--quiet") "Docker Compose config is invalid." } finally { Pop-Location }

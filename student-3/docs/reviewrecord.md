@@ -232,3 +232,38 @@ The task description for this attempt was longer and more detailed (two worked e
 - Full terminal transcript: `student-3/docs/evidence/release-1/loop/stage3-confidence-badge-class-terminal.txt`.
 
 **Verdict (as of 2026-09-28):** The record is complete and finalised as `kept`. Combined with the other two finalised records, this establishes a clear, evidence-backed pattern across Release 1: `reviewer-student3-v1.md`'s grounding-in-evidence rule reliably stops it from citing code that doesn't exist, but it has not yet correctly identified a real defect on its own initiative — the one real defect caught this release (`RagResponseError`) was found by the human re-deriving the code's behaviour against the task's examples, not by trusting the reviewer's stated finding. This is documented, not hidden, and is exactly the kind of evidence the assignment's agentic-loop criterion is asking for.
+
+## 2026-09-28 — Agentic Loop Attempt Review (Stage 4 `docker-compose.yml` validation, failed, no record)
+
+**Scope:** A single agentic-loop attempt to add a `docker compose config --quiet` validation step to `scripts/test/student-3.ps1`, which errored before writing a record. Reviewed by reading the terminal transcript directly (`student-3/docs/evidence/release-1/loop/stage4-compose-validation-failed-terminal.txt`) and by running the implementer's actual proposed code, live, against both a valid and a deliberately-broken `docker-compose.yml`.
+
+### What happened
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | Restated the goal, requirements, one file, four steps, one risk, one validation line. | Accurate; no scope drift. |
+| Act | `Push-Location "$repositoryRoot"` / `Invoke-Checked "docker" @("compose","config","--quiet") "Docker Compose config is invalid."` / `Pop-Location`. | **Substantively correct, one real gap.** This does validate the compose file with the exact command asked for. It does not use `try/finally`, unlike the pytest block immediately above it and unlike what the task explicitly asked for — if `Invoke-Checked` throws, `Pop-Location` is skipped and the working directory stays changed for the rest of the session. A real, minor defect, but not the one the reviewer found. |
+| Observe (1st pass) | `REVISE`, BLOCKING: "The script does not invoke the docker-compose config validation command, despite the TODO(you) comment requesting it." | **Hallucinated.** The Act code plainly does invoke it. Same class of error as the `total_matches` and `confidenceBadgeClass` records: a confident, wrong claim about code that contradicts it on inspection. |
+| Observe (retry, format-corrected) | `REVISE`, BLOCKING: "`docker` is invoked without checking the existence of the docker-compose.yml file... Required correction: Add a check to ensure the docker-compose.yml file exists before invoking the docker command." | **A different finding from the first pass**, not a restatement, and not something the task asked for or a real gap (`docker compose config` already fails clearly, with a specific YAML error, if the file is missing or invalid - a separate existence check would be redundant). This retry's own output was then itself malformed (the loop rejected it: `Reviewer output must contain exactly one Validation gaps: section.`), so the loop errored out entirely with no record. |
+
+### Why this is logged even without a finalised record
+
+Every other entry in this file reviews a finalised record. This one exists because the *failure itself* is evidence: three of four total Release 1 loop attempts have now produced a reviewer finding that does not survive inspection against the actual code (only this attempt failed to even produce a usable record at all). Silently retrying until something parses, without logging the attempts that didn't, would understate how unreliable this reviewer model is on this prompt - the opposite of what the assignment's agentic-loop evidence requirement is asking for.
+
+### What was done instead
+
+Implemented by hand: added the same `Push-Location .../try { Invoke-Checked ... } finally { Pop-Location }` shape already used by the pytest block one line above, so the new step matches the file's own established pattern rather than introducing a new one.
+
+**Verified twice, live, not just re-read:**
+1. Ran the full script (`powershell -File scripts/test/student-3.ps1`) against the real, valid `docker-compose.yml` — 64/64 pytest pass, then the new compose-validation step passes silently (exit code 0), confirming it doesn't break the existing happy path.
+2. Deliberately corrupted `docker-compose.yml`'s YAML (`sed` inserted an unindented line under `services:`), reran the script, and confirmed it now fails fast with `Docker Compose config is invalid.` plus the real underlying `yaml: line 3: mapping values are not allowed in this context` error - proving the check actually catches a broken config, not just a no-op that always "passes." Restored the original file immediately after and confirmed via `git diff` that only the intended two-line `docker-compose.yml` change (the unrelated `MCP_ENABLED`/`RAG_ENABLED` addition from earlier in this stage) remained.
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| No action needed | Both reviewer findings across this attempt's two passes were either factually wrong or an out-of-scope invention; neither survived inspection. | Not acted on; the hand-written fix does not include a file-existence pre-check, since `docker compose config` already reports that case clearly. |
+| Open | This is the fourth Release 1 agentic-loop task and the second (after the `RagResponseError` attempt 1) to fail outright rather than produce a usable, if wrong, record - both failures were format/parsing breakdowns under the loop's single-retry format-correction rule, not implementer defects. | Release 1 action: `prompt-engineering.md` should track failure rate (record-produced vs. not), not just finding-accuracy-when-a-record-exists, since a task that never produces a record is a total loss of the evidence the assignment wants. |
+| Open | The implementer's own code (missing `try/finally`) had a real, if minor, defect neither reviewer pass identified - both were focused on the wrong things entirely. | Consistent with the pattern logged in the 2026-09-28 `confidenceBadgeClass` entry: reviewer accuracy, not just reviewer output format, remains the open problem for a v2 prompt. |
+
+**Verdict (as of 2026-09-28):** No record to finalise, and none was fabricated. The task was completed by hand, verified live under both a passing and a deliberately failing condition, and this failed attempt is logged with the same rigour as a finalised one, because it is equally informative about the reviewer prompt's current limits.
