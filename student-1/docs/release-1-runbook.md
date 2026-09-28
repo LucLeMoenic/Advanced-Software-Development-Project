@@ -48,6 +48,11 @@ pwsh -File scripts/deploy/start-release1.ps1
 pwsh -File scripts/deploy/start-release1.ps1 -Stop
 ```
 
+The script is safe to rerun: services that are already running are reused.
+`-Stop` shuts down every Compose service, the MCP and RAG servers and Ollama.
+Installed models stay on disk. From inside `scripts/deploy`, PowerShell needs
+the `.\` prefix: `.\start-release1.ps1 -Stop`.
+
 Native logs and process IDs are kept in `$env:TEMPsd-release1`. `-Stop` stops
 only the native processes the script started, then runs `docker compose down`
 (volumes are kept).
