@@ -6,7 +6,7 @@ The Itinerary Planner turns a traveller's destination, dates, total budget, and 
 
 ```text
 Browser
-	-> frontend (nginx, HTML/CSS/JavaScript)
+	-> frontend (Vue 3, Vite, nginx)
   -> backend (Flask orchestration API)
 	  -> shared Ollama / llama3.2:3b
 	  -> database API (Flask)
@@ -50,10 +50,12 @@ The SQLite schema contains `trips` and `trip_stops`. Startup initialization inse
 
 ```powershell
 docker compose up --build student2-database student2-backend student2-frontend shared-frontend
-cd student-2/frontend; npm ci; npm test; cd ../..
+cd student-2/frontend; npm ci; npm test; npm run build; cd ../..
 cd student-2/backend; python -m pytest tests; cd ../..
 cd student-2/database; python -m pytest tests; cd ../..
 docker compose build student2-database student2-backend student2-frontend
 ```
 
-CI installs Node 22 and Python 3.11 dependencies, runs the frontend Vitest suite and both pytest suites, validates Compose, builds all Student 2 plus shared frontend images, and smoke-tests the three Student 2 services without requiring a live model.
+For frontend development, use Node 22.12+ and run `npm ci --prefix student-2/frontend`, then `npm run dev --prefix student-2/frontend`. Vite prints the local URL and proxies `/itinerary-api/` to the backend at `http://localhost:5202`. The backend and database must be running for saved trips and CRUD; native AI services are needed only for their enabled features. Production assets are bundled locally with relative URLs so the shared `/itinerary/` route and diagnostic frontend root both work.
+
+CI installs Node 22 and Python 3.11 dependencies, runs the Vue component Vitest suite, production frontend build, and both pytest suites, validates Compose, builds all Student 2 plus shared frontend images, and smoke-tests the three Student 2 services without requiring a live model.

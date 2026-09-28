@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
     U[Traveller] --> H[Shared frontend :5100]
-    H -->|/itinerary/| F[Student 2 frontend<br/>nginx and static HTML/CSS/JS]
+    H -->|/itinerary/| F[Student 2 frontend<br/>Vue 3 / Vite / nginx]
     F -->|/itinerary-api/*| B[Student 2 backend<br/>Flask orchestration API]
     B -->|HTTP CRUD| D[Student 2 database API<br/>Flask]
     D --> S[(SQLite itinerary.db)]
