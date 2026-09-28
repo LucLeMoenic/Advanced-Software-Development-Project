@@ -12,6 +12,7 @@ Deliver a containerised itinerary planner that generates and safely revises pers
 | Shared entry point | `http://localhost:5100` |
 | Services | `student2-frontend`, `student2-backend`, `student2-database` |
 | Diagnostic host ports | `5102`, `5202`, `5302` |
+| Frontend | Vue 3 Composition API, JavaScript, Vite; nginx serves the production bundle |
 | Backend/database container port | `8080` |
 | Application model | `${APPLICATION_MODEL:-llama3.2:3b}` |
 | Ollama URL | `http://ollama:11434` |
