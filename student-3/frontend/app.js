@@ -337,6 +337,227 @@ function handleRecommendStart(form) {
   if (button) button.disabled = true;
 }
 
+/**
+ * Minimal client-side argument schema for the two Student 3 MCP tools.
+ * The backend's GET /api/mcp/tools only returns tool names (Stage 2 scope),
+ * so this is what drives the dynamic argument form once a tool is picked.
+ * A tool name outside this map (there shouldn't be one, since the backend's
+ * own allow list matches exactly these two) falls back to a plain message
+ * instead of a broken form - see renderMcpArgs.
+ */
+const MCP_TOOL_SCHEMAS = {
+  'attractions.search': [
+    { name: 'category', label: 'Category', type: 'select', options: ['', 'sight', 'restaurant', 'activity'] },
+    { name: 'min_rating', label: 'Minimum rating', type: 'number', min: 0, max: 5, step: 0.5 },
+    { name: 'limit', label: 'Limit (max 10)', type: 'number', min: 1, max: 10, value: 5 },
+  ],
+  'attractions.get_reviews': [
+    { name: 'attraction_id', label: 'Attraction ID', type: 'number', min: 1, required: true },
+  ],
+};
+
+function mcpArgFieldHtml(field) {
+  const id = `mcp-arg-${field.name}`;
+  const label = `<label for="${id}">${escapeHtml(field.label)}</label>`;
+
+  if (field.type === 'select') {
+    const options = field.options
+      .map((value) => `<option value="${escapeHtml(value)}">${value ? escapeHtml(value) : 'Any'}</option>`)
+      .join('');
+    return `${label}<select id="${id}" data-arg="${field.name}">${options}</select>`;
+  }
+
+  const attrs = [
+    field.min != null ? `min="${field.min}"` : '',
+    field.max != null ? `max="${field.max}"` : '',
+    field.step != null ? `step="${field.step}"` : '',
+    field.value != null ? `value="${field.value}"` : '',
+    field.required ? 'required' : '',
+  ].filter(Boolean).join(' ');
+  return `${label}<input id="${id}" type="number" data-arg="${field.name}" ${attrs}>`;
+}
+
+function renderMcpArgs(toolName) {
+  const container = document.getElementById('mcp-args');
+  const schema = MCP_TOOL_SCHEMAS[toolName];
+  if (!schema) {
+    container.innerHTML = '<p class="empty">No input form available for this tool.</p>';
+    return;
+  }
+  container.innerHTML = schema.map(mcpArgFieldHtml).join('');
+}
+
+/** Reads #mcp-args' current inputs into a {tool_arg: value} object, skipping blank optional fields. */
+function collectMcpArguments(toolName) {
+  const schema = MCP_TOOL_SCHEMAS[toolName] || [];
+  const args = {};
+  schema.forEach((field) => {
+    const input = document.getElementById(`mcp-arg-${field.name}`);
+    if (!input || input.value === '') return;
+    args[field.name] = field.type === 'select' ? input.value : Number(input.value);
+  });
+  return args;
+}
+
+function setMcpStatus(message, kind) {
+  const status = document.getElementById('mcp-status');
+  status.innerHTML = message ? `<p class="${kind}">${escapeHtml(message)}</p>` : '';
+}
+
+function initMcpPanel() {
+  const select = document.getElementById('mcp-tool');
+  const runButton = document.getElementById('mcp-run');
+
+  fetch('/attractions-api/mcp/tools')
+    .then((response) => response.json().then((data) => ({ status: response.status, data })))
+    .then(({ status, data }) => {
+      if (status === 503) {
+        setMcpStatus('MCP tools are currently disabled.', 'error');
+        return;
+      }
+      if (status !== 200 || !data || !Array.isArray(data.tools)) {
+        setMcpStatus('MCP service is offline.', 'error');
+        return;
+      }
+      if (data.tools.length === 0) {
+        setMcpStatus('No MCP tools are currently registered.', 'empty');
+        return;
+      }
+      select.innerHTML = data.tools.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+      select.disabled = false;
+      runButton.disabled = false;
+      renderMcpArgs(select.value);
+    })
+    .catch(() => setMcpStatus('MCP service is offline.', 'error'));
+
+  select.addEventListener('change', () => renderMcpArgs(select.value));
+
+  document.getElementById('mcp-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const tool = select.value;
+    const resultBox = document.getElementById('mcp-result');
+    resultBox.innerHTML = '<p class="loading">Running tool...</p>';
+    runButton.disabled = true;
+
+    fetch('/attractions-api/mcp/invoke', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool, arguments: collectMcpArguments(tool) }),
+    })
+      .then((response) => response.json().then((data) => ({ status: response.status, data })))
+      .then(({ status, data }) => renderMcpResult(status, data, tool))
+      .catch(() => renderMcpResult(502, null, tool))
+      .finally(() => { runButton.disabled = false; });
+  });
+}
+
+function mcpAttractionsSearchResultHtml(result) {
+  const rows = result.attractions.map((attraction) => `
+    <li>
+      <strong>${escapeHtml(attraction.name)}</strong>
+      (${escapeHtml(attraction.category)}${attraction.rating != null ? `, ★ ${escapeHtml(attraction.rating)}` : ''})
+      <p>${escapeHtml(attraction.description)}</p>
+    </li>
+  `).join('');
+  return `
+    <p class="mcp-summary">Showing ${result.attractions.length} of ${result.total_matches} match(es).</p>
+    <ul class="mcp-attraction-list">${rows || '<li class="empty">No matches.</li>'}</ul>
+  `;
+}
+
+function mcpGetReviewsResultHtml(result) {
+  const rows = result.reviews.map((review) => `
+    <li>${review.rating != null ? `★ ${escapeHtml(review.rating)} — ` : ''}${escapeHtml(review.comment)}</li>
+  `).join('');
+  return `
+    <p class="mcp-summary">Reviews for <strong>${escapeHtml(result.name)}</strong>:</p>
+    <ul class="mcp-attraction-list">${rows || '<li class="empty">No reviews yet.</li>'}</ul>
+  `;
+}
+
+function renderMcpResult(status, data, tool) {
+  const box = document.getElementById('mcp-result');
+
+  if (status === 503) {
+    box.innerHTML = '<p class="error">MCP tools are currently disabled.</p>';
+    return;
+  }
+  if (status === 502 || data === null) {
+    box.innerHTML = '<p class="error">MCP service is offline.</p>';
+    return;
+  }
+  if (status === 400) {
+    box.innerHTML = `<p class="error">${escapeHtml((data && data.message) || 'Invalid tool call.')}</p>`;
+    return;
+  }
+  if (tool === 'attractions.search') {
+    box.innerHTML = mcpAttractionsSearchResultHtml(data.result);
+    return;
+  }
+  if (tool === 'attractions.get_reviews') {
+    box.innerHTML = mcpGetReviewsResultHtml(data.result);
+    return;
+  }
+  box.innerHTML = `<pre>${escapeHtml(JSON.stringify(data.result, null, 2))}</pre>`;
+}
+
+document.addEventListener('DOMContentLoaded', initMcpPanel);
+
+/** Matches handleRecommendStart's loading-state pattern for the RAG panel. */
+function handleRagStart(form) {
+  document.getElementById('rag-result').innerHTML = '<p class="loading">Asking the destination guide...</p>';
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = true;
+}
+
+function citationsHtml(citations) {
+  if (!citations.length) return '';
+  const items = citations.map((citation) => `
+    <li>
+      <strong>${escapeHtml(citation.source)}</strong>
+      (score ${escapeHtml(citation.score)})
+      <p>${escapeHtml(citation.snippet)}</p>
+    </li>
+  `).join('');
+  return `<ol class="rag-citations">${items}</ol>`;
+}
+
+function renderRagAnswer(event, form) {
+  const box = document.getElementById('rag-result');
+  const status = event.detail.xhr.status;
+  const data = parseJsonResponse(event);
+  const button = form.querySelector('button[type="submit"]');
+  if (button) button.disabled = false;
+
+  if (status === 503) {
+    box.innerHTML = '<p class="error">The destination guide is currently disabled.</p>';
+    return;
+  }
+  if (status === 502 || data === null) {
+    box.innerHTML = '<p class="error">The destination guide service is offline.</p>';
+    return;
+  }
+  if (status >= 400) {
+    box.innerHTML = `<p class="error">${escapeHtml((data && data.message) || 'Something went wrong, please try again.')}</p>`;
+    return;
+  }
+
+  const badgeClass = confidenceBadgeClass(data.confidence);
+
+  if (data.confidence === 'insufficient') {
+    box.innerHTML = `
+      <p class="rag-insufficient">${escapeHtml(data.answer)}</p>
+    `;
+    return;
+  }
+
+  box.innerHTML = `
+    <p><span class="confidence-badge ${badgeClass}">${escapeHtml(data.confidence)} confidence</span></p>
+    <p class="rag-answer">${escapeHtml(data.answer)}</p>
+    ${citationsHtml(data.citations)}
+  `;
+}
+
 function renderRecommendation(event, form) {
   const box = document.getElementById('recommend-result');
   const data = parseJsonResponse(event);

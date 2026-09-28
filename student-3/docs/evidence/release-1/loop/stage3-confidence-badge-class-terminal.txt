@@ -1,0 +1,146 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to implement the `confidenceBadgeClass(confidence)` function in the `index.html` file. This function maps a RAG confidence level to a CSS class name. The function should return "confidence-high" for "high", "confidence-medium" for "medium", "confidence-low" for "low", "confidence-insufficient" for "insufficient", and "confidence-unknown" for any other input.
+
+Requirements:
+- The function must be implemented in the `index.html` file.
+- The function should not throw any errors or return undefined for any input.
+- The function should return "confidence-unknown" for any input that is not "high", "medium", "low", or "insufficient".
+
+Files:
+- `student-3/frontend/index.html`
+
+Steps:
+1. Implement the `confidenceBadgeClass(confidence)` function in the `index.html` file.
+2. Test the function with various inputs to ensure it returns the correct CSS class name.
+
+Risks:
+- Implementing the function incorrectly could lead to incorrect styling or unexpected behavior.
+- The function should not throw any errors or return undefined for any input.
+
+Validation:
+- Test the function with various inputs to ensure it returns the correct CSS class name.
+- Ensure the function does not throw any errors or return undefined for any input.
+
+[ACT]
+Proposed change:
+```html
+<script>
+  // Maps a RAG confidence level to a CSS class name.
+  function confidenceBadgeClass(confidence) {
+    if (confidence === 'high') {
+      return 'confidence-high';
+    } else if (confidence === 'medium') {
+      return 'confidence-medium';
+    } else if (confidence === 'low') {
+      return 'confidence-low';
+    } else if (confidence === 'insufficient') {
+      return 'confidence-insufficient';
+    } else {
+      return 'confidence-unknown';
+    }
+  }
+
+  // Assertions (not run automatically - paste into `node -e "<body>"`):
+  console.assert(confidenceBadgeClass('high') === 'confidence-high', 'confidenceBadgeClass("high") should return "confidence-high"');
+  console.assert(confidenceBadgeClass('medium') === 'confidence-medium', 'confidenceBadgeClass("medium") should return "confidence-medium"');
+  console.assert(confidenceBadgeClass('low') === 'confidence-low', 'confidenceBadgeClass("low") should return "confidence-low"');
+  console.assert(confidenceBadgeClass('insufficient') === 'confidence-insufficient', 'confidenceBadgeClass("insufficient") should return "confidence-insufficient"');
+  console.assert(confidenceBadgeClass('bogus') === 'confidence-unknown', 'confidenceBadgeClass("bogus") should return "confidence-unknown"');
+</script>
+```
+```
+```
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `console.assert(confidenceBadgeClass('bogus') === 'confidence-unknown', 'confidenceBadgeClass("bogus") should return "confidence-unknown")` has no guard for unknown inputs.
+  Failure mode: The function will throw an error when given an unknown input.
+  Required correction: Return "confidence-unknown" for any input that is not "high", "medium", "low", or "insufficient".
+
+Validation gaps:
+The pre-test only confirms the stub existed; no test covers a count of zero.
+
+Scope check:
+The change touches only the one helper function, as requested.
+[ADAPT] Implementer model producing one bounded revision.
+```text
+[PLAN]
+Goal:
+The goal is to implement the `confidenceBadgeClass(confidence)` function in the `index.html` file. This function maps a RAG confidence level to a CSS class name. The function should return "confidence-high" for "high", "confidence-medium" for "medium", "confidence-low" for "low", "confidence-insufficient" for "insufficient", and "confidence-unknown" for any other input. The function should not throw any errors or return undefined for any input.
+
+Requirements:
+- The function must be implemented in the `index.html` file.
+- The function should not throw any errors or return undefined for any input.
+- The function should return "confidence-unknown" for any input that is not "high", "medium", "low", or "insufficient".
+
+Files:
+- `student-3/frontend/index.html`
+
+Steps:
+1. Implement the `confidenceBadgeClass(confidence)` function in the `index.html` file.
+2. Test the function with various inputs to ensure it returns the correct CSS class name.
+
+Risks:
+- Implementing the function incorrectly could lead to incorrect styling or unexpected behavior.
+- The function should not throw any errors or return undefined for any input.
+
+Validation:
+- Test the function with various inputs to ensure it returns the correct CSS class name.
+- Ensure the function does not throw any errors or return undefined for any input.
+
+[ACT]
+Proposed change:
+```html
+<script>
+  // Maps a RAG confidence level to a CSS class name.
+  function confidenceBadgeClass(confidence) {
+    if (confidence === 'high') {
+      return 'confidence-high';
+    } else if (confidence === 'medium') {
+      return 'confidence-medium';
+    } else if (confidence === 'low') {
+      return 'confidence-low';
+    } else if (confidence === 'insufficient') {
+      return 'confidence-insufficient';
+    } else {
+      return 'confidence-unknown';
+    }
+  }
+
+  // Assertions (not run automatically - paste into `node -e "<body>"`):
+  console.assert(confidenceBadgeClass('high') === 'confidence-high', 'confidenceBadgeClass("high") should return "confidence-high"');
+  console.assert(confidenceBadgeClass('medium') === 'confidence-medium', 'confidenceBadgeClass("medium") should return "confidence-medium"');
+  console.assert(confidenceBadgeClass('low') === 'confidence-low', 'confidenceBadgeClass("low") should return "confidence-low"');
+  console.assert(confidenceBadgeClass('insufficient') === 'confidence-insufficient', 'confidenceBadgeClass("insufficient") should return "confidence-insufficient"');
+  console.assert(confidenceBadgeClass('bogus') === 'confidence-unknown', 'confidenceBadgeClass("bogus") should return "confidence-unknown"');
+</script>
+```
+```
+```
+```
+[OBSERVE] Reviewer model assessing the adapted proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `console.assert(confidenceBadgeClass('bogus') === 'confidence-unknown', 'confidenceBadgeClass("bogus") should return "confidence-unknown")` has no guard for unknown inputs.
+  Failure mode: The function will throw an error when given an unknown input.
+  Required correction: Return "confidence-unknown" for any input that is not "high", "medium", "low", or "insufficient".
+
+Validation gaps:
+The pre-test only confirms the stub existed; no test covers a count of zero.
+
+Scope check:
+The change touches only the one helper function, as requested.
+
+The proposed code does not handle unknown inputs correctly, which is a blocking finding. It should return "confidence-unknown" for any input that is not "high", "medium", "low", or "insufficient".
+Agentic-loop record awaiting human finalisation: C:\Users\khush\sources\Repos\Advanced-Software-Development-Project\docs\agentic-loop-records\20260928T014432Z-13e1380479ef49e683dfad24f55d13c1.json

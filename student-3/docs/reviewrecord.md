@@ -188,3 +188,47 @@ The task description for this attempt was longer and more detailed (two worked e
 - Full terminal transcripts: `student-3/docs/evidence/release-1/loop/stage2-ragresponseerror-code-attempt1-failed-terminal.txt` (degenerate repetition, no record) and `...-attempt2-terminal.txt` (this record).
 
 **Verdict (as of 2026-09-27):** The record is complete and finalised as `rejected`, which is the correct outcome — this is the first Stage 2 case where the reviewer's error wasn't just a false positive on working code (as in the `total_matches` record) but a genuine miss of implementer-introduced bugs that would have shipped a broken `.code` extraction and a crash-on-error-path defect had they been accepted. The loop surfaced a real proposal to evaluate, evaluating it caught what the reviewer didn't, and the human Adapt phase replaced it entirely rather than patching around it.
+
+## 2026-09-28 — Agentic Loop Record Review (record `20260928T014432Z`, Stage 3 `confidenceBadgeClass`, kept)
+
+**Scope:** The finalised Stage 3 agentic-loop record `docs/agentic-loop-records/20260928T014432Z-13e1380479ef49e683dfad24f55d13c1.json`, produced to implement `confidenceBadgeClass(confidence)` in `student-3/frontend/index.html` (the RAG panel's confidence-badge CSS-class mapping), finalised `kept`. Reviewed by reading the record's fields directly and running the exact proposed code through `node` myself, not from the prompt-log summary alone.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Record file | `20260928T014432Z-13e1380479ef49e683dfad24f55d13c1.json` |
+| Created / finalised | 2026-09-28T01:44:32Z / 2026-09-28T01:49:57Z |
+| Task | Implement `confidenceBadgeClass(confidence)`: map `"high"/"medium"/"low"/"insufficient"` to `"confidence-<level>"`, anything else to `"confidence-unknown"` |
+| Context files | `student-3/frontend/index.html` only |
+| Implementer | `qwen2.5:3b`, prompt `shared-implementer-v1` |
+| Reviewer | `llama3.2:3b`, prompt `student3-reviewer-llama32-v1` |
+| Ollama / options | 0.34.3; temperature 0, context 16,384, max output 4,096 |
+| Pre-test | `node -e` assertions against the stub — 5/5 failed (`undefined` returned for every input), expected |
+| Post-test | Same assertions plus one extra (`undefined` input) — 6/6 passed |
+
+### Phase-by-phase
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | Restated the goal, requirements, one file, two steps, two risks, and validation. | Accurate; no scope drift. |
+| Act | An if/else-if chain for the four known levels, with a final `else { return 'confidence-unknown'; }` covering every other input. | **Correct.** Verified directly: ran the proposed function through `node` against all four known levels plus `"bogus"` and `undefined` — 6/6 match the task's required outputs exactly, and it never throws. |
+| Observe (1st pass) | `REVISE`, one BLOCKING finding: "has no guard for unknown inputs... will throw an error when given an unknown input." | **Hallucinated.** The `else` branch *is* the guard; there is no code path that throws. This is the same "reviewer misdescribes code that plainly contradicts the finding" pattern as the `total_matches` record (§2026-09-25) — not the `RagResponseError` record's pattern (§2026-09-27), where the reviewer's finding was wrong but the code underneath actually was broken for other reasons. |
+| Adapt (machine) | Implementer's revision is **byte-identical** to its first Act output (confirmed by comparing `planAct`/`adaptedProposal` directly). Reviewer's second pass repeats the identical BLOCKING finding verbatim, plus the identical "Validation gaps" text. | Same non-engagement pattern as both prior records. |
+| Adapt (human) | Decision `kept`. The proposal already satisfied the task; no code change was needed. Rejected the BLOCKING finding as hallucinated. | **Correct.** Re-verified post-finalise: 6/6 `node` assertions pass. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| No action needed | Reviewer's BLOCKING finding ("no guard, will throw") was factually wrong; the proposal's `else` branch is the guard and the function cannot throw for any string or `undefined` input. | Correctly rejected; no code was defective. |
+| Open | The reviewer's "Validation gaps" text ("no test covers a count of zero") is, again, boilerplate copied verbatim from the unrelated Stage 1 `total_matches` task — third record in a row where this exact phrase appears regardless of what the actual task was. | This is now a confirmed, repeatable failure mode of `reviewer-student3-v1.md` across three independent tasks (2026-09-25, 2026-09-27, 2026-09-28), not a one-off. Release 1 action: a v2 reviewer prompt should require the Validation gaps line to name a concept that actually appears in the current task's requirements, or say `None identified` rather than reuse fixed text. |
+| Open | Across all three finalised student-3 records to date, the reviewer's REVISE verdict was correct in intent (something needed checking) only once (`RagResponseError`), and even then its own stated finding was wrong; twice (`total_matches`, `confidenceBadgeClass`) the code needed no change at all. The reviewer has not yet produced a finding that was both correctly identified *and* accurately described. | Track in `prompt-engineering.md` as the residual limitation of `student3-reviewer-llama32-v1`; a future version should be evaluated specifically for finding *accuracy*, not just format compliance and evidence-quoting (which it already satisfies). |
+
+### Automated Evidence
+
+- Pre-test and post-test re-run directly: `node -e` — 5/5 failed before (stub), 6/6 passed after (implemented), matching the record's `preTest`/`postTest` fields.
+- Independent verification of the exact proposed code (before finalising) against 6 inputs including one not in the loop's own assertions (`undefined`) — all correct.
+- Full terminal transcript: `student-3/docs/evidence/release-1/loop/stage3-confidence-badge-class-terminal.txt`.
+
+**Verdict (as of 2026-09-28):** The record is complete and finalised as `kept`. Combined with the other two finalised records, this establishes a clear, evidence-backed pattern across Release 1: `reviewer-student3-v1.md`'s grounding-in-evidence rule reliably stops it from citing code that doesn't exist, but it has not yet correctly identified a real defect on its own initiative — the one real defect caught this release (`RagResponseError`) was found by the human re-deriving the code's behaviour against the task's examples, not by trusting the reviewer's stated finding. This is documented, not hidden, and is exactly the kind of evidence the assignment's agentic-loop criterion is asking for.

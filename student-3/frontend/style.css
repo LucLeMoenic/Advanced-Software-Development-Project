@@ -256,3 +256,184 @@ h2 {
 .rec-text {
   margin: 0;
 }
+
+/* MCP tools panel */
+
+.service-status p {
+  margin: 0 0 0.75rem;
+}
+
+#mcp-form label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin: 0.5rem 0 0.2rem;
+}
+
+#mcp-form select,
+#mcp-form input {
+  width: 100%;
+  max-width: 320px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+#mcp-run {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  cursor: pointer;
+}
+
+#mcp-run:disabled {
+  background: var(--color-muted);
+  cursor: default;
+}
+
+#mcp-result {
+  margin-top: 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  min-height: 2rem;
+}
+
+.mcp-summary {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.mcp-attraction-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.mcp-attraction-list li {
+  margin-bottom: 0.5rem;
+}
+
+.mcp-attraction-list p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+}
+
+/* RAG destination-guide panel */
+
+#rag-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+
+#rag-form input {
+  flex: 1;
+  min-width: 220px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+#rag-form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  cursor: pointer;
+}
+
+#rag-result {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  min-height: 2rem;
+}
+
+.confidence-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.confidence-high {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.confidence-medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.confidence-low {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.confidence-insufficient,
+.confidence-unknown {
+  background: #e5e7eb;
+  color: var(--color-muted);
+}
+
+.rag-answer {
+  margin: 0.5rem 0 0.75rem;
+}
+
+.rag-insufficient {
+  margin: 0;
+  padding: 0.75rem;
+  background: #f3f4f6;
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.rag-citations {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+}
+
+.rag-citations li {
+  margin-bottom: 0.5rem;
+}
+
+.rag-citations p {
+  margin: 0.15rem 0 0;
+  color: var(--color-muted);
+}
+
+/* Narrow viewports (down to 375px): stack the new panels' forms instead of
+   relying on flex-wrap alone, which still leaves inputs uncomfortably
+   narrow at this width. */
+@media (max-width: 480px) {
+  #mcp-form select,
+  #mcp-form input {
+    max-width: none;
+  }
+
+  #rag-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #rag-form input {
+    min-width: 0;
+  }
+}

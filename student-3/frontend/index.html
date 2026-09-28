@@ -96,6 +96,49 @@
       <p class="recommend-elapsed"><span id="recommend-elapsed" aria-hidden="true"></span></p>
     </section>
 
+    <section id="mcp-tools" aria-labelledby="mcp-tools-heading">
+      <h2 id="mcp-tools-heading">Attraction Tools (MCP)</h2>
+      <p>Run one of Student 3's MCP tools directly and see the structured result.</p>
+
+      <div id="mcp-status" class="service-status"></div>
+
+      <form id="mcp-form">
+        <label for="mcp-tool">Tool</label>
+        <select id="mcp-tool" disabled></select>
+
+        <div id="mcp-args"></div>
+
+        <button type="submit" id="mcp-run" disabled>Run tool</button>
+      </form>
+
+      <div id="mcp-result" aria-live="polite"></div>
+    </section>
+
+    <section id="rag-guide" aria-labelledby="rag-guide-heading">
+      <h2 id="rag-guide-heading">Ask the Destination Guide (RAG)</h2>
+      <p>Ask a question grounded in Student 3's knowledge base, with citations.</p>
+
+      <form
+        id="rag-form"
+        hx-post="/attractions-api/rag/ask"
+        hx-swap="none"
+        hx-on::before-request="handleRagStart(this)"
+        hx-on::after-request="renderRagAnswer(event, this)">
+        <label for="rag-question">Your question</label>
+        <input
+          id="rag-question"
+          name="question"
+          type="text"
+          placeholder="e.g. Is Chin Chin busy? Do I need to book?"
+          required
+          minlength="1"
+          maxlength="1000">
+        <button type="submit">Ask</button>
+      </form>
+
+      <div id="rag-result" aria-live="polite"></div>
+    </section>
+
     <section id="manage" aria-labelledby="manage-heading">
       <h2 id="manage-heading">Add an Attraction</h2>
 
@@ -198,6 +241,39 @@
     recommendForm.addEventListener('htmx:afterRequest', function () {
       stopElapsedTimer();
     });
+
+    /**
+     * Maps a RAG /query confidence level to the CSS class used to style its
+     * badge in the "Ask the Destination Guide" panel (see style.css's
+     * .confidence-* rules and renderRagAnswer in app.js).
+     *
+     * @param {string} confidence One of "high", "medium", "low",
+     *   "insufficient" (the RAG server's only defined values - see
+     *   ai-services/rag-server/confidence.py's CONFIDENCE_LEVELS).
+     * @returns {string} A CSS class name. Any value outside the four known
+     *   levels (defensive - the backend should never send one) must map to
+     *   "confidence-unknown", never throw or return undefined.
+     */
+    function confidenceBadgeClass(confidence) {
+      if (confidence === 'high') {
+        return 'confidence-high';
+      } else if (confidence === 'medium') {
+        return 'confidence-medium';
+      } else if (confidence === 'low') {
+        return 'confidence-low';
+      } else if (confidence === 'insufficient') {
+        return 'confidence-insufficient';
+      } else {
+        return 'confidence-unknown';
+      }
+    }
+
+    // Assertions (not run automatically - paste into `node -e "<body>"`):
+    // console.assert(confidenceBadgeClass('high') === 'confidence-high');
+    // console.assert(confidenceBadgeClass('medium') === 'confidence-medium');
+    // console.assert(confidenceBadgeClass('low') === 'confidence-low');
+    // console.assert(confidenceBadgeClass('insufficient') === 'confidence-insufficient');
+    // console.assert(confidenceBadgeClass('bogus') === 'confidence-unknown');
   </script>
 </body>
 </html>
