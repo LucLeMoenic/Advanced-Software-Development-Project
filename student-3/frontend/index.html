@@ -247,8 +247,6 @@
      * badge in the "Ask the Destination Guide" panel (see style.css's
      * .confidence-* rules and renderRagAnswer in app.js).
      *
-     * TODO(you): implement.
-     *
      * @param {string} confidence One of "high", "medium", "low",
      *   "insufficient" (the RAG server's only defined values - see
      *   ai-services/rag-server/confidence.py's CONFIDENCE_LEVELS).
@@ -257,6 +255,17 @@
      *   "confidence-unknown", never throw or return undefined.
      */
     function confidenceBadgeClass(confidence) {
+      if (confidence === 'high') {
+        return 'confidence-high';
+      } else if (confidence === 'medium') {
+        return 'confidence-medium';
+      } else if (confidence === 'low') {
+        return 'confidence-low';
+      } else if (confidence === 'insufficient') {
+        return 'confidence-insufficient';
+      } else {
+        return 'confidence-unknown';
+      }
     }
 
     // Assertions (not run automatically - paste into `node -e "<body>"`):
