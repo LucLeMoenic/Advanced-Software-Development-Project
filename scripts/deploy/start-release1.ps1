@@ -80,6 +80,8 @@ function Get-VenvPython([string]$Venv, [string]$Requirements) {
 
 Push-Location $repositoryRoot
 try {
+    & (Join-Path $PSScriptRoot "start-docker.ps1")
+
     if ($Stop) {
         if (Test-Path $stateFile) {
             $started = Get-Content $stateFile -Raw | ConvertFrom-Json
