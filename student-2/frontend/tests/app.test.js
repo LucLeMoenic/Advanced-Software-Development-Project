@@ -1,36 +1,62 @@
 // @vitest-environment jsdom
 
+import { createApp, nextTick } from "vue";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import App from "../App.vue";
 
-const page = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
-const body = page.match(/<body>([\s\S]*)<\/body>/)[1];
+let application;
+
+function setValue(selector, value) {
+  const input = document.querySelector(selector);
+  input.value = value;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 function jsonResponse(value, status = 200) {
+  const body = JSON.stringify(value);
   return Promise.resolve({
     ok: status >= 200 && status < 300,
     status,
-    json: () => Promise.resolve(value),
+    json: () => Promise.resolve(JSON.parse(body)),
   });
 }
 
 async function loadApplication() {
-  await import("../app.js");
-  window.dispatchEvent(new Event("load"));
+  application = createApp(App);
+  application.mount("#app");
+  await nextTick();
 }
 
 beforeEach(() => {
-  vi.resetModules();
-  document.body.innerHTML = body;
+  document.body.innerHTML = '<div id="app"></div>';
   vi.restoreAllMocks();
-  document.querySelectorAll("dialog").forEach((dialog) => {
-    dialog.showModal = vi.fn(() => { dialog.open = true; });
-    dialog.close = vi.fn(() => { dialog.open = false; });
-  });
+  HTMLDialogElement.prototype.showModal = vi.fn(function () { this.open = true; });
+  HTMLDialogElement.prototype.close = vi.fn(function () { this.open = false; });
+});
+
+afterEach(() => {
+  application?.unmount();
+  vi.unstubAllGlobals();
 });
 
 describe("Itinerary Planner", () => {
+  test("boots a single Vue application without legacy markup or handlers", async () => {
+    const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
+    expect(html.match(/<!doctype html>/gi)).toHaveLength(1);
+    expect(html).not.toContain('id="trip-form"');
+    vi.stubGlobal("fetch", vi.fn((url) => jsonResponse(url.endsWith("/capabilities")
+      ? { aiEnabled: false, mcpEnabled: false, ragEnabled: false } : [])));
+    await import("../app.js");
+    application = document.querySelector("#app").__vue_app__;
+    await vi.waitFor(() => expect(document.querySelector("#trip-count").textContent).toBe("0 saved trips"));
+    window.dispatchEvent(new Event("load"));
+    await nextTick();
+    expect(document.querySelectorAll("#trip-form")).toHaveLength(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test("ignores a pending summary after a successful 204 stop deletion", async () => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900,
       stops: [{ id: 1, tripId: 12, day: 1, activity: "Walk", notes: "", sortOrder: 0 }] };
@@ -66,9 +92,10 @@ describe("Itinerary Planner", () => {
     vi.stubGlobal("fetch", fetchMock);
     await loadApplication();
     await vi.waitFor(() => expect(document.querySelector("#advice-submit").disabled).toBe(false));
-    document.querySelector("#advice-question").value = "Budget?";
+    setValue("#advice-question", "Budget?");
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    await nextTick();
     expect(document.querySelector("#advice-question").disabled).toBe(true);
     expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/itinerary-advice"))).toHaveLength(1);
     resolveAdvice(await jsonResponse({ error: { message: "The local model is unavailable." } }, 503));
@@ -97,7 +124,7 @@ describe("Itinerary Planner", () => {
     document.querySelector("#mcp-summary").click();
     await vi.waitFor(() => expect(document.querySelector("#mcp-result").hidden).toBe(false));
     expect(document.querySelector("#mcp-result").textContent).toContain("1, 2, 3");
-    document.querySelector("#advice-question").value = "Budget?";
+    setValue("#advice-question", "Budget?");
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
     expect(document.querySelector("#advice-confidence").textContent).toBe("Confidence: high");
@@ -122,6 +149,7 @@ describe("Itinerary Planner", () => {
     expect(document.querySelector("#trip-count").textContent).toBe("2 saved trips");
     document.querySelector("#trip-filter").value = "sam";
     document.querySelector("#trip-filter").dispatchEvent(new Event("input", { bubbles: true }));
+    await nextTick();
     expect(document.querySelector("#trip-list").textContent).toContain("Lisbon");
     expect(document.querySelector("#trip-list").textContent).not.toContain("Kyoto");
     expect(document.querySelector("#trip-count").textContent).toBe("1 of 2 trips");
@@ -154,12 +182,12 @@ describe("Itinerary Planner", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     await loadApplication();
-    document.querySelector("#user").value = "Alex";
-    document.querySelector("#destination").value = "Osaka";
-    document.querySelector("#start-date").value = "2026-10-10";
-    document.querySelector("#end-date").value = "2026-10-11";
-    document.querySelector("#budget").value = "1500";
-    document.querySelector("#interests").value = "food";
+    setValue("#user", "Alex");
+    setValue("#destination", "Osaka");
+    setValue("#start-date", "2026-10-10");
+    setValue("#end-date", "2026-10-11");
+    setValue("#budget", "1500");
+    setValue("#interests", "food");
 
     document.querySelector("#trip-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
@@ -198,10 +226,11 @@ describe("Itinerary Planner", () => {
     await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toBe("Osaka itinerary"));
     document.querySelector("#trip-composer").open = false;
     document.querySelector("#edit-trip").click();
+    await nextTick();
     expect(document.querySelector("#trip-composer").open).toBe(true);
     expect(document.querySelector("#trip-form-summary").textContent).toBe("Osaka · 2026-10-10 to 2026-10-11");
     expect(document.querySelector("#destination").value).toBe("Osaka");
-    document.querySelector("#destination").value = "Kyoto";
+    setValue("#destination", "Kyoto");
     document.querySelector("#trip-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
     await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toBe("Kyoto itinerary"));
@@ -251,9 +280,10 @@ describe("Itinerary Planner", () => {
     expect(stopActionsMenu.querySelectorAll("button")).toHaveLength(4);
     stopActionsMenu.open = true;
     document.querySelector("[data-edit-stop='1']").click();
+    await nextTick();
     expect(stopActionsMenu.open).toBe(false);
     expect(document.querySelector("#stop-day").max).toBe("2");
-    document.querySelector("#stop-activity").value = "Edited market walk";
+    setValue("#stop-activity", "Edited market walk");
     document.querySelector("#stop-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Edited market walk"));
     const stopUpdate = fetchMock.mock.calls.find(([url, options]) => url === "/itinerary-api/stops/1" && options?.method === "PUT");
@@ -267,10 +297,12 @@ describe("Itinerary Planner", () => {
     document.querySelector("[data-regenerate-stop='1']").click();
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Regenerated market walk"));
     document.querySelector("#regenerate-trip").click();
+    await nextTick();
     expect(document.querySelector("#feedback-title").textContent).toBe("Regenerate itinerary?");
     document.querySelector("#feedback-confirm").click();
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Castle visit"));
     document.querySelector("[data-remove-stop='2']").click();
+    await nextTick();
     expect(document.querySelector("#feedback-title").textContent).toBe("Remove stop?");
     document.querySelector("#feedback-confirm").click();
     await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("No stops yet"));
@@ -287,16 +319,17 @@ describe("Itinerary Planner", () => {
     await loadApplication();
 
     document.querySelector("#trip-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await nextTick();
     expect(document.querySelector("#feedback-dialog").dataset.kind).toBe("validation");
     expect(document.querySelector("#feedback-title").textContent).toBe("Check details");
     expect(document.querySelector("#feedback-message").textContent).toBe("Traveller is required.");
     document.querySelector("#feedback-confirm").click();
 
-    document.querySelector("#user").value = "Alex";
-    document.querySelector("#destination").value = "Osaka";
-    document.querySelector("#start-date").value = "2026-10-10";
-    document.querySelector("#end-date").value = "2026-10-11";
-    document.querySelector("#budget").value = "1500";
+    setValue("#user", "Alex");
+    setValue("#destination", "Osaka");
+    setValue("#start-date", "2026-10-10");
+    setValue("#end-date", "2026-10-11");
+    setValue("#budget", "1500");
     document.querySelector("#trip-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#feedback-dialog").dataset.kind).toBe("error"));
     expect(document.querySelector("#feedback-title").textContent).toBe("Something went wrong");
@@ -305,14 +338,57 @@ describe("Itinerary Planner", () => {
     document.querySelector("#feedback-confirm").click();
 
     const trip = { id: 12, user: "Alex", destination: "Osaka", startDate: "2026-10-10", endDate: "2026-10-11", budget: 1500, stops: [] };
-    document.querySelector("#trip-list").innerHTML = '<li><button data-trip-id="12">Osaka</button></li>';
-    fetchMock.mockResolvedValueOnce(await jsonResponse(trip));
+    fetchMock.mockImplementation((url) => jsonResponse(url.endsWith("/trips/12") ? trip : [trip]));
+    document.querySelector("#refresh-trips").click();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
     document.querySelector("[data-trip-id='12']").click();
     await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toBe("Osaka itinerary"));
     document.querySelector("#delete-trip").click();
+    await nextTick();
     expect(document.querySelector("#feedback-dialog").dataset.kind).toBe("confirm");
     document.querySelector("#feedback-cancel").click();
     expect(fetchMock.mock.calls.some(([url, options]) => url === "/itinerary-api/trips/12" && options?.method === "DELETE")).toBe(false);
+  });
+
+  test("adds a stop and confirms deletion of the selected trip", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Osaka", startDate: "2026-10-10", endDate: "2026-10-11", budget: 1500, stops: [] };
+    let deleted = false;
+    const fetchMock = vi.fn((url, options) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: false, ragEnabled: false });
+      if (url.endsWith("/stops") && options?.method === "POST") {
+        trip.stops.push({ id: 1, ...JSON.parse(options.body) });
+        return jsonResponse(trip.stops[0], 201);
+      }
+      if (options?.method === "DELETE") { deleted = true; return jsonResponse(null, 204); }
+      if (url.endsWith("/trips/12")) return jsonResponse(trip);
+      return jsonResponse(deleted ? [] : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#itinerary-content").hidden).toBe(false));
+    document.querySelector("#add-stop").click();
+    await nextTick();
+    setValue("#stop-day", "2");
+    setValue("#stop-activity", "Evening walk");
+    setValue("#stop-notes", "Along the river");
+    document.querySelector("#stop-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector("#days").textContent).toContain("Evening walk"));
+    const createCall = fetchMock.mock.calls.find(([, options]) => options?.method === "POST");
+    expect(createCall[0]).toBe("/itinerary-api/trips/12/stops");
+    expect(JSON.parse(createCall[1].body)).toEqual({ day: 2, activity: "Evening walk", notes: "Along the river", sortOrder: 0 });
+    expect(document.querySelector("#stop-dialog").open).toBe(false);
+    document.querySelector("#edit-trip").click();
+    await nextTick();
+    document.querySelector("#delete-trip").click();
+    await nextTick();
+    document.querySelector("#feedback-confirm").click();
+    await vi.waitFor(() => expect(document.querySelector("#status").textContent).toBe("Trip deleted."));
+    expect(document.querySelector("#itinerary-content").hidden).toBe(true);
+    expect(document.querySelector("#empty-state").hidden).toBe(false);
+    expect(document.querySelector("#trip-count").textContent).toBe("0 saved trips");
+    expect(document.querySelector("#destination").value).toBe("");
   });
 
   test("prints the selected itinerary", async () => {
