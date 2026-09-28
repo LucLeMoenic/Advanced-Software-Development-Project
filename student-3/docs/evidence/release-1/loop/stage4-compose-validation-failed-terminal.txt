@@ -1,0 +1,47 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal: Add a new Invoke-Checked call to validate the docker-compose.yml file after the existing pytest block, with a failure message if the validation fails.
+Requirements: The script must run "docker" with arguments @("compose", "config", "--quiet") to validate docker-compose.yml, and must be placed after the existing pytest block. The Push-Location/try/finally { Pop-Location } pattern must be used to ensure docker-compose runs from the repository root.
+Files: scripts/test/student-3.ps1
+Steps:
+1. Push the current working directory to $repositoryRoot.
+2. Run the docker-compose config validation command with the specified arguments.
+3. If the command fails, throw a failure message indicating that the Docker Compose config is invalid.
+4. Pop the current working directory to the original location.
+Risks: The script might fail to validate the docker-compose.yml file, leading to undetected issues.
+Validation: The script should run without errors and the docker-compose config validation should be successful.
+
+[ACT]
+Push-Location "$repositoryRoot"
+Invoke-Checked "docker" @("compose", "config", "--quiet") "Docker Compose config is invalid."
+Pop-Location
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: The script does not invoke the docker-compose config validation command, despite the TODO(you) comment requesting it.
+  Failure mode: The script will not detect invalid docker-compose.yml files, leading to undetected issues.
+  Required correction: Add the Invoke-Checked call to run the docker-compose config validation command with the specified arguments.
+
+Validation gaps: The pre-test evidence does not cover the scenario where the docker-compose.yml file is invalid.
+
+Scope check: The proposal stays within the requested scope by adding a new Invoke-Checked call to validate the docker-compose.yml file.
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `docker` is invoked without checking the existence of the docker-compose.yml file, which could lead to a failure if the file is missing or invalid.
+  Failure mode: The script fails to validate the docker-compose.yml file, leading to undetected issues.
+  Required correction: Add a check to ensure the docker-compose.yml file exists before invoking the docker command.
+
+Validation gaps: The pre-test evidence does not yet prove that the script can handle the case where the docker-compose.yml file is missing or invalid.
+
+Scope check: The proposal stays within the requested scope by adding a new Invoke-Checked call to validate the docker-compose.yml file after the existing pytest block.
+error: Reviewer output must contain exactly one Validation gaps: section.

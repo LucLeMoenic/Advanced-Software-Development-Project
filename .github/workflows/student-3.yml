@@ -7,6 +7,8 @@ on:
   push:
     paths:
       - 'student-3/**'
+      - 'ai-services/mcp-server/**'
+      - 'ai-services/rag-server/**'
       - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
@@ -14,6 +16,8 @@ on:
   pull_request:
     paths:
       - 'student-3/**'
+      - 'ai-services/mcp-server/**'
+      - 'ai-services/rag-server/**'
       - 'shared/vue-frontend/**'
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
@@ -41,6 +45,9 @@ jobs:
         run: docker compose run --rm --no-deps student3-db-init
 
       - name: Start Student 3 services
+        env:
+          MCP_ENABLED: "false"
+          RAG_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
 
       - name: Smoke test Student 3 integration
@@ -49,6 +56,33 @@ jobs:
           curl --fail --silent http://localhost:5203/health
           curl --fail --silent http://localhost:5303/health
           curl --fail --silent http://localhost:5203/api/attractions | python -c "import json,sys; attractions=json.load(sys.stdin); assert len(attractions) >= 10"
+
+          # MCP/RAG are integrated but disabled in CI (see .env.example) - assert
+          # both routes fail closed with the documented disabled body instead of
+          # making a network call to a shared server that isn't running here.
+          curl --silent --write-out '\n%{http_code}' http://localhost:5203/api/mcp/tools \
+            | python -c "
+          import json, sys
+          *body_lines, status = sys.stdin.read().splitlines()
+          assert status == '503', status
+          assert json.loads('\n'.join(body_lines)) == {'error': 'mcp_disabled', 'message': 'MCP is disabled.'}
+          "
+          curl --silent --write-out '\n%{http_code}' -X POST http://localhost:5203/api/mcp/invoke \
+            -H 'Content-Type: application/json' -d '{"tool":"attractions.search","arguments":{}}' \
+            | python -c "
+          import json, sys
+          *body_lines, status = sys.stdin.read().splitlines()
+          assert status == '503', status
+          assert json.loads('\n'.join(body_lines)) == {'error': 'mcp_disabled', 'message': 'MCP is disabled.'}
+          "
+          curl --silent --write-out '\n%{http_code}' -X POST http://localhost:5203/api/rag/ask \
+            -H 'Content-Type: application/json' -d '{"question":"anything"}' \
+            | python -c "
+          import json, sys
+          *body_lines, status = sys.stdin.read().splitlines()
+          assert status == '503', status
+          assert json.loads('\n'.join(body_lines)) == {'error': 'rag_disabled', 'message': 'RAG is disabled.'}
+          "
 
       - name: Stop Student 3 services
         if: always()
