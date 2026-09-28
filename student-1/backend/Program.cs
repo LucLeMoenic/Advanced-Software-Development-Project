@@ -48,7 +48,8 @@ builder.Services
     .AddHttpClient<ILookupArgumentExtractor, OllamaLookupExtractor>(client =>
     {
         client.BaseAddress = new Uri(ollamaUrl);
-        client.Timeout = TimeSpan.FromSeconds(12);
+        // Allows for a cold model load; the nginx proxies in front allow 90 s.
+        client.Timeout = TimeSpan.FromSeconds(60);
     });
 // The MCP client enforces its own 5-second deadline for the whole session.
 builder.Services.AddHttpClient<IMcpToolClient, McpToolClient>();

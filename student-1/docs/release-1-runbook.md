@@ -76,8 +76,8 @@ Start each service in its own terminal. They bind to loopback only:
 - Restart the RAG server after editing `knowledge/student-1/`, because indexes
   are cached.
 
-Warm the model before the first demo question. A cold load can exceed the 12 s
-extraction deadline or the RAG server's 20 s model deadline:
+Warm the model before the first demo question. Lookup extraction allows 60 s for
+a cold load, but a cold load can exceed the RAG server's 20 s model deadline:
 
 ```powershell
 ollama run llama3.2:3b "ready" --keepalive 30m

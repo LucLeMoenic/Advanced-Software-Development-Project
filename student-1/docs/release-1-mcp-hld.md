@@ -41,7 +41,7 @@ Release 0 ranking, and Release 2 multi-agent work.
 | R1-MCP-04 | The backend calls only allow-listed tools. | Calling any name other than the two tools throws before a session opens; a unit test proves no connection is made. | Tool boundaries, security |
 | R1-MCP-05 | Model-extracted arguments are never trusted. | Extraction output is checked against an exact schema, the argument bounds and the question text. Invalid output returns `422 lookup_not_understood` and makes no MCP call. | Security, prompt engineering |
 | R1-MCP-06 | Structured results are validated. | Missing, extra or out-of-range fields, `is_error` results and `ok:false` results never reach the UI as success. | Reliability, grounding and traceability |
-| R1-MCP-07 | Deadlines are bounded. | Database read 3 s (tool); MCP session 5 s (backend outer deadline); extraction 12 s. Worst-case lookup is under 18 s. | Performance, reliability |
+| R1-MCP-07 | Deadlines are bounded. | Database read 3 s (tool); MCP session 5 s (backend outer deadline); extraction 60 s (raised from 12 s to allow a cold model load). Worst-case lookup is under 66 s, within the 90 s nginx proxy timeout. | Performance, reliability |
 | R1-MCP-08 | Request input is bounded. | Bodies over 8192 bytes, unknown fields or questions outside 1-1000 characters return `400 validation_error`. | Security |
 | R1-MCP-09 | Disabled mode is explicit. | With `MCP_ENABLED=false`, lookup returns `503 mode_disabled` and makes no Ollama or MCP call. Any flag value other than `true` or `false` stops the backend at startup. | Configuration, CI |
 | R1-MCP-10 | CI stays offline. | `student-1.yml` runs every Student 1 test plus `test_accommodation_tools.py` with the modes disabled and fakes for Ollama and MCP. It makes no live model or MCP call. | DevOps |
@@ -231,7 +231,7 @@ example rephrase and never calls MCP.
 | Extraction incomplete or ungrounded | 422 | `lookup_not_understood` |
 | Tool `search_not_found` | 404 | `search_not_found` |
 | Ollama or MCP connection failure; tool `dependency_unavailable` | 503 | `dependency_unavailable` |
-| Ollama 12 s or MCP 5 s deadline; tool `dependency_timeout` | 504 | `dependency_timeout` |
+| Ollama 60 s or MCP 5 s deadline; tool `dependency_timeout` | 504 | `dependency_timeout` |
 | Malformed model output, `is_error`, invalid structured result, tool `invalid_dependency_response` or unknown code | 502 | `dependency_response_error` |
 
 Messages are fixed and do not include dependency details.
@@ -279,7 +279,7 @@ Any value other than `true` or `false` throws during startup.
 |---|---|---|---|
 | Container cannot reach native host services (seen on Student 2's Podman/WSL host) | Live lookup fails with 503 | `host.docker.internal` plus `LOCAL_AI_HOST` override; check from inside the container in chunk 1 | Record as a known limitation with the diagnosis; code and CI do not depend on it |
 | C# SDK 2.2.0 does not interoperate with Python `mcp==2.2.0` | No MCP call from the backend | Spike in chunk 3 against the real server | Minimal streamable-HTTP JSON-RPC client behind the same interface; record why |
-| Cold model load exceeds the 12 s extraction deadline | 504 on the first lookup | `keep_alive` 30m; document warming the model | Retry after warm-up; deadline is not raised silently |
+| Cold model load exceeds the 60 s extraction deadline | 504 on the first lookup | `keep_alive` 30m; document warming the model | Retry after warm-up; deadline is not raised silently |
 | Small model extracts wrong or missing arguments | Wrong or no lookup | Schema-constrained output, grounding checks and a rephrase response with examples | Traveller rephrases; the search form still works |
 | Native Ollama not installed on the demo machine | Lookup extraction cannot run | Runbook prerequisites | Record the skipped live checks honestly |
 
