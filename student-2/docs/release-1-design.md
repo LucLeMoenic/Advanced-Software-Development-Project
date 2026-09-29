@@ -123,6 +123,40 @@ Successful `200` response, with illustrative fixture values:
 
 No user name, interests, activity/notes text, or model-generated claims are returned. Budget values use the same unit as the saved trip; do not invent a currency or describe allocation as actual expenditure.
 
+### Combined Trip Overview (28 September Update)
+
+The UI now uses `POST /api/trips/{id}/mcp-overview` and the registered
+`itinerary.get_overview` tool instead of the summary-only action. Existing
+summary clients and loop validation fixtures remain compatible.
+
+The request is empty or `{ "locationId": 1850147 }`. Positive integer IDs only;
+extra fields, arbitrary tools, coordinates, and upstream URLs are rejected.
+The tool reads the trip through the database API, calculates the existing summary,
+then searches up to five Open-Meteo location matches for the saved destination.
+Multiple matches require confirmation; a supplied ID must match a current result.
+No location choice is persisted and no trip data is modified.
+
+The response contains `tool`, the unchanged `summary`, and `weather`:
+
+- `status`: `choose_location`, `not_found`, `available`, `partial`, `outside_window`, or `unavailable`.
+- `locations` and optional `location`: bounded provider IDs, names, region/country and coordinates.
+- `days`: trip-date forecasts with `date`, `weatherCode`, `minTemperature`,
+  `maxTemperature`, and `precipitationProbability`. Missing individual values are null.
+- `unavailableDates`: the exact complement of forecast dates within the trip.
+- `retrievedAt`: UTC retrieval time for successfully retrieved forecasts, otherwise null.
+
+Open-Meteo returns up to 16 days using `timezone=auto` and Celsius. The tool
+validates units, consecutive dates, array lengths and numeric bounds; the backend
+independently validates the public envelope, dates, selection and summary.
+Weather failures degrade only the weather portion. Database/MCP failures retain
+the existing controlled API errors. Fixed HTTPS URLs, no redirects, bounded
+streaming reads and deadlines limit the external-service boundary.
+
+The combined panel includes location selection, daily forecast rows, unavailable
+dates, retrieval time and attribution. It does not infer activity suitability or
+claim real-world itinerary feasibility. Only the destination query and coordinates
+reach the external provider. No LLM is needed for this MCP interaction.
+
 ### Grounded Advice
 
 `POST /api/itinerary-advice` accepts exactly `{ "question": "..." }`. Require a string, trim whitespace, and enforce 1-1000 characters. Reject additional fields, including `feature`, `tripId`, or an upstream URL. Set the feature server-side.

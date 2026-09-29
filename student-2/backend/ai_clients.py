@@ -1,7 +1,8 @@
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
+from typing import Literal
 
 import anyio
 import httpx
@@ -61,6 +62,80 @@ def validate_summary(body, trip_id):
         raise IntegrationError("invalid_dependency_response") from None
 
 
+class WeatherLocation(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    id: int = Field(gt=0)
+    name: str = Field(min_length=1, max_length=200)
+    country: str = Field(max_length=200)
+    admin1: str = Field(max_length=200)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+class WeatherDay(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    date: str
+    weatherCode: int | None = Field(ge=0, le=99)
+    minTemperature: float | None = Field(ge=-100, le=70)
+    maxTemperature: float | None = Field(ge=-100, le=70)
+    precipitationProbability: float | None = Field(ge=0, le=100)
+
+
+class Weather(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    status: Literal["available", "partial", "outside_window", "choose_location", "not_found", "unavailable"]
+    locations: list[WeatherLocation] = Field(max_length=5)
+    location: WeatherLocation | None
+    days: list[WeatherDay] = Field(max_length=16)
+    unavailableDates: list[str] = Field(max_length=31)
+    retrievedAt: str | None
+
+
+def validate_overview(body, trip_id, location_id=None):
+    try:
+        if not isinstance(body, dict) or set(body) != {"summary", "weather"}:
+            raise ValueError("Invalid overview")
+        summary = validate_summary(body["summary"], trip_id)
+        weather = Weather.model_validate(body["weather"])
+        start = date.fromisoformat(summary["startDate"])
+        dates = [(start + timedelta(days=offset)).isoformat() for offset in range(summary["dayCount"])]
+        available = [day.date for day in weather.days]
+        if (available != sorted(set(available)) or not set(available).issubset(dates)
+                or weather.unavailableDates != [value for value in dates if value not in available]
+                or len({item.id for item in weather.locations}) != len(weather.locations)):
+            raise ValueError("Inconsistent weather dates or locations")
+        if weather.location is not None:
+            if weather.location not in weather.locations:
+                raise ValueError("Unknown location")
+            if ((location_id is not None and weather.location.id != location_id)
+                    or (location_id is None and len(weather.locations) != 1)):
+                raise ValueError("Unconfirmed location")
+        for day in weather.days:
+            if (day.minTemperature is not None and day.maxTemperature is not None
+                    and day.minTemperature > day.maxTemperature):
+                raise ValueError("Invalid temperatures")
+            if all(value is None for key, value in day.model_dump().items() if key != "date"):
+                raise ValueError("Empty weather day")
+        if weather.status in ("available", "partial", "outside_window"):
+            if weather.location is None or weather.retrievedAt is None:
+                raise ValueError("Missing forecast source")
+            if datetime.fromisoformat(weather.retrievedAt).tzinfo is None:
+                raise ValueError("Missing retrieval timezone")
+            if (weather.status == "available" and len(available) != len(dates)
+                    or weather.status == "partial" and not 0 < len(available) < len(dates)
+                    or weather.status == "outside_window" and available):
+                raise ValueError("Inconsistent forecast status")
+        elif available or weather.retrievedAt is not None:
+            raise ValueError("Unexpected forecast")
+        if weather.status == "choose_location" and (not weather.locations or weather.location is not None):
+            raise ValueError("Invalid location choice")
+        if weather.status == "not_found" and (weather.locations or weather.location is not None):
+            raise ValueError("Invalid missing location")
+        return {"summary": summary, "weather": weather.model_dump()}
+    except (ValidationError, ValueError, TypeError, KeyError):
+        raise IntegrationError("invalid_dependency_response") from None
+
+
 class Citation(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
     source: str = Field(min_length=1, max_length=200)
@@ -96,15 +171,21 @@ class McpClient:
         self.url = url
 
     def summary(self, trip_id):
-        return anyio.run(self._summary, trip_id)
+        return anyio.run(self._call, "itinerary.get_summary", {"trip_id": trip_id}, 5)["summary"]
 
-    async def _summary(self, trip_id):
+    def overview(self, trip_id, location_id=None):
+        params = {"trip_id": trip_id}
+        if location_id is not None:
+            params["location_id"] = location_id
+        return anyio.run(self._call, "itinerary.get_overview", params, 15)
+
+    async def _call(self, tool, params, timeout):
         try:
-            with anyio.fail_after(5):
+            with anyio.fail_after(timeout):
                 async with streamable_http_client(self.url) as streams:
                     async with ClientSession(*streams) as session:
                         await session.initialize()
-                        result = await session.call_tool("itinerary.get_summary", {"params": {"trip_id": trip_id}})
+                        result = await session.call_tool(tool, {"params": params})
                         if result.is_error or not isinstance(result.structured_content, dict):
                             raise IntegrationError("invalid_dependency_response")
                         body = result.structured_content
@@ -112,9 +193,10 @@ class McpClient:
                             error = body.get("error")
                             code = error.get("code") if isinstance(error, dict) else None
                             raise IntegrationError(code)
-                        if body.get("ok") is not True or set(body) != {"ok", "summary"}:
+                        expected = {"ok", "summary", "weather"} if tool == "itinerary.get_overview" else {"ok", "summary"}
+                        if body.get("ok") is not True or set(body) != expected:
                             raise IntegrationError("invalid_dependency_response")
-                        return body["summary"]
+                        return {key: value for key, value in body.items() if key != "ok"}
         except IntegrationError:
             raise
         except TimeoutError:

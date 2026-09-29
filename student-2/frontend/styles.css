@@ -11,6 +11,32 @@
  #advice-citations summary { cursor: pointer; }
  #advice-citations p { white-space: pre-wrap; }
  button:disabled { cursor: not-allowed; opacity: 0.55; }
+ .overview-refresh { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+ .overview-refresh svg, .weather-condition svg { flex: 0 0 auto; }
+ .overview-weather { margin-top: 20px; overflow-wrap: anywhere; }
+ .overview-weather h4 { margin: 0; font-size: 15px; }
+ .overview-weather a { color: var(--color-primary-dark); }
+ .weather-location-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; margin: 16px 0; }
+ .weather-location-form label { grid-column: 1 / -1; }
+ .weather-location-form select { width: 100%; min-width: 0; min-height: 42px; padding: 8px; border: 1px solid var(--color-border-strong); border-radius: 3px; background: var(--color-surface); color: var(--color-text); font: inherit; }
+ .weather-location-form select:focus-visible { outline: 3px solid var(--color-primary-dark); outline-offset: 3px; }
+ .weather-place { font-weight: 600; }
+ .weather-days { list-style: none; margin: 16px 0; padding: 0; }
+ .weather-day { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.1fr) minmax(0, 1fr); gap: 12px; align-items: center; padding: 14px 0; border-top: 1px solid var(--color-border); font-size: .85rem; }
+ .weather-condition { display: flex; align-items: center; gap: 8px; }
+ .weather-condition svg { color: var(--color-primary); }
+ .weather-label { display: block; font-size: .72rem; color: var(--color-muted); margin-bottom: 4px; }
+ .weather-missing, .weather-attribution { line-height: 1.5; }
+ @media (max-width: 900px) {
+   .weather-day { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+   .weather-location-form { grid-template-columns: minmax(0, 1fr); }
+   .weather-location-form button { justify-self: start; }
+ }
+ @media (max-width: 560px) {
+   .integration-section { padding: 18px; }
+   .integration-section .trip-metrics { padding: 16px 0; }
+   .integration-section .trip-metrics dd { overflow-wrap: anywhere; }
+ }
 :root {
   --color-primary: #24536b;
   --color-primary-dark: #173d51;

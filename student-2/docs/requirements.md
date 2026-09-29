@@ -48,6 +48,32 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 | IT-NFR-06 | Student 2 CI runs frontend, backend, and database tests, validates Compose, and builds integrated images without requiring a live model. |
 | IT-NFR-07 | The feature runs locally from the unified application at `http://localhost:5100/itinerary/`. |
 
+## Release 1 Trip Overview
+
+- The saved-trip UI offers one **Trip overview** action: day/stop coverage,
+	unplanned days, daily budget allocation, and destination weather. It is read-only.
+- Browser requests go through the backend's `POST /api/trips/{id}/mcp-overview`
+	and the shared `itinerary.get_overview` MCP tool. The existing summary-only
+	endpoint/tool remain supported. RAG advice remains separate.
+- Weather uses Open-Meteo geocoding and forecast APIs, without an API key for
+	qualifying non-commercial use. Only the saved destination and resolved coordinates
+	are sent to Open-Meteo, never traveller names, notes, budgets, or database IDs.
+- Multiple location matches require a user choice. Only IDs in the destination's
+	current provider results are accepted; clients cannot supply coordinates or URLs.
+- Show date-specific low/high Celsius temperatures, weather conditions and maximum
+	precipitation probability. Do not turn null provider values into zeroes.
+- Match forecasts to trip dates using the provider's local-date response, up to
+	16 forecast days. Clearly identify partial coverage, dates outside the window,
+	missing locations, and provider failures; never invent future or historical weather.
+- Preserve the itinerary summary when weather fails. Clear both parts after trip
+	changes, and ignore responses belonging to an earlier selection or mutation.
+- Show retrieval time and Open-Meteo/GeoNames attribution. Forecasts are not
+	guarantees, spending estimates, opening-hours checks, or route feasibility checks.
+- Provider reads use fixed HTTPS endpoints, reject redirects, cap each response
+	at 64 KiB, and share an eight-second checked deadline with at most three-second
+	socket waits. The backend MCP overview deadline is 15 seconds; browser deadline
+	is 20 seconds. Summary-only requests retain their five-second deadline.
+
 ## Evidence Required
 
 - Frontend, backend, and database automated-test output.

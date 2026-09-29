@@ -1,5 +1,57 @@
 # Student 2 Review Record
 
+## 2026-09-29 - Pending Change Review and Corrections
+
+Reviewed the local pending changes, not a published PR or its remote CI results.
+Scope included the overview producer/backend/UI contract, regression tests,
+dependency lockfile, database test portability, optional smoke runner and docs.
+
+### Findings Addressed
+
+- Malformed forecast dates could fail the whole overview: `9999-12-31` followed
+	by another date raised `OverflowError` during consecutive-date construction,
+	escaping the weather-unavailable fallback. Reproduced with an in-memory
+	provider response. Moved the stale-date rejection before date arithmetic;
+	three tool-level regressions verify the summary survives upper-bound,
+	lower-bound and invalid date responses.
+- Removed this session's two Student 2 entries from the Student 1 prompt log,
+	following the user's scope clarification. Verified that file now exactly
+	matches HEAD; existing Student 1 entries were preserved.
+
+### Verification and Limits
+
+Fresh results: MCP 89, backend 49, database 5, frontend 16 and RAG 62 tests pass
+(221 total); 19 live-model tests skip. Production Vite build, Compose config and
+editor diagnostics pass. In-memory reproduction of the smoke runner's current
+JSON collection filtering selected only its fixture, not the seed record.
+
+No further defect was identified in the inspected paths, but this is not a
+guarantee of a defect-free release. The container-to-native networking blocker
+remains explicitly deferred. Remote CI, real model results and the data-mutating
+smoke/restart path were not verified. The new weather module and supplied Release 1
+brief remain untracked and must not be omitted when preparing the change set.
+No saved trips, firewall settings or VM networking were changed; no commit,
+push or merge was performed.
+
+## 2026-09-29 - Limited Pre-Push Check
+
+Scope: pending Student 2 overview work, test-runner safety/readiness, generated
+artifacts and handoff documentation. This is not a full release or security review.
+
+- Integration blocker remains: container-to-native MCP calls time out. The user
+	explicitly deferred it; no firewall or VM networking changes were made.
+- Generated Vite output and local Playwright artifacts are now ignored, not deleted.
+- Database tests use temporary directories and pass on Windows; the runbook's
+	obsolete temporary-file failure warning was corrected.
+- MCP 86, backend 49, database 5 and frontend 16 tests passed; production build
+	and PowerShell syntax checks passed. These do not establish live integration.
+- The smoke runner was inspected but not executed against saved trips. CI currently
+	uses its default unit-test path and separate basic container smoke commands;
+	the expanded `-Smoke` CRUD/restart path still lacks fresh end-to-end evidence.
+
+Human review, remote CI and integrated acceptance remain outstanding. No commit,
+push or merge was performed. Networking follow-up is intentionally out of scope.
+
 ## 2026-09-27 - Release 1 Defect-Fix Follow-Up
 
 The original six findings below are retained. Their current status:
