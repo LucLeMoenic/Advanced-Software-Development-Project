@@ -100,8 +100,8 @@ Stop a shared service and verify a distinct dependency error without stale
 results. Advice is general feature knowledge, not a private-trip analysis.
 
 Run `scripts/test/student-2.ps1` on Linux CI or a supported Python environment.
-The existing database tests keep a temporary file open and fail on Windows;
-their Linux run is the recorded database regression check. Shared service suites
+Database tests now use a temporary directory and pass on Windows without holding
+an open SQLite temporary-file handle. Shared service suites
 must run from their own directories to avoid `server` module name collisions.
 Run `dotnet test ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj` separately.
 
@@ -112,6 +112,64 @@ prove source support; record human claim-by-claim review and keep a genuinely
 untouched held-out set separate from these development cases.
 
 ## Current Evidence and Gaps
+
+### Review Handoff - 29 September 2026
+
+The user explicitly deferred the Podman-to-Windows networking problem. Keep the
+required containerised frontend/backend/database and native MCP/RAG architecture;
+no native-backend workaround, firewall change, or VM networking change is included.
+
+The updated Student 2 frontend/backend images were deployed and native MCP started.
+The shared itinerary page and saved-trip API returned HTTP 200 with ten trips.
+Windows could reach MCP, but both the VM probe and backend connection timed out;
+the integrated overview returned HTTP 504 `dependency_timeout`. Firewall filtering
+is suspected, not proven. Machine-specific addresses were runtime settings only,
+not changes to the committed Compose defaults. Integrated MCP/weather acceptance
+remains blocked and is not a release-completion claim.
+
+Fresh offline checks: MCP 86, backend 49, database 5 and frontend 16 tests passed
+(156 total); the Vite production build and PowerShell test-runner syntax check
+passed. Generated frontend output and local Playwright artifacts are ignored.
+The data-mutating `-Smoke` path was not run against saved trips. Remote CI and
+live MCP/RAG acceptance must be checked separately before release sign-off.
+No commit, push, or merge was performed during this handoff.
+
+### Trip Overview Update - 28 September 2026
+
+The frontend now combines coverage/budget information and destination weather in
+**Trip overview**. Rebuild the Student 2 backend/frontend and restart the shared
+native MCP process after updating code; a previously running MCP process does not
+discover the new `itinerary.get_overview` tool automatically. The old
+`itinerary.get_summary` tool remains available for existing clients and loop checks.
+
+Open a saved trip, choose **Check overview**, then confirm the forecast location
+when multiple matches appear. Open-Meteo requires no key for this non-commercial
+use, but requires attribution and is subject to its public API limits. See
+[provider terms](https://open-meteo.com/en/terms). Outbound HTTPS access to
+`geocoding-api.open-meteo.com` and `api.open-meteo.com` is required from the native
+MCP process. Do not expose that MCP process publicly to fix host connectivity.
+
+The refreshed seed trips start beyond the forecast horizon. They should show
+their saved-trip summary and **outside the current forecast window**, not invented
+weather. A trip overlapping the next 16 days can show forecasts; missing days and
+null fields remain explicit. No saved data was changed during overview validation.
+
+Fresh checks: MCP 86 tests, backend 49 tests, frontend 16 tests; production build
+passes. `docker compose build student2-backend student2-frontend` also succeeded;
+running containers were not recreated and the native MCP process was not restarted.
+A real Open-Meteo Tokyo request returned two dated forecasts. SDK execution
+of `itinerary.get_overview` against persisted Copenhagen trip 21 returned location
+choices and, after selecting Denmark, a validated `outside_window` result for
+3-4 December. An initial live attempt failed its assertion before capturing the
+result; repeated calls and the backend validator passed. This is not a container
+connectivity success claim.
+
+Playwright checked location choice/focus, partial forecasts, null values and
+attribution with intercepted API fixtures in the Vite preview. No page, panel or
+weather overflow at 320/768/1280px. Screenshots:
+`.playwright-mcp/student2-overview-{320,768,1280}.png` (local test artefacts).
+The forecast browser fixtures are not live integrated-app evidence. Existing
+container-to-host connectivity and generated-RAG acceptance remain separate gates.
 
 As of the 27 September 2026 defect-fix follow-up: backend 35, MCP 26, RAG 31 and
 shared loop 38 tests pass (130 fresh passes); nine live RAG cases are skipped

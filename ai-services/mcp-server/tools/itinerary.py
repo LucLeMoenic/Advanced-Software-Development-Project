@@ -6,10 +6,16 @@ from typing import Any
 import requests
 from pydantic import BaseModel, ConfigDict, Field
 
+from tools.itinerary_weather import trip_weather
+
 
 class SummaryParams(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     trip_id: int = Field(gt=0)
+
+
+class OverviewParams(SummaryParams):
+    location_id: int | None = Field(default=None, gt=0)
 
 
 def summarize(trip, trip_id):
@@ -71,7 +77,16 @@ def register(mcp):
         except (ValueError, TypeError, KeyError, InvalidOperation):
             return failure("invalid_dependency_response", "The itinerary database returned invalid data.")
 
-    tool = mcp._tool_manager.get_tool("itinerary.get_summary")
-    tool.fn_metadata.arg_model.model_config["extra"] = "forbid"
-    tool.fn_metadata.arg_model.model_rebuild(force=True)
-    tool.parameters = tool.fn_metadata.arg_model.model_json_schema(by_alias=True)
+    @mcp.tool(name="itinerary.get_overview")
+    def get_overview(params: OverviewParams) -> dict[str, Any]:
+        """Read saved trip coverage and budget with Open-Meteo destination weather."""
+        result = get_summary(SummaryParams(trip_id=params.trip_id))
+        if result["ok"]:
+            result["weather"] = trip_weather(result["summary"], params.location_id)
+        return result
+
+    for name in ("itinerary.get_summary", "itinerary.get_overview"):
+        tool = mcp._tool_manager.get_tool(name)
+        tool.fn_metadata.arg_model.model_config["extra"] = "forbid"
+        tool.fn_metadata.arg_model.model_rebuild(force=True)
+        tool.parameters = tool.fn_metadata.arg_model.model_json_schema(by_alias=True)

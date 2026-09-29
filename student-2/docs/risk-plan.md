@@ -16,5 +16,6 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 | IT-R10 | Work without durable remote history cannot support contribution evidence. | 2 | 5 | 10 | Keep selective commits on the Student 2 branch, push with approval, and open a reviewed pull request. | Local branch and commits complete; push/PR open |
 | IT-R11 | Responsive or keyboard defects appear during the showcase. | 3 | 3 | 9 | Complete the browser checklist at 320px, 768px, and 1280px and capture evidence. | Open |
 | IT-R12 | Compose services build but fail when started together. | 2 | 4 | 8 | Validate Compose, wait for Student 2 health checks, and exercise backend-to-database HTTP integration in CI. | Mitigated locally and in workflow; remote run evidence pending |
+| IT-R13 | Weather provider outage, wrong location match, or forecasts used beyond their horizon mislead travellers. | 3 | 4 | 12 | Require ambiguous-location confirmation; use fixed provider URLs, response bounds and deadlines; retain summary after weather failures; show missing dates/values and attribution; never claim feasibility. | Overview implemented and tested 2026-09-28; native provider/SDK checked, integrated container gate remains open |
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.

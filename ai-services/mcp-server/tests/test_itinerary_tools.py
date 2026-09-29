@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import requests
@@ -6,6 +7,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 
 from tools import itinerary
+from tools import itinerary_weather as weather
 
 
 def trip():
@@ -94,3 +96,169 @@ def test_top_level_arguments_are_strict_and_advertised(monkeypatch):
     assert tools[0].input_schema["additionalProperties"] is False
     with pytest.raises(ToolError):
         asyncio.run(server.call_tool("itinerary.get_summary", {"params": {"trip_id": 12}, "url": "http://other"}))
+
+
+def test_overview_preserves_summary_when_weather_fails(monkeypatch):
+    from unittest.mock import Mock
+
+    monkeypatch.setattr(itinerary.requests, "get", lambda *args, **kwargs: Mock(status_code=200, json=trip))
+    monkeypatch.setattr("tools.itinerary_weather.read_provider", lambda *args: (_ for _ in ()).throw(requests.Timeout()))
+    server = MCPServer("overview-test")
+    itinerary.register(server)
+    result = asyncio.run(server.call_tool("itinerary.get_overview", {"params": {"trip_id": 12}})).structured_content
+    assert result["ok"] is True
+    assert result["summary"]["unplannedDays"] == [3]
+    assert result["weather"]["status"] == "unavailable"
+    assert result["weather"]["days"] == []
+
+
+@pytest.fixture
+def weather_provider(monkeypatch):
+    today = datetime.now(timezone.utc).date()
+    location = {"id": 1850147, "name": "Tokyo", "country": "Japan", "admin1": "Tokyo",
+                "latitude": 35.68, "longitude": 139.69}
+    dates = [(today + timedelta(days=offset)).isoformat() for offset in range(16)]
+    forecast = {"daily": {"time": dates, "weather_code": [3] * 16, "temperature_2m_min": [10.0] * 16,
+                          "temperature_2m_max": [20.0] * 16, "precipitation_probability_max": [30.0] * 16},
+                "daily_units": {"weather_code": "wmo code", "temperature_2m_min": "\u00b0C",
+                                "temperature_2m_max": "\u00b0C", "precipitation_probability_max": "%"}}
+    geocoding = {"results": [location]}
+    calls = []
+
+    def provider(url, params, deadline):
+        calls.append((url, params))
+        return geocoding if "geocoding-api" in url else forecast
+
+    monkeypatch.setattr(weather, "read_provider", provider)
+    summary = {"destination": "Tokyo", "startDate": dates[0], "dayCount": 3}
+    return summary, geocoding, forecast, calls
+
+
+def test_weather_uses_fixed_provider_urls_and_only_destination_coordinates(weather_provider):
+    summary, geocoding, forecast, calls = weather_provider
+    result = weather.trip_weather(summary)
+    assert result["status"] == "available"
+    assert len(result["days"]) == 3
+    assert result["unavailableDates"] == []
+    assert result["days"][0]["precipitationProbability"] == 30.0
+    assert calls[0] == ("https://geocoding-api.open-meteo.com/v1/search", {
+        "name": "Tokyo", "count": 5, "language": "en", "format": "json"})
+    assert calls[1][0] == "https://api.open-meteo.com/v1/forecast"
+    assert calls[1][1]["timezone"] == "auto"
+    assert calls[1][1]["forecast_days"] == 16
+    assert "trip_id" not in calls[1][1]
+
+
+def test_ambiguous_destination_requires_allowlisted_choice(weather_provider):
+    summary, geocoding, forecast, calls = weather_provider
+    geocoding["results"].append({**geocoding["results"][0], "id": 123, "country": "Other country"})
+    for location_id in (None, 999):
+        result = weather.trip_weather(summary, location_id)
+        assert result["status"] == "choose_location"
+        assert result["location"] is None
+    assert len(calls) == 2
+    result = weather.trip_weather(summary, 123)
+    assert result["location"]["country"] == "Other country"
+    assert result["status"] == "available"
+
+
+def test_missing_destination_does_not_call_forecast(weather_provider):
+    summary, geocoding, forecast, calls = weather_provider
+    geocoding.clear()
+    assert weather.trip_weather(summary)["status"] == "not_found"
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("offset,status,available", [(14, "partial", 2), (16, "outside_window", 0), (-3, "outside_window", 0)])
+def test_forecast_window_never_invents_missing_days(weather_provider, offset, status, available):
+    summary, geocoding, forecast, calls = weather_provider
+    summary["startDate"] = (datetime.now(timezone.utc).date() + timedelta(days=offset)).isoformat()
+    result = weather.trip_weather(summary)
+    assert result["status"] == status
+    assert len(result["days"]) == available
+    assert len(result["unavailableDates"]) == 3 - available
+
+
+def test_null_forecast_values_are_not_zeroes(weather_provider):
+    summary, geocoding, forecast, calls = weather_provider
+    forecast["daily"]["precipitation_probability_max"][0] = None
+    result = weather.trip_weather(summary)
+    assert result["days"][0]["precipitationProbability"] is None
+    for field in forecast["daily"]:
+        if field != "time":
+            forecast["daily"][field] = [None] * 16
+    result = weather.trip_weather(summary)
+    assert result["status"] == "unavailable"
+    assert result["retrievedAt"] is None
+
+
+@pytest.mark.parametrize("field,value", [("temperature_2m_min", 25.0), ("temperature_2m_max", float("nan")),
+                                        ("weather_code", True), ("precipitation_probability_max", 101)])
+def test_invalid_forecast_values_are_unavailable(weather_provider, field, value):
+    summary, geocoding, forecast, calls = weather_provider
+    forecast["daily"][field][0] = value
+    assert weather.trip_weather(summary)["status"] == "unavailable"
+
+
+def test_mismatched_arrays_and_wrong_units_are_unavailable(weather_provider):
+    summary, geocoding, forecast, calls = weather_provider
+    forecast["daily"]["weather_code"].pop()
+    assert weather.trip_weather(summary)["status"] == "unavailable"
+    forecast["daily"]["weather_code"].append(3)
+    forecast["daily_units"]["temperature_2m_min"] = "F"
+    assert weather.trip_weather(summary)["status"] == "unavailable"
+
+
+@pytest.mark.parametrize("invalid_date", ["9999-12-31", "0001-01-01", "not-a-date"])
+def test_invalid_provider_dates_preserve_overview_summary(weather_provider, monkeypatch, invalid_date):
+    from unittest.mock import Mock
+
+    summary, geocoding, forecast, calls = weather_provider
+    forecast["daily"]["time"] = [invalid_date] * 16
+    monkeypatch.setattr(itinerary.requests, "get", lambda *args, **kwargs: Mock(status_code=200, json=trip))
+    server = MCPServer("invalid-weather-date-test")
+    itinerary.register(server)
+    result = asyncio.run(server.call_tool("itinerary.get_overview", {"params": {"trip_id": 12}})).structured_content
+    assert result["ok"] is True
+    assert result["summary"]["unplannedDays"] == [3]
+    assert result["weather"]["status"] == "unavailable"
+    assert result["weather"]["days"] == []
+    assert result["weather"]["retrievedAt"] is None
+
+
+@pytest.mark.parametrize("params", [{"trip_id": 12, "location_id": True}, {"trip_id": 12, "latitude": 0},
+                                     {"trip_id": 12, "location_id": -1}])
+def test_overview_rejects_unknown_arguments_before_any_io(monkeypatch, params):
+    monkeypatch.setattr(itinerary.requests, "get", lambda *args, **kwargs: pytest.fail("Unexpected network call"))
+    server = MCPServer("overview-boundary-test")
+    itinerary.register(server)
+    with pytest.raises(ToolError):
+        asyncio.run(server.call_tool("itinerary.get_overview", {"params": params}))
+
+
+def test_provider_rejects_redirects_and_stops_oversized_stream(monkeypatch):
+    from unittest.mock import Mock
+    from time import monotonic
+
+    response = Mock(status_code=302)
+    response.__enter__ = Mock(return_value=response)
+    response.__exit__ = Mock(return_value=False)
+    get = Mock(return_value=response)
+    monkeypatch.setattr(weather.requests, "get", get)
+    original = weather.read_provider
+    with pytest.raises(ValueError):
+        original("https://api.open-meteo.com/v1/forecast", {}, monotonic() + 8)
+    assert get.call_args.kwargs["allow_redirects"] is False
+    response.status_code = 200
+    consumed = []
+
+    def chunks(chunk_size):
+        for index in range(100):
+            consumed.append(index)
+            yield b"x" * chunk_size
+
+    response.iter_content = chunks
+    with pytest.raises(ValueError):
+        original("https://api.open-meteo.com/v1/forecast", {}, monotonic() + 8)
+    assert len(consumed) == 17
+    assert response.__exit__.call_count == 2

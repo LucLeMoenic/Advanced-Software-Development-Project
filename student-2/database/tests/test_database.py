@@ -1,11 +1,12 @@
 import tempfile
+from pathlib import Path
 
 from app import create_app
 
 
 def test_seed_and_trip_stop_crud():
-    with tempfile.NamedTemporaryFile(suffix=".db") as database:
-        client = create_app(database.name).test_client()
+    with tempfile.TemporaryDirectory() as directory:
+        client = create_app(str(Path(directory) / "itinerary.db")).test_client()
         assert client.get("/health").status_code == 200
         seeded = client.get("/api/data/trips").get_json()
         assert len(seeded) == 10
@@ -41,8 +42,8 @@ def test_seed_and_trip_stop_crud():
 
 
 def test_validation_rejects_invalid_trip_without_writing():
-    with tempfile.NamedTemporaryFile(suffix=".db") as database:
-        client = create_app(database.name).test_client()
+    with tempfile.TemporaryDirectory() as directory:
+        client = create_app(str(Path(directory) / "itinerary.db")).test_client()
         response = client.post("/api/data/trips", json={"destination": "X", "budget": -1})
         assert response.status_code == 400
         assert "destination" in response.get_json()["error"]["fields"]
@@ -50,8 +51,8 @@ def test_validation_rejects_invalid_trip_without_writing():
 
 
 def test_atomic_itinerary_create_and_replace_preserve_valid_state():
-    with tempfile.NamedTemporaryFile(suffix=".db") as database:
-        client = create_app(database.name).test_client()
+    with tempfile.TemporaryDirectory() as directory:
+        client = create_app(str(Path(directory) / "itinerary.db")).test_client()
         response = client.post("/api/data/itineraries", json={
             "trip": {
                 "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
@@ -80,8 +81,8 @@ def test_atomic_itinerary_create_and_replace_preserve_valid_state():
 
 
 def test_stop_days_and_trip_updates_respect_trip_duration():
-    with tempfile.NamedTemporaryFile(suffix=".db") as database:
-        client = create_app(database.name).test_client()
+    with tempfile.TemporaryDirectory() as directory:
+        client = create_app(str(Path(directory) / "itinerary.db")).test_client()
         trip = client.post("/api/data/trips", json={
             "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
             "endDate": "2026-10-12", "budget": 1500, "interests": "food",
@@ -106,8 +107,8 @@ def test_stop_days_and_trip_updates_respect_trip_duration():
 
 
 def test_stop_update_preserves_existing_trip_ownership():
-    with tempfile.NamedTemporaryFile(suffix=".db") as database:
-        client = create_app(database.name).test_client()
+    with tempfile.TemporaryDirectory() as directory:
+        client = create_app(str(Path(directory) / "itinerary.db")).test_client()
         trip = client.post("/api/data/trips", json={
             "user": "Alex", "destination": "Osaka", "startDate": "2026-10-10",
             "endDate": "2026-10-11", "budget": 1500, "interests": "food",
