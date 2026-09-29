@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
+import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, RefreshCw, Sun } from "@lucide/vue";
 
 const trips = ref([]);
 const currentTrip = ref(null);
@@ -21,6 +22,10 @@ const stopDraft = reactive({ id: "", day: 1, activity: "", notes: "" });
 const feedback = reactive({ kind: "", title: "", message: "", confirmLabel: "OK", cancelLabel: "" });
 const integrations = reactive({ capabilities: {}, summaryVersion: 0, adviceVersion: 0, summaryBusy: false, adviceBusy: false });
 const summary = ref(null);
+const weather = ref(null);
+const selectedLocationId = ref("");
+const overviewResult = ref(null);
+const locationSelect = ref(null);
 const summaryStatus = ref("MCP is disabled.");
 const advice = ref(null);
 const adviceQuestion = ref("");
@@ -52,6 +57,34 @@ const summaryMetrics = computed(() => summary.value ? [
   ["Unplanned days", summary.value.unplannedDays.join(", ") || "None"],
   ["Daily allocation (AUD)", Number(summary.value.dailyBudgetAllocation).toFixed(2)],
 ] : []);
+
+const weatherMessage = computed(() => ({
+  choose_location: "Destination needs confirmation.",
+  not_found: "No matching weather location found. Check the saved destination.",
+  unavailable: "Weather is currently unavailable. Your saved-trip details are still available.",
+  outside_window: "Trip dates are outside the current forecast window (up to 16 days ahead).",
+  partial: "Forecast available for part of this trip. Other dates are listed below.",
+  available: "Forecast available for all trip dates.",
+}[weather.value?.status] || ""));
+
+function locationLabel(location) {
+  return [...new Set([location.name, location.admin1, location.country].filter(Boolean))].join(", ");
+}
+
+function weatherCondition(code) {
+  if (code === 0) return { label: "Clear sky", icon: Sun };
+  if ([1, 2, 3].includes(code)) return { label: ["", "Mainly clear", "Partly cloudy", "Overcast"][code], icon: Cloud };
+  if ([45, 48].includes(code)) return { label: "Fog", icon: CloudFog };
+  if ([51, 53, 55, 56, 57].includes(code)) return { label: "Drizzle", icon: CloudRain };
+  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return { label: "Rain", icon: CloudRain };
+  if ([71, 73, 75, 77, 85, 86].includes(code)) return { label: "Snow", icon: CloudSnow };
+  if ([95, 96, 97, 99].includes(code)) return { label: "Thunderstorm", icon: CloudLightning };
+  return { label: "Conditions unavailable", icon: Cloud };
+}
+
+function formatWeatherValue(value, unit) {
+  return value == null ? "Not available" : `${value}${unit}`;
+}
 
 function openFeedback({ kind, title, message, confirmLabel = "OK", cancelLabel = "" }, focusTarget = null) {
   if (resolveFeedback) closeFeedback(false);
@@ -97,7 +130,7 @@ async function api(path, options = {}) {
   const response = await fetch(`/itinerary-api${path}`, {
     ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
-  if (response.ok && ["POST", "PUT", "DELETE"].includes(options.method) && !path.endsWith("/mcp-summary") && path !== "/itinerary-advice") invalidateSummary();
+  if (response.ok && ["POST", "PUT", "DELETE"].includes(options.method) && !path.endsWith("/mcp-summary") && !path.endsWith("/mcp-overview") && path !== "/itinerary-advice") invalidateSummary();
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) throw new Error(Object.values(body.error?.fields || {})[0] || body.error?.message || "The request could not be completed.");
@@ -108,6 +141,8 @@ function invalidateSummary() {
   integrations.summaryVersion++;
   integrations.summaryBusy = false;
   summary.value = null;
+  weather.value = null;
+  selectedLocationId.value = "";
   summaryStatus.value = integrations.capabilities.mcpEnabled ? "" : "MCP is disabled.";
 }
 
@@ -132,14 +167,21 @@ async function inspectTrip() {
   const version = ++integrations.summaryVersion;
   integrations.summaryBusy = true;
   summary.value = null;
-  summaryStatus.value = "Inspecting saved itinerary...";
+  weather.value = null;
+  summaryStatus.value = "Checking trip overview...";
   try {
-    const result = await api(`/trips/${tripId}/mcp-summary`, { method: "POST", signal: AbortSignal.timeout(10000) });
+    const body = selectedLocationId.value ? { locationId: Number(selectedLocationId.value) } : {};
+    const result = await api(`/trips/${tripId}/mcp-overview`, { method: "POST", body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
     if (version !== integrations.summaryVersion || currentTrip.value?.id !== tripId) return;
     summary.value = result.summary;
-    summaryStatus.value = "Saved itinerary inspected.";
+    weather.value = result.weather;
+    selectedLocationId.value = result.weather?.location?.id || "";
+    summaryStatus.value = "Trip overview updated.";
+    integrations.summaryBusy = false;
+    await nextTick();
+    if (version === integrations.summaryVersion) (locationSelect.value || overviewResult.value)?.focus();
   } catch (error) {
-    if (version === integrations.summaryVersion) summaryStatus.value = error.name === "TimeoutError" ? "The summary request timed out." : error.message;
+    if (version === integrations.summaryVersion) summaryStatus.value = error.name === "TimeoutError" ? "The overview request timed out." : error.message;
   } finally {
     if (version === integrations.summaryVersion) integrations.summaryBusy = false;
   }
@@ -402,9 +444,35 @@ onUnmounted(() => {
             <div><dt>Planned days</dt><dd id="metric-days">{{ plannedDays }} / {{ dayCount }}</dd></div>
           </dl>
           <section class="integration-section" aria-labelledby="summary-heading">
-            <div class="integration-heading"><h3 id="summary-heading">Saved itinerary summary</h3><button id="mcp-summary" class="secondary-button" type="button" :disabled="!integrations.capabilities.mcpEnabled || !currentTrip || integrations.summaryBusy" @click="inspectTrip">Inspect itinerary</button></div>
+            <div class="integration-heading"><h3 id="summary-heading">Trip overview</h3><button id="mcp-summary" class="secondary-button overview-refresh" type="button" title="Refresh trip overview" :disabled="!integrations.capabilities.mcpEnabled || !currentTrip || integrations.summaryBusy" @click="inspectTrip"><RefreshCw :size="16" aria-hidden="true" />Check overview</button></div>
             <p id="mcp-status" class="muted" role="status">{{ summaryStatus }}</p>
-            <dl id="mcp-result" class="trip-metrics" :hidden="!summary"><div v-for="[label, value] in summaryMetrics" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
+            <div ref="overviewResult" tabindex="-1" aria-label="Trip overview results" :hidden="!summary">
+              <dl id="mcp-result" class="trip-metrics" :hidden="!summary"><div v-for="[label, value] in summaryMetrics" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
+              <section v-if="weather" id="overview-weather" class="overview-weather" aria-labelledby="weather-heading">
+                <h4 id="weather-heading">Destination weather</h4>
+                <p id="weather-status" class="muted" role="status">{{ weatherMessage }}</p>
+                <form v-if="weather.locations.length > 1 || weather.status === 'choose_location'" id="weather-location-form" class="weather-location-form" @submit.prevent="inspectTrip">
+                  <label for="weather-location">Forecast location</label>
+                  <select id="weather-location" ref="locationSelect" v-model="selectedLocationId" required :disabled="integrations.summaryBusy">
+                    <option disabled value="">Select location</option>
+                    <option v-for="location in weather.locations" :key="location.id" :value="location.id">{{ locationLabel(location) }}</option>
+                  </select>
+                  <button class="secondary-button" type="submit" :disabled="!selectedLocationId || integrations.summaryBusy">Use location</button>
+                </form>
+                <p v-if="weather.location" class="weather-place">{{ locationLabel(weather.location) }}</p>
+                <ul v-if="weather.days.length" class="weather-days" aria-label="Daily forecast">
+                  <li v-for="forecast in weather.days" :key="forecast.date" class="weather-day">
+                    <time :datetime="forecast.date">{{ forecast.date }}</time>
+                    <span class="weather-condition"><component :is="weatherCondition(forecast.weatherCode).icon" :size="20" aria-hidden="true" />{{ weatherCondition(forecast.weatherCode).label }}</span>
+                    <span><span class="weather-label">Low / High</span>{{ formatWeatherValue(forecast.minTemperature, ' C') }} / {{ formatWeatherValue(forecast.maxTemperature, ' C') }}</span>
+                    <span><span class="weather-label">Precipitation chance</span>{{ formatWeatherValue(forecast.precipitationProbability, '%') }}</span>
+                  </li>
+                </ul>
+                <p v-if="['partial', 'outside_window'].includes(weather.status)" class="muted weather-missing">No forecast: {{ weather.unavailableDates.join(', ') }}</p>
+                <p v-if="weather.retrievedAt" class="muted">Retrieved {{ new Date(weather.retrievedAt).toLocaleString() }}. Forecasts may change.</p>
+                <p class="muted weather-attribution">Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Locations: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>.</p>
+              </section>
+            </div>
           </section>
           <div id="days" class="days">
             <section v-for="[day, items] in days" :key="day" class="day" :aria-labelledby="`day-${day}`">

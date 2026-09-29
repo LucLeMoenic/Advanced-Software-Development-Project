@@ -6,7 +6,7 @@ from pathlib import Path
 import requests
 from flask import Flask, g, jsonify, request
 
-from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_summary
+from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_overview, validate_summary
 
 
 class DependencyError(Exception):
@@ -259,6 +259,21 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         if trip_id < 1 or (request.get_data() and request.get_json(silent=True) != {}):
             return invalid_integration_input()
         return jsonify({"tool": "itinerary.get_summary", "summary": validate_summary(mcp_client.summary(trip_id), trip_id)})
+
+    @app.post("/api/trips/<int:trip_id>/mcp-overview")
+    def mcp_overview(trip_id):
+        if not modes["mcpEnabled"]:
+            raise IntegrationError("mode_disabled")
+        if request.content_length is not None and request.content_length > 1024:
+            return invalid_integration_input()
+        payload = request.get_json(silent=True) if request.get_data() else {}
+        if trip_id < 1 or not isinstance(payload, dict) or set(payload) - {"locationId"}:
+            return invalid_integration_input()
+        location_id = payload.get("locationId")
+        if "locationId" in payload and (type(location_id) is not int or not 0 < location_id <= 2147483647):
+            return invalid_integration_input()
+        overview = validate_overview(mcp_client.overview(trip_id, location_id), trip_id, location_id)
+        return jsonify({"tool": "itinerary.get_overview", **overview})
 
     @app.post("/api/itinerary-advice")
     def itinerary_advice():

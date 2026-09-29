@@ -4,7 +4,7 @@ import pytest
 import httpx
 
 from app import ItineraryGenerator, create_app
-from ai_clients import IntegrationError, INSUFFICIENT_ANSWER, RagClient, validate_summary
+from ai_clients import IntegrationError, INSUFFICIENT_ANSWER, McpClient, RagClient, validate_overview, validate_summary
 
 
 @pytest.fixture(autouse=True)
@@ -83,7 +83,7 @@ class FakeIntegrations:
 def test_integrations_are_disabled_without_upstream_calls():
     fake = FakeIntegrations()
     client = create_app(mcp_client=fake, rag_client=fake).test_client()
-    for path in ("/api/trips/12/mcp-summary", "/api/itinerary-advice"):
+    for path in ("/api/trips/12/mcp-summary", "/api/trips/12/mcp-overview", "/api/itinerary-advice"):
         response = client.post(path)
         assert response.status_code == 503
         assert response.json["error"]["code"] == "mode_disabled"
@@ -96,6 +96,108 @@ def test_enabled_integrations_use_fixed_contracts():
     assert client.post("/api/trips/12/mcp-summary").json["summary"]["tripId"] == 12
     assert client.post("/api/itinerary-advice", json={"question": " Budget? "}).json["confidence"] == "high"
     assert fake.calls == [12, "Budget?"]
+
+
+def overview_fixture():
+    return {"summary": FakeIntegrations().summary(12), "weather": {
+        "status": "unavailable", "locations": [], "location": None, "days": [],
+        "unavailableDates": ["2026-10-10", "2026-10-11", "2026-10-12"], "retrievedAt": None,
+    }}
+
+
+def test_overview_passes_only_validated_location_and_preserves_weather_failure():
+    class Client:
+        def overview(self, trip_id, location_id):
+            assert (trip_id, location_id) == (12, 1850147)
+            return overview_fixture()
+
+    response = create_app(mcp_client=Client(), settings={"MCP_ENABLED": True}).test_client().post(
+        "/api/trips/12/mcp-overview", json={"locationId": 1850147})
+    assert response.status_code == 200
+    assert response.json["summary"]["stopCount"] == 4
+    assert response.json["weather"]["status"] == "unavailable"
+
+
+@pytest.mark.parametrize("payload", [[], {"locationId": True}, {"locationId": "12"}, {"locationId": 0},
+                                      {"locationId": None}, {"locationId": 2147483648}, {"url": "http://other"}])
+def test_invalid_overview_input_never_calls_mcp(payload):
+    client = create_app(mcp_client=FakeIntegrations(), settings={"MCP_ENABLED": True}).test_client()
+    assert client.post("/api/trips/12/mcp-overview", json=payload).status_code == 400
+
+
+@pytest.mark.parametrize("mutation", [
+    {"status": "available"}, {"unavailableDates": []}, {"status": "choose_location"},
+    {"days": [{"date": "2026-10-09", "weatherCode": 0, "minTemperature": 10.0,
+               "maxTemperature": 20.0, "precipitationProbability": 0.0}]},
+])
+def test_backend_rejects_inconsistent_overview(mutation):
+    class Client:
+        def overview(self, trip_id, location_id):
+            body = overview_fixture()
+            body["weather"].update(mutation)
+            return body
+
+    response = create_app(mcp_client=Client(), settings={"MCP_ENABLED": True}).test_client().post("/api/trips/12/mcp-overview")
+    assert response.status_code == 502
+
+
+def test_backend_accepts_partial_forecast_and_rejects_wrong_location_or_values():
+    from copy import deepcopy
+
+    body = overview_fixture()
+    location = {"id": 1, "name": "Tokyo", "country": "Japan", "admin1": "Tokyo", "latitude": 35.68, "longitude": 139.69}
+    body["weather"].update(status="partial", locations=[location], location=location,
+                           retrievedAt="2026-09-28T10:00:00+00:00", unavailableDates=["2026-10-11", "2026-10-12"],
+                           days=[{"date": "2026-10-10", "weatherCode": 63, "minTemperature": 10.0,
+                                  "maxTemperature": 20.0, "precipitationProbability": None}])
+    assert validate_overview(body, 12, 1)["weather"]["days"][0]["precipitationProbability"] is None
+    with pytest.raises(IntegrationError):
+        validate_overview(body, 12, 2)
+    for field, value in (("minTemperature", 21.0), ("maxTemperature", float("inf")), ("weatherCode", True),
+                         ("precipitationProbability", 101), ("date", "2026-10-13")):
+        invalid = deepcopy(body)
+        invalid["weather"]["days"][0][field] = value
+        with pytest.raises(IntegrationError):
+            validate_overview(invalid, 12, 1)
+
+
+def test_mcp_overview_transport_uses_fixed_tool_and_closes_session(monkeypatch):
+    from contextlib import asynccontextmanager
+    from types import SimpleNamespace
+    import ai_clients
+
+    events = []
+
+    @asynccontextmanager
+    async def transport(url):
+        assert url == "http://mcp.test/mcp"
+        try:
+            yield (None, None)
+        finally:
+            events.append("transport_closed")
+
+    class Session:
+        def __init__(self, *streams):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            events.append("session_closed")
+
+        async def initialize(self):
+            events.append("initialize")
+
+        async def call_tool(self, tool, arguments):
+            events.append((tool, arguments))
+            return SimpleNamespace(is_error=False, structured_content={"ok": True, **overview_fixture()})
+
+    monkeypatch.setattr(ai_clients, "streamable_http_client", transport)
+    monkeypatch.setattr(ai_clients, "ClientSession", Session)
+    assert McpClient("http://mcp.test/mcp").overview(12, 1) == overview_fixture()
+    assert events == ["initialize", ("itinerary.get_overview", {"params": {"trip_id": 12, "location_id": 1}}),
+                      "session_closed", "transport_closed"]
 
 
 @pytest.mark.parametrize("payload", [None, [], {}, {"question": True}, {"question": " "}, {"question": "a" * 1001}, {"question": "Budget?", "feature": "student-3"}])

@@ -17,8 +17,11 @@ Only the database API opens SQLite. The frontend calls only the backend through 
 
 Release 0 planning, architecture, data design, risks, and evidence status are indexed in [`docs/README.md`](docs/README.md).
 
-Release 1 adds a read-only MCP saved-itinerary summary and RAG planning advice
-with citations/confidence. Follow the [native-service runbook](docs/release-1-runbook.md)
+Release 1 adds a read-only MCP **Trip overview** combining saved-itinerary coverage
+and budget allocation with Open-Meteo destination weather, plus RAG planning advice
+with citations/confidence. The overview confirms ambiguous locations and identifies
+dates without forecasts; it does not check venue hours or travel feasibility.
+Follow the [native-service runbook](docs/release-1-runbook.md)
 for setup, strict mode flags, and current live-integration limitations.
 
 ## Services
@@ -40,6 +43,7 @@ These direct host ports are retained for service diagnostics and are not the nor
 - AI adaptation: `POST /api/trips/{id}/regenerate`, `POST /api/stops/{id}/regenerate`
 - Mode availability: `GET /api/capabilities`
 - MCP summary: `POST /api/trips/{id}/mcp-summary`
+- Combined MCP overview: `POST /api/trips/{id}/mcp-overview` with `{}` or `{locationId}`
 - Grounded advice: `POST /api/itinerary-advice` with `{question}`
 - Database CRUD mirrors these resources under `/api/data/`
 - Atomic database operations: `POST /api/data/itineraries`, `PUT /api/data/trips/{id}/stops`

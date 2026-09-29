@@ -4,6 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
 # User-specific files
+/student-2/frontend/dist/
+/.playwright-mcp/
 *.rsuser
 *.suo
 *.user

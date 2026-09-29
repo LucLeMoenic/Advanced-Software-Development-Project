@@ -64,7 +64,7 @@ describe("Itinerary Planner", () => {
     let deleted = false;
     vi.stubGlobal("fetch", vi.fn((url, options) => {
       if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
-      if (url.endsWith("/mcp-summary")) return new Promise((resolve) => { resolveSummary = resolve; });
+      if (url.endsWith("/mcp-overview")) return new Promise((resolve) => { resolveSummary = resolve; });
       if (options?.method === "DELETE") { deleted = true; return jsonResponse(null, 204); }
       if (url.endsWith("/trips/12")) return deleted ? new Promise(() => {}) : jsonResponse(trip);
       return jsonResponse([trip]);
@@ -110,7 +110,7 @@ describe("Itinerary Planner", () => {
     let insufficient = false;
     vi.stubGlobal("fetch", vi.fn((url) => {
       if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
-      if (url.endsWith("/mcp-summary")) return jsonResponse({ summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 } });
+      if (url.endsWith("/mcp-overview")) return jsonResponse({ summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 } });
       if (url.endsWith("/itinerary-advice")) return jsonResponse(insufficient
         ? { answer: "Not enough information in the knowledge base to answer this.", confidence: "insufficient", citations: [] }
         : { answer: "Budget is total. [budget#1]", confidence: "high", citations: [{ source: "<img src=x onerror=alert(1)>", chunk_id: "budget#1", snippet: "Trip budget" }] });
@@ -133,6 +133,96 @@ describe("Itinerary Planner", () => {
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#advice-status").textContent).toBe("Insufficient context."));
     expect(document.querySelector("#advice-citations").textContent).toBe("");
+  });
+
+  test("combines summary with location selection and a partial forecast", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    const locations = [{ id: 1, name: "Tokyo", admin1: "Tokyo", country: "Japan" }, { id: 2, name: "Tokyo", admin1: "Central", country: "Papua New Guinea" }];
+    const summary = { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 };
+    const fetchMock = vi.fn((url, options) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/mcp-overview")) {
+        const selected = JSON.parse(options.body).locationId;
+        return jsonResponse({ summary, weather: selected ? {
+          status: "partial", locations, location: locations[0], retrievedAt: "2026-09-28T10:00:00Z", unavailableDates: ["2026-10-12"],
+          days: [{ date: "2026-10-10", weatherCode: 63, minTemperature: 12, maxTemperature: 20, precipitationProbability: 80 },
+            { date: "2026-10-11", weatherCode: null, minTemperature: 13, maxTemperature: 21, precipitationProbability: null }],
+        } : { status: "choose_location", locations, location: null, retrievedAt: null, days: [], unavailableDates: [] } });
+      }
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#weather-location")).not.toBeNull());
+    expect(document.querySelector("#mcp-result").textContent).toContain("300.00");
+    expect(document.activeElement.id).toBe("weather-location");
+    const select = document.querySelector("#weather-location");
+    select.value = "1";
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await nextTick();
+    document.querySelector("#weather-location-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector(".weather-days")).not.toBeNull());
+    expect(document.querySelector("#weather-status").textContent).toContain("part of this trip");
+    expect(document.querySelector(".weather-days").textContent).toContain("80%");
+    expect(document.querySelector(".weather-days").textContent).toContain("Not available");
+    expect(document.querySelector(".weather-days").textContent).not.toContain("null");
+    expect(document.querySelector(".weather-missing").textContent).toContain("2026-10-12");
+    expect(document.querySelector(".weather-attribution").textContent).toContain("Open-Meteo");
+    expect(JSON.parse(fetchMock.mock.calls.filter(([url]) => url.endsWith("/mcp-overview"))[1][1].body)).toEqual({ locationId: 1 });
+    expect(fetchMock.mock.calls.every(([url]) => url.startsWith("/itinerary-api/"))).toBe(true);
+  });
+
+  test.each([
+    ["unavailable", "Weather is currently unavailable"],
+    ["outside_window", "outside the current forecast window"],
+    ["not_found", "No matching weather location"],
+  ])("retains summary when weather is %s", async (weatherStatus, message) => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/mcp-overview")) return jsonResponse({
+        summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 },
+        weather: { status: weatherStatus, locations: [], location: null, days: [], unavailableDates: ["2026-10-10"], retrievedAt: null },
+      });
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#weather-status")?.textContent).toContain(message));
+    expect(document.querySelector("#mcp-result").hidden).toBe(false);
+    expect(document.querySelector("#mcp-result").textContent).toContain("1, 2, 3");
+    expect(document.querySelector(".weather-days")).toBeNull();
+  });
+
+  test("drops overview and location selection when switching trips during a request", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    const other = { ...trip, id: 13, destination: "Paris" };
+    let resolveOverview;
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/mcp-overview")) return new Promise((resolve) => { resolveOverview = resolve; });
+      if (url.endsWith("/trips/12")) return jsonResponse(trip);
+      if (url.endsWith("/trips/13")) return jsonResponse(other);
+      return jsonResponse([trip, other]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    document.querySelector("[data-trip-id='13']").click();
+    await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toContain("Paris"));
+    resolveOverview(await jsonResponse({ summary: { stopCount: 99 }, weather: { status: "available" } }));
+    await nextTick();
+    expect(document.querySelector("#mcp-result").hidden).toBe(true);
+    expect(document.querySelector("#overview-weather")).toBeNull();
   });
 
   test("loads saved trips through the same-origin backend route", async () => {

@@ -2,6 +2,20 @@
 
 Status: implementation in progress as of 27 September 2026, not release-complete. The baseline below describes the pre-implementation state; proposed sections remain the target, not proof of completion.
 
+29 September handoff: offline overview/regression checks and the production build
+pass. The user explicitly deferred the VM-to-Windows connection timeout; preserve
+the required deployment architecture and do not mark integrated MCP/weather or
+Release 1 acceptance complete. See the [current handoff](release-1-runbook.md#review-handoff---29-september-2026).
+
+28 September scope update: the user requested a combined **Trip overview** rather
+than separate summary/weather features. The UI now combines read-only coverage and
+budget allocation with Open-Meteo forecasts through `itinerary.get_overview`.
+Location confirmation, forecast-window limits and weather-failure states are
+implemented; the existing summary-only contract is retained. See the updated
+[design](release-1-design.md#combined-trip-overview-28-september-update) and
+[runbook](release-1-runbook.md#trip-overview-update---28-september-2026) for tests and
+the distinction between native provider checks and pending container acceptance.
+
 Current checkpoint: Student 2 summary/advice routes, UI controls, mode flags, shared itinerary tool, RAG generation/knowledge, native-service Compose/CI changes, and shared loop validation modes are implemented with isolated tests passing. Native MCP SDK execution against persisted data succeeded. Diagnostic frontend viewport/error checks and additional transport/race tests passed. Container-to-host integration remains blocked by unresolved VM/host connectivity, and native Ollama was not found at its standard installation location. Live generated-answer and loop evidence, integrated five-feature checks, cross-feature calibration, and remote CI/report evidence remain pending. See the [native-service runbook](release-1-runbook.md) and [prompt log](prompt-log.md) for exact results and limitations.
 
 The [implementation design](release-1-design.md) defines proposed API/tool contracts, component changes, shared dependencies, and validation gates for this plan.
