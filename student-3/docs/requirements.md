@@ -8,7 +8,7 @@ Release 0 delivers one integrated, containerised feature through the required pa
 
 `HTMX + HTML/CSS frontend -> Flask backend/API -> Flask database API -> SQLite`
 
-Full RAG-based grounding over a curated destination knowledge base is explicitly **Release 1 scope** per the Group 45 registration form; Release 0 uses closed-context prompting only (the backend limits the model to attractions its own query returned).
+Full RAG-based grounding over a curated destination knowledge base was Release 1 scope per the Group 45 registration form; Release 0 used closed-context prompting only (the backend limited the model to attractions its own query returned). **Release 1 delivers this**, plus read-only MCP tool access to the attraction catalogue, both integrated end to end (frontend → backend → shared MCP/RAG server), per the sections below.
 
 The feature must run from the team's shared `docker-compose.yml`, be reachable from the unified home page, use the shared CSS theme, and provide demonstrable Create, Read, Update, and Delete operations through both the frontend and the backend/database APIs.
 
@@ -29,6 +29,21 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 - MCP tool calls, multi-agent review, and cloud deployment (Release 1/2).
 - Review update/delete (only create/list are required for Release 0; the feature's primary CRUD resource is the attraction, not the review).
 - Real itinerary persistence — the "Add to itinerary" action is an intentional Release 0 stub that logs the request; full itinerary wiring is Student 1's feature and a later-release integration point.
+
+### 1.3 Release 1 In Scope
+
+- One read-only MCP tool integration (`attractions.search`, `attractions.get_reviews`) against the shared MCP server, invoked through the backend's own allow list and rendered in a dedicated frontend panel.
+- One RAG destination-guide integration against the shared RAG server, grounded in a hand-written knowledge base under `ai-services/rag-server/knowledge/student-3/`, with citations, a confidence category, and a distinct insufficient-context state, rendered in a dedicated frontend panel.
+- `MCP_ENABLED`/`RAG_ENABLED` feature flags with fail-closed (`503`) behaviour when disabled, wired through `docker-compose.yml` and forced to `false` in CI.
+- Extension of the shared agentic loop's `validate-mcp`/`validate-rag` commands to cover `student-3` (previously `student-1`/`student-2` only).
+- Release 0's CRUD and AI-Mode continue to work unmodified.
+
+### 1.4 Release 1 Out of Scope
+
+- Write access via MCP (create/update/delete attractions or reviews) — the tools are read-only by design.
+- Embedding-based or semantic RAG retrieval — retrieval is TF-IDF/lexical (see `architecture.md`'s Release 1 sections and `ai-services/rag-server/retrieval.py`).
+- Multi-agent review and cloud deployment (Release 2).
+- Authentication/attribution for MCP or RAG queries.
 
 ## 2. Actors and System Boundaries
 
@@ -84,6 +99,23 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 | FR-14 | The three assigned services run from the shared Compose file and the shared Ollama runtime. | `student3-frontend` (`:5103`), `student3-backend` (`:5203`), `student3-database` (`:5303`), and the one-shot `student3-db-init` job are all defined in the root `docker-compose.yml`; the backend calls `http://ollama:11434` via Compose DNS, model pulled by the shared `ollama-model-setup` job. |
 | FR-15 | The frontend communicates only with the backend/API service. | `student-3/frontend/nginx.conf` reverse-proxies `/api/` to `student3-backend`; the frontend never calls `student3-database` or Ollama directly. |
 
+### 3.6 MCP Tool Integration (Release 1)
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-16 | The traveller can list Student 3's available MCP tools and run one directly, seeing the structured result. | The "Attraction Tools (MCP)" panel calls `GET /api/mcp/tools` to populate a tool picker, renders a dynamic argument form per tool, and on submit calls `POST /api/mcp/invoke {tool, arguments}`, rendering the real `result` object (not raw JSON) for `attractions.search`/`attractions.get_reviews`. |
+| FR-17 | The backend only ever invokes an explicitly allow-listed tool, even if the shared MCP server later exposes more. | `app.py`'s `ALLOWED_MCP_TOOLS` set is checked before `mcp_client.call_tool()` is ever called; a disallowed tool name returns `400 validation_error` without a network call. |
+| FR-18 | `attractions.search` supports filtering by category and minimum rating, and caps how many results a single call returns. | The MCP tool itself validates `category` against `{sight, restaurant, activity}`, `limit` against `1-10`, and rejects unknown argument fields — verified both at the tool level (`ai-services/mcp-server/tests/`) and via the backend's `400` mapping (`student-3/tests/test_backend_mcp_rag.py`). |
+| FR-19 | A disabled or unreachable MCP integration fails closed with a distinct, visible state. | `MCP_ENABLED=false` (or the shared server being unreachable) surfaces as a `503`/`502` respectively, rendered by the frontend as "MCP tools are currently disabled."/"MCP service is offline." rather than a generic error or a silent no-op. |
+
+### 3.7 RAG Destination Guide (Release 1)
+
+| ID | Requirement | Acceptance criteria |
+|---|---|---|
+| FR-20 | The traveller can ask a free-text question and receive an answer grounded in Student 3's knowledge base, with citations and a confidence category. | The "Ask the Destination Guide (RAG)" panel calls `POST /api/rag/ask {question}`; a successful, answerable response renders the answer text, a colour-coded confidence badge (`high`/`medium`/`low`), and a numbered citations list (source, snippet, score). |
+| FR-21 | A question the knowledge base cannot answer produces a distinct, honest "insufficient context" result, never a fabricated answer. | `confidence: "insufficient"` responses render as a visually distinct state (`.rag-insufficient`) with the fixed sentence "Not enough information in the knowledge base to answer this." and no citations — verified live against a real unanswerable question ("What is the capital of France?"). |
+| FR-22 | A disabled or unreachable RAG integration fails closed with a distinct, visible state, same as MCP. | `RAG_ENABLED=false` (or the shared server being unreachable/timed out) surfaces as `503`/`502`, rendered as "The destination guide is currently disabled."/"The destination guide service is offline." |
+
 ## 4. API Contracts
 
 ### 4.1 Frontend-Facing Backend API (`student3-backend`)
@@ -99,6 +131,9 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 | `POST /api/reviews` | `201` / `400` | Create a review. |
 | `POST /api/recommend` | `200` / `400` | Run the Plan → Act → Observe → Adapt recommendation loop. |
 | `POST /api/itinerary` | `202` | Release 0 stub — logs the request only. |
+| `GET /api/mcp/tools` | `200` / `503` / `502` | List Student 3's MCP tool names (Release 1). |
+| `POST /api/mcp/invoke` | `200` / `400` / `503` / `502` | Invoke an allow-listed MCP tool (Release 1). |
+| `POST /api/rag/ask` | `200` / `400` / `503` / `502` | Ask the RAG destination guide (Release 1). |
 | `GET /health` | `200` | Process health. |
 
 ### 4.2 Backend-Facing Database API (`student3-database`)
@@ -123,7 +158,39 @@ The feature must run from the team's shared `docker-compose.yml`, be reachable f
 }
 ```
 
-`error` values in use: `validation_error` (400), `not_found` (404), `database_unavailable` (502, backend-to-database connectivity failure).
+`error` values in use: `validation_error` (400), `not_found` (404), `database_unavailable` (502, backend-to-database connectivity failure), `mcp_disabled`/`rag_disabled` (503, `MCP_ENABLED`/`RAG_ENABLED` is `false`), `mcp_unavailable`/`rag_unavailable` (502, shared server unreachable, timed out, or returned a malformed response).
+
+### 4.4 MCP/RAG Contracts (Release 1)
+
+```json
+// POST /api/mcp/invoke {"tool": "attractions.search", "arguments": {"category": "restaurant", "limit": 5}}
+// -> 200
+{
+  "tool": "attractions.search",
+  "result": {
+    "attractions": [{"id": 3, "name": "Chat Thai Sydney CBD", "category": "restaurant", "description": "...", "rating": 4.3}],
+    "total_matches": 4
+  }
+}
+```
+
+```json
+// POST /api/rag/ask {"question": "Is Chin Chin busy? Do I need to book?"}
+// -> 200 (answerable)
+{
+  "answer": "Chin Chin Melbourne is a loud, popular restaurant... [melbourne-attractions-overview#3]",
+  "citations": [{"source": "Melbourne Attractions Overview", "chunk_id": "melbourne-attractions-overview#3", "snippet": "...", "score": 0.35}],
+  "confidence": "medium"
+}
+// -> 200 (insufficient context)
+{
+  "answer": "Not enough information in the knowledge base to answer this.",
+  "citations": [],
+  "confidence": "insufficient"
+}
+```
+
+Both routes accept JSON **and** form-encoded bodies (matching `/api/recommend`'s existing convention, since HTMX posts form-encoded by default). `attractions.search`'s `arguments` object mirrors the MCP tool's own parameters (`category`, `min_rating`, `limit`); `attractions.get_reviews` takes `{"attraction_id": <int>}`.
 
 ## 5. Data Requirements
 
@@ -158,6 +225,11 @@ Seed data provides 12 attractions and 14 reviews (`student-3/database/seed.py`),
 | NFR-04 | Portability | `docker compose up -d --build student3-frontend` brings up the full slice (frontend, backend, database, db-init, and the shared `ollama`/`ollama-model-setup` dependency) on a clean checkout. |
 | NFR-05 | CI isolation | `student-3.yml` runs `pytest` with the real database/backend code but does not require live Ollama for the unit-test stage; the recommend tests mock `_call_ollama`. The workflow's later Compose/smoke stage does start the real containers, including Ollama, so it exercises the live model. |
 | NFR-06 | Observability | Every recommendation call prints a labelled `PLAN`/`ACT`/`OBSERVE`/`ADAPT` line, so the loop can be shown live in a terminal per the marking rubric. |
+| NFR-07 | Security (tool boundary) | `POST /api/mcp/invoke` checks the requested tool against a backend-owned allow list before ever calling the MCP server — a second boundary on top of the MCP server's own tool registration (Release 1). |
+| NFR-08 | Availability | `MCP_ENABLED`/`RAG_ENABLED` let either integration fail closed (`503`) without a network call when intentionally disabled, and both map an unreachable/malformed shared-server response to `502` rather than crashing the request (Release 1). |
+| NFR-09 | Traceability | A RAG answer's every embedded `[chunk_id]` reference is traceable to one of the returned `citations`; an unanswerable question never receives a fabricated answer — it receives the fixed `confidence: "insufficient"` response instead (Release 1). |
+| NFR-10 | Reliability (RAG) | The shared RAG server's grounded-generation call has a fixed server-side deadline; a timeout is mapped to `502 rag_unavailable` rather than hanging the request indefinitely (Release 1 — see `knownissues.md` for the deadline's observed tightness under host load). |
+| NFR-11 | Resource constraint | Running the shared agentic loop's implementer+reviewer pair alongside RAG's own generation model on this 8GB host requires never loading more than one Ollama model at a time (`OLLAMA_MAX_LOADED_MODELS=1`); violating this has caused observed OOM failures during Release 1 development (Release 1 — see `knownissues.md`). |
 
 ## 7. AI Prompt and Validation Contract
 
@@ -173,12 +245,18 @@ The model is advisory only. `_is_response_usable()` — not the model — decide
 
 | ID | Required evidence |
 |---|---|
-| EV-01 | `pytest tests` from `student-3/` — 29 tests covering backend attraction/review routes (`test_backend_attractions.py`), the database API (`test_database_api.py`), and the recommend loop with mocked Ollama (`test_recommend.py`). All 29 passing as of this document. |
-| EV-02 | `docker compose config --quiet` and `docker compose build ...` succeed (exercised in `student-3.yml`). |
-| EV-03 | CI smoke test: `student-3.yml` starts the real containers and curls `/health` on all three services plus `/api/attractions` to assert at least 10 seeded records. |
-| EV-04 | Manual browser evidence: create/edit/delete an attraction, submit a review, and request an AI recommendation, all against the integrated app (not the standalone `student-3/frontend`). |
-| EV-05 | A finalised agentic-loop development record under `docs/agentic-loop-records/` referencing real student-3 work (see `known-issues.md` — outstanding as of this document). |
+| EV-01 | `pytest tests` from `student-3/` — 64 tests covering backend attraction/review routes, the database API, the recommend loop (mocked Ollama), and the MCP/RAG clients and routes (mocked shared servers). All 64 passing as of this document. |
+| EV-02 | `docker compose config --quiet` and `docker compose build ...` succeed (exercised in `student-3.yml` and validated live in `docs/evidence/release-1/stage4-compose-ci-terminal.txt`). |
+| EV-03 | CI smoke test: `student-3.yml` starts the real containers and curls `/health` on all three services, `/api/attractions` (≥10 seeded records), and the new `/api/mcp/tools`/`/api/mcp/invoke`/`/api/rag/ask` disabled-body assertions. |
+| EV-04 | Manual browser evidence: create/edit/delete an attraction, submit a review, and request an AI recommendation, all against the integrated app (Release 0, `docs/evidence/`). |
+| EV-05 | A finalised agentic-loop development record under `docs/agentic-loop-records/` referencing real student-3 work — three finalised for Release 1 (`total_matches`, `RagResponseError.code`, `confidenceBadgeClass`), analysed in `reviewrecord.md`. |
+| EV-06 | Live browser evidence for both Release 1 integrations: a successful MCP tool result, a successful RAG answer with citations and confidence, and the distinct insufficient-context state — `docs/evidence/release-1/stage3-frontend-panels/`. |
+| EV-07 | Terminal evidence of both integrations working end to end against the real, live shared servers (not mocked) — `docs/evidence/release-1/stage2-mcp-backend-terminal.txt` and the Stage 5 live-evidence capture. |
+| EV-08 | Both agentic-loop validation modes (`validate-mcp`/`validate-rag`) exercised for student-3's cases — captured via `ServiceValidation.CaptureAsync` directly after the CLI commands themselves failed for environment reasons (see `knownissues.md`); `docs/evidence/release-1/stage5-loop-validation/`. |
+| EV-09 | A green `student-3.yml` GitHub Actions run link — **outstanding as of this document**, see `knownissues.md`. |
 
 ## 9. Definition of Done
 
-Release 0 is done for this feature only when it is demonstrated inside the integrated group application (a standalone feature is worth zero per the rubric), full attraction CRUD is exercised through the frontend (not only the API), the AI recommendation loop is shown live with real terminal output, and the evidence in Section 8 exists and is linked from the technical report.
+Release 0 was done for this feature when it was demonstrated inside the integrated group application, full attraction CRUD was exercised through the frontend, the AI recommendation loop was shown live with real terminal output, and its evidence existed and was linked from the technical report.
+
+Release 1 is done for this feature when, in addition to Release 0 remaining fully working: the MCP tool panel and RAG destination-guide panel are both demonstrated live in the integrated app, including the insufficient-context and disabled/offline states; the disabled-flag CI smoke assertions pass; `docker-compose.yml` carries the MCP/RAG configuration without introducing new Compose services (per the Release 1 brief); at least one finalised agentic-loop record exists for Release 1 work; and the evidence in Section 8 exists and is linked from the technical report.
