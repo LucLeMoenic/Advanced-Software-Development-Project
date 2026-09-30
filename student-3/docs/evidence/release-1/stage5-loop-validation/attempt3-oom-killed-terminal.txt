@@ -1,0 +1,50 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+[PLAN]
+Goal:
+Implement the `IsValidStudent3Mcp` function to validate the response from the `attractions.search` tool, ensuring that the response only includes attractions with category "restaurant" and that the total number of matches is at least as many as the number of attractions requested.
+
+Requirements:
+- The response must be a JSON object with a `result` property.
+- The `result` property must have a `total_matches` property that is greater than or equal to the number of attractions requested.
+- The response must contain only attractions with category "restaurant".
+
+Files:
+- `ai-services/agentic-loop/ServiceValidation.cs`
+
+Steps:
+1. Parse the JSON response.
+2. Check if the response contains a `result` property.
+3. If the response does not contain a `result` property, return false.
+4. Check if the `result` property contains a `total_matches` property.
+5. If the `result` property does not contain a `total_matches` property, return false.
+6. Check if the `total_matches` property is greater than or equal to the number of attractions requested.
+7. If the `total_matches` property is less than the number of attractions requested, return false.
+8. Check if the response contains only attractions with category "restaurant".
+9. If the response contains attractions with categories other than "restaurant", return false.
+10. If all checks pass, return true.
+
+Risks:
+- The response might not contain the expected structure.
+- The response might contain invalid data.
+- The response might contain too many or too few attractions.
+
+Validation:
+- Test the implementation with a valid response that meets the requirements.
+- Test the implementation with a response that does not meet the requirements.
+
+[ACT]
+return false;
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: BLOCKING
+  Evidence: `return false;` has no guard for `total_matches < attractions.length`.
+  Failure mode: A total_matches less than attractions.length raises an assertion error at runtime.
+  Required correction: Return false when total_matches is less than attractions.length.
+
+Validation gaps: The pre-test evidence does not yet prove that the implementation handles the case where total_matches is less than attractions.length.
+
+Scope check: The proposal stayed within the requested scope.

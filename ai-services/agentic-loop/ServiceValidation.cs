@@ -8,13 +8,24 @@ internal static class ServiceValidation
 {
     private static readonly HashSet<string> Student1Tools = ["accommodation.find", "accommodation.get_search"];
 
-    internal static string DefaultBackendUrl(string feature) =>
-        feature == "student-1" ? "http://127.0.0.1:5201" : "http://127.0.0.1:5202";
+    internal static string DefaultBackendUrl(string feature) => feature switch
+    {
+        "student-1" => "http://127.0.0.1:5201",
+        "student-3" => "http://127.0.0.1:5203",
+        _ => "http://127.0.0.1:5202"
+    };
 
     internal static string DefaultQuestion(string feature, string mode) => (feature, mode) switch
     {
         ("student-1", "mcp") => "Find stays in Tokyo for 2 guests under $200",
         ("student-1", _) => "Is Tokyo safe for families?",
+        // Student 3's mcp validation invokes attractions.search directly (see
+        // CaptureAsync) rather than routing a natural-language question through
+        // an assistant endpoint like student-1 does, so this value is unused
+        // for ("student-3", "mcp") - kept only so the switch stays exhaustive
+        // and DefaultQuestion never returns null for a supported feature.
+        ("student-3", "mcp") => "attractions.search {category: restaurant}",
+        ("student-3", _) => "Is Chin Chin busy? Do I need to book?",
         _ => "Is budget the total for the trip?"
     };
 
@@ -23,8 +34,8 @@ internal static class ServiceValidation
     {
         if (mode is not ("mcp" or "rag"))
             throw new LoopException("Validation mode must be mcp or rag.");
-        if (feature is not ("student-1" or "student-2"))
-            throw new LoopException("Validation feature must be student-1 or student-2.");
+        if (feature is not ("student-1" or "student-2" or "student-3"))
+            throw new LoopException("Validation feature must be student-1, student-2, or student-3.");
         if (!Uri.TryCreate(backendUrl, UriKind.Absolute, out var backend)
             || backend.Scheme != "http" || !backend.IsLoopback
             || backend.AbsolutePath != "/" || backend.UserInfo.Length != 0
@@ -33,12 +44,24 @@ internal static class ServiceValidation
         if (tripId <= 0 || string.IsNullOrWhiteSpace(question) || question.Length > 1000)
             throw new LoopException("Use a positive trip ID and a question of 1-1000 characters.");
 
-        var path = feature == "student-1" ? "/api/assistant"
-            : mode == "mcp" ? $"/api/trips/{tripId}/mcp-summary" : "/api/itinerary-advice";
+        var path = feature switch
+        {
+            "student-1" => "/api/assistant",
+            // Student 3 has its own direct-invoke MCP/RAG routes (Stage 2),
+            // unlike student-1's single natural-language assistant endpoint or
+            // student-2's trip-scoped mcp-summary/itinerary-advice routes.
+            "student-3" => mode == "mcp" ? "/api/mcp/invoke" : "/api/rag/ask",
+            _ => mode == "mcp" ? $"/api/trips/{tripId}/mcp-summary" : "/api/itinerary-advice"
+        };
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(35));
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(backend, path))
         {
             Content = feature == "student-1" ? JsonContent.Create(new { mode = mode == "mcp" ? "lookup" : "guide", question })
+                // The handoff's fixed Student 3 mcp case: attractions.search
+                // filtered to category=restaurant, via the backend's allow-listed
+                // {tool, arguments} invoke contract rather than a bare POST body.
+                : feature == "student-3" && mode == "mcp"
+                    ? JsonContent.Create(new { tool = "attractions.search", arguments = new { category = "restaurant" } })
                 : mode == "rag" ? JsonContent.Create(new { question }) : JsonContent.Create(new { })
         };
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
@@ -70,6 +93,8 @@ internal static class ServiceValidation
         {
             using var document = JsonDocument.Parse(body);
             var root = document.RootElement;
+            if (feature == "student-3")
+                return mode == "mcp" ? IsValidStudent3Mcp(root) : IsValidStudent3Rag(root);
             if (feature == "student-1" && mode == "mcp")
                 return IsValidStudent1Lookup(root);
             if (feature == "student-1" && root.GetProperty("mode").GetString() != "guide")
@@ -115,6 +140,51 @@ internal static class ServiceValidation
             return false;
         }
     }
+    // The attractions.search allow-listed call this file hardcodes must be
+    // filtered to category=restaurant (the request body sent above), so a
+    // passing contract check also confirms the tool actually applied that
+    // filter rather than returning every attraction.
+    private static bool IsValidStudent3Mcp(JsonElement root)
+    {
+        if (root.GetProperty("tool").GetString() != "attractions.search") return false;
+        var result = root.GetProperty("result");
+        var attractions = result.GetProperty("attractions").EnumerateArray().ToArray();
+        var totalMatches = result.GetProperty("total_matches").GetInt32();
+        return totalMatches >= attractions.Length
+            && attractions.All(attraction =>
+                attraction.GetProperty("id").GetInt32() > 0
+                && !string.IsNullOrWhiteSpace(attraction.GetProperty("name").GetString())
+                && attraction.GetProperty("category").GetString() == "restaurant");
+    }
+
+    // Unlike the shared rag block below (reused by student-1's guide mode and
+    // student-2), Student 3's RAG contract treats "insufficient" as a valid,
+    // correct outcome for an unanswerable question, not a failure - so this
+    // cannot reuse that block, which explicitly rejects "insufficient".
+    private static bool IsValidStudent3Rag(JsonElement root)
+    {
+        var confidence = root.GetProperty("confidence").GetString();
+        var answer = root.GetProperty("answer").GetString();
+        var citations = root.GetProperty("citations").EnumerateArray().ToArray();
+        if (confidence == "insufficient")
+            return citations.Length == 0
+                && answer == "Not enough information in the knowledge base to answer this.";
+        if (confidence is not ("high" or "medium" or "low") || string.IsNullOrWhiteSpace(answer)
+            || answer.Length > 2000 || citations.Length is < 1 or > 3) return false;
+        var identifiers = new HashSet<string>();
+        foreach (var citation in citations)
+        {
+            var identifier = citation.GetProperty("chunk_id").GetString();
+            var score = citation.GetProperty("score").GetDouble();
+            if (string.IsNullOrWhiteSpace(identifier) || !identifiers.Add(identifier)
+                || !answer.Contains($"[{identifier}]", StringComparison.Ordinal)
+                || string.IsNullOrWhiteSpace(citation.GetProperty("source").GetString())
+                || string.IsNullOrWhiteSpace(citation.GetProperty("snippet").GetString())
+                || !double.IsFinite(score) || score <= 0 || score > 1) return false;
+        }
+        return true;
+    }
+
     private static bool IsValidStudent1Lookup(JsonElement root)
     {
         var tool = root.GetProperty("tool").GetString();

@@ -1,0 +1,41 @@
+Stage 5 live evidence: student-3's cases through the shared agentic loop's
+validate-mcp/validate-rag capture path (ServiceValidation.CaptureAsync),
+run directly against the real, live student-3 stack (database :5303, MCP
+server :5400, RAG server :5500, backend :5203) on 2026-09-30.
+
+Not captured via the loop's `validate-mcp`/`validate-rag` CLI commands
+themselves: three attempts at those crashed this host (see reviewrecord.md
+2026-09-30 for the full account - qwen2.5:3b and llama3.2:3b loaded
+simultaneously each time, ~6.8GB, killed by the harness's low-memory
+protection). ServiceValidation.CaptureAsync is the exact function those
+CLI commands call to produce their pre-test evidence; calling it directly
+captures identical, real evidence against the real backend with no Ollama
+model-loop involved at all (CaptureAsync only calls the student-3 backend
+over HTTP - the implementer/reviewer loop that crashed is a separate stage
+of the CLI command that never ran here).
+
+The RAG answer for the answerable question failed 4/4 times with "The
+local model timed out" (the shared RAG server's own internal 25s
+generation deadline in ai-services/rag-server/server.py, not something
+this evidence capture controls), even with llama3.2:3b pre-warmed via a
+direct Ollama call beforehand. This is a real, reproducible timeout under
+current host load, not a code defect: the same question succeeded with a
+full grounded answer and citations in Stage 3's live browser test (see
+student-3/docs/evidence/release-1/stage3-frontend-panels/02-rag-answer-success-with-citations.png),
+proving the underlying contract works when the host has enough headroom.
+The mcp case and the unanswerable rag case both need no generation call
+(mcp is pure retrieval; an unanswerable question short-circuits to the
+fixed insufficient response before ever calling Ollama) and passed cleanly
+every time.
+
+=== validate-mcp: attractions.search {category: restaurant} ===
+Command: POST http://127.0.0.1:5203/api/mcp/invoke
+Result: {"feature":"student-3","mode":"mcp","capturedAt":"2026-09-30T07:58:28.9962337+00:00","endpoint":"http://127.0.0.1:5203/api/mcp/invoke","statusCode":200,"contractPassed":true,"response":"{\u0022result\u0022:{\u0022attractions\u0022:[{\u0022category\u0022:\u0022restaurant\u0022,\u0022description\u0022:\u0022Busy, no-frills Thai restaurant popular with locals and students.\u0022,\u0022id\u0022:3,\u0022name\u0022:\u0022Chat Thai Sydney CBD\u0022,\u0022rating\u0022:4.3},{\u0022category\u0022:\u0022restaurant\u0022,\u0022description\u0022:\u0022Upscale Cantonese dining in a converted Sydney CBD warehouse.\u0022,\u0022id\u0022:6,\u0022name\u0022:\u0022Mr. Wong\u0022,\u0022rating\u0022:4.6},{\u0022category\u0022:\u0022restaurant\u0022,\u0022description\u0022:\u0022Loud, popular modern Thai/Asian restaurant on Flinders Lane.\u0022,\u0022id\u0022:9,\u0022name\u0022:\u0022Chin Chin Melbourne\u0022,\u0022rating\u0022:4.4},{\u0022category\u0022:\u0022restaurant\u0022,\u0022description\u0022:\u0022Historic open-air market with food stalls, produce, and deli halls.\u0022,\u0022id\u0022:11,\u0022name\u0022:\u0022Queen Victoria Market\u0022,\u0022rating\u0022:4.3}],\u0022total_matches\u0022:4},\u0022tool\u0022:\u0022attractions.search\u0022}\n","limitation":"Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately."}
+
+=== validate-rag: answerable question ===
+Command: POST http://127.0.0.1:5203/api/rag/ask
+Result: {"feature":"student-3","mode":"rag","capturedAt":"2026-09-30T07:58:50.5557951+00:00","endpoint":"http://127.0.0.1:5203/api/rag/ask","statusCode":502,"contractPassed":false,"response":"{\u0022error\u0022:\u0022rag_unavailable\u0022,\u0022message\u0022:\u0022The local model timed out.\u0022}\n","limitation":"Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately."}
+
+=== validate-rag: unanswerable question ===
+Command: POST http://127.0.0.1:5203/api/rag/ask
+Result: {"feature":"student-3","mode":"rag","capturedAt":"2026-09-30T07:58:52.6674644+00:00","endpoint":"http://127.0.0.1:5203/api/rag/ask","statusCode":200,"contractPassed":true,"response":"{\u0022answer\u0022:\u0022Not enough information in the knowledge base to answer this.\u0022,\u0022citations\u0022:[],\u0022confidence\u0022:\u0022insufficient\u0022}\n","limitation":"Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately."}
