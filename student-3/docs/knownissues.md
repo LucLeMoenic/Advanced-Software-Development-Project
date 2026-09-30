@@ -19,6 +19,11 @@
 - Cascade-delete of a review when its parent attraction is deleted is enforced in application code (`student-3/database/app.py`), not by a SQLite foreign-key constraint — `schema.sql` does not declare `ON DELETE CASCADE`. Functionally equivalent for Release 0, but worth tightening at the schema level if there's time.
 - No authentication — reviews and attraction edits are not attributed to a user. Acceptable for a Release 0 classroom demonstration; would need addressing before any real deployment.
 
+## Release 1 Local-Execution Limits (living note; Stage 6 rewrites this whole file for Release 1)
+
+- **Ollama does not reliably honour `OLLAMA_MAX_LOADED_MODELS=1`** on this host. Confirmed 2026-09-30: three consecutive agentic-loop attempts (Stage 5, `IsValidStudent3Mcp`) showed both loop models (`qwen2.5:3b`, `llama3.2:3b`, ~6.8GB combined) loaded simultaneously via `ollama ps`, despite the variable being set in the user environment. Most likely cause: the setting is read at Ollama server startup, not per-request, and the running server was never actually restarted after it was set. Mitigation used: manually killing the loop process and stopping both models the moment double-loading is observed, rather than relying on the setting alone. See `reviewrecord.md` 2026-09-30 for the full account.
+- **The shared RAG server's fixed 25-second generation deadline** (`ai-services/rag-server/server.py`) can be too tight for a full grounded answer under host load, even with the model pre-warmed — observed 4/4 times on 2026-09-30 for a question that had succeeded (with a full answer and citations) in Stage 3's browser test under lighter load. Not a correctness defect in student-3's own code; flagged for whoever owns that shared file if it recurs during the group demo.
+
 ## Rollover Checklist (close before submission)
 
 - [ ] Merge PR #38 (browser pass below is done; this is the remaining blocker).

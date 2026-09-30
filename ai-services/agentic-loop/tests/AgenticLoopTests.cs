@@ -141,13 +141,97 @@ public sealed class AgenticLoopTests
     }
 
     [Theory]
-    [InlineData("student-3", "mcp")]
-    [InlineData("student-3", "rag")]
+    [InlineData("student-4", "mcp")]
+    [InlineData("student-5", "rag")]
     public async Task ValidationModes_RejectUnsupportedFeatureFixtures(string feature, string mode)
     {
         using var client = new HttpClient(new RecordingHandler("{}"));
         await Assert.ThrowsAsync<LoopException>(() =>
             ServiceValidation.CaptureAsync(client, mode, "http://127.0.0.1:5201", 1, "Tokyo", feature));
+    }
+
+    [Fact]
+    public void Student3SearchValidation_ChecksToolNameAndCategoryFilterApplied()
+    {
+        Assert.True(ServiceValidation.IsValid("mcp", """
+            {"tool":"attractions.search","result":{"attractions":[{"id":3,"name":"Mr. Wong","category":"restaurant","description":"d","rating":4.6}],"total_matches":1}}
+            """, 1, "student-3"));
+        Assert.True(ServiceValidation.IsValid("mcp", """
+            {"tool":"attractions.search","result":{"attractions":[],"total_matches":0}}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"tool":"attractions.get_reviews","result":{"attractions":[],"total_matches":0}}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"tool":"attractions.search","result":{"attractions":[{"id":1,"name":"Opera House","category":"sight","description":"d","rating":4.7}],"total_matches":1}}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"tool":"attractions.search","result":{"attractions":[{"id":1,"name":"X","category":"restaurant","description":"d","rating":4}],"total_matches":0}}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("mcp", """{"error":"mcp_disabled","message":"MCP is disabled."}""", 1, "student-3"));
+    }
+
+    [Fact]
+    public void Student3RagValidation_AcceptsInsufficientAsAValidOutcomeNotAFailure()
+    {
+        const string grounded = """
+            {"answer":"Chin Chin is busy on weekends. [melbourne-attractions-overview#3]","citations":[{"source":"Melbourne Attractions Overview","chunk_id":"melbourne-attractions-overview#3","snippet":"Chin Chin is busy.","score":0.35}],"confidence":"medium"}
+            """;
+        const string insufficient = """
+            {"answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """;
+        Assert.True(ServiceValidation.IsValid("rag", grounded, 1, "student-3"));
+        Assert.True(ServiceValidation.IsValid("rag", insufficient, 1, "student-3"));
+        // An "insufficient" verdict must still have no citations and the exact
+        // fixed sentence - a model can't claim abstention while also citing
+        // sources or answering with something else.
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Not enough information in the knowledge base to answer this.","citations":[{"source":"S","chunk_id":"s#1","snippet":"s","score":0.2}],"confidence":"insufficient"}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Maybe, I'm not sure.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-3"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Chin Chin is busy.","citations":[{"source":"S","chunk_id":"s#1","snippet":"s","score":0.35}],"confidence":"medium"}
+            """, 1, "student-3"));
+    }
+
+    [Fact]
+    public async Task Student3McpValidation_PostsAttractionsSearchInvokeToBackend()
+    {
+        var handler = new RecordingHandler("""
+            {"tool":"attractions.search","result":{"attractions":[],"total_matches":0}}
+            """);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "mcp", "http://127.0.0.1:5203", 1, "unused", "student-3");
+
+        Assert.Equal("http://127.0.0.1:5203/api/mcp/invoke", handler.Uri);
+        Assert.Equal("""{"tool":"attractions.search","arguments":{"category":"restaurant"}}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("student-3", result.RootElement.GetProperty("feature").GetString());
+        Assert.Equal("http://127.0.0.1:5203", ServiceValidation.DefaultBackendUrl("student-3"));
+    }
+
+    [Fact]
+    public async Task Student3RagValidation_PostsQuestionToRagAskEndpoint()
+    {
+        const string grounded = """
+            {"answer":"Chin Chin is busy. [melbourne-attractions-overview#3]","citations":[{"source":"Melbourne Attractions Overview","chunk_id":"melbourne-attractions-overview#3","snippet":"Busy.","score":0.35}],"confidence":"medium"}
+            """;
+        var handler = new RecordingHandler(grounded);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "rag", "http://127.0.0.1:5203", 1, "Is Chin Chin busy?", "student-3");
+
+        Assert.Equal("http://127.0.0.1:5203/api/rag/ask", handler.Uri);
+        Assert.Equal("""{"question":"Is Chin Chin busy?"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("Is Chin Chin busy? Do I need to book?", ServiceValidation.DefaultQuestion("student-3", "rag"));
     }
 
     [Fact]
