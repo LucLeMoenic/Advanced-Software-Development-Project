@@ -1,5 +1,25 @@
 # Review Record
 
+## 2026-10-02 - Student 4 RAG Shared-Surface Review
+
+**Scope:** Student 4 RAG implementation against HLD sections 4-6, plus the
+shared RAG prompt, retrieval contract, and test suite. Student 1 feature source
+and corpus, live generation, and release acceptance were not in scope.
+
+**Finding:** Existing Student 4 tests covered known/paraphrase questions,
+unsupported topics, and topical overlap, but lacked an injection-shaped case.
+Added one test in `ai-services/rag-server/tests/test_student4_retrieval.py`.
+The initial test also required every retained top-three chunk to be the status
+source; measured retrieval showed a related workflow chunk legitimately scores
+0.1592, so the final assertion requires the supported category-status chunk to
+remain first. Shared retrieval implementation, thresholds, prompt, and Student 1
+source/corpus are unchanged.
+
+**Verification:** Student 4 retrieval 17/17; focused backend RAG/client 29/29;
+full Student 4 backend 135/135; shared RAG 79 passed and 19 live-model tests
+skipped; Compose configuration parsed. Live-model behavior remains unverified;
+no Student 1 behavior or acceptance is claimed.
+
 ## 2026-09-27 - Release 1 Start Script Self-Review
 
 **Scope:** `scripts/deploy/start-release1.ps1`, README and runbook additions.

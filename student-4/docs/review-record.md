@@ -1,5 +1,26 @@
 # Student 4 Review Record
 
+## 2026-10-02 - Student 4 RAG HLD Verification
+
+**Scope:** Current `POST /api/budget-guidance`, `RagClient`, Student 4 corpus and
+retrieval tests, canonical shared grounding prompt, and HLD sections 4-6. UI,
+live-model behavior, native/container connectivity, loop, CI, and release
+acceptance were out of scope.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required test coverage | Known/paraphrase, unsupported, and misleading-overlap retrieval cases existed, but Student 4 had no injection-shaped query case. | Added one offline retrieval regression combining an injection attempt with a supported threshold question; the relevant category-status chunk remains top-ranked. |
+| Verified behavior | The route fixes `student-4`; the client streams a bounded response under a linked 30-second deadline; the API enforces the shared 8 KiB request bound; validation checks exact envelope/citation fields, supported ID/title pairs, markers, finite score/confidence consistency, and exact insufficient abstention. | Matches the inspected HLD contracts. The shared prompt treats question and context as untrusted data. Production code, shared prompt, and thresholds were not changed. |
+
+**Validation:** Retrieval 17/17; focused backend RAG/client tests 29/29; full
+Student 4 backend 135/135; shared RAG 79 passed and 19 live-model tests skipped;
+`docker compose config --quiet` exited 0. One Starlette deprecation warning
+appeared in the shared Python suite.
+
+**Open limits:** Offline retrieval does not prove claim entailment or live-model
+resistance to injected instructions. No model, service, container, UI, database,
+CI, or human acceptance was exercised.
+
 ## 2026-09-03 Repository and Design Review
 
 Reviewer: GitHub Copilot, acting as an AI programming assistant for Liam

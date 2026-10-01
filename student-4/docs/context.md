@@ -72,13 +72,22 @@ runtime arrangement. No schema changes, cross-student calls, model-authored mone
 values, or autonomous writes are in scope.
 
 R1 mode controls and `GET /api/capabilities` are implemented. The read-only
-`budget.get_summary` tool and `POST /api/budget-check` backend route are now
-implemented on `BCP/R1_Budget_MCP`; the backend uses the official
-`ModelContextProtocol.Core` 2.2.0 client and fixed `MCP_URL` endpoint. Offline
-backend and shared MCP suites passed 106/106 and 120/120 on 2026-10-01. The
-in-process SDK test uses a scripted HTTP protocol handler; live native/container
-connectivity, callback re-entry, and database immutability were not exercised.
-Student 4 RAG corpus/route, UI, and integrated evidence remain planned.
+`budget.get_summary` tool and `POST /api/budget-check` backend route were added on
+`BCP/R1_Budget_MCP`; the backend uses the official `ModelContextProtocol.Core`
+2.2.0 client and fixed `MCP_URL` endpoint. Its offline backend and shared MCP
+suites passed 106/106 and 120/120 on 2026-10-01. The in-process SDK test uses a
+scripted HTTP protocol handler; live native/container connectivity, callback
+re-entry, and database immutability remain unverified.
+
+and the full shared RAG suite 78 passed with 19 live-model cases skipped. Compose
+Student 4 RAG guidance uses a three-document corpus under the shared RAG
+knowledge root and `POST /api/budget-guidance`, with fixed `student-4` routing
+and `RAG_SERVER_URL`. On 2026-10-02, Student 4 retrieval tests passed 17/17,
+focused RAG backend/client tests 29/29, the full backend suite 135/135, and the
+full shared RAG suite 79 passed with 19 live-model cases skipped. Compose
+configuration parsed successfully. No live RAG/Ollama response, UI, native
+connectivity, or release acceptance was tested. Compose uses Student4-prefixed
+mode variables; `.env.example` enables them for an explicitly started local demo.
 
 ## Development Workflow
 

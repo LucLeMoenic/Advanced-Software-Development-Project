@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 var databaseUrl = builder.Configuration["Services:DatabaseUrl"] ?? "http://localhost:5304";
 var ollamaUrl = builder.Configuration["Services:OllamaUrl"] ?? "http://localhost:11434";
 var mcpUrl = builder.Configuration["MCP_URL"] ?? "http://localhost:5400/mcp";
+var ragUrl = builder.Configuration["RAG_SERVER_URL"] ?? "http://localhost:5500";
 var databaseTimeout = builder.Configuration.GetValue("Services:DatabaseTimeoutSeconds", 4);
 var ollamaTimeout = builder.Configuration.GetValue("Services:OllamaTimeoutSeconds", 15);
 var model = builder.Configuration["STUDENT4_MODEL"] ?? "llama3.2:3b";
@@ -21,11 +22,13 @@ builder.Services.AddSingleton(serviceProvider => FeatureModeSettings.FromConfigu
 builder.Services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings(rateSection["Version"] ?? "demo-v1", rateDate, rateSection["Disclaimer"] ?? "Demonstration rates only.", rateValues)));
 builder.Services.AddSingleton(new OllamaInsightsSettings(model, prompt));
 builder.Services.AddSingleton(McpBudgetCheckSettings.FromUrl(mcpUrl));
+builder.Services.AddSingleton(RagSettings.FromUrl(ragUrl));
 builder.Services.AddScoped<IAdviceService, AdviceService>();
 builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => { client.BaseAddress = new Uri(databaseUrl); client.Timeout = TimeSpan.FromSeconds(databaseTimeout); });
 builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>(client => { client.BaseAddress = new Uri(ollamaUrl); client.Timeout = TimeSpan.FromSeconds(ollamaTimeout); });
 builder.Services.AddHttpClient<IMcpBudgetCheckClient, McpBudgetCheckClient>(client => client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new BoundedMcpResponseHandler());
+builder.Services.AddHttpClient<IRagClient, RagClient>(client => client.Timeout = Timeout.InfiniteTimeSpan);
 
 var app = builder.Build();
 _ = app.Services.GetRequiredService<FeatureModeSettings>();
@@ -45,6 +48,7 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "budg
 app.MapGet("/api/capabilities", (FeatureModeSettings modes) => Results.Ok(new { aiEnabled = modes.AiEnabled, mcpEnabled = modes.McpEnabled, ragEnabled = modes.RagEnabled }));
 app.MapBudgetEndpoints();
 app.MapBudgetCheckEndpoints();
+app.MapBudgetGuidanceEndpoints();
 app.Run();
 
 public partial class Program;
