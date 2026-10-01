@@ -54,6 +54,9 @@ connection, HTTP, and no-data tests pass without a live LLM.
   feature CSS, vanilla JavaScript, and locally bundled HTMX.
 - Implement budget/expense CRUD, conversion preview, notices, insights,
   accessible dialogs, status/error/empty/loading states, and safe rendering.
+- Add separate Release 1 MCP budget-check and grounded-guidance controls, gated
+  by `/api/capabilities`, with exact safe-integer money display and stale-request
+  protection.
 - Add Vitest/jsdom coverage and a deterministic packaging validation.
 
 Exit: frontend tests and packaging pass; browser checklist is prepared.
@@ -113,8 +116,12 @@ ownership, and make no schema changes or cross-student calls.
   focused RAG backend/client tests passed 29/29, the full backend suite passed
   135/135, and the shared RAG suite passed 79 with 19 live-model cases skipped.
   Compose configuration parsed; live generation remains open.
-4. **Static UI - planned:** add budget-check and guidance panels without replacing
-  the existing frontend or combining guidance with private financial data.
+4. **Static UI - implemented, offline-tested:** added compact MCP budget-check
+  and separate RAG-guidance panels without replacing the existing frontend or
+  combining guidance with private financial data. Capabilities fail closed for
+  new controls only; safe money formatting, request invalidation, response states,
+  and text-only citation rendering have Vitest coverage. Browser/live acceptance
+  and responsive viewport evidence remain pending.
 5. **Integration and evidence - planned:** validate native connectivity, mode-off
   behavior, live MCP/RAG paths, accessibility, and the affected release gates.
 

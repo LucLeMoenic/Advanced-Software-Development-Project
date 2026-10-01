@@ -39,6 +39,7 @@ function defaultFetch(overrides = {}) {
     if (overrides[key]) return overrides[key](url, options);
     if (url === "/budget-api/journeys") return response(journeys);
     if (url === "/budget-api/currencies") return response(currencies);
+    if (url === "/budget-api/capabilities") return response({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
     if (url.startsWith("/budget-api/dashboard")) return response(dashboard);
     if (url.startsWith("/budget-api/budgets")) return response(budgets);
     if (url.startsWith("/budget-api/expenses")) return response(expenses);
@@ -68,6 +69,202 @@ beforeEach(() => {
 });
 
 describe("Budget & Expense Tracker", () => {
+    test("renders a validated MCP budget check with exact money and category status", async () => {
+      const summary = {
+        ...dashboard,
+        plannedAmountMinor: Number.MAX_SAFE_INTEGER - 1,
+        actualAmountMinor: Number.MAX_SAFE_INTEGER,
+        remainingAmountMinor: -1,
+        percentageUsed: 100,
+        categories: [{ ...dashboard.categories[1], plannedAmountMinor: Number.MAX_SAFE_INTEGER - 1, actualAmountMinor: Number.MAX_SAFE_INTEGER, remainingAmountMinor: -1, percentageUsed: 100, status: "overspent" }],
+      };
+      const payload = { tool: "budget.get_summary", result: { ok: true, summary } };
+      const fetchMock = await start(defaultFetch({ "POST /budget-api/api/budget-check": () => response(payload) }));
+      document.querySelector("#run-budget-check").click();
+
+      await vi.waitFor(() => expect(document.querySelector("#budget-check-result").hidden).toBe(false));
+      const call = fetchMock.mock.calls.find(([url, options]) => url === "/budget-api/api/budget-check" && options.method === "POST");
+      expect(JSON.parse(call[1].body)).toEqual({ journeyLabel: "Journey" });
+      expect(document.querySelector("#budget-check-tool").textContent).toBe("budget.get_summary");
+      expect(document.querySelector("#check-actual").textContent).toContain("90,071,992,547,409.91");
+      expect(document.querySelector("#check-remaining").textContent).toContain("0.01");
+      expect(document.querySelector("#budget-check-categories").textContent).toContain("overspent");
+      expect(document.querySelector("#budget-check-raw").textContent).toContain('"tool": "budget.get_summary"');
+      expect(document.querySelector("#budget-check-status").dataset.state).toBe("success");
+    });
+
+    test("renders grounded guidance separately with expandable named citations", async () => {
+      const guidance = {
+        answer: "Set a category limit and review it regularly. [category-budgets#1]",
+        citations: [{ source: "Category budgets and spending statuses", chunkId: "category-budgets#1", snippet: "Budgets are grouped by category.", score: 0.62 }],
+        confidence: "high",
+      };
+      const fetchMock = await start(defaultFetch({ "POST /budget-api/api/budget-guidance": () => response(guidance) }));
+      document.querySelector("#guidance-question").value = "How should I plan category budgets?";
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+      await vi.waitFor(() => expect(document.querySelector("#guidance-result").hidden).toBe(false));
+      const call = fetchMock.mock.calls.find(([url, options]) => url === "/budget-api/api/budget-guidance" && options.method === "POST");
+      expect(JSON.parse(call[1].body)).toEqual({ question: "How should I plan category budgets?" });
+      expect(fetchMock.mock.calls.filter(([url]) => url === "/budget-api/api/budget-guidance")).toHaveLength(1);
+      expect(document.querySelector("#guidance-confidence").textContent).toBe("High retrieval confidence");
+      expect(document.querySelector("#guidance-citations summary").textContent).toBe("Category budgets and spending statuses");
+      expect(document.querySelector("#guidance-citations").textContent).toContain("category-budgets#1");
+      expect(document.querySelector("#guidance-description").textContent).toContain("does not use this journey's saved totals");
+      expect(document.querySelector("#guidance-status").dataset.state).toBe("success");
+    });
+
+    test("reports fixed insufficient-context abstention distinctly", async () => {
+      const guidance = { answer: "Not enough information in the knowledge base to answer this.", citations: [], confidence: "insufficient" };
+      await start(defaultFetch({ "POST /budget-api/api/budget-guidance": () => response(guidance) }));
+      document.querySelector("#guidance-question").value = "Can you guarantee tomorrow's fares?";
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+      await vi.waitFor(() => expect(document.querySelector("#guidance-status").dataset.state).toBe("abstention"));
+      expect(document.querySelector("#guidance-answer").textContent).toBe(guidance.answer);
+      expect(document.querySelector("#guidance-citations").children).toHaveLength(0);
+    });
+
+    test("fails closed for disabled or unavailable capabilities without disabling CRUD", async () => {
+      const offFetch = await start(defaultFetch({
+        "GET /budget-api/capabilities": () => response({ aiEnabled: true, mcpEnabled: false, ragEnabled: false }),
+      }));
+      expect(document.querySelector("#run-budget-check").disabled).toBe(true);
+      expect(document.querySelector("#submit-guidance").disabled).toBe(true);
+      expect(document.querySelector("#budget-check-status").dataset.state).toBe("disabled");
+      expect(document.querySelector("#guidance-status").dataset.state).toBe("disabled");
+      document.querySelector("#run-budget-check").click();
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      expect(offFetch.mock.calls.some(([url]) => url.includes("/api/budget-check") || url.includes("/api/budget-guidance"))).toBe(false);
+      expect(document.querySelector("#add-budget").disabled).toBe(false);
+
+      vi.resetModules();
+      document.body.innerHTML = body;
+      document.querySelectorAll("dialog").forEach((dialog) => { dialog.showModal = vi.fn(); dialog.close = vi.fn(); });
+      const unavailable = await start(defaultFetch({ "GET /budget-api/capabilities": () => response({ error: { message: "Unavailable" } }, 503) }));
+      expect(document.querySelector("#run-budget-check").disabled).toBe(true);
+      expect(document.querySelector("#submit-guidance").disabled).toBe(true);
+      expect(document.querySelector("#budget-check-status").dataset.state).toBe("disabled");
+      expect(document.querySelector("#add-expense").disabled).toBe(false);
+      expect(unavailable.mock.calls.some(([url]) => url.includes("/api/budget-check") || url.includes("/api/budget-guidance"))).toBe(false);
+    });
+
+    test("enforces the guidance question limit and surfaces dependency failures", async () => {
+      const fetchMock = await start(defaultFetch({
+        "POST /budget-api/api/budget-check": () => response({ error: { message: "MCP unavailable." } }, 503),
+        "POST /budget-api/api/budget-guidance": () => response({ error: { message: "RAG unavailable." } }, 502),
+      }));
+      const question = document.querySelector("#guidance-question");
+      question.value = "x".repeat(1001);
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      expect(document.querySelector("#guidance-status").textContent).toContain("1 to 1000 characters");
+      expect(fetchMock.mock.calls.some(([url]) => url === "/budget-api/api/budget-guidance")).toBe(false);
+
+      question.value = "x".repeat(1000);
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await vi.waitFor(() => expect(document.querySelector("#guidance-status").textContent).toBe("RAG unavailable."));
+      expect(JSON.parse(fetchMock.mock.calls.find(([url]) => url === "/budget-api/api/budget-guidance")[1].body).question).toHaveLength(1000);
+      document.querySelector("#run-budget-check").click();
+      await vi.waitFor(() => expect(document.querySelector("#budget-check-status").textContent).toBe("MCP unavailable."));
+      expect(document.querySelector("#budget-check-status").dataset.state).toBe("error");
+    });
+
+    test("renders hostile guidance and citation text without interpreting HTML", async () => {
+      const guidance = {
+        answer: "<img src=x onerror=alert(1)> [category-budgets#1]",
+        citations: [{ source: "<svg onload=alert(1)>", chunkId: "category-budgets#1", snippet: "<script>alert(1)</script>", score: 0.62 }],
+        confidence: "high",
+      };
+      await start(defaultFetch({ "POST /budget-api/api/budget-guidance": () => response(guidance) }));
+      document.querySelector("#guidance-question").value = "How can I plan?";
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await vi.waitFor(() => expect(document.querySelector("#guidance-result").hidden).toBe(false));
+      expect(document.querySelector("#guidance-answer").textContent).toBe(guidance.answer);
+      expect(document.querySelector("#guidance-result img, #guidance-result svg, #guidance-result script")).toBeNull();
+    });
+
+    test("prevents duplicate budget checks and stale journey responses", async () => {
+      let resolveCheck;
+      const checkPromise = new Promise((resolve) => { resolveCheck = resolve; });
+      const twoJourneys = [...journeys, { ...journeys[0], journeyLabel: "Other" }];
+      const payload = { tool: "budget.get_summary", result: { ok: true, summary: { ...dashboard } } };
+      const fetchMock = await start(defaultFetch({
+        "GET /budget-api/journeys": () => response(twoJourneys),
+        "POST /budget-api/api/budget-check": () => checkPromise,
+      }));
+      const button = document.querySelector("#run-budget-check");
+      button.click();
+      button.click();
+      expect(button.disabled).toBe(true);
+      expect(fetchMock.mock.calls.filter(([url]) => url === "/budget-api/api/budget-check")).toHaveLength(1);
+
+      const selector = document.querySelector("#journey-select");
+      selector.value = "Other";
+      selector.dispatchEvent(new Event("change", { bubbles: true }));
+      resolveCheck(await response(payload));
+      await vi.waitFor(() => expect(document.querySelector("#status").textContent).toContain("Other is up to date"));
+      expect(document.querySelector("#budget-check-result").hidden).toBe(true);
+      expect(document.querySelector("#budget-check-journey").textContent).not.toBe("Journey · AUD");
+    });
+
+    test("cancels guidance and invalidates budget check before selected-journey CRUD", async () => {
+      const summary = { tool: "budget.get_summary", result: { ok: true, summary: { ...dashboard } } };
+      const fetchMock = await start(defaultFetch({ "POST /budget-api/api/budget-check": () => response(summary) }));
+      document.querySelector("#run-budget-check").click();
+      await vi.waitFor(() => expect(document.querySelector("#budget-check-result").hidden).toBe(false));
+
+      let resolveGuidance;
+      const pendingGuidance = new Promise((resolve) => { resolveGuidance = resolve; });
+      fetchMock.mockImplementation((url, options = {}) => url === "/budget-api/api/budget-guidance" ? pendingGuidance : defaultFetch()(url, options));
+      document.querySelector("#guidance-question").value = "How do I plan?";
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      expect(document.querySelector("#cancel-guidance").hidden).toBe(false);
+      document.querySelector("#cancel-guidance").click();
+      resolveGuidance(await response({ answer: "Late answer.", citations: [], confidence: "insufficient" }));
+      await vi.waitFor(() => expect(document.querySelector("#guidance-status").textContent).toBe("Guidance request cancelled."));
+      expect(document.querySelector("#guidance-result").hidden).toBe(true);
+
+      document.querySelector("#add-expense").click();
+      document.querySelector("#expense-description").value = "Snack";
+      document.querySelector("#expense-amount").value = "1.00";
+      document.querySelector("#expense-date").value = "2026-09-03";
+      document.querySelector("#expense-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      expect(document.querySelector("#budget-check-result").hidden).toBe(true);
+      expect(document.querySelector("#budget-check-status").textContent).toContain("expense is being changed");
+      await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url, options]) => url === "/budget-api/expenses" && options.method === "POST")).toBe(true));
+    });
+
+    test("changed guidance and selected-journey writes reject late responses", async () => {
+      let resolveGuidance;
+      let resolveCheck;
+      const pendingGuidance = new Promise((resolve) => { resolveGuidance = resolve; });
+      const pendingCheck = new Promise((resolve) => { resolveCheck = resolve; });
+      const fetchMock = await start(defaultFetch({
+        "POST /budget-api/api/budget-guidance": () => pendingGuidance,
+        "POST /budget-api/api/budget-check": () => pendingCheck,
+      }));
+      const question = document.querySelector("#guidance-question");
+      question.value = "First question";
+      document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      question.value = "Changed question";
+      question.dispatchEvent(new Event("input", { bubbles: true }));
+      resolveGuidance(await response({ answer: "Stale answer.", citations: [], confidence: "insufficient" }));
+      await vi.waitFor(() => expect(document.querySelector("#guidance-status").textContent).toContain("Question changed"));
+      expect(document.querySelector("#guidance-result").hidden).toBe(true);
+
+      document.querySelector("#run-budget-check").click();
+      document.querySelector("#add-expense").click();
+      document.querySelector("#expense-description").value = "Coffee";
+      document.querySelector("#expense-amount").value = "2.00";
+      document.querySelector("#expense-date").value = "2026-09-03";
+      document.querySelector("#expense-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      resolveCheck(await response({ tool: "budget.get_summary", result: { ok: true, summary: { ...dashboard } } }));
+      await vi.waitFor(() => expect(document.querySelector("#status").textContent).toContain("up to date"));
+      expect(fetchMock.mock.calls.filter(([url]) => url === "/budget-api/api/budget-check")).toHaveLength(1);
+      expect(document.querySelector("#budget-check-result").hidden).toBe(true);
+    });
+
   test("loads the seeded dashboard and renders warning, overspend, ledger, and rate evidence", async () => {
     const fetchMock = await start();
 
@@ -243,10 +440,17 @@ describe("Budget & Expense Tracker", () => {
 
   test("minor-unit parser accepts cents and rejects unsafe values", async () => {
     vi.stubGlobal("fetch", defaultFetch());
-    const { majorToMinor } = await import("../app.js");
+    const { formatExactMoney, majorToMinor } = await import("../app.js");
     expect(majorToMinor("0.01")).toBe(1);
     expect(majorToMinor("12.3")).toBe(1230);
     expect(() => majorToMinor("12.345")).toThrow(/two decimal/);
     expect(() => majorToMinor("0")).toThrow(/greater than zero/);
+    expect(formatExactMoney(1, "USD")).toContain("0.01");
+    expect(formatExactMoney(-1, "USD")).toContain("0.01");
+    expect(formatExactMoney(-1, "USD")).not.toBe(formatExactMoney(1, "USD"));
+    expect(formatExactMoney(Number.MAX_SAFE_INTEGER, "USD")).toContain("90,071,992,547,409.91");
+    expect(formatExactMoney(-Number.MAX_SAFE_INTEGER, "USD")).toContain("90,071,992,547,409.91");
+    expect(formatExactMoney(-Number.MAX_SAFE_INTEGER, "USD")).not.toBe(formatExactMoney(Number.MAX_SAFE_INTEGER, "USD"));
+    expect(() => formatExactMoney(Number.MAX_SAFE_INTEGER + 1, "USD")).toThrow(/safe integer/);
   });
 });
