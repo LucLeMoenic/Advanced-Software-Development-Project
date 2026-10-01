@@ -50,11 +50,12 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 
 ## Release 1 Trip Overview
 
-- The saved-trip UI offers one **Trip overview** action: day/stop coverage,
-	unplanned days, daily budget allocation, and destination weather. It is read-only.
-- Browser requests go through the backend's `POST /api/trips/{id}/mcp-overview`
-	and the shared `itinerary.get_overview` MCP tool. The existing summary-only
-	endpoint/tool remain supported. RAG advice remains separate.
+- The saved-trip UI offers a collapsible **Trip assistant** with separate Edit
+	and Advice tabs outside the stop list. Day/stop counts and daily allocation
+	remain visible in the trip summary.
+- The backend's `POST /api/trips/{id}/mcp-overview` and shared
+	`itinerary.get_overview` tool remain available, along with the summary-only
+	endpoint/tool. Advice uses overview weather only for weather-related questions.
 - Weather uses Open-Meteo geocoding and forecast APIs, without an API key for
 	qualifying non-commercial use. Only the saved destination and resolved coordinates
 	are sent to Open-Meteo, never traveller names, notes, budgets, or database IDs.
@@ -85,8 +86,42 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 - `itinerary.apply_edit` accepts only the trip ID and signed preview token.
 	Callers must require user confirmation before invoking it; the database checks
 	expiry and revision and applies approved changes atomically. No save retries.
-- These tools are a service foundation; the backend/UI editor integration is
-	delivered separately. They provide no authentication and remain local-only.
+- These tools provide no authentication and remain local-only.
+
+## Release 1 Editor and Advice Integration
+
+- Edit accepts natural-language move/swap/add/remove/title/notes/date-shift/undo
+	requests through `POST /api/trips/{id}/edit-preview`. Action-specific model
+	schemas and saved-stop validation bound the proposal; ambiguity requests
+	clarification. Runtime prompts live only under
+	`ai-services/agentic-loop/prompts/itinerary-edit-v1.txt` and
+	`ai-services/agentic-loop/prompts/itinerary-review-v1.txt`.
+- Preview displays current/proposed values without saving. Confirm sends only
+	the signed token to `POST /api/trips/{id}/edit-confirm`; cancellation discards
+	the preview. The model-free Undo button requests a preview through
+	`edit-operation-preview` and still requires confirmation. No manual reorder
+	panel is exposed. Successful saves reload the trip and briefly highlight changes.
+- Edit endpoints require both MCP and AI mode. The legacy read-only `/review`
+	endpoint remains supported. Disabled modes, stale previews and malformed
+	dependencies produce controlled errors rather than unvalidated writes.
+- Advice accepts `{question}` or `{question,tripId}`. Selected-trip context is
+	read from the database, limited to destination/dates, twenty stops, 160-character
+	notes and an omitted-stop count. Traveller identity is excluded.
+- Only explicit weather-related questions trigger MCP weather lookup. The weather
+	report is separate from knowledge citations; missing forecasts never imply dry
+	weather. Other questions clear the prior weather result.
+- The shared RAG service accepts bounded Student 2 `tripContext` as untrusted
+	context, not a knowledge source. Retrieved knowledge supports every claim;
+	context neither changes the retrieval query nor establishes unsupported facts.
+- Student 2 citations contain complete retained passages, up to 2000 characters;
+	other features retain 280-character excerpts. The UI uses plain numbered markers
+	and independently expandable sources. Source relevance is lexical similarity,
+	not a probability that the answer is true.
+- Changing trips or editing clears obsolete assistant results; late responses
+	must not replace newer state. Collapse preserves drafts/results and cancel
+	controls stop waiting without claiming to undo a server-side save.
+- Backend images build from the repository root to include both shared prompts.
+	Itinerary nginx proxies allow 75 seconds for bounded multi-service requests.
 
 ## Evidence Required
 

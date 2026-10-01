@@ -29,6 +29,18 @@ async function loadApplication() {
   await nextTick();
 }
 
+function reviewResponse() {
+  return { tripId: 12, clarification: "", tool: "itinerary.preview_edit", preview: {
+    tripId: 12, token: "signed-preview", expiresIn: 600,
+    changes: [{ id: 1, activity: "Park walk", notes: "Saved plan", fromDay: 1, toDay: 2, fromOrder: 0, toOrder: 0 }],
+  } };
+}
+
+function adviceResponse(weather) {
+  return { tripId: 12, answer: "Keep timing flexible. [planning#1]", confidence: "high",
+    citations: [{ source: "Planning guidance", chunk_id: "planning#1", snippet: "Keep timing flexible." }], weather };
+}
+
 beforeEach(() => {
   document.body.innerHTML = '<div id="app"></div>';
   vi.restoreAllMocks();
@@ -42,6 +54,210 @@ afterEach(() => {
 });
 
 describe("Itinerary Planner", () => {
+  test("minimises the assistant without losing its selected tab, draft or late result", async () => {
+    let resolveAdvice;
+    const fetchMock = vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) return new Promise((resolve) => { resolveAdvice = resolve; });
+      return jsonResponse([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("#advice-submit").disabled).toBe(false));
+    document.querySelector("#advice-tab").click();
+    setValue("#advice-question", "Budget?");
+    document.querySelector("#advice-submit").click();
+    const toggle = document.querySelector("#toggle-assistant");
+    toggle.focus();
+    toggle.click();
+    await nextTick();
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.getAttribute("aria-label")).toBe("Expand trip assistant");
+    expect(document.querySelector(".planner-grid").classList.contains("assistant-collapsed")).toBe(true);
+    expect(document.querySelector("#assistant-tabs").hidden).toBe(true);
+    expect(document.querySelector("#assistant-content").hidden).toBe(true);
+    resolveAdvice(await jsonResponse(adviceResponse()));
+    await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
+    expect(document.activeElement).toBe(toggle);
+    toggle.click();
+    await nextTick();
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(document.querySelector("#assistant-content").hidden).toBe(false);
+    expect(document.querySelector("#advice-tab").getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector("#advice-question").value).toBe("Budget?");
+    expect(document.querySelector("#advice-answer").textContent).toContain("Keep timing flexible");
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/itinerary-advice"))).toHaveLength(1);
+  });
+
+  test("keeps the assistant outside stops with keyboard tabs, selected trip and dated days", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-12-31", endDate: "2027-01-01", budget: 900,
+      stops: [{ id: 1, day: 2, activity: "Walk", notes: "Morning" }] };
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toContain("Tokyo"));
+    expect(document.querySelector("[data-trip-id='12']").getAttribute("aria-current")).toBe("true");
+    expect(document.querySelector("#day-2 time").getAttribute("datetime")).toBe("2027-01-01");
+    expect(document.querySelector("#day-2 time").textContent).toBe("1 Jan 2027");
+    expect(document.querySelector(".itinerary-panel #edit-panel")).toBeNull();
+    expect(document.querySelector(".itinerary-panel #advice-panel")).toBeNull();
+    expect(document.querySelector(".assistant-panel #days")).toBeNull();
+    expect(document.querySelector("#edit-panel").hidden).toBe(false);
+    document.querySelector("#edit-tab").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    await nextTick();
+    expect(document.querySelector("#advice-tab").getAttribute("aria-selected")).toBe("true");
+    expect(document.querySelector("#edit-tab").tabIndex).toBe(-1);
+    expect(document.activeElement.id).toBe("advice-tab");
+    expect(document.querySelector("#edit-panel").hidden).toBe(true);
+    expect(document.querySelector("#advice-panel").hidden).toBe(false);
+    document.querySelector("#advice-tab").dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    await nextTick();
+    expect(document.activeElement.id).toBe("edit-tab");
+    expect(document.querySelector("#edit-panel").hidden).toBe(false);
+  });
+
+  test("cancels late advice safely, retries and renders citation markers as plain text", async () => {
+    const requests = [];
+    vi.stubGlobal("fetch", vi.fn((url, options) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) return new Promise((resolve) => requests.push({ resolve, signal: options.signal }));
+      return jsonResponse([]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("#advice-submit").disabled).toBe(false));
+    document.querySelector("#advice-tab").click();
+    setValue("#advice-question", "Budget?");
+    document.querySelector("#advice-submit").click();
+    await nextTick();
+    expect(document.querySelector("#advice-submit").textContent).toContain("Getting advice...");
+    expect(document.querySelector("#advice-question").disabled).toBe(true);
+    document.querySelector("#cancel-advice").click();
+    await nextTick();
+    expect(requests[0].signal.aborted).toBe(true);
+    expect(document.querySelector("#advice-status").textContent).toBe("Advice request cancelled.");
+    expect(document.querySelector("#advice-submit").disabled).toBe(false);
+    document.querySelector("#advice-submit").click();
+    requests[0].resolve(await jsonResponse(adviceResponse()));
+    await nextTick();
+    expect(document.querySelector("#advice-result").hidden).toBe(true);
+    expect(document.querySelector("#advice-submit").disabled).toBe(true);
+    const answer = adviceResponse();
+    answer.answer = '<img src=x onerror=alert(1)> [planning#1] [unknown#2]';
+    answer.citations[0].snippet = '<script>alert(1)</script>' + "Keep plans flexible. ".repeat(30) + "Missing forecasts do not mean dry weather.";
+    requests[1].resolve(await jsonResponse(answer));
+    await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
+    expect(document.querySelector("#advice-answer img")).toBeNull();
+    expect(document.querySelector("#advice-citations script")).toBeNull();
+    expect(document.querySelector("#advice-answer").textContent).toContain("[unknown#2]");
+    expect(document.querySelector("#advice-answer").textContent).toContain("[1]");
+    expect(document.querySelector("#advice-answer").textContent).not.toContain("[planning#1]");
+    expect(document.querySelectorAll("#advice-answer a, #advice-answer button")).toHaveLength(0);
+    expect(document.querySelector("#advice-source-0").open).toBe(false);
+    document.querySelector("#advice-source-0 summary").click();
+    expect(document.querySelector("#advice-source-0").open).toBe(true);
+    expect(document.querySelector("#advice-source-0 p").textContent).toBe(answer.citations[0].snippet);
+    expect(document.querySelector("#advice-confidence").textContent).toBe("Source relevance: high");
+    expect(document.querySelector("#cancel-advice")).toBeNull();
+  });
+
+  test.each(["add_stop", "remove_stop", "update_stop", "shift_dates"])("previews and confirms %s through the assistant", async (kind) => {
+    const originalStop = { id: 1, day: 1, sortOrder: 4, activity: "Museum", notes: "Bring booking" };
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [originalStop] };
+    const proposedStop = { ...originalStop, id: kind === "add_stop" ? 0 : 1, activity: "<img src=x onerror=alert(1)>", notes: "Bring tickets", sortOrder: kind === "add_stop" ? 5 : 4 };
+    const change = kind === "shift_dates"
+      ? { kind, fromStartDate: trip.startDate, fromEndDate: trip.endDate, toStartDate: "2027-06-01", toEndDate: "2027-06-03" }
+      : { kind, id: proposedStop.id, before: kind === "add_stop" ? null : originalStop, after: kind === "remove_stop" ? null : proposedStop };
+    const result = reviewResponse();
+    result.preview.changes = [change];
+    let saved = false;
+    const updated = kind === "shift_dates" ? { ...trip, startDate: change.toStartDate, endDate: change.toEndDate }
+      : { ...trip, stops: kind === "remove_stop" ? [] : kind === "add_stop" ? [originalStop, { ...proposedStop, id: 2 }] : [proposedStop] };
+    const fetchMock = vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return jsonResponse(result);
+      if (url.endsWith("/edit-confirm")) { saved = true; return jsonResponse({ tripId: 12, applied: true, changes: [change] }); }
+      return jsonResponse(url.endsWith("/trips/12") ? (saved ? updated : trip) : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    setValue("#review-question", "Requested assistant change");
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    const text = document.querySelector("#mcp-result").textContent;
+    expect(text).toContain({ add_stop: "Add activity", remove_stop: "Remove activity", update_stop: "Update activity", shift_dates: "Shift trip dates" }[kind]);
+    expect(text).toContain("Current");
+    expect(text).toContain("Proposed");
+    expect(document.querySelector("#mcp-result img")).toBeNull();
+    if (kind === "shift_dates") {
+      expect(text).toContain(trip.startDate);
+      expect(text).toContain(change.toStartDate);
+    } else {
+      expect(text).toContain(kind === "remove_stop" ? "Removed from itinerary" : proposedStop.activity);
+      expect(text).toContain(kind === "add_stop" ? "Not scheduled" : originalStop.notes);
+    }
+    expect(saved).toBe(false);
+    document.querySelector("#cancel-edit").click();
+    await nextTick();
+    expect(document.querySelector("#confirm-edit")).toBeNull();
+    expect(saved).toBe(false);
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    document.querySelector("#confirm-edit").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-status").textContent).toContain({ add_stop: "Added", remove_stop: "Removed", update_stop: "Updated", shift_dates: "Trip dates shifted" }[kind]));
+    expect(document.querySelector("#status").textContent).toBe(document.querySelector("#mcp-status").textContent);
+    if (kind === "shift_dates") expect(document.querySelector("#trip-dates").classList.contains("saved-highlight")).toBe(true);
+    if (kind === "add_stop" || kind === "update_stop") expect(document.querySelector(`[data-stop-id='${kind === "add_stop" ? 2 : 1}']`).classList.contains("saved-highlight")).toBe(true);
+    const saves = fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"));
+    expect(saves).toHaveLength(1);
+    expect(JSON.parse(saves[0][1].body)).toEqual({ token: "signed-preview" });
+    expect(document.querySelector("#metric-stops").textContent).toBe(String(updated.stops.length));
+    if (kind === "shift_dates") expect(document.querySelector("[data-trip-id='12']").textContent).toContain(change.toStartDate);
+  });
+
+  test("shows actual same-day positions and previews undo without saving", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900,
+      stops: [
+        { id: 1, day: 1, sortOrder: 0, activity: "Museum", notes: "" },
+        { id: 2, day: 1, sortOrder: 0, activity: "Lunch", notes: "" },
+        { id: 3, day: 1, sortOrder: 8, activity: "Gallery", notes: "" },
+      ] };
+    const result = reviewResponse();
+    result.preview.changes = trip.stops.map((stop) => ({ id: stop.id, activity: stop.activity, notes: "",
+      fromDay: 1, toDay: 1, fromOrder: stop.sortOrder, toOrder: stop.id === 3 ? 0 : stop.id }));
+    const fetchMock = vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-operation-preview")) return jsonResponse(result);
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    expect(document.querySelector(".reorder-panel")).toBeNull();
+    document.querySelector("#undo-edit").click();
+    await vi.waitFor(() => expect(document.querySelectorAll(".review-finding")).toHaveLength(3));
+    const gallery = [...document.querySelectorAll(".review-finding")].find((element) => element.textContent.includes("Gallery"));
+    expect(gallery.textContent).toContain("Stop 3 (current)");
+    expect(gallery.textContent).toContain("Stop 1 (proposed)");
+    expect(document.querySelector(".review-finding").textContent).toContain("Stop 2 (proposed)");
+    const requests = fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-operation-preview"));
+    expect(requests).toHaveLength(1);
+    expect(JSON.parse(requests[0][1].body)).toEqual({ operation: { action: "undo", sourceDay: 1, targetDay: 1, stopId: 0, targetStopId: 0 } });
+    expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/edit-confirm"))).toBe(false);
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    document.querySelector("#cancel-edit").click();
+    await nextTick();
+    expect(document.querySelector("#confirm-edit")).toBeNull();
+  });
+
   test("boots a single Vue application without legacy markup or handlers", async () => {
     const html = readFileSync(resolve(process.cwd(), "index.html"), "utf8");
     expect(html.match(/<!doctype html>/gi)).toHaveLength(1);
@@ -57,14 +273,14 @@ describe("Itinerary Planner", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  test("ignores a pending summary after a successful 204 stop deletion", async () => {
+  test("ignores a pending edit preview after a successful 204 stop deletion", async () => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900,
       stops: [{ id: 1, tripId: 12, day: 1, activity: "Walk", notes: "", sortOrder: 0 }] };
     let resolveSummary;
     let deleted = false;
     vi.stubGlobal("fetch", vi.fn((url, options) => {
-      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
-      if (url.endsWith("/mcp-overview")) return new Promise((resolve) => { resolveSummary = resolve; });
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return new Promise((resolve) => { resolveSummary = resolve; });
       if (options?.method === "DELETE") { deleted = true; return jsonResponse(null, 204); }
       if (url.endsWith("/trips/12")) return deleted ? new Promise(() => {}) : jsonResponse(trip);
       return jsonResponse([trip]);
@@ -77,7 +293,7 @@ describe("Itinerary Planner", () => {
     document.querySelector("[data-remove-stop='1']").click();
     document.querySelector("#feedback-confirm").click();
     await vi.waitFor(() => expect(deleted).toBe(true));
-    resolveSummary(await jsonResponse({ summary: { stopCount: 1, dayCount: 3, plannedDayCount: 1, unplannedDays: [2, 3], dailyBudgetAllocation: 300 } }));
+    resolveSummary(await jsonResponse(reviewResponse()));
     await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
     expect(document.querySelector("#mcp-result").hidden).toBe(true);
   });
@@ -105,12 +321,12 @@ describe("Itinerary Planner", () => {
     expect(document.querySelector("#mcp-summary").disabled).toBe(true);
   });
 
-  test("shows MCP summary and safely renders cited RAG answers and insufficient context", async () => {
+  test("shows MCP edit preview and safely renders cited RAG answers and insufficient context", async () => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
     let insufficient = false;
     vi.stubGlobal("fetch", vi.fn((url) => {
       if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
-      if (url.endsWith("/mcp-overview")) return jsonResponse({ summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 } });
+      if (url.endsWith("/edit-preview")) return jsonResponse(reviewResponse());
       if (url.endsWith("/itinerary-advice")) return jsonResponse(insufficient
         ? { answer: "Not enough information in the knowledge base to answer this.", confidence: "insufficient", citations: [] }
         : { answer: "Budget is total. [budget#1]", confidence: "high", citations: [{ source: "<img src=x onerror=alert(1)>", chunk_id: "budget#1", snippet: "Trip budget" }] });
@@ -123,11 +339,14 @@ describe("Itinerary Planner", () => {
     await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
     document.querySelector("#mcp-summary").click();
     await vi.waitFor(() => expect(document.querySelector("#mcp-result").hidden).toBe(false));
-    expect(document.querySelector("#mcp-result").textContent).toContain("1, 2, 3");
+    expect(document.querySelector("#mcp-result").textContent).toContain("Park walk");
+    expect(document.querySelector("#mcp-result").textContent).toContain("Day 1");
+    expect(document.querySelector("#mcp-result").textContent).toContain("Day 2");
+    expect(document.querySelector("#mcp-result .trip-metrics")).toBeNull();
     setValue("#advice-question", "Budget?");
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
     await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
-    expect(document.querySelector("#advice-confidence").textContent).toBe("Confidence: high");
+    expect(document.querySelector("#advice-confidence").textContent).toBe("Source relevance: high");
     expect(document.querySelector("#advice-citations img")).toBeNull();
     insufficient = true;
     document.querySelector("#advice-form").dispatchEvent(new Event("submit", { cancelable: true }));
@@ -135,19 +354,20 @@ describe("Itinerary Planner", () => {
     expect(document.querySelector("#advice-citations").textContent).toBe("");
   });
 
-  test("combines summary with location selection and a partial forecast", async () => {
+  test("shows weather advice then clears the report for a non-weather response", async () => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
     const locations = [{ id: 1, name: "Tokyo", admin1: "Tokyo", country: "Japan" }, { id: 2, name: "Tokyo", admin1: "Central", country: "Papua New Guinea" }];
-    const summary = { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 };
     const fetchMock = vi.fn((url, options) => {
-      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
-      if (url.endsWith("/mcp-overview")) {
-        const selected = JSON.parse(options.body).locationId;
-        return jsonResponse({ summary, weather: selected ? {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) {
+        if (JSON.parse(options.body).question === "Is my budget per day?") {
+          return jsonResponse({ ...adviceResponse(null), weatherNotice: "" });
+        }
+        return jsonResponse(adviceResponse({
           status: "partial", locations, location: locations[0], retrievedAt: "2026-09-28T10:00:00Z", unavailableDates: ["2026-10-12"],
           days: [{ date: "2026-10-10", weatherCode: 63, minTemperature: 12, maxTemperature: 20, precipitationProbability: 80 },
             { date: "2026-10-11", weatherCode: null, minTemperature: 13, maxTemperature: 21, precipitationProbability: null }],
-        } : { status: "choose_location", locations, location: null, retrievedAt: null, days: [], unavailableDates: [] } });
+        }));
       }
       return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
     });
@@ -156,58 +376,63 @@ describe("Itinerary Planner", () => {
     await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
     document.querySelector("[data-trip-id='12']").click();
     await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
-    document.querySelector("#mcp-summary").click();
-    await vi.waitFor(() => expect(document.querySelector("#weather-location")).not.toBeNull());
-    expect(document.querySelector("#mcp-result").textContent).toContain("300.00");
-    expect(document.activeElement.id).toBe("weather-location");
-    const select = document.querySelector("#weather-location");
-    select.value = "1";
-    select.dispatchEvent(new Event("change", { bubbles: true }));
-    await nextTick();
-    document.querySelector("#weather-location-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    setValue("#advice-question", "Does the forecast affect my plans?");
+    document.querySelector("#advice-submit").click();
     await vi.waitFor(() => expect(document.querySelector(".weather-days")).not.toBeNull());
+    expect(document.querySelector("#weather-location")).toBeNull();
+    expect(document.querySelector("#advice-result #overview-weather")).not.toBeNull();
+    expect(document.querySelector("#mcp-result #overview-weather")).toBeNull();
+    expect(document.querySelector(".weather-place").textContent).toContain("top match): Tokyo, Japan");
     expect(document.querySelector("#weather-status").textContent).toContain("part of this trip");
     expect(document.querySelector(".weather-days").textContent).toContain("80%");
     expect(document.querySelector(".weather-days").textContent).toContain("Not available");
     expect(document.querySelector(".weather-days").textContent).not.toContain("null");
     expect(document.querySelector(".weather-missing").textContent).toContain("2026-10-12");
     expect(document.querySelector(".weather-attribution").textContent).toContain("Open-Meteo");
-    expect(JSON.parse(fetchMock.mock.calls.filter(([url]) => url.endsWith("/mcp-overview"))[1][1].body)).toEqual({ locationId: 1 });
+    const calls = fetchMock.mock.calls.filter(([url]) => url.endsWith("/itinerary-advice"));
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0][1].body)).toEqual({ question: "Does the forecast affect my plans?", tripId: 12 });
     expect(fetchMock.mock.calls.every(([url]) => url.startsWith("/itinerary-api/"))).toBe(true);
+    setValue("#advice-question", "Is my budget per day?");
+    document.querySelector("#advice-submit").click();
+    await nextTick();
+    await vi.waitFor(() => expect(document.querySelector("#advice-result").hidden).toBe(false));
+    expect(document.querySelector("#overview-weather")).toBeNull();
+    expect(document.querySelector(".weather-attribution")).toBeNull();
+    expect(document.querySelector("#advice-result").textContent).toContain("Keep timing flexible.");
   });
 
   test.each([
     ["unavailable", "Weather is currently unavailable"],
     ["outside_window", "outside the current forecast window"],
     ["not_found", "No matching weather location"],
-  ])("retains summary when weather is %s", async (weatherStatus, message) => {
+  ])("retains advice when weather is %s", async (weatherStatus, message) => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
     vi.stubGlobal("fetch", vi.fn((url) => {
-      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
-      if (url.endsWith("/mcp-overview")) return jsonResponse({
-        summary: { stopCount: 0, dayCount: 3, plannedDayCount: 0, unplannedDays: [1, 2, 3], dailyBudgetAllocation: 300 },
-        weather: { status: weatherStatus, locations: [], location: null, days: [], unavailableDates: ["2026-10-10"], retrievedAt: null },
-      });
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) return jsonResponse(adviceResponse(
+        { status: weatherStatus, locations: [], location: null, days: [], unavailableDates: ["2026-10-10"], retrievedAt: null }));
       return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
     }));
     await loadApplication();
     await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
     document.querySelector("[data-trip-id='12']").click();
     await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
-    document.querySelector("#mcp-summary").click();
+    setValue("#advice-question", "Outdoor planning in rainy weather?");
+    document.querySelector("#advice-submit").click();
     await vi.waitFor(() => expect(document.querySelector("#weather-status")?.textContent).toContain(message));
-    expect(document.querySelector("#mcp-result").hidden).toBe(false);
-    expect(document.querySelector("#mcp-result").textContent).toContain("1, 2, 3");
+    expect(document.querySelector("#advice-result").hidden).toBe(false);
+    expect(document.querySelector("#advice-result").textContent).toContain("Keep timing flexible.");
     expect(document.querySelector(".weather-days")).toBeNull();
   });
 
-  test("drops overview and location selection when switching trips during a request", async () => {
+  test("drops edit preview when switching trips during a request", async () => {
     const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
     const other = { ...trip, id: 13, destination: "Paris" };
     let resolveOverview;
     vi.stubGlobal("fetch", vi.fn((url) => {
-      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: false, mcpEnabled: true, ragEnabled: false });
-      if (url.endsWith("/mcp-overview")) return new Promise((resolve) => { resolveOverview = resolve; });
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return new Promise((resolve) => { resolveOverview = resolve; });
       if (url.endsWith("/trips/12")) return jsonResponse(trip);
       if (url.endsWith("/trips/13")) return jsonResponse(other);
       return jsonResponse([trip, other]);
@@ -219,9 +444,146 @@ describe("Itinerary Planner", () => {
     document.querySelector("#mcp-summary").click();
     document.querySelector("[data-trip-id='13']").click();
     await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toContain("Paris"));
-    resolveOverview(await jsonResponse({ summary: { stopCount: 99 }, weather: { status: "available" } }));
+    resolveOverview(await jsonResponse(reviewResponse()));
     await nextTick();
     expect(document.querySelector("#mcp-result").hidden).toBe(true);
+    expect(document.querySelector("#overview-weather")).toBeNull();
+  });
+
+  test("locks edit preview while pending, prevents duplicates and restores input on failure", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    let resolveReview;
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return new Promise((resolve) => { resolveReview = resolve; });
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#review-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    document.querySelector("#review-form").dispatchEvent(new Event("submit", { cancelable: true }));
+    await nextTick();
+    expect(document.querySelector("#review-question").disabled).toBe(true);
+    expect(fetch.mock.calls.filter(([url]) => url.endsWith("/edit-preview"))).toHaveLength(1);
+    resolveReview(await jsonResponse({ error: { message: "The requested service is unavailable." } }, 503));
+    await vi.waitFor(() => expect(document.querySelector("#review-question").disabled).toBe(false));
+    expect(document.querySelector("#mcp-status").textContent).toContain("unavailable");
+    expect(document.querySelector("#mcp-result").hidden).toBe(true);
+  });
+
+  test("renders preview as text and supports clarification without a save button", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    const result = reviewResponse();
+    result.preview.changes[0].activity = "<img src=x onerror=alert(1)>";
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return jsonResponse(result);
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-result").hidden).toBe(false));
+    expect(document.querySelector("#mcp-result img")).toBeNull();
+    expect(document.querySelector("#mcp-result").textContent).toContain("<img src=x");
+    result.preview = null;
+    result.clarification = "Which days should be swapped?";
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-status").textContent).toContain("Which days"));
+    expect(document.querySelectorAll(".review-finding")).toHaveLength(0);
+    expect(document.querySelector("#confirm-edit")).toBeNull();
+  });
+
+  test("cancels without saving, then confirms only the token and refreshes the itinerary", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900,
+      stops: [{ id: 1, day: 1, activity: "Park walk", notes: "Saved plan", sortOrder: 0 }] };
+    let resolveSave;
+    const fetchMock = vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/edit-preview")) return jsonResponse(reviewResponse());
+      if (url.endsWith("/edit-confirm")) return new Promise((resolve) => { resolveSave = resolve; });
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    expect(document.activeElement.id).toBe("mcp-result");
+    document.querySelector("#cancel-edit").click();
+    await nextTick();
+    expect(document.querySelector("#mcp-result").hidden).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => url.endsWith("/edit-confirm"))).toBe(false);
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    document.querySelector("#confirm-edit").click();
+    document.querySelector("#confirm-edit").click();
+    await nextTick();
+    expect(document.querySelector("#confirm-edit").disabled).toBe(true);
+    const saves = fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"));
+    expect(saves).toHaveLength(1);
+    expect(JSON.parse(saves[0][1].body)).toEqual({ token: "signed-preview" });
+    trip.stops[0].day = 2;
+    resolveSave(await jsonResponse({ tripId: 12, applied: true, changes: reviewResponse().preview.changes }));
+    await vi.waitFor(() => expect(document.querySelector("#mcp-status").textContent).toContain('Moved "Park walk" to Day 2.'));
+    expect(document.querySelector("#days #day-2")).not.toBeNull();
+    expect(document.querySelector("#mcp-result").hidden).toBe(true);
+  });
+
+  test.each([409, 504])("discards a rejected or uncertain save (%s) and permits a new preview", async (httpStatus) => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: false });
+      if (url.endsWith("/edit-preview")) return jsonResponse(reviewResponse());
+      if (url.endsWith("/edit-confirm")) return jsonResponse({ error: { message: "Save was not acknowledged." } }, httpStatus);
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    setValue("#review-question", "Move day 1 to day 3");
+    await nextTick();
+    expect(document.querySelector("#confirm-edit")).toBeNull();
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).not.toBeNull());
+    document.querySelector("#confirm-edit").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-status").textContent).toContain("Refresh the saved trip"));
+    expect(document.querySelector("#confirm-edit")).toBeNull();
+    expect(document.querySelector("#mcp-summary").disabled).toBe(false);
+    expect(fetch.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"))).toHaveLength(1);
+  });
+
+  test("clears weather and ignores stale advice after changing trips", async () => {
+    const trip = { id: 12, user: "Alex", destination: "Tokyo", startDate: "2026-10-10", endDate: "2026-10-12", budget: 900, stops: [] };
+    const other = { ...trip, id: 13, destination: "Paris" };
+    let resolveAdvice;
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/itinerary-advice")) return new Promise((resolve) => { resolveAdvice = resolve; });
+      if (url.endsWith("/trips/12")) return jsonResponse(trip);
+      if (url.endsWith("/trips/13")) return jsonResponse(other);
+      return jsonResponse([trip, other]);
+    }));
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toContain("Tokyo"));
+    setValue("#advice-question", "Outdoor planning?");
+    document.querySelector("#advice-submit").click();
+    document.querySelector("[data-trip-id='13']").click();
+    await vi.waitFor(() => expect(document.querySelector("#trip-title").textContent).toContain("Paris"));
+    resolveAdvice(await jsonResponse(adviceResponse({ status: "unavailable", days: [] })));
+    await nextTick();
+    expect(document.querySelector("#advice-result").hidden).toBe(true);
     expect(document.querySelector("#overview-weather")).toBeNull();
   });
 

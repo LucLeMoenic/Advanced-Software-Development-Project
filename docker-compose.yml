@@ -104,8 +104,8 @@ services:
 
   student2-backend:
     build:
-      context: ./student-2/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: student-2/backend/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: http://student2-database:8080
