@@ -89,7 +89,7 @@ check every generated claim against its cited full source; passing citation IDs
 alone do not pass that gate. Retain the output and human decisions with the
 commit/model identity, and evaluate a separately authored, untouched hold-out set
 before accepting or recalibrating the shared thresholds. Normal CI skips these
-nine live cases explicitly and never downloads a model.
+28 live cases explicitly and never downloads a model.
 
 Student 1's ten destination guides (`knowledge/student-1/`, one per catalogue city)
 keep review metadata in the heading paragraph so it is never indexed, and start
@@ -99,6 +99,15 @@ still retrieve at low confidence; see the
 [Student 1 RAG HLD](../../student-1/docs/release-1-rag-hld.md) calibration note.
 
 ## Adding a feature's knowledge base
+
+Student 2 has thirteen topic passages: six application topics plus weather-aware
+planning, daily pacing, transport buffers, expense/contingency planning,
+packing/preparation, accessibility and family/group planning. The seven added
+sources are project-authored general guidance reviewed October 2026, not verified
+destination research. They do not supply current timetables, fares, entry
+eligibility or named-venue accessibility. The grounding fixtures include supported
+planning questions and unsupported live-train/named-venue questions. Unsupported
+questions may retrieve no passages; lexical overlap does not prove answerability.
 
 1. Create `knowledge/<feature>/*.md` — 6–10 short docs, one clear topic
    each, with a `# Title` heading.
