@@ -1,8 +1,8 @@
 # Agentic Loop Prompt Log
 
-Student 5 (Alex Chen), Release 0. Every attempt I made at a Plan/Act/Observe/
+Student 5 (Alex Chen), Release 0 and Release 1. Every attempt I made at a Plan/Act/Observe/
 Adapt run through the shared development loop, in order, including the three
-that failed.
+that failed, plus the Release 1 validation runs and AI-written code.
 
 Only attempt (d) produced saved artefacts. Attempts (a) to (c) are recorded from
 the working session; no evidence file is cited for them, because none was kept.
@@ -108,3 +108,79 @@ tooling, or a test framework* - written after earlier attempts drifted toward
 suggesting a test framework for a nine-line pure function. The reviewer's
 `Scope check:` line then has something concrete to check against, and it
 correctly reported that the change touched only the one function.
+
+## Release 1
+
+### AI-written code for Release 1
+
+The Release 1 implementation was written by **GitHub Copilot CLI** (Claude
+Opus 5.5) in one supervised session, working from the Release 1 brief, the
+project specifications, this docs folder and the existing Student 1-3 Release 1
+patterns. I directed scope, ran the stack, and reviewed the result (see
+`review-record.md`, "Release 1").
+
+| Area | Files written or changed by the assistant |
+|---|---|
+| MCP tools | `ai-services/mcp-server/tools/logistics.py`, `tools/__init__.py` (registration line), `tests/test_logistics_tools.py` |
+| RAG knowledge | 8 documents in `ai-services/rag-server/knowledge/student-5/`, `tests/test_student5_retrieval.py` |
+| Backend | `mcp_client.py`, `rag_client.py`, `integrations.py`, `ui.py`, `app.py`, `templates/mcp_result.html`, `templates/rag_answer.html`, `requirements.txt`, `Dockerfile`, `tests/conftest.py`, `tests/test_integrations.py` |
+| Frontend | `index.html` (assist section), `style.css` (assist, citation and confidence styles; responsive rules) |
+| Integration and CI | `docker-compose.yml` (`student5-backend` flags only), `.env.example` comment, `scripts/test/student-5.ps1`, `.github/workflows/student-5.yml` |
+| Shared agentic loop | `ServiceValidation.cs` (`student-5` fixture), `AgenticLoopApplication.cs` (`--trip-id` rejection), `tests/AgenticLoopTests.cs`, `README.md` |
+| Docs and evidence | This folder and `evidence/release-1/` |
+
+The assistant made its changes in the working tree only. An earlier
+single-branch push it made was withdrawn, and I then committed, pushed and
+opened each of the seven Release 1 pull requests myself (see
+`contribution-log.md`).
+
+Tests run on the final working tree (on top of `main` at `5114071`), all passing:
+
+| Suite | Result |
+|---|---|
+| `student-5/database` | 26 passed |
+| `student-5/backend` | 125 passed (68 before Release 1) |
+| `ai-services/mcp-server` | 135 passed, 34 of them Student 5 |
+| `ai-services/rag-server` | 94 passed, 28 skipped (opt-in live evaluation), 17 of them Student 5 |
+| `ai-services/agentic-loop/tests` | 73 passed (69 before Release 1) |
+| `scripts/test/student-5.ps1` | 26 + 125 + 34 + 17 passed |
+| CI smoke step, run locally | passes with flags off; fails with `AssertionError: 200` with flags on (`evidence/release-1/ci-smoke-local.txt`) |
+
+Two things the assistant got wrong and corrected during the session: it first
+passed the repository root as a positional argument to `start-release1.ps1`,
+which bound to `-McpVenv` and created a virtual environment in the repo (cleaned
+up; do not pass `.`); and the `/ui/mcp` transit filter field is `transit_type`,
+not `type`, which it found when the first fragment capture ignored the filter.
+An independent AI code review then found that `get_transit` filtered after the
+20-row cap; that was fixed with a regression test before committing (see
+`review-record.md`).
+
+### Validation runs (e) and (f)
+
+Both runs used the native loop against the live stack, with
+`MCP_ENABLED=true RAG_ENABLED=true`, the same two models as (d), and my
+`reviewer-llama32-v2.md` prompt. `--reviewer-prompt` needs an absolute path; a
+relative path is resolved against the loop project directory.
+
+| # | Mode | `--task` | `--context` | Pre-test | Reviewer outcome | Record |
+|---|---|---|---|---|---|---|
+| e | `validate-mcp --feature student-5` | Validate the captured `logistics.check_visa_requirement` result for destination 1 against the tool design: confirm it is read-only, bounded, scoped to the requested destination and carries the official-source reminder. Propose at most one small, bounded improvement to `logistics.py` if a real gap exists; otherwise state that no change is needed. | `ai-services/mcp-server/tools/logistics.py`, `student-5/backend/integrations.py` | `200`, `contractPassed: true` | First review malformed (echo of the prompt's worked example); after one format correction, `ACCEPT` with one SUGGESTION. No `[ADAPT]`. | `20261001T114821Z-cafe2142e4624e52807d4b54c983d954.json` |
+| f | `validate-rag --feature student-5` | Validate the captured visa guidance answer against its cited knowledge chunks. List any sentence in the answer that is not supported by a cited snippet. Propose at most one small, bounded improvement to `visa-categories.md` if a real gap exists; otherwise state that no change is needed. | `ai-services/rag-server/knowledge/student-5/visa-categories.md` | `200`, `contractPassed: true`, question `What is the difference between visa on arrival and an eVisa?` | `ACCEPT` with one SUGGESTION. No `[ADAPT]`. | `20261001T114858Z-e3385d8dc6f1499db6c99f34beee5180.json` |
+
+```powershell
+dotnet run --project ai-services/agentic-loop -- validate-mcp --feature student-5 `
+  --task '<task (e) above>' `
+  --context ai-services/mcp-server/tools/logistics.py `
+  --context student-5/backend/integrations.py `
+  --reviewer-prompt "$PWD\student-5\docs\prompt-library\reviewer-llama32-v2.md"
+
+dotnet run --project ai-services/agentic-loop -- validate-rag --feature student-5 `
+  --task '<task (f) above>' `
+  --context ai-services/rag-server/knowledge/student-5/visa-categories.md `
+  --question 'What is the difference between visa on arrival and an eVisa?' `
+  --reviewer-prompt "$PWD\student-5\docs\prompt-library\reviewer-llama32-v2.md"
+```
+
+In both runs the implementer concluded that no change was needed. Terminal
+output is in `evidence/release-1/loop/`. I finalised both records myself
+after reviewing them: (e) `kept`, (f) `kept` (see `review-record.md`).

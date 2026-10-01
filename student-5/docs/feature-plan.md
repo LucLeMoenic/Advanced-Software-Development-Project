@@ -1,6 +1,6 @@
 # Travel Logistics & Advisory Service - Feature Plan
 
-Student 5 (Alex Chen), Release 0. This records the build **as executed**, in the
+Student 5 (Alex Chen), Release 0 and Release 1. This records the build **as executed**, in the
 order it happened, with the status of each deliverable. Requirement IDs refer to
 `requirements.md`.
 
@@ -51,6 +51,30 @@ already worked rather than against a stub.
 
 ## Deliberately out of scope for Release 0
 
-MCP tools (`get_weather`, `check_visa_requirement`) are Release 1 work; nothing
-in this release depends on them. Authentication, live visa/weather feeds, RAG
-and multi-agent application behaviour are also out of scope.
+MCP tools (`get_weather`, `check_visa_requirement`) were Release 1 work; nothing
+in Release 0 depends on them. Authentication, live visa/weather feeds, RAG
+and multi-agent application behaviour were also out of scope.
+
+## Release 1 - MCP, RAG and agentic validation
+
+Delivered as one pull request per step (see `contribution-log.md`). Same sequencing rule, bottom-up: the
+shared tool and knowledge base first, then the backend clients, then the UI,
+then CI and the loop fixtures.
+
+| # | Deliverable | Requirements | Status | Evidence / notes |
+|---|---|---|---|---|
+| R1-1 | Three `logistics.*` MCP tools on the shared server | TL-FR-11, TL-NFR-07 | **Complete** | `ai-services/mcp-server/tools/logistics.py` + 34 tests (`release-1/pytest-mcp-server.txt`). Read-only `GET`s to the Student 5 database service only. |
+| R1-2 | Student 5 RAG knowledge base | TL-FR-13, TL-NFR-08 | **Complete** | 8 curated documents in `ai-services/rag-server/knowledge/student-5/`; 17 retrieval tests (`release-1/pytest-rag-server.txt`). |
+| R1-3 | Backend MCP and RAG clients and routes | TL-FR-12, TL-FR-13, TL-NFR-06 | **Complete** | `mcp_client.py`, `rag_client.py`, `integrations.py`; feature flags default off; 57 new backend tests (125 total). Live captures in `release-1/mcp-*.json` and `rag-*.json`. |
+| R1-4 | Frontend "Live tools & knowledge base" section | TL-FR-14 | **Complete** | `/ui/mcp` and `/ui/rag` fragments; desktop and 375px screenshots in `release-1/screenshots/`. |
+| R1-5 | Compose flags, test script and CI smoke test | TL-NFR-06, TL-NFR-09 | **Complete** (locally) | `MCP_ENABLED`/`RAG_ENABLED` on `student5-backend`; `student-5.yml` starts the services and asserts the fail-closed 503s. Smoke step verified locally (`release-1/ci-smoke-local.txt`); a green GitHub run is still to be recorded once the CI pull request has merged. |
+| R1-6 | `--feature student-5` in agentic-loop `validate-mcp` / `validate-rag` | TL-FR-15 | **Complete** | `ServiceValidation.cs` + 4 tests (73 total). Both modes run live; records finalised by Alex: (e) `kept`, (f) `kept`. |
+| R1-7 | Release 1 docs and evidence | All | **Complete** | This folder and `docs/evidence/release-1/`. |
+
+| Decision | Alternative rejected | Reason |
+|---|---|---|
+| MCP tools read the Student 5 database over HTTP | Open `travel.db` from the MCP server | Keeps TL-NFR-01: one owner for the data, and the tool gets the same validation and 404s as every other caller. |
+| The backend allow-lists the three `logistics.*` tools | Proxy any tool name | Student 5's public API must not become a route into other students' tools. |
+| The RAG client re-validates the server's response | Trust the shared server | A response with a citation the answer never uses, or an "insufficient" answer with citations, is a contract breach the UI should not render as authoritative. |
+| MCP and RAG default to disabled; CI asserts the disabled path | Enable both in CI | CI has no model and no shared servers. Asserting the fail-closed 503s still proves the routes, Compose wiring and the `:5105` proxy without flaky dependencies. |
+| The Smartraveller reminder is part of the tool result and the RAG markup | Rely on the model | Same reason as Release 0's advisory disclaimer: it must appear whatever the model writes. |

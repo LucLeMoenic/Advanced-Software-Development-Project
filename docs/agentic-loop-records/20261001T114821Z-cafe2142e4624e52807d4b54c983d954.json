@@ -42,9 +42,12 @@
   "adaptedProposal": null,
   "adaptedProposalReview": null,
   "finalReviewerVerdict": "ACCEPT",
-  "humanDecision": null,
-  "humanNotes": null,
-  "postTest": null,
-  "finalisedAt": null,
+  "humanDecision": "kept",
+  "humanNotes": "Reviewed the validate-mcp run. The implementer correctly proposed no change: the captured check_visa_requirement result is read-only, scoped to destination 1 and carries the Smartraveller reminder. Rejected the reviewer\u0027s SUGGESTION as unfounded - official_source_reminder is already a plain-text field - and its validation gap is wrong because the pre-test contract checks id 1. The reviewer\u0027s first output echoed the prompt\u0027s worked example (TL-R10). No change to logistics.py.",
+  "postTest": {
+    "command": "pwsh -NoProfile -File scripts/test/student-5.ps1",
+    "result": "26 \u002B 125 \u002B 34 \u002B 17 passed"
+  },
+  "finalisedAt": "2026-10-01T13:47:10.3097119+00:00",
   "validationMode": "mcp"
 }

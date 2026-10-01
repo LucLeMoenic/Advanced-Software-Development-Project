@@ -16,13 +16,14 @@ group's Docker Compose stack. Standalone services do not satisfy the brief.
 
 ## Scope
 
-Release 0 only. Everything below is implemented and integrated.
+Release 0 is implemented and integrated. Release 1 adds MCP tools, a RAG
+knowledge base and agentic-loop validation, all reached through the backend.
 
-| Release 0 in scope | Not in this release |
-|---|---|
-| Three containerised services, Compose-integrated | MCP tools (`get_weather`, `check_visa_requirement`) - Release 1 |
-| JSON CRUD over HTTP, HTMX fragment UI, AI-Mode advisory | Authentication, multi-user data, cloud deployment |
-| Seeded sample data, CI on every push | Live visa/weather feeds; RAG; multi-agent behaviour |
+| Release 0 in scope | Release 1 in scope | Not in either release |
+|---|---|---|
+| Three containerised services, Compose-integrated | Three `logistics.*` tools on the shared MCP server (:5400) | Authentication, multi-user data, cloud deployment |
+| JSON CRUD over HTTP, HTMX fragment UI, AI-Mode advisory | Student 5 knowledge base on the shared RAG server (:5500) | Live visa/weather feeds |
+| Seeded sample data, CI on every push | `/api/mcp/*`, `/api/rag/ask`, the "Live tools & knowledge base" UI section, `validate-mcp`/`validate-rag --feature student-5` | Multi-agent application behaviour (Release 2) |
 
 ## Fixed contracts
 
@@ -49,6 +50,8 @@ Browser
   -> student5-backend   (Flask :5205) - JSON passthrough, HTMX fragments, advisory
        -> student5-database (Flask + SQLite :5305) - the only SQLite owner
        -> ollama (:11434) -> model tag from APPLICATION_MODEL
+       -> MCP server (:5400/mcp, Release 1) -> logistics.* tools -> student5-database over HTTP
+       -> RAG server (:5500/ask, Release 1) -> knowledge/student-5/ + ollama
 ```
 
 The rule that shapes the whole design: **no service opens another service's
@@ -82,6 +85,10 @@ travels over HTTP through `backend/db_client.py`.
 | `backend/advisory.py` | Grounding + prompt assembly + both advisory endpoints |
 | `backend/ui.py`, `backend/templates/` | Server-rendered HTMX fragments |
 | `frontend/index.html`, `style.css`, `nginx.conf` | The page, its CSS, the edge |
+| `backend/mcp_client.py`, `rag_client.py`, `integrations.py` | Release 1: the only code that speaks to the MCP and RAG servers, and the `/api/mcp/*` and `/api/rag/ask` routes |
+| `ai-services/mcp-server/tools/logistics.py` | Release 1: the three Student 5 MCP tools (shared server, Student 5 file) |
+| `ai-services/rag-server/knowledge/student-5/` | Release 1: the eight knowledge-base documents |
+| `docs/evidence/release-1/` | Release 1 evidence: live API captures, screenshots, test output, loop terminal output |
 | `docs/evidence/` | All 17 evidence artefacts - agentic loop, tests, build, stack, CI run, screenshots. Indexed in `testing-evidence.md` |
 | `docs/prompt-library/` | `reviewer-llama32-v2.md`, my custom reviewer prompt |
 
@@ -92,7 +99,10 @@ docker compose up --build student5-frontend student5-backend student5-database
 ```
 
 Then open `http://localhost:5105/`. The advisory button additionally needs
-`ollama` and `ollama-model-setup` running.
+`ollama` and `ollama-model-setup` running. For Release 1 (MCP and RAG enabled),
+run `pwsh -File scripts/deploy/start-release1.ps1` from the repo root with no
+positional arguments; it starts the MCP and RAG servers and sets
+`MCP_ENABLED`/`RAG_ENABLED` to true.
 
 ## Gotcha before you run the tests
 

@@ -1,6 +1,6 @@
 # Review Record - Agentic Loop Run, 6 September 2026
 
-Student 5 (Alex Chen), Release 0. The completed Plan/Act/Observe/Adapt cycle.
+Student 5 (Alex Chen), Release 0, with the Release 1 validation runs and code review at the end. The completed Plan/Act/Observe/Adapt cycle.
 
 ## Run identity
 
@@ -157,3 +157,77 @@ The residual defect in `reviewer-llama32-v2.md` - the model now echoes the
 worked examples rather than the template - is analysed in
 `prompt-engineering.md`, along with the recommendation to take the fix back to
 the team's shared prompt.
+
+## Release 1 - validation runs (e) and (f)
+
+Both records are in `docs/agentic-loop-records/`; terminal output is in
+`evidence/release-1/loop/`. Models and reviewer prompt as for (d). In both, the
+pre-test was a **live** call to the Student 5 backend with the loop's own
+contract check passing, and the implementer proposed no change.
+
+### (e) `validate-mcp` - `20261001T114821Z-cafe2142e4624e52807d4b54c983d954.json`
+
+| Phase | What happened |
+|---|---|
+| Pre-test | `POST http://127.0.0.1:5205/api/mcp/invoke` with the fixed visa call for destination 1: `200`, `contractPassed: true` (tool name, `ok`, id 1, country, visa category, Smartraveller reminder). |
+| Plan / Act | Restated the four properties in the task and concluded no change to `logistics.py` was needed. |
+| Observe (1st) | **Malformed.** The reviewer returned a REQUIRED finding, "The new helper divides by `count` without a zero check", under `Verdict: ACCEPT`. That is the worked example from `reviewer-llama32-v2.md` again: there is no new helper and no division. `ParseVerdict` rejected the REQUIRED-under-ACCEPT combination and asked for one correction. |
+| Observe (2nd) | `ACCEPT` with one SUGGESTION: "add a plain text version of the official-source reminder". The reminder is already a plain-text string field (`official_source_reminder`), so the suggestion has no basis. The validation gap it names - "does not prove that the result is bounded to the requested destination" - is also wrong: the pre-test contract checks `id == 1`. |
+| Adapt | None generated (verdict ACCEPT). |
+
+**My assessment:** the tool result is correct and the implementer was right
+that no change is needed. Both reviewer findings are unsupported. This is
+TL-R10 occurring, and the controls worked the same way as in (d).
+
+### (f) `validate-rag` - `20261001T114858Z-e3385d8dc6f1499db6c99f34beee5180.json`
+
+| Phase | What happened |
+|---|---|
+| Pre-test | `POST http://127.0.0.1:5205/api/rag/ask` with "What is the difference between visa on arrival and an eVisa?": `200`, `contractPassed: true`; the answer cites `visa-categories#2` and `#3` inline. |
+| Plan / Act | Checked each sentence against the cited snippets; proposed no change to `visa-categories.md`. |
+| Observe | `ACCEPT` with one SUGGESTION: add more about visa-on-arrival requirements. |
+| Adapt | None generated. |
+
+**My assessment:** both sentences in the answer are supported by the cited
+chunks. The suggestion is about the answer's length, not its grounding, and the
+requirement details it asks for are already in chunk `visa-categories#2` - so
+the knowledge base needs no change. Low confidence on a correct answer is
+recorded in `known-issues.md`.
+
+### Finalising
+
+The `humanDecision` field is mine to set, so the assistant left both records
+pending. After reviewing the runs above I finalised them myself: (e) `kept`, (f) `kept`.
+My notes and the post-test are stored in each record. The command has this
+form:
+
+```powershell
+dotnet run --project ai-services/agentic-loop -- finalise `
+  --record docs/agentic-loop-records/20261001T114821Z-cafe2142e4624e52807d4b54c983d954.json `
+  --decision kept `
+  --notes "Reviewer's first output echoed the prompt's worked example; final SUGGESTION unsupported - the reminder is already plain text and the contract checks id 1. No change to logistics.py." `
+  --post-test-command "pwsh -NoProfile -File scripts/test/student-5.ps1" `
+  --post-test-result "26 + 125 + 34 + 17 passed"
+```
+
+## Release 1 - review of the AI-written code
+
+Before committing, the working-tree diff (code only, not docs) was given to an
+independent AI code-review agent. It was asked to look for logic errors,
+contract mismatches with the shared MCP/RAG servers (compared with Student 3's
+clients), template XSS, SSRF or allow-list bypass, anyio misuse, CI script
+mistakes, and regressions for Students 1-4 in the shared agentic-loop files.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| `logistics.get_transit` applied the `type` filter **after** the 20-row cap, so with more than 20 transit rows for a destination, a matching row with a higher id was dropped and the tool wrongly reported "no matching options". Not reachable with the seed data (at most 2 rows per destination), but reachable after admin creates. | Medium | **Accepted and fixed.** `_children` now returns the full sorted list; `get_transit` filters, then caps, and `get_weather` caps. Regression test `test_transit_filter_runs_before_cap` (20 bus rows, then a ferry at id 21). MCP suite 122 -> 123 passed (135 on the current `main`, which has more Student 2 tools); live call re-checked after restarting the server. |
+
+The reviewer reported nothing else: the clients match the shared servers'
+contracts, Jinja autoescape is on with no `|safe`, `destination_id` is a
+validated int and tool names go through a fixed allow-list, the smoke-test bash
+parses correctly, and the shared agentic-loop changes only add `student-5`
+branches without changing behaviour for Students 1-4.
+
+Also checked during the session: the four 503 bodies in the CI smoke test
+against the running backend (`ci-smoke-local.txt`), and the 375px layout for
+horizontal overflow (0px, `assist-mobile-375.png`).

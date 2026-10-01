@@ -1,0 +1,1 @@
+{"result":{"count":1,"destination":{"country":"Japan","id":1},"ok":true,"transit_options":[{"details":"Tokyo Metro and Toei lines accept Suica or Pasmo IC cards, which also work on buses and in convenience stores.","id":2,"type":"metro"}]},"tool":"logistics.get_transit"}
