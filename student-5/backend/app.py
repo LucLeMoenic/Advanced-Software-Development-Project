@@ -4,11 +4,12 @@ This service is the middle tier of the stack. It owns no data of its own: the
 frontend talks to it, and it talks to the database microservice over HTTP
 (never to the SQLite file) and to Ollama for generated advice.
 
-Three feature areas, three blueprints, deliberately kept apart because they do
+Four feature areas, four blueprints, deliberately kept apart because they do
 not share failure semantics:
 
 * ``api``      -- JSON passthrough over the database's CRUD API (this module).
 * ``advisory`` -- the Frontend -> Backend/API -> Ollama -> LLM workflow.
+* ``integrations`` -- Release 1 MCP tool and RAG knowledge-base routes.
 * ``ui``       -- server-rendered HTML fragments for the HTMX frontend.
 """
 
@@ -19,15 +20,23 @@ from flask import Blueprint, Flask, current_app, jsonify, request
 
 from advisory import advisory_bp
 from db_client import DatabaseClient, DatabaseResponse, DatabaseUnavailable
+from integrations import integrations_bp
+from mcp_client import DEFAULT_MCP_SERVER_URL, McpClient
 from ollama_client import (
     DEFAULT_APPLICATION_MODEL,
     DEFAULT_OLLAMA_URL,
     OllamaClient,
     OllamaUnavailable,
 )
+from rag_client import DEFAULT_RAG_SERVER_URL, RagClient
 from ui import ui_bp
 
 DEFAULT_DATABASE_API_URL = "http://student5-database:8080"
+
+
+def env_flag(name: str) -> bool:
+    """An opt-in boolean: only the literal "true" (any case) switches it on."""
+    return os.environ.get(name, "false").strip().lower() == "true"
 
 
 # ---------------------------------------------------------------------------
@@ -201,6 +210,12 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.config["APPLICATION_MODEL"] = os.environ.get(
         "APPLICATION_MODEL", DEFAULT_APPLICATION_MODEL
     )
+    # Release 1 integrations fail closed: MCP and RAG stay off unless the
+    # deployment opts in, so CI never reaches for shared servers it lacks.
+    app.config["MCP_SERVER_URL"] = os.environ.get("MCP_SERVER_URL", DEFAULT_MCP_SERVER_URL)
+    app.config["MCP_ENABLED"] = env_flag("MCP_ENABLED")
+    app.config["RAG_SERVER_URL"] = os.environ.get("RAG_SERVER_URL", DEFAULT_RAG_SERVER_URL)
+    app.config["RAG_ENABLED"] = env_flag("RAG_ENABLED")
     if config:
         app.config.update(config)
 
@@ -208,6 +223,8 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.config["OLLAMA_CLIENT"] = OllamaClient(
         app.config["OLLAMA_URL"], app.config["APPLICATION_MODEL"]
     )
+    app.config["MCP_CLIENT"] = McpClient(app.config["MCP_SERVER_URL"], app.config["MCP_ENABLED"])
+    app.config["RAG_CLIENT"] = RagClient(app.config["RAG_SERVER_URL"], app.config["RAG_ENABLED"])
 
     @app.errorhandler(DatabaseUnavailable)
     def handle_database_unavailable(_exc):
@@ -233,6 +250,7 @@ def create_app(config: Optional[dict] = None) -> Flask:
 
     app.register_blueprint(api)
     app.register_blueprint(advisory_bp)
+    app.register_blueprint(integrations_bp)
     app.register_blueprint(ui_bp)
 
     return app

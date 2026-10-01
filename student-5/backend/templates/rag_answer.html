@@ -1,0 +1,33 @@
+{#
+  A grounded answer from the shared RAG server. Confidence is always shown,
+  citations are listed with their chunk ids so every [chunk_id] marker in the
+  answer can be traced, and an insufficient answer is shown as an honest
+  "not covered" message rather than styled like a real answer.
+#}
+<section class="rag-answer">
+  <p class="rag-question">{{ question }}</p>
+  <p class="rag-confidence">
+    <span class="confidence-badge confidence-{{ confidence }}">{{ confidence | capitalize }} confidence</span>
+  </p>
+  {% if confidence == "insufficient" %}
+  <p class="rag-insufficient">{{ answer }}</p>
+  <p class="panel-hint">The knowledge base covers visas, passports and documents, packing by season, local transit, airport arrival, insurance and how this service works.</p>
+  {% else %}
+  <p class="rag-answer-text">{{ answer }}</p>
+  {% if confidence == "low" %}
+  <p class="rag-caution">Low confidence: the sources only partly match this question, so check them before relying on the answer.</p>
+  {% endif %}
+  <h3 class="rag-sources-heading">Sources</h3>
+  <ol class="rag-citations">
+    {% for citation in citations %}
+    <li class="rag-citation">
+      <span class="citation-source">{{ citation.source }}</span>
+      <code class="citation-id">{{ citation.chunk_id }}</code>
+      <span class="citation-score">score {{ "%.2f" | format(citation.score) }}</span>
+      <blockquote class="citation-snippet">{{ citation.snippet }}</blockquote>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  <p class="visa-disclaimer">General guidance from a curated knowledge base, not legal or migration advice. Confirm entry rules with Smartraveller and official sources.</p>
+</section>

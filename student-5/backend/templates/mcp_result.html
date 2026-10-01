@@ -1,0 +1,50 @@
+{#
+  One Student 5 MCP tool result. The provenance line names the tool so a
+  reader (and a marker) can see the data came through the shared MCP server,
+  not the direct database panels above.
+#}
+<section class="mcp-result">
+  <p class="mcp-provenance">Retrieved through the shared MCP server &middot; <code class="mcp-tool-name">{{ tool }}</code></p>
+  <p class="mcp-destination">{{ result.destination.country }}</p>
+  {% if tool == "logistics.check_visa_requirement" %}
+  <p class="visa-requirement">{{ result.destination.visa_requirement }}</p>
+  {% if result.destination.notes %}
+  <p class="visa-notes">{{ result.destination.notes }}</p>
+  {% else %}
+  <p class="fragment-empty">No entry notes are recorded for this destination.</p>
+  {% endif %}
+  <p class="visa-disclaimer">{{ result.official_source_reminder }}</p>
+  {% elif tool == "logistics.get_weather" %}
+  {% if result.weather_notes %}
+  <dl class="weather-notes">
+    {% for note in result.weather_notes %}
+    <dt class="weather-season">{{ note.season }}</dt>
+    <dd class="weather-detail">{{ note.notes }}</dd>
+    {% endfor %}
+  </dl>
+  {% else %}
+  <p class="fragment-empty">No weather notes are recorded for this destination.</p>
+  {% endif %}
+  {% else %}
+  {% if result.transit_options %}
+  <table class="transit-table">
+    <thead>
+      <tr>
+        <th class="transit-heading" scope="col">Type</th>
+        <th class="transit-heading" scope="col">Details</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for option in result.transit_options %}
+      <tr class="transit-row">
+        <td class="transit-type">{{ option.type }}</td>
+        <td class="transit-details">{{ option.details }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="fragment-empty">No matching transit options are recorded for this destination.</p>
+  {% endif %}
+  {% endif %}
+</section>
