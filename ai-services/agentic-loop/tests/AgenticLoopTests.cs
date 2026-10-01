@@ -251,7 +251,7 @@ public sealed class AgenticLoopTests
 
     [Theory]
     [InlineData("student-4", "mcp")]
-    [InlineData("student-5", "rag")]
+    [InlineData("student-4", "rag")]
     public async Task ValidationModes_RejectUnsupportedFeatureFixtures(string feature, string mode)
     {
         using var client = new HttpClient(new RecordingHandler("{}"));
@@ -341,6 +341,77 @@ public sealed class AgenticLoopTests
         using var result = JsonDocument.Parse(evidence.Result);
         Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
         Assert.Equal("Is Chin Chin busy? Do I need to book?", ServiceValidation.DefaultQuestion("student-3", "rag"));
+    }
+
+    private const string Student5Visa = """
+        {"tool":"logistics.check_visa_requirement","result":{"ok":true,"destination":{"id":1,"country":"Japan","visa_requirement":"visa-free","notes":null},"official_source_reminder":"General guidance only. Confirm entry requirements with Smartraveller and the destination's official immigration authority before booking."}}
+        """;
+
+    [Fact]
+    public void Student5VisaValidation_ChecksToolDestinationAndOfficialSourceReminder()
+    {
+        Assert.True(ServiceValidation.IsValid("mcp", Student5Visa, 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", Student5Visa.Replace("check_visa_requirement", "get_weather"), 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", Student5Visa.Replace("\"id\":1", "\"id\":2"), 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", Student5Visa.Replace("Smartraveller", "a travel agent"), 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", Student5Visa.Replace("\"visa-free\"", "\"  \""), 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", """
+            {"tool":"logistics.check_visa_requirement","result":{"ok":false,"error":{"code":"destination_not_found","message":"Destination not found."}}}
+            """, 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("mcp", """{"error":"mcp_disabled","message":"MCP is disabled."}""", 1, "student-5"));
+    }
+
+    [Fact]
+    public void Student5RagValidation_AcceptsGroundedOrExactInsufficientAnswers()
+    {
+        const string grounded = """
+            {"answer":"An eVisa is approved online before travel. [visa-categories#3]","citations":[{"source":"Visa Categories","chunk_id":"visa-categories#3","snippet":"An eVisa is applied for online.","score":0.38}],"confidence":"medium"}
+            """;
+        Assert.True(ServiceValidation.IsValid("rag", grounded, 1, "student-5"));
+        Assert.True(ServiceValidation.IsValid("rag", """
+            {"answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("rag", grounded.Replace(" [visa-categories#3]", ""), 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Probably fine.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-5"));
+        Assert.False(ServiceValidation.IsValid("rag", """{"error":"rag_disabled","message":"RAG is disabled."}""", 1, "student-5"));
+    }
+
+    [Fact]
+    public async Task Student5McpValidation_PostsFixedVisaInvokeToBackend()
+    {
+        var handler = new RecordingHandler(Student5Visa);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "mcp", "http://127.0.0.1:5205", 1, "unused", "student-5");
+
+        Assert.Equal("http://127.0.0.1:5205/api/mcp/invoke", handler.Uri);
+        Assert.Equal("""{"tool":"logistics.check_visa_requirement","arguments":{"destination_id":1}}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("student-5", result.RootElement.GetProperty("feature").GetString());
+        Assert.Equal("http://127.0.0.1:5205", ServiceValidation.DefaultBackendUrl("student-5"));
+    }
+
+    [Fact]
+    public async Task Student5RagValidation_PostsQuestionToRagAskEndpoint()
+    {
+        var handler = new RecordingHandler("""
+            {"answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "rag", "http://127.0.0.1:5205", 1, "What is the capital of France?", "student-5");
+
+        Assert.Equal("http://127.0.0.1:5205/api/rag/ask", handler.Uri);
+        Assert.Equal("""{"question":"What is the capital of France?"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("What is the difference between visa on arrival and an eVisa?",
+            ServiceValidation.DefaultQuestion("student-5", "rag"));
     }
 
     [Fact]

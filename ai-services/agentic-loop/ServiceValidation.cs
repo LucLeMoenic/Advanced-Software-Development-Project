@@ -9,11 +9,13 @@ namespace AgenticLoop;
 internal static class ServiceValidation
 {
     private static readonly HashSet<string> Student1Tools = ["accommodation.find", "accommodation.get_search"];
+    private const int Student5DestinationId = 1;
 
     internal static string DefaultBackendUrl(string feature) => feature switch
     {
         "student-1" => "http://127.0.0.1:5201",
         "student-3" => "http://127.0.0.1:5203",
+        "student-5" => "http://127.0.0.1:5205",
         _ => "http://127.0.0.1:5202"
     };
 
@@ -29,6 +31,10 @@ internal static class ServiceValidation
         ("student-3", "mcp") => "attractions.search {category: restaurant}",
         ("student-3", _) => "Is Chin Chin busy? Do I need to book?",
         ("student-2", "mcp") => "Add a Coffee break to day 1",
+        // Like student-3, Student 5's mcp body is fixed (see CaptureAsync), so
+        // this value is unused for ("student-5", "mcp").
+        ("student-5", "mcp") => "logistics.check_visa_requirement {destination_id: 1}",
+        ("student-5", _) => "What is the difference between visa on arrival and an eVisa?",
         _ => "Is budget the total for the trip?"
     };
 
@@ -37,8 +43,8 @@ internal static class ServiceValidation
     {
         if (mode is not ("mcp" or "rag"))
             throw new LoopException("Validation mode must be mcp or rag.");
-        if (feature is not ("student-1" or "student-2" or "student-3"))
-            throw new LoopException("Validation feature must be student-1, student-2, or student-3.");
+        if (feature is not ("student-1" or "student-2" or "student-3" or "student-5"))
+            throw new LoopException("Validation feature must be student-1, student-2, student-3, or student-5.");
         if (!Uri.TryCreate(backendUrl, UriKind.Absolute, out var backend)
             || backend.Scheme != "http" || !backend.IsLoopback
             || backend.AbsolutePath != "/" || backend.UserInfo.Length != 0
@@ -53,7 +59,7 @@ internal static class ServiceValidation
             // Student 3 has its own direct-invoke MCP/RAG routes (Stage 2),
             // unlike student-1's single natural-language assistant endpoint or
             // student-2's trip-scoped edit-preview/itinerary-advice routes.
-            "student-3" => mode == "mcp" ? "/api/mcp/invoke" : "/api/rag/ask",
+            "student-3" or "student-5" => mode == "mcp" ? "/api/mcp/invoke" : "/api/rag/ask",
             _ => mode == "mcp" ? $"/api/trips/{tripId}/edit-preview" : "/api/itinerary-advice"
         };
         using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(feature == "student-2" && mode == "rag" ? 55 : 35));
@@ -65,6 +71,9 @@ internal static class ServiceValidation
                 // {tool, arguments} invoke contract rather than a bare POST body.
                 : feature == "student-3" && mode == "mcp"
                     ? JsonContent.Create(new { tool = "attractions.search", arguments = new { category = "restaurant" } })
+                // Student 5's fixed case: the visa lookup for seeded destination 1.
+                : feature == "student-5" && mode == "mcp"
+                    ? JsonContent.Create(new { tool = "logistics.check_visa_requirement", arguments = new { destination_id = Student5DestinationId } })
                 : feature == "student-2" && mode == "rag" ? JsonContent.Create(new { question, tripId })
                 : JsonContent.Create(new { question })
         };
@@ -110,6 +119,10 @@ internal static class ServiceValidation
             var root = document.RootElement;
             if (feature == "student-3")
                 return mode == "mcp" ? IsValidStudent3Mcp(root) : IsValidStudent3Rag(root);
+            // Student 5's RAG contract also accepts "insufficient" as a correct
+            // abstention, with the same fixed sentence and no citations.
+            if (feature == "student-5")
+                return mode == "mcp" ? IsValidStudent5Visa(root) : IsValidStudent3Rag(root);
             if (feature == "student-1" && mode == "mcp")
                 return IsValidStudent1Lookup(root);
             if (feature == "student-1" && root.GetProperty("mode").GetString() != "guide")
@@ -253,6 +266,22 @@ internal static class ServiceValidation
                     && before.GetProperty("notes").GetString() == after.GetProperty("notes").GetString()))) return false;
         }
         return true;
+    }
+
+    // A passing check confirms the tool read the requested destination (not a
+    // fallback record) and kept the official-source reminder, so a visa
+    // category is never shown as an authoritative entry decision.
+    private static bool IsValidStudent5Visa(JsonElement root)
+    {
+        if (root.GetProperty("tool").GetString() != "logistics.check_visa_requirement") return false;
+        var result = root.GetProperty("result");
+        var destination = result.GetProperty("destination");
+        var reminder = result.GetProperty("official_source_reminder").GetString();
+        return result.GetProperty("ok").GetBoolean()
+            && destination.GetProperty("id").GetInt32() == Student5DestinationId
+            && !string.IsNullOrWhiteSpace(destination.GetProperty("country").GetString())
+            && !string.IsNullOrWhiteSpace(destination.GetProperty("visa_requirement").GetString())
+            && reminder is not null && reminder.Contains("Smartraveller", StringComparison.Ordinal);
     }
 
     private static bool IsValidStudent1Lookup(JsonElement root)

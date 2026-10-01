@@ -101,6 +101,20 @@ case invokes `attractions.search` for restaurants. Unlike Student 1/2 grounded-a
 checks, Student 3 accepts the exact fixed insufficient-context answer with no
 citations as a valid abstention, not as evidence of a grounded answer.
 
+Pass `--feature student-5` to validate Travel Logistics & Advisory on `http://127.0.0.1:5205` (`--trip-id` is rejected). MCP mode posts the fixed allow-listed call `{"tool":"logistics.check_visa_requirement","arguments":{"destination_id":1}}` to `POST /api/mcp/invoke`; the contract passes only when the result is `ok`, is for destination 1, and keeps the Smartraveller official-source reminder. RAG mode posts `{"question":...}` to `POST /api/rag/ask`; like Student 3, the exact insufficient sentence with no citations is a valid abstention:
+
+```powershell
+dotnet run --project ai-services/agentic-loop -- validate-mcp --feature student-5 `
+  --task 'Validate the visa lookup tool boundary and captured result against the MCP design.' `
+  --context ai-services/mcp-server/tools/logistics.py `
+  --context student-5/backend/integrations.py
+
+dotnet run --project ai-services/agentic-loop -- validate-rag --feature student-5 `
+  --task 'Validate the captured visa guidance answer against its cited knowledge; report unsupported claims.' `
+  --context ai-services/rag-server/knowledge/student-5/visa-categories.md `
+  --question 'What is the difference between visa on arrival and an eVisa?'
+```
+
 Records include `validationMode` while retaining the existing finalisation schema. Finalise only after human verification and real post-test evidence. A backend observation does not replace protocol discovery, frontend screenshots, or manual source-support checks. Do not submit unit-test model doubles as live loop evidence.
 
 ## Tests
