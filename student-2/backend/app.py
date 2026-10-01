@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from datetime import date
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import requests
 from flask import Flask, g, jsonify, request
 
 from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_overview, validate_summary
+from itinerary_review import ItineraryEditor, ItineraryReviewer, ReviewModel
 
 
 class DependencyError(Exception):
@@ -180,7 +182,7 @@ def validate_stop(payload, trip_id=None):
     return fields, cleaned
 
 
-def create_app(database_client=None, generator=None, *, settings=None, mcp_client=None, rag_client=None):
+def create_app(database_client=None, generator=None, *, settings=None, mcp_client=None, rag_client=None, review_model=None):
     app = Flask(__name__)
     settings = settings or {}
 
@@ -199,6 +201,9 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
     }
     mcp_client = mcp_client or McpClient(os.getenv("MCP_SERVER_URL", "http://host.docker.internal:5400/mcp"))
     rag_client = rag_client or RagClient(os.getenv("RAG_SERVER_URL", "http://host.docker.internal:5500"))
+    reviewer = ItineraryReviewer(mcp_client, review_model or ReviewModel(
+        os.getenv("OLLAMA_URL", "http://ollama:11434"), os.getenv("APPLICATION_MODEL", "llama3.2:3b")))
+    editor = ItineraryEditor(mcp_client, reviewer.model)
     database = database_client or DatabaseClient(os.getenv("DATABASE_URL", "http://student2-database:8080"))
     itinerary_generator = generator or ItineraryGenerator(
         os.getenv("OLLAMA_URL", "http://ollama:11434"), os.getenv("APPLICATION_MODEL", "llama3.2:3b")
@@ -260,6 +265,52 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
             return invalid_integration_input()
         return jsonify({"tool": "itinerary.get_summary", "summary": validate_summary(mcp_client.summary(trip_id), trip_id)})
 
+    @app.post("/api/trips/<int:trip_id>/review")
+    def review_itinerary(trip_id):
+        if not modes["mcpEnabled"] or not modes["aiEnabled"]:
+            raise IntegrationError("mode_disabled")
+        if request.content_length is not None and request.content_length > 8192:
+            return invalid_integration_input()
+        payload = request.get_json(silent=True)
+        if trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"question"}:
+            return invalid_integration_input()
+        question = payload["question"]
+        if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1000:
+            return invalid_integration_input()
+        return jsonify(reviewer.review(trip_id, question.strip()))
+
+    @app.post("/api/trips/<int:trip_id>/edit-preview")
+    def edit_preview(trip_id):
+        if not modes["mcpEnabled"] or not modes["aiEnabled"]:
+            raise IntegrationError("mode_disabled")
+        payload = request.get_json(silent=True)
+        if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"question"}:
+            return invalid_integration_input()
+        question = payload["question"]
+        if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1000:
+            return invalid_integration_input()
+        return jsonify(editor.preview(trip_id, question.strip()))
+
+    @app.post("/api/trips/<int:trip_id>/edit-operation-preview")
+    def edit_operation_preview(trip_id):
+        if not modes["mcpEnabled"] or not modes["aiEnabled"]:
+            raise IntegrationError("mode_disabled")
+        payload = request.get_json(silent=True)
+        if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"operation"}:
+            return invalid_integration_input()
+        return jsonify(editor.preview_operation(trip_id, payload["operation"]))
+
+    @app.post("/api/trips/<int:trip_id>/edit-confirm")
+    def edit_confirm(trip_id):
+        if not modes["mcpEnabled"] or not modes["aiEnabled"]:
+            raise IntegrationError("mode_disabled")
+        payload = request.get_json(silent=True)
+        if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"token"}:
+            return invalid_integration_input()
+        if not isinstance(payload["token"], str) or not 1 <= len(payload["token"]) <= 4096:
+            return invalid_integration_input()
+        return jsonify(editor.apply(trip_id, payload["token"]))
+
     @app.post("/api/trips/<int:trip_id>/mcp-overview")
     def mcp_overview(trip_id):
         if not modes["mcpEnabled"]:
@@ -282,12 +333,65 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         if request.content_length is not None and request.content_length > 8192:
             return invalid_integration_input()
         payload = request.get_json(silent=True)
-        if not isinstance(payload, dict) or set(payload) != {"question"}:
+        if not isinstance(payload, dict) or "question" not in payload or set(payload) - {"question", "tripId"}:
             return invalid_integration_input()
         question = payload["question"]
         if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1000:
             return invalid_integration_input()
-        return jsonify(validate_advice(rag_client.advice(question.strip())))
+        if "tripId" not in payload:
+            return jsonify(validate_advice(rag_client.advice(question.strip())))
+        trip_id = payload["tripId"]
+        if type(trip_id) is not int or trip_id < 1:
+            return invalid_integration_input()
+        try:
+            trip, status = database.request("GET", f"/api/data/trips/{trip_id}")
+        except DependencyError as exception:
+            return dependency_error(exception)
+        if status != 200:
+            return respond(trip, status)
+        try:
+            if not isinstance(trip, dict) or trip.get("id") != trip_id or not isinstance(trip.get("stops"), list):
+                raise ValueError("Invalid trip")
+            fields, cleaned = validate_trip(trip)
+            if fields:
+                raise ValueError("Invalid trip")
+            context = {key: cleaned[key] for key in ("destination", "startDate", "endDate")}
+            context["stops"] = []
+            for stop in trip["stops"][:20]:
+                if not isinstance(stop, dict) or stop.get("tripId") != trip_id:
+                    raise ValueError("Invalid stop")
+                fields, cleaned_stop = validate_stop(stop, trip_id)
+                if fields or cleaned_stop["day"] > (date.fromisoformat(cleaned["endDate"]) - date.fromisoformat(cleaned["startDate"])).days + 1:
+                    raise ValueError("Invalid stop")
+                context["stops"].append({"day": cleaned_stop["day"], "activity": cleaned_stop["activity"], "notes": cleaned_stop["notes"][:160]})
+            context["omittedStops"] = max(0, len(trip["stops"]) - 20)
+        except (ValueError, TypeError, KeyError):
+            raise IntegrationError("invalid_dependency_response") from None
+        weather = None
+        weather_related = bool(re.search(
+            r"\b(?:weather|forecasts?|rain(?:y|ing|fall)?|showers?|thunderstorms?|storms?|"
+            r"snow(?:y|ing|fall)?|temperatures?|precipitation|humidity|humid|wind(?:y)?|"
+            r"sunny|sunshine|cloudy|heatwaves?|climate|freezing|celsius|fahrenheit)\b"
+            r"|\b(?:how|too|very)\s+(?:hot|cold|wet)\b",
+            question, re.IGNORECASE,
+        ))
+        weather_notice = "Weather context is unavailable because MCP is disabled." if weather_related else ""
+        if weather_related and modes["mcpEnabled"]:
+            try:
+                overview = validate_overview(mcp_client.overview(trip_id), trip_id)
+                if any(overview["summary"][key] != context[key] for key in ("destination", "startDate", "endDate")):
+                    raise IntegrationError("stale_preview")
+                weather = overview["weather"]
+                weather_notice = ""
+            except IntegrationError:
+                weather_notice = "Weather could not be retrieved. Advice uses saved-plan context and knowledge-base guidance only."
+        context["weather"] = None if weather is None else {
+            "status": weather["status"], "location": ", ".join(filter(None, [weather["location"][key] for key in ("name", "admin1", "country")])) if weather["location"] else None,
+            "retrievedAt": weather["retrievedAt"], "days": weather["days"],
+        }
+        result = validate_advice(rag_client.advice(question.strip(), context))
+        return jsonify({**result, "tripId": trip_id, "weather": weather, "weatherNotice": weather_notice,
+                        "contextNotice": f"Advice used {len(context['stops'])} saved stops; notes are limited to 160 characters. {context['omittedStops']} stops omitted."})
 
     @app.get("/api/trips")
     def list_trips():

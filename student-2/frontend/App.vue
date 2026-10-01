@@ -1,6 +1,6 @@
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from "vue";
-import { Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, RefreshCw, Sun } from "@lucide/vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
+import { Check, ClipboardCheck, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, LoaderCircle, PanelRightClose, PanelRightOpen, Sun, Undo2, X } from "@lucide/vue";
 
 const trips = ref([]);
 const currentTrip = ref(null);
@@ -21,15 +21,34 @@ const tripDraft = reactive(emptyTrip());
 const stopDraft = reactive({ id: "", day: 1, activity: "", notes: "" });
 const feedback = reactive({ kind: "", title: "", message: "", confirmLabel: "OK", cancelLabel: "" });
 const integrations = reactive({ capabilities: {}, summaryVersion: 0, adviceVersion: 0, summaryBusy: false, adviceBusy: false });
-const summary = ref(null);
+const review = ref(null);
+const assistantTab = ref("edit");
+const assistantCollapsed = ref(false);
+const savedChanges = reactive({ stopIds: [], days: [], dates: false });
+let highlightTimeout = null;
+const reviewQuestion = ref("Swap days 1 and 2");
+const editSaving = ref(false);
 const weather = ref(null);
-const selectedLocationId = ref("");
 const overviewResult = ref(null);
-const locationSelect = ref(null);
-const summaryStatus = ref("MCP is disabled.");
+const summaryStatus = ref("Itinerary editing is disabled.");
+const reviewEnabled = computed(() => integrations.capabilities.mcpEnabled && integrations.capabilities.aiEnabled);
+let reviewController = null;
+let adviceController = null;
 const advice = ref(null);
 const adviceQuestion = ref("");
 const adviceStatus = ref("RAG is disabled.");
+const adviceParts = computed(() => (advice.value?.answer || "").split(/(\[[^\]\r\n]+\])/g).map((text) => {
+  const source = (advice.value?.citations || []).findIndex((citation) => text === `[${citation.chunk_id}]`);
+  return { text, source };
+}));
+const previewSummary = computed(() => {
+  const counts = {};
+  for (const change of review.value?.changes || []) {
+    const label = { add_stop: "to add", remove_stop: "to remove", update_stop: "to update", shift_dates: "date shift" }[change.kind] || "to move";
+    counts[label] = (counts[label] || 0) + 1;
+  }
+  return Object.entries(counts).map(([label, count]) => label === "date shift" ? `${count} date shift` : `${count} ${count === 1 ? 'activity' : 'activities'} ${label}`).join(" · ");
+});
 const capabilitiesFailed = ref(false);
 let resolveFeedback = null;
 let feedbackFocusTarget = null;
@@ -42,6 +61,21 @@ const tripCount = computed(() => tripFilter.value.trim()
   ? `${filteredTrips.value.length} of ${trips.value.length} trips`
   : `${trips.value.length} saved ${trips.value.length === 1 ? "trip" : "trips"}`);
 const stops = computed(() => currentTrip.value?.stops || []);
+const editPositions = computed(() => {
+  const positions = (proposed) => {
+    let planned = stops.value.map((stop) => ({ ...stop }));
+    if (proposed) for (const change of review.value?.changes || []) {
+      if (change.kind === "add_stop") planned.push(change.after);
+      else if (change.kind === "remove_stop") planned = planned.filter((stop) => stop.id !== change.id);
+      else if (change.kind === "update_stop") planned = planned.map((stop) => stop.id === change.id ? change.after : stop);
+      else if (!change.kind) planned = planned.map((stop) => stop.id === change.id ? { ...stop, day: change.toDay, sortOrder: change.toOrder } : stop);
+    }
+    const ordered = planned.sort((first, second) => first.day - second.day || (first.sortOrder ?? 0) - (second.sortOrder ?? 0) || first.id - second.id);
+    const counts = {};
+    return Object.fromEntries(ordered.map((stop) => [stop.id, counts[stop.day] = (counts[stop.day] || 0) + 1]));
+  };
+  return { current: positions(false), proposed: positions(true) };
+});
 const dayCount = computed(() => currentTrip.value
   ? Math.round((new Date(currentTrip.value.endDate) - new Date(currentTrip.value.startDate)) / 86400000) + 1 : 0);
 const plannedDays = computed(() => new Set(stops.value.map((stop) => stop.day)).size);
@@ -51,15 +85,7 @@ const days = computed(() => {
   for (const stop of stops.value) (grouped[stop.day] ||= []).push(stop);
   return Object.entries(grouped).sort(([first], [second]) => Number(first) - Number(second));
 });
-const summaryMetrics = computed(() => summary.value ? [
-  ["Stops", summary.value.stopCount],
-  ["Planned days", `${summary.value.plannedDayCount} / ${summary.value.dayCount}`],
-  ["Unplanned days", summary.value.unplannedDays.join(", ") || "None"],
-  ["Daily allocation (AUD)", Number(summary.value.dailyBudgetAllocation).toFixed(2)],
-] : []);
-
 const weatherMessage = computed(() => ({
-  choose_location: "Destination needs confirmation.",
   not_found: "No matching weather location found. Check the saved destination.",
   unavailable: "Weather is currently unavailable. Your saved-trip details are still available.",
   outside_window: "Trip dates are outside the current forecast window (up to 16 days ahead).",
@@ -84,6 +110,43 @@ function weatherCondition(code) {
 
 function formatWeatherValue(value, unit) {
   return value == null ? "Not available" : `${value}${unit}`;
+}
+
+function selectAssistantTab(tab) {
+  assistantTab.value = tab;
+  nextTick(() => document.querySelector(`#${tab}-tab`)?.focus());
+}
+
+function dayDate(day) {
+  const date = new Date(`${currentTrip.value.startDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + Number(day) - 1);
+  return date.toISOString().slice(0, 10);
+}
+
+function readableDate(value) {
+  return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
+}
+
+function clearSavedHighlights() {
+  clearTimeout(highlightTimeout);
+  Object.assign(savedChanges, { stopIds: [], days: [], dates: false });
+}
+
+function savedMessage(changes) {
+  if (changes.length !== 1) return `${changes.length} itinerary changes saved.`;
+  const change = changes[0];
+  if (change.kind === "shift_dates") return `Trip dates shifted to ${readableDate(change.toStartDate)} - ${readableDate(change.toEndDate)}.`;
+  if (change.kind === "add_stop") return `Added "${change.after.activity}" to Day ${change.after.day}.`;
+  if (change.kind === "remove_stop") return `Removed "${change.before.activity}" from Day ${change.before.day}.`;
+  if (change.kind === "update_stop") return `Updated ${change.before.activity !== change.after.activity ? "activity" : "notes"} for "${change.after.activity}".`;
+  return `Moved "${change.activity}" to Day ${change.toDay}.`;
+}
+
+function cancelAdvice() {
+  adviceController?.abort();
+  integrations.adviceVersion++;
+  integrations.adviceBusy = false;
+  adviceStatus.value = "Advice request cancelled.";
 }
 
 function openFeedback({ kind, title, message, confirmLabel = "OK", cancelLabel = "" }, focusTarget = null) {
@@ -130,20 +193,32 @@ async function api(path, options = {}) {
   const response = await fetch(`/itinerary-api${path}`, {
     ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) },
   });
-  if (response.ok && ["POST", "PUT", "DELETE"].includes(options.method) && !path.endsWith("/mcp-summary") && !path.endsWith("/mcp-overview") && path !== "/itinerary-advice") invalidateSummary();
+  if (response.ok && ["POST", "PUT", "DELETE"].includes(options.method) && !path.endsWith("/mcp-summary") && !path.endsWith("/mcp-overview") && !path.endsWith("/review") && !path.endsWith("/edit-preview") && !path.endsWith("/edit-operation-preview") && !path.endsWith("/edit-confirm") && path !== "/itinerary-advice") invalidateSummary();
   if (response.status === 204) return null;
   const body = await response.json();
   if (!response.ok) throw new Error(Object.values(body.error?.fields || {})[0] || body.error?.message || "The request could not be completed.");
   return body;
 }
 
-function invalidateSummary() {
+function cancelPreview() {
+  reviewController?.abort();
   integrations.summaryVersion++;
   integrations.summaryBusy = false;
-  summary.value = null;
+  review.value = null;
+  summaryStatus.value = reviewEnabled.value ? "" : "Itinerary editing is disabled.";
+}
+
+watch(reviewQuestion, cancelPreview, { flush: "sync" });
+
+function invalidateSummary() {
+  clearSavedHighlights();
+  cancelPreview();
+  adviceController?.abort();
+  integrations.adviceVersion++;
+  integrations.adviceBusy = false;
+  advice.value = null;
   weather.value = null;
-  selectedLocationId.value = "";
-  summaryStatus.value = integrations.capabilities.mcpEnabled ? "" : "MCP is disabled.";
+  adviceStatus.value = integrations.capabilities.ragEnabled ? "" : "RAG is disabled.";
 }
 
 async function loadCapabilities() {
@@ -151,7 +226,7 @@ async function loadCapabilities() {
     const capabilities = await api("/capabilities");
     if (!["aiEnabled", "mcpEnabled", "ragEnabled"].every((name) => typeof capabilities[name] === "boolean")) throw new Error("Could not read service availability.");
     integrations.capabilities = capabilities;
-    summaryStatus.value = capabilities.mcpEnabled ? "" : "MCP is disabled.";
+    summaryStatus.value = reviewEnabled.value ? "" : "Itinerary editing is disabled.";
     adviceStatus.value = capabilities.ragEnabled ? "" : "RAG is disabled.";
     capabilitiesFailed.value = false;
   } catch {
@@ -161,29 +236,77 @@ async function loadCapabilities() {
   }
 }
 
-async function inspectTrip() {
-  if (integrations.summaryBusy || !currentTrip.value || !integrations.capabilities.mcpEnabled) return;
+function inspectTrip() {
+  const question = reviewQuestion.value.trim();
+  if (!question || question.length > 1000) return;
+  return requestEditPreview("edit-preview", { question });
+}
+
+async function requestEditPreview(endpoint, payload) {
+  if (integrations.summaryBusy || editSaving.value || !currentTrip.value || !reviewEnabled.value) return;
   const tripId = currentTrip.value.id;
   const version = ++integrations.summaryVersion;
   integrations.summaryBusy = true;
-  summary.value = null;
-  weather.value = null;
-  summaryStatus.value = "Checking trip overview...";
+  review.value = null;
+  summaryStatus.value = "Preparing edit preview...";
+  reviewController = new AbortController();
+  const controller = reviewController;
+  const timeout = setTimeout(() => controller.abort("timeout"), 35000);
   try {
-    const body = selectedLocationId.value ? { locationId: Number(selectedLocationId.value) } : {};
-    const result = await api(`/trips/${tripId}/mcp-overview`, { method: "POST", body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
+    const result = await api(`/trips/${tripId}/${endpoint}`, { method: "POST", body: JSON.stringify(payload), signal: controller.signal });
     if (version !== integrations.summaryVersion || currentTrip.value?.id !== tripId) return;
-    summary.value = result.summary;
-    weather.value = result.weather;
-    selectedLocationId.value = result.weather?.location?.id || "";
-    summaryStatus.value = "Trip overview updated.";
+    review.value = result.preview;
+    summaryStatus.value = result.clarification || "Preview ready. No changes saved. Expires in 10 minutes.";
     integrations.summaryBusy = false;
     await nextTick();
-    if (version === integrations.summaryVersion) (locationSelect.value || overviewResult.value)?.focus();
+    if (version === integrations.summaryVersion && !assistantCollapsed.value && assistantTab.value === "edit") overviewResult.value?.focus();
   } catch (error) {
-    if (version === integrations.summaryVersion) summaryStatus.value = error.name === "TimeoutError" ? "The overview request timed out." : error.message;
+    if (version === integrations.summaryVersion) summaryStatus.value = controller.signal.reason === "timeout" ? "The edit preview timed out." : error.message;
   } finally {
+    clearTimeout(timeout);
     if (version === integrations.summaryVersion) integrations.summaryBusy = false;
+  }
+}
+
+function previewUndo() {
+  return requestEditPreview("edit-operation-preview", { operation: {
+    action: "undo", sourceDay: 1, targetDay: 1, stopId: 0, targetStopId: 0,
+  } });
+}
+
+async function confirmEdit() {
+  if (editSaving.value || !review.value || !currentTrip.value || !reviewEnabled.value) return;
+  const tripId = currentTrip.value.id;
+  const token = review.value.token;
+  const changes = review.value.changes;
+  const previousIds = new Set(stops.value.map((stop) => stop.id));
+  const version = integrations.summaryVersion;
+  editSaving.value = true;
+  summaryStatus.value = "Saving confirmed changes...";
+  try {
+    await api(`/trips/${tripId}/edit-confirm`, { method: "POST", body: JSON.stringify({ token }), signal: AbortSignal.timeout(10000) });
+    if (currentTrip.value?.id !== tripId || version !== integrations.summaryVersion) return;
+    invalidateSummary();
+    const refreshVersion = integrations.summaryVersion;
+    const updated = await api(`/trips/${tripId}`);
+    if (currentTrip.value?.id !== tripId || refreshVersion !== integrations.summaryVersion) return;
+    selectTrip(updated);
+    trips.value = trips.value.map((trip) => trip.id === tripId ? updated : trip);
+    summaryStatus.value = savedMessage(changes);
+    status.value = summaryStatus.value;
+    savedChanges.stopIds = [...changes.map((change) => change.id), ...updated.stops.filter((stop) => !previousIds.has(stop.id)).map((stop) => stop.id)];
+    savedChanges.days = changes.flatMap((change) => [change.before?.day, change.after?.day, change.fromDay, change.toDay]).filter(Boolean);
+    savedChanges.dates = changes.some((change) => change.kind === "shift_dates");
+    highlightTimeout = setTimeout(clearSavedHighlights, 8000);
+    await nextTick();
+    document.querySelector(assistantCollapsed.value ? "#toggle-assistant" : assistantTab.value === "edit" ? "#mcp-summary" : "#advice-tab")?.focus();
+  } catch (error) {
+    if (currentTrip.value?.id === tripId) {
+      cancelPreview();
+      summaryStatus.value = `${error.message} Refresh the saved trip before requesting another preview; a save may already have completed.`;
+    }
+  } finally {
+    editSaving.value = false;
   }
 }
 
@@ -194,15 +317,22 @@ async function askAdvice() {
   const version = ++integrations.adviceVersion;
   integrations.adviceBusy = true;
   advice.value = null;
+  weather.value = null;
   adviceStatus.value = "Retrieving planning advice...";
+  const tripId = currentTrip.value?.id;
+  adviceController = new AbortController();
+  const controller = adviceController;
+  const timeout = setTimeout(() => controller.abort("timeout"), 55000);
   try {
-    const result = await api("/itinerary-advice", { method: "POST", body: JSON.stringify({ question }), signal: AbortSignal.timeout(35000) });
+    const result = await api("/itinerary-advice", { method: "POST", body: JSON.stringify({ question, ...(tripId ? { tripId } : {}) }), signal: controller.signal });
     if (version !== integrations.adviceVersion) return;
     advice.value = result;
+    weather.value = result.weather || null;
     adviceStatus.value = result.confidence === "insufficient" ? "Insufficient context." : "Planning advice received.";
   } catch (error) {
-    if (version === integrations.adviceVersion) adviceStatus.value = error.name === "TimeoutError" ? "The advice request timed out." : error.message;
+    if (version === integrations.adviceVersion) adviceStatus.value = controller.signal.reason === "timeout" ? "The advice request timed out." : error.message;
   } finally {
+    clearTimeout(timeout);
     if (version === integrations.adviceVersion) integrations.adviceBusy = false;
   }
 }
@@ -356,7 +486,10 @@ onMounted(() => {
   document.addEventListener("click", closeActionMenus);
 });
 onUnmounted(() => {
+  clearSavedHighlights();
   document.removeEventListener("click", closeActionMenus);
+  reviewController?.abort();
+  adviceController?.abort();
   integrations.summaryVersion++;
   integrations.adviceVersion++;
   resolveFeedback?.(false);
@@ -395,7 +528,7 @@ onUnmounted(() => {
         </div>
       </form>
     </details>
-    <div class="planner-grid">
+    <div class="planner-grid" :class="{ 'assistant-collapsed': assistantCollapsed }">
       <aside class="saved-trips" aria-labelledby="saved-heading">
         <div class="saved-heading-row"><h2 id="saved-heading">Saved trips</h2><button id="refresh-trips" class="text-button" type="button" @click="loadTrips">Refresh</button></div>
         <label class="visually-hidden" for="trip-filter">Filter saved trips</label>
@@ -407,7 +540,7 @@ onUnmounted(() => {
           <li v-else-if="!trips.length" class="muted">No saved trips yet.</li>
           <li v-else-if="!filteredTrips.length" class="muted">No trips match this filter.</li>
           <li v-for="trip in tripsLoading || tripsError ? [] : filteredTrips" :key="trip.id">
-            <button type="button" :data-trip-id="trip.id" @click="openTrip(trip.id)"><span class="trip-name">{{ trip.destination }}</span><span class="trip-list-dates">{{ trip.startDate }} to {{ trip.endDate }}</span></button>
+            <button type="button" :data-trip-id="trip.id" :aria-current="currentTrip?.id === trip.id ? 'true' : undefined" @click="openTrip(trip.id)"><span class="trip-name">{{ trip.destination }}</span><span class="trip-list-dates">{{ trip.startDate }} to {{ trip.endDate }}</span></button>
           </li>
         </ul>
       </aside>
@@ -421,7 +554,7 @@ onUnmounted(() => {
         <div id="itinerary-content" :hidden="!currentTrip">
           <header class="itinerary-header">
             <div>
-              <p id="trip-dates" class="eyebrow">{{ currentTrip ? `${currentTrip.startDate} to ${currentTrip.endDate}` : "" }}</p>
+              <p id="trip-dates" class="eyebrow" :class="{ 'saved-highlight': savedChanges.dates }">{{ currentTrip ? `${readableDate(currentTrip.startDate)} - ${readableDate(currentTrip.endDate)}` : "" }}</p>
               <div class="trip-title-row"><h2 id="trip-title">{{ currentTrip ? `${currentTrip.destination} itinerary` : "" }}</h2><span id="generation-mode" class="mode-badge">{{ currentTrip?.generationMode === "fallback" ? "Reliable fallback" : currentTrip?.generationMode || "saved" }}</span></div>
               <p id="trip-summary" class="trip-summary">{{ currentTrip ? `${currentTrip.user} · AUD ${Number(currentTrip.budget).toLocaleString()} · ${currentTrip.interests || "Open interests"}` : "" }}</p>
             </div>
@@ -443,41 +576,10 @@ onUnmounted(() => {
             <div><dt>Daily budget</dt><dd id="metric-budget">AUD {{ dailyBudget }}</dd></div>
             <div><dt>Planned days</dt><dd id="metric-days">{{ plannedDays }} / {{ dayCount }}</dd></div>
           </dl>
-          <section class="integration-section" aria-labelledby="summary-heading">
-            <div class="integration-heading"><h3 id="summary-heading">Trip overview</h3><button id="mcp-summary" class="secondary-button overview-refresh" type="button" title="Refresh trip overview" :disabled="!integrations.capabilities.mcpEnabled || !currentTrip || integrations.summaryBusy" @click="inspectTrip"><RefreshCw :size="16" aria-hidden="true" />Check overview</button></div>
-            <p id="mcp-status" class="muted" role="status">{{ summaryStatus }}</p>
-            <div ref="overviewResult" tabindex="-1" aria-label="Trip overview results" :hidden="!summary">
-              <dl id="mcp-result" class="trip-metrics" :hidden="!summary"><div v-for="[label, value] in summaryMetrics" :key="label"><dt>{{ label }}</dt><dd>{{ value }}</dd></div></dl>
-              <section v-if="weather" id="overview-weather" class="overview-weather" aria-labelledby="weather-heading">
-                <h4 id="weather-heading">Destination weather</h4>
-                <p id="weather-status" class="muted" role="status">{{ weatherMessage }}</p>
-                <form v-if="weather.locations.length > 1 || weather.status === 'choose_location'" id="weather-location-form" class="weather-location-form" @submit.prevent="inspectTrip">
-                  <label for="weather-location">Forecast location</label>
-                  <select id="weather-location" ref="locationSelect" v-model="selectedLocationId" required :disabled="integrations.summaryBusy">
-                    <option disabled value="">Select location</option>
-                    <option v-for="location in weather.locations" :key="location.id" :value="location.id">{{ locationLabel(location) }}</option>
-                  </select>
-                  <button class="secondary-button" type="submit" :disabled="!selectedLocationId || integrations.summaryBusy">Use location</button>
-                </form>
-                <p v-if="weather.location" class="weather-place">{{ locationLabel(weather.location) }}</p>
-                <ul v-if="weather.days.length" class="weather-days" aria-label="Daily forecast">
-                  <li v-for="forecast in weather.days" :key="forecast.date" class="weather-day">
-                    <time :datetime="forecast.date">{{ forecast.date }}</time>
-                    <span class="weather-condition"><component :is="weatherCondition(forecast.weatherCode).icon" :size="20" aria-hidden="true" />{{ weatherCondition(forecast.weatherCode).label }}</span>
-                    <span><span class="weather-label">Low / High</span>{{ formatWeatherValue(forecast.minTemperature, ' C') }} / {{ formatWeatherValue(forecast.maxTemperature, ' C') }}</span>
-                    <span><span class="weather-label">Precipitation chance</span>{{ formatWeatherValue(forecast.precipitationProbability, '%') }}</span>
-                  </li>
-                </ul>
-                <p v-if="['partial', 'outside_window'].includes(weather.status)" class="muted weather-missing">No forecast: {{ weather.unavailableDates.join(', ') }}</p>
-                <p v-if="weather.retrievedAt" class="muted">Retrieved {{ new Date(weather.retrievedAt).toLocaleString() }}. Forecasts may change.</p>
-                <p class="muted weather-attribution">Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Locations: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>.</p>
-              </section>
-            </div>
-          </section>
           <div id="days" class="days">
-            <section v-for="[day, items] in days" :key="day" class="day" :aria-labelledby="`day-${day}`">
-              <h3 :id="`day-${day}`">Day {{ day }}</h3>
-              <div><article v-for="stop in items" :key="stop.id" class="stop">
+            <section v-for="[day, items] in days" :key="day" class="day" :class="{ 'saved-highlight': savedChanges.days.includes(Number(day)) || savedChanges.dates }" :aria-labelledby="`day-${day}`">
+              <h3 :id="`day-${day}`">Day {{ day }}<time class="day-date" :datetime="dayDate(day)">{{ readableDate(dayDate(day)) }}</time></h3>
+              <div><article v-for="stop in items" :key="stop.id" class="stop" :data-stop-id="stop.id" :class="{ 'saved-highlight': savedChanges.stopIds.includes(stop.id) }">
                 <div class="stop-heading">
                   <h4>{{ stop.activity }}</h4>
                   <details class="action-menu stop-action-menu">
@@ -497,21 +599,105 @@ onUnmounted(() => {
           </div>
           <button id="add-stop" class="add-button" type="button" @click="openStopDialog()">+ Add a stop</button>
         </div>
-        <section class="integration-section" aria-labelledby="advice-heading">
-          <div class="integration-heading"><h3 id="advice-heading">Planning advice</h3><button id="reload-capabilities" class="text-button" type="button" :hidden="!capabilitiesFailed" @click="loadCapabilities">Retry connection</button></div>
+      </section>
+      <aside class="assistant-panel" aria-labelledby="assistant-heading">
+        <div class="assistant-navigation">
+        <header class="assistant-header">
+          <button id="toggle-assistant" class="assistant-toggle" type="button" :aria-expanded="!assistantCollapsed" aria-controls="assistant-tabs assistant-content" :aria-label="assistantCollapsed ? 'Expand trip assistant' : 'Minimise trip assistant'" :title="assistantCollapsed ? 'Expand trip assistant' : 'Minimise trip assistant'" @click="assistantCollapsed = !assistantCollapsed"><PanelRightOpen v-if="assistantCollapsed" :size="20" aria-hidden="true" /><PanelRightClose v-else :size="20" aria-hidden="true" /></button>
+          <h2 id="assistant-heading">Trip assistant</h2>
+          <p class="muted">{{ currentTrip ? currentTrip.destination : "No trip selected" }}</p>
+        </header>
+        <div id="assistant-tabs" class="assistant-tabs" role="tablist" aria-label="Trip assistant" :hidden="assistantCollapsed"
+          @keydown.right.prevent="selectAssistantTab(assistantTab === 'edit' ? 'advice' : 'edit')"
+          @keydown.left.prevent="selectAssistantTab(assistantTab === 'edit' ? 'advice' : 'edit')"
+          @keydown.home.prevent="selectAssistantTab('edit')" @keydown.end.prevent="selectAssistantTab('advice')">
+          <button id="edit-tab" role="tab" aria-controls="edit-panel" :aria-selected="assistantTab === 'edit'" :tabindex="assistantTab === 'edit' ? 0 : -1" @click="assistantTab = 'edit'">Edit</button>
+          <button id="advice-tab" role="tab" aria-controls="advice-panel" :aria-selected="assistantTab === 'advice'" :tabindex="assistantTab === 'advice' ? 0 : -1" @click="assistantTab = 'advice'">Advice</button>
+        </div>
+        </div>
+        <div id="assistant-content" class="assistant-content" :hidden="assistantCollapsed">
+          <section id="edit-panel" class="integration-section" role="tabpanel" aria-labelledby="edit-tab" :hidden="assistantTab !== 'edit'" tabindex="0">
+            <div class="integration-heading"><h3 id="summary-heading">Edit my itinerary</h3><span class="mode-badge">MCP</span></div>
+            <p v-if="!currentTrip" class="muted">Select a saved trip to edit.</p>
+            <form id="review-form" @submit.prevent="inspectTrip">
+              <label for="review-question">Requested change</label>
+              <textarea id="review-question" v-model="reviewQuestion" rows="2" maxlength="1000" required :disabled="!reviewEnabled || !currentTrip || integrations.summaryBusy || editSaving" placeholder="Add a lunch break to day 2"></textarea>
+              <div class="edit-actions">
+                <button id="mcp-summary" class="secondary-button overview-refresh" type="submit" :disabled="!reviewEnabled || !currentTrip || integrations.summaryBusy || editSaving || !reviewQuestion.trim()"><LoaderCircle v-if="integrations.summaryBusy" class="loading-spinner" :size="16" aria-hidden="true" /><ClipboardCheck v-else :size="16" aria-hidden="true" />{{ integrations.summaryBusy ? "Preparing..." : "Preview changes" }}</button>
+                <button id="undo-edit" class="text-button overview-refresh" type="button" title="Preview undo of the last confirmed itinerary edit" :disabled="!reviewEnabled || !currentTrip || integrations.summaryBusy || editSaving" @click="previewUndo"><Undo2 :size="16" aria-hidden="true" />Undo last edit</button>
+              </div>
+            </form>
+            <p id="mcp-status" class="muted" role="status">{{ summaryStatus }}</p>
+            <div id="mcp-result" ref="overviewResult" tabindex="-1" aria-label="Itinerary edit preview" :hidden="!review">
+              <template v-if="review">
+                <div class="preview-heading"><h3>Review changes</h3><span class="mode-badge">Not saved</span></div>
+                <p class="preview-count">{{ previewSummary }}</p>
+                <article v-for="(change, index) in review.changes" :key="change.kind === 'shift_dates' ? 'dates' : change.id" class="review-finding" :data-change-kind="change.kind || 'move'">
+                  <span class="change-number">Change {{ index + 1 }}</span>
+                  <template v-if="change.kind === 'shift_dates'">
+                    <h4>Shift trip dates</h4>
+                    <div class="edit-detail-states">
+                      <div><p class="muted">Current dates</p><p>{{ change.fromStartDate }} to {{ change.fromEndDate }}</p></div>
+                      <div><p class="muted">Proposed dates</p><p>{{ change.toStartDate }} to {{ change.toEndDate }}</p></div>
+                    </div>
+                  </template>
+                  <template v-else-if="change.kind">
+                    <h4>{{ { add_stop: 'Add activity', remove_stop: 'Remove activity', update_stop: 'Update activity' }[change.kind] }}</h4>
+                    <div class="edit-detail-states">
+                      <div><p class="muted">Current</p><template v-if="change.before"><p><strong>{{ change.before.activity }}</strong></p><p>Day {{ change.before.day }}, stop {{ editPositions.current[change.id] }}</p><p>{{ change.before.notes || 'No notes' }}</p></template><p v-else>Not scheduled</p></div>
+                      <div><p class="muted">Proposed</p><template v-if="change.after"><p :class="{ 'changed-value': change.before?.activity !== change.after.activity }"><strong>{{ change.after.activity }}</strong></p><p>Day {{ change.after.day }}, stop {{ editPositions.proposed[change.id] }}</p><p :class="{ 'changed-value': change.before?.notes !== change.after.notes }">{{ change.after.notes || 'No notes' }}</p></template><p v-else>Removed from itinerary</p></div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <h4>{{ change.activity }}</h4>
+                    <div class="edit-detail-states"><div><p class="muted">Current</p><p>Day {{ change.fromDay }}</p><small>Stop {{ editPositions.current[change.id] || "?" }} (current)</small></div><div><p class="muted">Proposed</p><p>Day {{ change.toDay }}</p><small>Stop {{ editPositions.proposed[change.id] || "?" }} (proposed)</small></div></div>
+                    <p v-if="change.notes">{{ change.notes }}</p>
+                  </template>
+                </article>
+                <div class="edit-actions preview-actions">
+                  <button id="confirm-edit" class="primary-button overview-refresh" type="button" :disabled="editSaving" @click="confirmEdit"><Check :size="16" aria-hidden="true" />{{ editSaving ? "Saving..." : `Confirm ${review.changes.length} ${review.changes.length === 1 ? 'change' : 'changes'}` }}</button>
+                  <button id="cancel-edit" class="text-button overview-refresh" type="button" :disabled="editSaving" @click="cancelPreview"><X :size="16" aria-hidden="true" />Cancel</button>
+                </div>
+              </template>
+            </div>
+          </section>
+        <section id="advice-panel" class="integration-section" role="tabpanel" aria-labelledby="advice-tab" :hidden="assistantTab !== 'advice'" tabindex="0">
+          <div class="integration-heading"><h3 id="advice-heading">Planning advice</h3><span class="mode-badge">RAG</span><button id="reload-capabilities" class="text-button" type="button" :hidden="!capabilitiesFailed" @click="loadCapabilities">Retry connection</button></div>
           <form id="advice-form" @submit.prevent="askAdvice">
             <label for="advice-question">Planning question</label>
             <textarea id="advice-question" v-model="adviceQuestion" maxlength="1000" rows="2" required :disabled="!integrations.capabilities.ragEnabled || integrations.adviceBusy"></textarea>
-            <button id="advice-submit" class="secondary-button" type="submit" :disabled="!integrations.capabilities.ragEnabled || integrations.adviceBusy">Ask question</button>
+            <div class="edit-actions">
+              <button id="advice-submit" class="secondary-button overview-refresh" type="submit" :disabled="!integrations.capabilities.ragEnabled || integrations.adviceBusy"><LoaderCircle v-if="integrations.adviceBusy" class="loading-spinner" :size="16" aria-hidden="true" />{{ integrations.adviceBusy ? "Getting advice..." : "Ask question" }}</button>
+              <button v-if="integrations.adviceBusy" id="cancel-advice" class="text-button overview-refresh" type="button" @click="cancelAdvice"><X :size="16" aria-hidden="true" />Cancel</button>
+            </div>
           </form>
           <p id="advice-status" class="muted" role="status">{{ adviceStatus }}</p>
           <div id="advice-result" :hidden="!advice">
-            <p id="advice-confidence" class="mode-badge">{{ advice ? `Confidence: ${advice.confidence}` : "" }}</p>
-            <p id="advice-answer" class="advice-answer">{{ advice?.answer }}</p>
-            <div id="advice-citations"><details v-for="(citation, index) in advice?.citations || []" :key="`${citation.chunk_id}-${index}`"><summary>{{ citation.source }}</summary><p>{{ citation.chunk_id }}</p><p>{{ citation.snippet }}</p></details></div>
+            <p id="advice-confidence" class="mode-badge" title="Retrieval relevance, not factual certainty">{{ advice ? `Source relevance: ${advice.confidence}` : "" }}</p>
+            <p id="advice-answer" class="advice-answer"><template v-for="(part, index) in adviceParts" :key="index">{{ part.source >= 0 ? `[${part.source + 1}]` : part.text }}</template></p>
+            <div id="advice-citations"><details v-for="(citation, index) in advice?.citations || []" :id="`advice-source-${index}`" :key="`${citation.chunk_id}-${index}`"><summary>[{{ index + 1 }}] {{ citation.source }}</summary><p>{{ citation.snippet }}</p></details></div>
+            <p v-if="advice?.contextNotice" class="muted">{{ advice.contextNotice }}</p>
+            <p v-if="advice?.weatherNotice" class="muted">{{ advice.weatherNotice }}</p>
+            <section v-if="weather" id="overview-weather" class="overview-weather" aria-labelledby="weather-heading">
+              <h4 id="weather-heading">Destination weather</h4>
+              <p id="weather-status" class="muted" role="status">{{ weatherMessage }}</p>
+              <p v-if="weather.location" class="weather-place">Forecast location (top match): {{ locationLabel(weather.location) }}</p>
+              <ul v-if="weather.days.length" class="weather-days" aria-label="Daily forecast">
+                <li v-for="forecast in weather.days" :key="forecast.date" class="weather-day">
+                  <time :datetime="forecast.date">{{ forecast.date }}</time>
+                  <span class="weather-condition"><component :is="weatherCondition(forecast.weatherCode).icon" :size="20" aria-hidden="true" />{{ weatherCondition(forecast.weatherCode).label }}</span>
+                  <span><span class="weather-label">Low / High</span>{{ formatWeatherValue(forecast.minTemperature, ' C') }} / {{ formatWeatherValue(forecast.maxTemperature, ' C') }}</span>
+                  <span><span class="weather-label">Precipitation chance</span>{{ formatWeatherValue(forecast.precipitationProbability, '%') }}</span>
+                </li>
+              </ul>
+              <p v-if="['partial', 'outside_window'].includes(weather.status)" class="muted weather-missing">No forecast: {{ weather.unavailableDates.join(', ') }}</p>
+              <p v-if="weather.retrievedAt" class="muted">Retrieved {{ new Date(weather.retrievedAt).toLocaleString() }}. Forecasts may change.</p>
+              <p class="muted weather-attribution">Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Locations: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>.</p>
+            </section>
           </div>
         </section>
-      </section>
+        </div>
+      </aside>
     </div>
   </main>
   <dialog id="stop-dialog" ref="stopDialog" aria-labelledby="stop-dialog-title">

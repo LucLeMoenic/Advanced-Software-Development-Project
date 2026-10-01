@@ -71,20 +71,28 @@ def render_answer(payload, ranked):
         raise GenerationError(502, "invalid_dependency_response", "The model returned an invalid grounded answer.") from None
 
 
-async def generate(question, ranked):
+async def generate(question, ranked, trip_context=None):
     if not _capacity.acquire(blocking=False):
         raise GenerationError(503, "dependency_unavailable", "The local model is busy. Try again shortly.")
     try:
         context = [{"chunk_id": chunk.chunk_id, "source": chunk.source, "text": chunk.text} for chunk, score in ranked]
+        prompt = {"question": question, "context": context}
+        if trip_context is not None:
+            prompt["tripContext"] = trip_context
+        output_schema = GeneratedAnswer.model_json_schema()
+        if ranked:
+            output_schema["$defs"]["Claim"]["properties"]["chunk_ids"]["items"]["enum"] = [
+                chunk.chunk_id for chunk, score in ranked
+            ]
         with anyio.fail_after(20):
             async with httpx.AsyncClient(timeout=18) as client:
                 async with client.stream(
                     "POST", os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/generate",
                     json={"model": os.getenv("RAG_MODEL", "llama3.2:3b"), "stream": False,
                           "system": PROMPT_PATH.read_text(encoding="utf-8"),
-                          "prompt": json.dumps({"question": question, "context": context}),
-                          "format": GeneratedAnswer.model_json_schema(),
-                          "options": {"temperature": 0, "num_predict": 600, "num_ctx": 4096}},
+                          "prompt": json.dumps(prompt),
+                          "format": output_schema,
+                          "options": {"temperature": 0, "num_predict": 600, "num_ctx": 8192 if trip_context is not None else 4096}},
                 ) as response:
                     response.raise_for_status()
                     content = bytearray()

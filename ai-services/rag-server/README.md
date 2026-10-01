@@ -47,6 +47,11 @@ never a guess dressed up as fact.
   [grounding prompt](../agentic-loop/prompts/rag-grounding-v1.txt). Only retrieved
   IDs are accepted. Citation titles, snippets and scores come from the index;
   public answer markers are assembled from validated claims.
+- The output schema restricts citation IDs to retained passages. This prevents
+  invented IDs, not unsupported claims or attribution to the wrong retained source.
+  Student 2 receives complete cited passages (up to 2000 characters each); other
+  features retain 280-character excerpts. Source disclaimers must remain limitations,
+  not become new traveller requirements.
 - Confidence is the lowest cited retrieval score: low from 0.15, medium from
   0.30, high from 0.40. These provisional thresholds were measured on the small
   Student 2 fixture set, not a statistically independent or cross-feature
@@ -119,9 +124,13 @@ python -m uvicorn server:app --host 127.0.0.1 --port 5500 --app-dir ai-services/
 | `RAG_MODEL` | `llama3.2:3b` | Approved local generation model |
 
 Backends consume `RAG_SERVER_URL` / `RAG_ENABLED`; browsers call only their backend.
-Requests accept only `feature` (student-1 through student-5) and a nonblank question
-of at most 1000 characters. Unknown fields/features return 400. Empty feature
-corpora return insufficient context.
+Requests accept `feature` (student-1 through student-5), a nonblank question of at
+most 1000 characters, and optional `tripContext` for Student 2 only. Context holds
+bounded destination/dates, up to twenty stops with 160-character notes, an omitted
+count and optional weather. It is untrusted context, never a cited source, and
+does not change lexical retrieval. Unknown fields/features return 400. Empty
+feature corpora return insufficient context. Restart the native service when
+deploying the context-aware Student 2 backend; older servers reject the new field.
 
 See [Student 2 deployment](../../student-2/docs/release-1-runbook.md) for private
 host bindings, VM routing limitations, and reproducible checks. Do not expose

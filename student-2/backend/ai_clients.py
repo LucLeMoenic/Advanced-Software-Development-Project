@@ -12,6 +12,10 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 ERRORS = {
+    "invalid_edit": (400, "The edit or preview is invalid or expired. Request a new preview."),
+    "edit_no_change": (400, "Those stops are already in that order."),
+    "undo_unavailable": (400, "There is no unchanged confirmed itinerary edit to undo. Manual edits cannot be undone here."),
+    "stale_preview": (409, "The trip changed. Refresh it and request a new preview."),
     "trip_not_found": (404, "The saved trip was not found."),
     "mode_disabled": (503, "This mode is disabled."),
     "dependency_unavailable": (503, "The requested service is unavailable."),
@@ -108,7 +112,7 @@ def validate_overview(body, trip_id, location_id=None):
             if weather.location not in weather.locations:
                 raise ValueError("Unknown location")
             if ((location_id is not None and weather.location.id != location_id)
-                    or (location_id is None and len(weather.locations) != 1)):
+                    or (location_id is None and weather.location != weather.locations[0])):
                 raise ValueError("Unconfirmed location")
         for day in weather.days:
             if (day.minTemperature is not None and day.maxTemperature is not None
@@ -140,7 +144,7 @@ class Citation(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
     source: str = Field(min_length=1, max_length=200)
     chunk_id: str = Field(min_length=1, max_length=160, pattern=r"^[a-zA-Z0-9_-]+#\d+$")
-    snippet: str = Field(min_length=1, max_length=280)
+    snippet: str = Field(min_length=1, max_length=2000)
     score: float = Field(gt=0, le=1)
 
 
@@ -173,6 +177,15 @@ class McpClient:
     def summary(self, trip_id):
         return anyio.run(self._call, "itinerary.get_summary", {"trip_id": trip_id}, 5)["summary"]
 
+    def itinerary(self, trip_id):
+        return anyio.run(self._call, "itinerary.get_itinerary", {"trip_id": trip_id}, 5)
+
+    def preview_edit(self, trip_id, operation):
+        return anyio.run(self._call, "itinerary.preview_edit", {"trip_id": trip_id, "operation": operation}, 5)
+
+    def apply_edit(self, trip_id, token):
+        return anyio.run(self._call, "itinerary.apply_edit", {"trip_id": trip_id, "token": token}, 5)
+
     def overview(self, trip_id, location_id=None):
         params = {"trip_id": trip_id}
         if location_id is not None:
@@ -194,6 +207,12 @@ class McpClient:
                             code = error.get("code") if isinstance(error, dict) else None
                             raise IntegrationError(code)
                         expected = {"ok", "summary", "weather"} if tool == "itinerary.get_overview" else {"ok", "summary"}
+                        if tool == "itinerary.get_itinerary":
+                            expected = {"ok", "summary", "stops"}
+                        elif tool == "itinerary.preview_edit":
+                            expected = {"ok", "tripId", "token", "changes", "expiresIn"}
+                        elif tool == "itinerary.apply_edit":
+                            expected = {"ok", "tripId", "applied", "changes"}
                         if body.get("ok") is not True or set(body) != expected:
                             raise IntegrationError("invalid_dependency_response")
                         return {key: value for key, value in body.items() if key != "ok"}
@@ -215,14 +234,17 @@ class RagClient:
     def __init__(self, url):
         self.url = url.rstrip("/")
 
-    def advice(self, question):
-        return anyio.run(self._advice, question)
+    def advice(self, question, trip_context=None):
+        return anyio.run(self._advice, question, trip_context)
 
-    async def _advice(self, question):
+    async def _advice(self, question, trip_context=None):
         try:
+            payload = {"feature": "student-2", "question": question}
+            if trip_context is not None:
+                payload["tripContext"] = trip_context
             with anyio.fail_after(30):
                 async with httpx.AsyncClient(timeout=28) as client:
-                    async with client.stream("POST", f"{self.url}/query", json={"feature": "student-2", "question": question}) as response:
+                    async with client.stream("POST", f"{self.url}/query", json=payload) as response:
                         if response.status_code != 200:
                             code = {503: "dependency_unavailable", 504: "dependency_timeout"}.get(response.status_code, "invalid_dependency_response")
                             raise IntegrationError(code)

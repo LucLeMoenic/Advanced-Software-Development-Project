@@ -15,7 +15,7 @@ import anyio
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import confidence
 import retrieval
@@ -28,10 +28,51 @@ if not 1 <= TOP_K <= 3:
 app = FastAPI(title="asd-shared-rag-server")
 
 
+class ContextStop(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    day: int = Field(ge=1, le=31)
+    activity: str = Field(min_length=1, max_length=160)
+    notes: str = Field(max_length=160)
+
+
+class ContextForecast(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    weatherCode: int | None = Field(ge=0, le=99)
+    minTemperature: float | None = Field(ge=-100, le=70)
+    maxTemperature: float | None = Field(ge=-100, le=70)
+    precipitationProbability: float | None = Field(ge=0, le=100)
+
+
+class ContextWeather(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    status: Literal["available", "partial", "outside_window", "not_found", "unavailable"]
+    location: str | None = Field(max_length=605)
+    retrievedAt: str | None = Field(max_length=50)
+    days: list[ContextForecast] = Field(max_length=16)
+
+
+class TripContext(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    destination: str = Field(min_length=2, max_length=100)
+    startDate: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    endDate: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    stops: list[ContextStop] = Field(max_length=20)
+    omittedStops: int = Field(ge=0)
+    weather: ContextWeather | None
+
+
 class QueryRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     feature: Literal["student-1", "student-2", "student-3", "student-4", "student-5"]
     question: str = Field(min_length=1, max_length=1000)
+    tripContext: TripContext | None = None
+
+    @model_validator(mode="after")
+    def context_feature(self):
+        if self.tripContext is not None and self.feature != "student-2":
+            raise ValueError("Trip context is only supported for itinerary advice.")
+        return self
 
     @field_validator("question")
     @classmethod
@@ -73,7 +114,17 @@ async def query(request: QueryRequest):
                     length += len(chunk.text)
             if not ranked:
                 return generation.insufficient()
-            return await generation.generate(request.question, ranked)
+            if request.tripContext is not None:
+                result = await generation.generate(request.question, ranked, request.tripContext.model_dump())
+            else:
+                result = await generation.generate(request.question, ranked)
+            if request.feature == "student-2":
+                passages = {chunk.chunk_id: chunk.text for chunk, score in ranked}
+                result = {**result, "citations": [
+                    {**citation, "snippet": passages[citation["chunk_id"]]}
+                    for citation in result["citations"]
+                ]}
+            return result
     except TimeoutError:
         raise generation.GenerationError(504, "dependency_timeout", "The grounded response timed out.") from None
 

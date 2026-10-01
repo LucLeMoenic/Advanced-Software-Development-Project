@@ -1,0 +1,14 @@
+**
+!student-2/
+!student-2/backend/
+!student-2/backend/requirements.txt
+!student-2/backend/app.py
+!student-2/backend/ai_clients.py
+!student-2/backend/itinerary_review.py
+!student-2/backend/prompts/
+!student-2/backend/prompts/**
+!ai-services/
+!ai-services/agentic-loop/
+!ai-services/agentic-loop/prompts/
+!ai-services/agentic-loop/prompts/itinerary-review-v1.txt
+!ai-services/agentic-loop/prompts/itinerary-edit-v1.txt
