@@ -2,6 +2,105 @@
 
 Status: implementation reference, 27 September 2026. The component slices below are implemented, but runtime/evidence gates are not all complete. See the [runbook](release-1-runbook.md) for measured results and remaining limitations. Proposed wording below records the original design, not proof that every verification criterion passed.
 
+## Editor and Advice Update - 1 October 2026
+
+The showcase UI places a tabbed Trip assistant beside, not inside, the saved
+itinerary. Its navigation and scrolling content are separate on desktop; narrow
+screens use distinct stacked regions. Numbered Current/Proposed comparisons,
+change counts and Not saved labels precede explicit confirmation. Phone previews
+stack the two states. Successful saves provide action-specific feedback and brief
+highlights. RAG source markers open numbered excerpts; Source relevance replaces
+the ambiguous Confidence label. Cancellation uses the existing request-version
+guard to ignore late advice responses. No backend contracts changed for this UI.
+
+The current UI separates **MCP actions** from **RAG guidance**, superseding the
+review design below. See [requirements](requirements.md#release-1-editor-and-advice-integration)
+for the authoritative bounds and failure behavior.
+
+```mermaid
+sequenceDiagram
+  participant UI as Itinerary UI
+  participant API as Student 2 backend
+  participant Model as Native Ollama
+  participant MCP as Native shared MCP
+  participant DB as Database API / SQLite
+  UI->>API: edit-preview(question, selected trip)
+  API->>MCP: itinerary.get_itinerary(trip_id)
+  MCP->>DB: GET saved trip
+  DB-->>API: Saved stops through MCP
+  API->>Model: Select one supported edit or clarify
+  API->>MCP: itinerary.preview_edit(trip_id, operation)
+  MCP->>DB: POST edit-preview
+  DB-->>UI: Before/after changes + signed expiring token through MCP/API
+  UI->>API: Explicit confirmation(token)
+  API->>MCP: itinerary.apply_edit(trip_id, token)
+  MCP->>DB: POST edit-apply
+  DB->>DB: Verify revision and update atomically
+  DB-->>UI: Saved result through MCP/API
+```
+
+The database owns deterministic day/stop moves, additions, removals, title/notes
+updates, same-duration date shifts and one-level undo, plus snapshot hashing and
+token signing. Tokens contain the trip ID, operation (including proposed text
+when applicable) and full-state revision; signing does not encrypt them.
+The process-local random key invalidates previews on restart. The backend
+never exposes confirmation to the model and rejects invalid or inconsistent tool
+results. Human confirmation remains necessary because schema checks cannot prove
+that an interpreted command matches user intent. Only the database opens SQLite.
+
+RAG follows UI -> backend -> database snapshot and optional MCP weather -> shared
+RAG -> retrieved knowledge + native model. Context is capped and contains no
+traveller name. Forecast data is displayed beside, not inside, knowledge citations.
+The new weather-planning source supplies general guidance; it is not a live forecast.
+The original question still controls retrieval and unsupported questions abstain.
+
+The dedicated shared [edit prompt](../../ai-services/agentic-loop/prompts/itinerary-edit-v1.txt)
+defines model-selected edits; the [review prompt](../../ai-services/agentic-loop/prompts/itinerary-review-v1.txt)
+retains legacy review stages. The shared
+[RAG prompt](../../ai-services/agentic-loop/prompts/rag-grounding-v1.txt) defines
+trip-context handling. Neither runtime prompt is copied into feature documentation.
+
+## Itinerary Review Update - 30 September 2026
+
+This section supersedes the summary/overview UI and location-confirmation design
+below. The older endpoints are compatibility contracts, not the current UI flow.
+
+`POST /api/trips/{id}/review` takes exactly `{question}`. With AI and MCP enabled,
+the backend asks the configured local application model for one of two plans:
+`[itinerary.get_itinerary]` or `[itinerary.get_itinerary, itinerary.get_overview]`.
+It validates the complete plan before executing anything and supplies the route's
+trip ID itself. No model-supplied arguments, arbitrary tools, URLs or writes exist.
+
+The new itinerary tool reads the database API once and returns
+`{ok:true,summary,stops}`. Stops expose only ID, day, activity and notes (at most
+200). The overview tool retains its summary/weather envelope, now selecting the
+first geocoding match by default. Legacy explicit IDs remain allow-listed.
+
+The same model then receives validated tool results and returns
+`{findings:[{day,observation,suggestion,stopIds,weatherDates}],limitation}`.
+At most five findings are accepted. Each stop reference must belong to the stated
+day; weather references must identify an available forecast for that same trip day.
+The backend attaches the actual stop/forecast evidence plus that day's stop count.
+Summary disagreement across the two reads rejects a changed-trip result.
+This is not a transactional snapshot: edits preserving the summary can still race.
+
+The UI displays observations, proposed changes, expandable evidence, limitations,
+used tools and optional dated forecasts. It removes duplicate metrics and the
+location picker, names the top-match place, prevents duplicate submissions, and
+discards/cancels reviews invalidated by selection or mutation. No review is saved.
+
+Authoritative runtime instructions:
+[itinerary-review-v1.txt](../../ai-services/agentic-loop/prompts/itinerary-review-v1.txt).
+`ITINERARY_REVIEW_PROMPT` can override the local prompt path; the backend image
+copies the shared source using a narrowly allow-listed repository-root build context.
+Two 20-second model calls plus 5/15-second MCP calls fit within the 70-second browser
+and 75-second nginx deadlines. No retries or autonomous loop are added.
+
+Validation enforces schemas and evidence references, not factual entailment of
+free-text prose. Live useful-answer, refusal, injection and source-support checks
+are required before claiming grounded review quality. Weather is uncertain and
+top-result geocoding may select the wrong place. RAG remains a separate workflow.
+
 ## Purpose and Scope
 
 Implement the [Release 1 plan](release-1-plan.md) as two complete user interactions within the existing Itinerary Planner:

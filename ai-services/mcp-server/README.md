@@ -4,8 +4,9 @@ Registered tools include Student 3 attractions search/reviews, Student 2's
 read-only `itinerary.get_summary`, `itinerary.get_itinerary`, `itinerary.get_overview`,
 edit tools `itinerary.preview_edit` and `itinerary.apply_edit`, and Student 1's read-only `accommodation.find`
 and `accommodation.get_search`. One shared native process serves these tools.
-Student 2's real native SDK invocation was verified; container-to-host access on
-the current VM-backed Windows environment remains unresolved.
+Student 2's native SDK and container-to-host paths were verified on 1 October
+2026; those results are historical, not a current service-health guarantee.
+See its runbook for private host configuration and remaining limits.
 
 ## What this is
 

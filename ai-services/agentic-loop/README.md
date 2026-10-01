@@ -59,21 +59,23 @@ The `run` command records supplied test commands/results. The human runs tests a
 
 ## Release 1 Validation Modes
 
-Start native MCP/RAG and the feature containers first. These initial fixtures use Student 2's backend routes; other features must add their own contract fixtures to the same shared modes, not duplicate the loop.
+Start native MCP/RAG and the feature containers first. Student 2 MCP validation requests a model-selected edit preview without confirming it. RAG validation includes the selected trip and optional weather context. Replace the example trip ID with an existing saved trip ID. Other features must add their own contract fixtures to the same shared modes, not duplicate the loop.
 
 ```powershell
 dotnet run --project ai-services/agentic-loop -- validate-mcp `
-  --task 'Validate the itinerary tool boundary and captured summary against the design.' `
+  --task 'Validate the itinerary edit preview against the requested intent and design.' `
   --context ai-services/mcp-server/tools/itinerary.py `
   --backend-url http://127.0.0.1:5202 --trip-id 10
 
 dotnet run --project ai-services/agentic-loop -- validate-rag `
   --task 'Validate the captured answer against its cited knowledge; report unsupported claims.' `
   --context ai-services/rag-server/knowledge/student-2/budget-basics.md `
-  --question 'Is budget the total for the trip?'
+  --question 'Is budget the total for the trip?' --trip-id 10
 ```
 
-Pass `--feature student-1` to validate the Accommodation Recommender (the default is `student-2`, so existing commands are unchanged). Student 1 posts to `POST /api/assistant` on `http://127.0.0.1:5201` and rejects `--trip-id`. The MCP contract passes only for an allow-listed `accommodation.find` or `accommodation.get_search` result whose shape matches its arguments:
+Student 2's default MCP question is `Add a Coffee break to day 1`; use `--question` to exercise another supported edit. The contract checks the selected trip, expiry and typed changes. Clarifications do not count as successful previews. Confirmation tokens are removed from captured evidence before the development models receive it; confirmation and undo execution require separate tests.
+
+Pass `--feature student-1` to validate the Accommodation Recommender (the default is `student-2`). Student 1 posts to `POST /api/assistant` on `http://127.0.0.1:5201` and rejects `--trip-id`. The MCP contract passes only for an allow-listed `accommodation.find` or `accommodation.get_search` result whose shape matches its arguments:
 
 ```powershell
 dotnet run --project ai-services/agentic-loop -- validate-mcp --feature student-1 `
@@ -92,7 +94,12 @@ dotnet run --project ai-services/agentic-loop -- validate-rag --feature student-
   --question 'Is Tokyo safe for families?'
 ```
 
-These commands capture timestamped HTTP status, exact response and deterministic contract outcome as pre-test evidence before the normal Plan/Act/Observe/Adapt cycle. Only a loopback HTTP origin is accepted; paths and read-only POST bodies are fixed. Redirects are disabled, response size is bounded to 16000 bytes, and each observation has a 35-second deadline. Dependency failures and insufficient context must not be described as successful grounded answers. The models' verdicts do not override a failed contract check or prove entailment. Native Ollama is required to complete either loop mode.
+These commands capture timestamped HTTP status, response (with Student 2 preview tokens omitted) and deterministic contract outcome as pre-test evidence before the normal Plan/Act/Observe/Adapt cycle. Only a loopback HTTP origin is accepted; paths and non-writing POST bodies are fixed. Redirects are disabled and response size is bounded to 16000 bytes. Student 2 contextual RAG has a 55-second deadline; other observations have 35 seconds. Dependency failures and insufficient context must not be described as successful grounded answers. The models' verdicts do not override a failed contract check or prove intent or entailment. Native Ollama is required to complete either loop mode.
+
+Student 3 uses its own `/api/mcp/invoke` and `/api/rag/ask` contracts. Its fixed MCP
+case invokes `attractions.search` for restaurants. Unlike Student 1/2 grounded-answer
+checks, Student 3 accepts the exact fixed insufficient-context answer with no
+citations as a valid abstention, not as evidence of a grounded answer.
 
 Records include `validationMode` while retaining the existing finalisation schema. Finalise only after human verification and real post-test evidence. A backend observation does not replace protocol discovery, frontend screenshots, or manual source-support checks. Do not submit unit-test model doubles as live loop evidence.
 

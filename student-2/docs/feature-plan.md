@@ -34,6 +34,17 @@ Deliver a containerised itinerary planner that generates and safely revises pers
 
 ## Next Gates
 
+Current Release 1 slice (1 October): confirmed MCP itinerary editing and separate
+weather-aware RAG advice. Natural-language editing now adds/removes activities,
+updates a title or notes, shifts dates without changing duration, and undoes the
+last confirmed edit, alongside day/stop moves and swaps. The manual reorder panel
+is removed; its MCP/API operations remain compatible. The Undo button bypasses
+model selection and retains preview/confirmation. All new actions passed isolated
+real-model HTTP and browser confirmation/undo checks; see the runbook for limits.
+The prior review UI is superseded. See
+[Release 1 requirements](requirements.md#release-1-editor-and-advice-integration)
+and the [runbook](release-1-runbook.md) for verification status.
+
 1. Run the shared agentic loop against the Student 2 reliability or architecture changes and finalise the record after human review.
 2. Review and commit the latest fixes on the Student 2 feature branch, then open a pull request.
 3. Capture a successful GitHub Actions run.

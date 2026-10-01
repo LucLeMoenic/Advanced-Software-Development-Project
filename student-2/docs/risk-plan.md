@@ -21,3 +21,26 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 | IT-R15 | Context-aware advice is deployed against an older RAG server. | 3 | 4 | 12 | Deploy matching backend and shared RAG context contract, restart native RAG and verify a selected-trip query. Treat context as untrusted and keep identity excluded. | Context producer/consumer included together; live deployment not repeated for this branch |
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
+
+## Editor and Validation Follow-up - 1 October 2026
+
+- Model intent and source support remain separate from schema validity. Restrict
+	model authority to one action/replacement field, ground new text/day in the
+	request, derive existing stop days from saved IDs and show exact before/after
+	values. Ambiguous names and embedded instructions still require human review.
+- A save timeout has an uncertain outcome (P=3, I=4): never retry automatically;
+	discard the preview and refresh before requesting another edit.
+- Removal and undo can lose intended content (P=3, I=5). Atomically journal dates
+	and full stops, including IDs/creation times; undo removes added stops and rejects
+	intervening changes. Database restart invalidates outstanding preview tokens.
+- Weather context can be mistaken for cited knowledge (P=3, I=4). Keep provider
+	data/attribution separate, preserve abstention and report missing forecasts and
+	truncated plan context. Automatic geocoding is fallible; weather failure must not
+	block knowledge-based advice.
+- Earlier universal-schema extraction failed live intent cases. Action-specific
+	schemas and text/day grounding passed eleven retained cases and five isolated
+	confirmation/undo flows. This is historical, narrow evidence, not general model
+	accuracy or injection certification.
+- The launcher restarts MCP/RAG and binds native APIs to the chosen interface.
+	Use a local private address and administrator-managed access policy; the script
+	does not edit firewall rules. Full startup remains a separate acceptance check.
