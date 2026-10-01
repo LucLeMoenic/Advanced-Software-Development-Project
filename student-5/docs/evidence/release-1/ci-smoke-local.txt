@@ -1,0 +1,40 @@
+### MCP_ENABLED=false RAG_ENABLED=false - CI 'Smoke test Student 5 integration' step, run locally with bash -ex
++ curl --fail --silent http://localhost:5305/health
+{"service":"student5-database","status":"ok"}
++ curl --fail --silent http://localhost:5205/health
+{"service":"student5-backend","status":"ok"}
++ curl --fail --silent http://localhost:5105/
++ curl --fail --silent http://localhost:5205/api/destinations
++ python -c 'import json,sys; assert len(json.load(sys.stdin)) >= 12'
++ check_disabled http://localhost:5205/api/mcp/tools
++ curl --silent --write-out '\n%{http_code}' http://localhost:5205/api/mcp/tools
++ python -c $'\nimport json, sys\n*body, status = sys.stdin.read().splitlines()\nassert status == \'503\', status\nerror = json.loads(\'\\n\'.join(body))[\'error\']\nassert error in (\'mcp_disabled\', \'rag_disabled\'), error\n'
++ check_disabled -X POST http://localhost:5205/api/mcp/invoke -H 'Content-Type: application/json' -d '{"tool":"logistics.get_weather","arguments":{"destination_id":1}}'
++ curl --silent --write-out '\n%{http_code}' -X POST http://localhost:5205/api/mcp/invoke -H 'Content-Type: application/json' -d '{"tool":"logistics.get_weather","arguments":{"destination_id":1}}'
++ python -c $'\nimport json, sys\n*body, status = sys.stdin.read().splitlines()\nassert status == \'503\', status\nerror = json.loads(\'\\n\'.join(body))[\'error\']\nassert error in (\'mcp_disabled\', \'rag_disabled\'), error\n'
++ check_disabled -X POST http://localhost:5205/api/rag/ask -H 'Content-Type: application/json' -d '{"question":"What is an eVisa?"}'
++ curl --silent --write-out '\n%{http_code}' -X POST http://localhost:5205/api/rag/ask -H 'Content-Type: application/json' -d '{"question":"What is an eVisa?"}'
++ python -c $'\nimport json, sys\n*body, status = sys.stdin.read().splitlines()\nassert status == \'503\', status\nerror = json.loads(\'\\n\'.join(body))[\'error\']\nassert error in (\'mcp_disabled\', \'rag_disabled\'), error\n'
++ check_disabled -X POST http://localhost:5105/api/rag/ask -H 'Content-Type: application/json' -d '{"question":"What is an eVisa?"}'
++ curl --silent --write-out '\n%{http_code}' -X POST http://localhost:5105/api/rag/ask -H 'Content-Type: application/json' -d '{"question":"What is an eVisa?"}'
++ python -c $'\nimport json, sys\n*body, status = sys.stdin.read().splitlines()\nassert status == \'503\', status\nerror = json.loads(\'\\n\'.join(body))[\'error\']\nassert error in (\'mcp_disabled\', \'rag_disabled\'), error\n'
+exit status: 0
+
+### MCP_ENABLED=true RAG_ENABLED=true - CI 'Smoke test Student 5 integration' step, run locally with bash -ex
++ curl --fail --silent http://localhost:5305/health
+{"service":"student5-database","status":"ok"}
++ curl --fail --silent http://localhost:5205/health
+{"service":"student5-backend","status":"ok"}
++ curl --fail --silent http://localhost:5105/
++ curl --fail --silent http://localhost:5205/api/destinations
++ python -c 'import json,sys; assert len(json.load(sys.stdin)) >= 12'
++ check_disabled http://localhost:5205/api/mcp/tools
++ curl --silent --write-out '\n%{http_code}' http://localhost:5205/api/mcp/tools
++ python -c $'\nimport json, sys\n*body, status = sys.stdin.read().splitlines()\nassert status == \'503\', status\nerror = json.loads(\'\\n\'.join(body))[\'error\']\nassert error in (\'mcp_disabled\', \'rag_disabled\'), error\n'
+Traceback (most recent call last):
+  File "<string>", line 4, in <module>
+    assert status == '503', status
+           ^^^^^^^^^^^^^^^
+AssertionError: 200
+exit status: 1
+

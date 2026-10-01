@@ -1,0 +1,5 @@
+$ docker compose ps student5-database student5-backend student5-frontend   # MCP_ENABLED=true RAG_ENABLED=true
+SERVICE             STATUS                   PORTS
+student5-backend    Up 3 minutes (healthy)   0.0.0.0:5205->8080/tcp, [::]:5205->8080/tcp
+student5-database   Up 2 hours (healthy)     0.0.0.0:5305->8080/tcp, [::]:5305->8080/tcp
+student5-frontend   Up 7 minutes (healthy)   0.0.0.0:5105->80/tcp, [::]:5105->80/tcp

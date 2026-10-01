@@ -40,9 +40,12 @@
   "adaptedProposal": null,
   "adaptedProposalReview": null,
   "finalReviewerVerdict": "ACCEPT",
-  "humanDecision": null,
-  "humanNotes": null,
-  "postTest": null,
-  "finalisedAt": null,
+  "humanDecision": "kept",
+  "humanNotes": "Reviewed the validate-rag run. Checked both answer sentences against the cited chunks visa-categories#2 and #3; both are supported, so the implementer correctly proposed no change. Rejected the reviewer\u0027s SUGGESTION to add more visa-on-arrival detail: it concerns answer length, not grounding, and the details are already in visa-categories#2. No change to visa-categories.md.",
+  "postTest": {
+    "command": "pwsh -NoProfile -File scripts/test/student-5.ps1",
+    "result": "26 \u002B 125 \u002B 34 \u002B 17 passed"
+  },
+  "finalisedAt": "2026-10-01T13:47:40.0028977+00:00",
   "validationMode": "rag"
 }

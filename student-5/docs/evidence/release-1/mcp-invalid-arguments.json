@@ -1,0 +1,1 @@
+{"error":"invalid_arguments","message":"Error executing tool logistics.get_transit: 1 validation error for get_transitArguments\nparams.type\n  Input should be 'metro', 'rail', 'bus', 'rideshare', 'ferry' or 'airport-link' [type=literal_error, input_value='teleport', input_type=str]\n    For further information visit https://errors.pydantic."}

@@ -1,6 +1,7 @@
 # Travel Logistics & Advisory Service - Architecture
 
-Student 5 (Alex Chen), Release 0. Three containerised services plus the team's
+Student 5 (Alex Chen), Release 0, with Release 1 additions in "Release 1: MCP
+and RAG paths". Three containerised services plus the team's
 shared Ollama runtime.
 
 ## Architecture Diagram
@@ -115,6 +116,63 @@ The browser never reaches Ollama. `ollama_client.py` is the only module in the
 backend that knows how to, and `build_prompt` guarantees that every advisory -
 JSON or fragment - is grounded in the same stored rows, because both endpoints
 call the same function.
+
+## Release 1: MCP and RAG paths
+
+Release 1 adds two shared AI services, both reached **only by the backend**. The
+browser path is unchanged: `student5-frontend` proxies `/ui/` and `/api/` to the
+backend, which is the only Student 5 code that knows where the MCP and RAG
+servers are.
+
+```mermaid
+flowchart LR
+    browser["Browser"]
+    frontend["student5-frontend<br/>nginx :5105"]
+    backend["student5-backend<br/>Flask :5205<br/>integrations.py"]
+    mcpc["mcp_client.py<br/>allow-list, 5s"]
+    ragc["rag_client.py<br/>response validation, 30s"]
+    mcp["Shared MCP server<br/>:5400/mcp<br/>tools/logistics.py"]
+    rag["Shared RAG server<br/>:5500/ask<br/>knowledge/student-5/"]
+    database["student5-database<br/>:5305"]
+    ollama["Ollama :11434"]
+
+    browser --> frontend -->|"/api/mcp/*  /api/rag/ask  /ui/mcp  /ui/rag"| backend
+    backend --> mcpc -->|"streamable HTTP<br/>tools/call"| mcp
+    mcp -->|"GET only, 3s"| database
+    backend --> ragc -->|"POST /ask<br/>feature student-5"| rag
+    rag --> ollama
+```
+
+- **MCP.** `logistics.check_visa_requirement`, `logistics.get_weather` and
+  `logistics.get_transit` live in the shared server but read Student 5 data only
+  through `student5-database`'s HTTP API (`STUDENT5_DATABASE_API_URL`), so the
+  "no one else opens this SQLite file" rule below still holds. The backend
+  forwards only those three names; a tool-level error keeps its body and maps to
+  404/504/502.
+- **RAG.** The backend posts `{"feature": "student-5", "question"}`; the shared
+  server retrieves from the eight Student 5 documents and answers with
+  citations and a confidence label. `rag_client.py` checks that contract before
+  anything is rendered.
+- **Flags.** `MCP_ENABLED` and `RAG_ENABLED` default to false. Disabled routes
+  answer 503 without opening a connection. `scripts/deploy/start-release1.ps1`
+  starts both servers natively and recreates the backend with both flags on.
+- **UI.** The collapsible "Live tools & knowledge base" section posts to
+  `/ui/mcp` and `/ui/rag`. As in Release 0, those fragment routes answer 200 and
+  render failures as content.
+
+### Release 1 CI changes
+
+`student-5.yml` now also triggers on the Student 5 MCP tool, its test, the
+Student 5 knowledge folder and retrieval test, and the RAG retrieval and
+confidence modules they depend on. The two pytest steps are replaced by one step
+that runs `scripts/test/student-5.ps1`, which still runs each suite in its own
+process (database 26, backend 125, MCP tools 34, RAG retrieval 17). After the
+image build, the job starts the three containers with `--wait` on their
+healthchecks and runs a smoke test: health on all three ports, at least 12
+destinations through the backend, and the disabled-integration contract (`503`
+with `mcp_disabled` / `rag_disabled`) on `:5205` and through the `:5105` proxy.
+CI runs with both flags `false`, because it has no model or shared servers; the
+live paths are evidenced locally in `docs/evidence/release-1/`.
 
 ## The rule that shapes everything: no service touches another's SQLite file
 

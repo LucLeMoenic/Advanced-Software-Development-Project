@@ -13,7 +13,9 @@ Three microservices:
 
 ```text
 Browser -> student5-frontend -> student5-backend -> student5-database -> SQLite
-                                      \-> ollama (:11434) -> tag from APPLICATION_MODEL
+                                      |-> ollama (:11434) -> tag from APPLICATION_MODEL
+                                      |-> MCP server (:5400/mcp) -> logistics.* tools -> student5-database   [Release 1]
+                                      \-> RAG server (:5500)     -> knowledge/student-5/ + ollama            [Release 1]
 ```
 
 **The rule that shapes the design: no service opens another service's SQLite
@@ -28,11 +30,11 @@ anyone working on this feature.
 | Document | Contents |
 | --- | --- |
 | [context.md](docs/context.md) | Orientation: goal, scope, contracts, code boundaries, where things live |
-| [requirements.md](docs/requirements.md) | 10 functional requirements mapped to real endpoints and UI elements, 5 testable non-functional requirements |
+| [requirements.md](docs/requirements.md) | 15 functional requirements mapped to real endpoints and UI elements, 9 testable non-functional requirements (Release 0 and 1) |
 | [feature-plan.md](docs/feature-plan.md) | The build as executed, status per deliverable, decisions and why |
-| [architecture.md](docs/architecture.md) | Runtime topology diagram, one paragraph per service, the AI workflow path |
+| [architecture.md](docs/architecture.md) | Runtime topology diagram, one paragraph per service, the AI workflow path, Release 1 MCP and RAG paths |
 | [data-design.md](docs/data-design.md) | Conceptual model, ER diagram, logical design, physical notes and seeding |
-| [risk-plan.md](docs/risk-plan.md) | Six risks with likelihood, impact, mitigation and status |
+| [risk-plan.md](docs/risk-plan.md) | Ten risks with likelihood, impact, mitigation and status |
 | [sprint-backlog.md](docs/sprint-backlog.md) | Backlog items with requirement links and status |
 | [prompt-log.md](docs/prompt-log.md) | All four agentic-loop attempts, three of which failed |
 | [review-record.md](docs/review-record.md) | The completed Plan/Act/Observe/Adapt run and the human decision |
@@ -46,7 +48,8 @@ covering the agentic-loop run, both pytest suites, the image build, the healthy
 Compose stack, the green CI run and four screenshots of the running application,
 each one indexed in [testing-evidence.md](docs/testing-evidence.md) - and
 [`docs/prompt-library/reviewer-llama32-v2.md`](docs/prompt-library/reviewer-llama32-v2.md)
-(the custom reviewer prompt).
+(the custom reviewer prompt). Release 1 evidence lives in
+[`docs/evidence/release-1/`](docs/evidence/release-1).
 
 ## Run it
 
@@ -85,9 +88,19 @@ cd student-5/database && python -m pytest tests
 cd student-5/backend && python -m pytest tests
 ```
 
-Expected: 26 and 68 tests respectively. Both run offline - the database suite
+Expected: 26 and 125 tests respectively. Both run offline - the database suite
 gives each test its own `tmp_path` database, and the backend suite mocks the
-database service and Ollama with `responses`.
+database service, Ollama, and the MCP and RAG clients.
+
+The Student 5 MCP tools and knowledge base are tested in the shared servers:
+
+```bash
+cd ai-services/mcp-server && python -m pytest tests/test_logistics_tools.py
+cd ai-services/rag-server && python -m pytest tests/test_student5_retrieval.py
+```
+
+Expected: 34 and 17. `pwsh -File scripts/test/student-5.ps1` installs the
+dependencies and runs all four.
 
 Dependencies:
 
@@ -95,8 +108,10 @@ Dependencies:
 pip install -r student-5/database/requirements.txt -r student-5/backend/requirements.txt
 ```
 
-CI runs both suites, `docker compose config --quiet`, and a build of all three
-images on every push touching `student-5/**` - see
+CI runs both suites plus the two shared-server suites, `docker compose config
+--quiet`, a build of all three images, then starts them and smoke-tests the
+health checks, the destination list and the disabled MCP/RAG contract on every
+push touching Student 5 files - see
 [`.github/workflows/student-5.yml`](../.github/workflows/student-5.yml).
 
 ## Configuration
@@ -108,6 +123,10 @@ Everything environment-driven; nothing secret is committed.
 | backend | `DATABASE_API_URL` | `http://student5-database:8080` | Database service base URL |
 | backend | `OLLAMA_URL` | `http://ollama:11434` | Shared Ollama runtime |
 | backend | `APPLICATION_MODEL` | `llama3.2:3b` | Model tag for advisories. No model name is a literal in calling code |
+| backend | `MCP_ENABLED` | `false` | Release 1: turns on `/api/mcp/*`; otherwise they return `503 mcp_disabled` |
+| backend | `MCP_SERVER_URL` | `http://host.docker.internal:5400/mcp` | Shared MCP server (streamable HTTP) |
+| backend | `RAG_ENABLED` | `false` | Release 1: turns on `/api/rag/ask`; otherwise it returns `503 rag_disabled` |
+| backend | `RAG_SERVER_URL` | `http://host.docker.internal:5500` | Shared RAG server |
 | database | `DATABASE_PATH` | `/data/logistics.db` | SQLite file, bind-mounted from `database/storage` |
 | database / backend | `PORT` | `8080` | Listen port |
 
@@ -124,6 +143,40 @@ curl -X POST http://localhost:5205/api/advisory -H "Content-Type: application/js
 ```
 
 A cold 3B model on CPU can take well over a minute on the first call.
+
+## Release 1 - MCP tools and RAG knowledge base
+
+Start the shared servers and enable both integrations from the repository root
+(no positional arguments):
+
+```bash
+pwsh -File scripts/deploy/start-release1.ps1
+```
+
+The browser still talks only to the backend. Tools are on the shared MCP server
+(`ai-services/mcp-server/tools/logistics.py`); the knowledge base is
+`ai-services/rag-server/knowledge/student-5/`.
+
+| Method | Path | Body | Result |
+| --- | --- | --- | --- |
+| `GET` | `/api/mcp/tools` | - | The three allow-listed `logistics.*` tools, with name and description |
+| `POST` | `/api/mcp/invoke` | `{"tool": "logistics.check_visa_requirement", "arguments": {"destination_id": 1}}` | `200 {tool, result}`; `404` for an unknown destination; `400` for a tool outside the allow-list or bad arguments |
+| `POST` | `/api/rag/ask` | `{"question": "What is the difference between visa on arrival and an eVisa?"}` | `200 {answer, citations, confidence}`; out-of-scope questions return the fixed insufficient sentence with no citations |
+| `POST` | `/ui/mcp`, `/ui/rag` | form fields | HTMX fragments for the "Live tools & knowledge base" section |
+
+Tools: `logistics.check_visa_requirement` and `logistics.get_weather` take
+`destination_id`; `logistics.get_transit` also takes an optional `type`
+(`metro`, `rail`, `bus`, `rideshare`, `ferry`, `airport-link`). Error bodies are
+`{"error": code, "message": ...}`, with codes `mcp_disabled`, `mcp_unavailable`,
+`invalid_request`, `unknown_tool`, `invalid_arguments`, `rag_disabled`,
+`rag_unavailable`, `rag_timeout` and `invalid_question`.
+
+Validate either path with the shared agentic loop - `validate-mcp` and
+`validate-rag` with `--feature student-5`, `--task` and `--context`. The full
+commands are in
+[`ai-services/agentic-loop/README.md`](../ai-services/agentic-loop/README.md);
+the runs used for Release 1 are recorded in
+[`docs/prompt-log.md`](docs/prompt-log.md).
 
 ## Database API
 

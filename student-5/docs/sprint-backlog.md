@@ -1,6 +1,6 @@
 # Travel Logistics & Advisory Service - Sprint Backlog
 
-Student 5 (Alex Chen), Release 0. Owner is Alex Chen throughout. Requirement
+Student 5 (Alex Chen), Release 0 and Release 1 (TL-20..25). Owner is Alex Chen throughout. Requirement
 IDs refer to `requirements.md`. An item is Done only when its requirements hold
 in the integrated Compose stack, not just in isolation.
 
@@ -26,4 +26,9 @@ in the integrated Compose stack, not just in isolation.
 | TL-18 | Release 0 documentation pack | all | Context, requirements, plan, risks, backlog, data design, architecture (with the three required diagrams), prompt log, review record, prompt engineering, testing evidence (with the `student-5.yml` step description), known issues, contribution log; README linked. | **Done** - this folder |
 | TL-18a | Test and stack evidence capture | TL-NFR-05 | pytest output for both suites, the image build, and a `docker compose ps` showing all three services healthy, committed under `docs/evidence/` and indexed in `testing-evidence.md`. | **Done** - `pytest-database.txt`, `pytest-backend.txt`, `compose-build.txt`, `compose-ps.txt` |
 | TL-19 | Browser evidence for the report | TL-FR-01..09 | Screenshots of the loaded panels, a generated advisory with the elapsed counter running, and the manage table after a create, with the inline edit and delete controls. | **Done** - `ui-filled-panels.png`, `ui-advisory-output.png`, `ui-advisory-loading.png` (`17s` on the elapsed readout), `ui-manage-table.png` (created row id 13). The `hx-confirm` delete dialog is not screenshot-able; that path is covered by `backend/tests/test_ui_fragments.py`. |
-| TL-20 | MCP tools - `get_weather`, `check_visa_requirement` | - | Out of Release 0 scope. | **Not started (Release 1)** |
+| TL-20 | MCP tools - `check_visa_requirement`, `get_weather`, `get_transit` | TL-FR-11, TL-NFR-07 | Registered on the shared MCP server; read-only HTTP to the Student 5 database; strict arguments; structured errors; tests. | **Done (Release 1)** - `logistics.py`, 34 tests |
+| TL-21 | RAG knowledge base for Student 5 | TL-FR-13, TL-NFR-08 | Curated, sourced documents under `knowledge/student-5/`; retrieval tests pin the expected chunk per benchmark question and the insufficient path. | **Done (Release 1)** - 8 documents, 17 tests |
+| TL-22 | Backend MCP and RAG integration | TL-FR-12, TL-FR-13, TL-NFR-06 | `/api/mcp/tools`, `/api/mcp/invoke`, `/api/rag/ask`; allow-list; response validation; distinct error codes; flags default off. | **Done (Release 1)** - 125 backend tests; live captures in `release-1/` |
+| TL-23 | Frontend live tools and knowledge base section | TL-FR-14 | MCP and RAG forms with provenance, confidence, citations, insufficient state and disclaimer; readable failures; no horizontal overflow at 375px. | **Done (Release 1)** - `release-1/screenshots/` |
+| TL-24 | Compose, test script and CI smoke test | TL-NFR-06, TL-NFR-09 | Compose flags; `student-5.ps1` runs the new suites; `student-5.yml` starts the services and asserts the fail-closed contract; green on GitHub. | **Done locally** - `ci-smoke-local.txt`. Green GitHub run to record once the CI pull request has merged. |
+| TL-25 | Agentic-loop validation fixtures | TL-FR-15 | `validate-mcp` and `validate-rag` support `--feature student-5`, with tests; one live run of each, finalised with a human decision. | **Done (Release 1)** - `release-1/loop/`; finalised (e) `kept`, (f) `kept` |

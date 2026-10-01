@@ -1,6 +1,6 @@
 # Contribution Log - Student 5
 
-Alex Chen, feature **Travel Logistics & Advisory Service**, Release 0.
+Alex Chen, feature **Travel Logistics & Advisory Service**, Release 0 and Release 1.
 
 Derived from `git log --all --author="alexanderschen08@gmail.com"` across my
 `AC/*` branches and `main`. 25 commits between 1 and 6 September 2026, of which
@@ -31,6 +31,22 @@ the PR number traceable.
 | 2026-09-06 | `5adfd3f` | (on `AC/complete-documentation`) | **Evidence index reconciled and the three required diagrams added.** Every pytest / Compose TODO replaced by a reference to the committed capture with its result line quoted; Mermaid diagrams for the Compose architecture, the DevOps pipeline and the Plan/Act/Observe/Adapt workflow in `architecture.md`; the `student-5.yml` step-by-step description in `testing-evidence.md`. 5 files, 281 insertions. |
 | 2026-09-06 | (working tree) | (on `AC/complete-documentation`) | **Final evidence capture and documentation close-out.** The green CI run (`ci-run-green.png`) and four application screenshots (`ui-filled-panels.png`, `ui-advisory-output.png`, `ui-advisory-loading.png`, `ui-manage-table.png`) into `docs/evidence/`; the last two TODOs replaced across `testing-evidence.md`, `requirements.md`, `feature-plan.md` and `sprint-backlog.md`; evidence-completeness mapping added. No documentation item is outstanding. |
 
+## Release 1
+
+Written with GitHub Copilot CLI under my direction and reviewed by me (see
+`prompt-log.md` and `review-record.md`). The assistant prepared each change in the
+working tree only; I committed, pushed and opened every pull request myself, one
+per step, each squash-merged into `main`.
+
+| PR | Branch | Commit (Conventional) | What it delivers |
+|---|---|---|---|
+| #97 | `AC/mcp-logistics-tools` | `feat(mcp): add Student 5 logistics tools` | `logistics.check_visa_requirement`, `logistics.get_weather`, `logistics.get_transit`; registration; 34 tests |
+| #98 | `AC/rag-knowledge-base` | `feat(rag): add Student 5 knowledge base` | 8 curated documents; 17 retrieval tests |
+| #99 | `AC/backend-ui-integration` | `feat(student-5): integrate MCP and RAG through backend and UI` | MCP/RAG clients, `/api/mcp/*`, `/api/rag/ask`, `/ui/mcp`, `/ui/rag`, the "Live tools & knowledge base" section, Compose flags; backend suite 68 -> 125 |
+| #101 | `AC/ci-mcp-rag-smoke-test` | `ci(student-5): run MCP and RAG suites and smoke-test the stack` | `student-5.ps1` runs the new suites; `student-5.yml` path filters, start, smoke test and stop steps |
+| #100 | `AC/agentic-loop-validation` | `feat(agentic-loop): add student-5 MCP and RAG validation fixtures` | `--feature student-5` for `validate-mcp` / `validate-rag`; 4 tests; the two validation records |
+| (this PR) | `AC/docs-and-evidence` | `docs(student-5): add Release 1 docs and evidence` | Release 1 docs and `evidence/release-1/` |
+
 ## Pull requests
 
 | PR | Branch | Merge commit | Scope |
@@ -45,6 +61,11 @@ the PR number traceable.
 | #42 | `AC/UX-UI-uplift` | `6215c8c` | Design-system uplift |
 | #44 | `AC/shared-home-page-tweak` | `7acd2e4` | Naming alignment |
 | #50 | `AC/agenticloop-work-elapsed-timer` | `dbbb3e6` | Agentic-loop deliverable and reviewer prompt |
+| #97 | `AC/mcp-logistics-tools` | `1105410` | Release 1: Student 5 MCP logistics tools |
+| #98 | `AC/rag-knowledge-base` | `2a15c02` | Release 1: Student 5 RAG knowledge base |
+| #99 | `AC/backend-ui-integration` | `1083525` | Release 1: backend and UI integration of MCP and RAG |
+| #101 | `AC/ci-mcp-rag-smoke-test` | `7dd74d5` | Release 1: test script and CI smoke test |
+| #100 | `AC/agentic-loop-validation` | `12008ea` | Release 1: agentic-loop `student-5` validation fixtures |
 
 ## Summary by area
 
@@ -54,7 +75,8 @@ the PR number traceable.
 | Backend service | HTTP database client, JSON passthrough, Ollama client, grounded advisory workflow, HTMX fragment blueprint with 7 templates, 68 tests |
 | Frontend service | Single-page HTMX application, nginx edge with same-origin proxying, own stylesheet, print sheet, client-side failure handling |
 | Integration | Three Compose services with healthchecks and dependency ordering; shared home page entry |
-| CI | `student-5.yml` - two test suites, Compose validation, three image builds; green run captured (`ci-run-green.png`) |
+| CI | `student-5.yml` - two test suites, Compose validation, three image builds; green run captured (`ci-run-green.png`). Release 1: MCP/RAG suites, container start and smoke test |
+| Release 1 integration | Three MCP tools, eight-document RAG knowledge base, backend MCP/RAG routes and UI section, `student-5` agentic-loop validation fixture |
 | Group infrastructure | Agentic-loop context-extension fix, token-limit increase, `[OBSERVE]` regex fix |
 | AI workflow evidence | One completed and finalised Plan/Act/Observe/Adapt record, custom reviewer prompt, six artefacts covering the run |
 | Documentation | This `docs/` folder - 13 documents, three architecture diagrams, and 17 indexed evidence artefacts with nothing outstanding |
