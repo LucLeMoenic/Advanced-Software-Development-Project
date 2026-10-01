@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-01T11:48:58.4216748+00:00",
+  "task": "Validate the captured visa guidance answer against its cited knowledge chunks. List any sentence in the answer that is not supported by a cited snippet. Propose at most one small, bounded improvement to visa-categories.md if a real gap exists; otherwise state that no change is needed.",
+  "contextFiles": [
+    "ai-services/rag-server/knowledge/student-5/visa-categories.md"
+  ],
+  "models": {
+    "implementer": "qwen2.5-coder:7b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "C:\\Users\\alex\\repos\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\implementer.md",
+    "reviewer": "C:\\Users\\alex\\repos\\Advanced-Software-Development-Project\\student-5\\docs\\prompt-library\\reviewer-llama32-v2.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "student5-reviewer-llama32-v2"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "ai-services/rag-server/knowledge/student-5/visa-categories.md": "38CEC00D42EA992A60AC29E17886933604268B530419996B8645CF2974ED4836"
+    },
+    "implementerPromptSha256": "84A995BA031FB6D4DCCCBC8EFAFE98213B4404F7BF454D537E7860AF1315C50A",
+    "reviewerPromptSha256": "942529C0DC8D0EE82DA5C35C1CF1794EABF913E1D04478E0CE3BA0CB00867EB0"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.35.0",
+  "preTest": {
+    "command": "POST http://127.0.0.1:5205/api/rag/ask",
+    "result": "{\u0022feature\u0022:\u0022student-5\u0022,\u0022mode\u0022:\u0022rag\u0022,\u0022capturedAt\u0022:\u00222026-10-01T11:48:50.6578544\u002B00:00\u0022,\u0022endpoint\u0022:\u0022http://127.0.0.1:5205/api/rag/ask\u0022,\u0022statusCode\u0022:200,\u0022contractPassed\u0022:true,\u0022response\u0022:\u0022{\\u0022answer\\u0022:\\u0022A visa on arrival is issued at the border, usually at a major airport, after landing, whereas an eVisa is an electronic visa applied for online before departure. [visa-categories#2] [visa-categories#3]\\u0022,\\u0022citations\\u0022:[{\\u0022chunk_id\\u0022:\\u0022visa-categories#2\\u0022,\\u0022score\\u0022:0.2743,\\u0022snippet\\u0022:\\u0022Visa on arrival means the visa is issued at the border, usually at a major airport, after you land. A visa on arrival often requires a fee, a passport with enough validity and blank pages, and an onward or return ticket. Queues for a visa on arrival can be long, so allow extra ti\\u0022,\\u0022source\\u0022:\\u0022Visa Requirement Categories\\u0022},{\\u0022chunk_id\\u0022:\\u0022visa-categories#3\\u0022,\\u0022score\\u0022:0.3838,\\u0022snippet\\u0022:\\u0022An eVisa is an electronic visa applied for online before departure. An eVisa approval is linked to your passport number, so the passport you travel on must match the application. Apply for an eVisa well before booking flights, carry a printed copy of the eVisa approval, and check\\u0022,\\u0022source\\u0022:\\u0022Visa Requirement Categories\\u0022}],\\u0022confidence\\u0022:\\u0022low\\u0022}\\n\u0022,\u0022limitation\u0022:\u0022Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately.\u0022}"
+  },
+  "planAct": "\u0060\u0060\u0060text\n[PLAN]\nGoal: Validate the captured visa guidance answer against its cited knowledge chunks.\nRequirements: Ensure all sentences in the answer are supported by cited snippets.\nFiles: visa-categories.md\nSteps:\n1. Review the captured answer and its citations.\n2. Compare each sentence in the answer with the cited snippets.\n3. Identify any sentences not supported by the cited snippets.\n4. Propose a small, bounded improvement if a real gap exists.\nRisks: Incorrect validation could lead to misinformation.\nValidation: Manually review the captured answer and citations.\n\n[ACT]\nProposed change: No change is needed.\nUnresolved: The captured answer is supported by the cited snippets.\n\u0060\u0060\u0060",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n  Evidence: The captured answer correctly states that a visa on arrival is issued at the border, usually at a major airport, after landing, and that an eVisa is an electronic visa applied for online before departure.\n  Failure mode: The answer does not provide additional information about the requirements for a visa on arrival.\n  Required correction: Consider adding more details about the requirements for a visa on arrival.\n\nValidation gaps:\nThe pre-test evidence does not yet prove that the captured answer correctly identifies the requirements for an eVisa.\n\nScope check:\nThe proposal stayed within the requested scope, as it only focused on validating the captured visa guidance answer against its cited knowledge chunks.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": null,
+  "humanNotes": null,
+  "postTest": null,
+  "finalisedAt": null,
+  "validationMode": "rag"
+}
