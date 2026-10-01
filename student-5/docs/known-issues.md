@@ -187,7 +187,7 @@ as is.
 CI has no model and no MCP or RAG server, so `student-5.yml` runs with both
 flags off and asserts the fail-closed 503 bodies. The live paths are covered by
 mocked unit tests in CI and by the local captures in `evidence/release-1/`.
-A green GitHub run of the Release 1 workflow has not been captured yet.
+The Release 1 workflow is green on GitHub (Student 5 CI run #140 on `main`, `49e5489`).
 
 ### The reviewer echo recurred on `validate-mcp`
 

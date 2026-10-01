@@ -313,6 +313,7 @@ bodies from `curl` against the running stack). Text captures are UTF-8.
 | `loop/validate-mcp-terminal.txt` | Terminal output | `validate-mcp --feature student-5`: live pre-test 200 with the contract passing, Plan/Act, the reviewer's malformed first review and format correction, final ACCEPT. Record `20261001T114821Z-cafe2142e4624e52807d4b54c983d954.json`. |
 | `loop/validate-rag-terminal.txt` | Terminal output | `validate-rag --feature student-5`: live pre-test 200 with the contract passing, Plan/Act, ACCEPT. Record `20261001T114858Z-e3385d8dc6f1499db6c99f34beee5180.json`. |
 | `ci-smoke-local.txt` | Script output | The CI "Smoke test Student 5 integration" step run locally with `bash -ex`: exit 0 with both flags `false` (as in CI), and exit 1 with `AssertionError: 200` with them `true` - so the step really detects the flag state. TL-NFR-06, TL-NFR-09. |
+| `ci-run-green.png` | CI screenshot | Student 5 CI run #140 on `main` (`49e5489`) succeeded: the four test suites, Compose validation, the image builds and the fail-closed smoke test. TL-NFR-05, TL-NFR-09. |
 | `compose-ps.txt` | Container status | All three Student 5 services `healthy` with `MCP_ENABLED=true RAG_ENABLED=true`. |
 
 ### Reproducing Release 1
@@ -335,5 +336,5 @@ three containers with `--wait`, smoke-test them, and always stop them.
 
 ### Release 1 outstanding items
 
-- A green GitHub Actions run of the Release 1 workflow on `main`, to be recorded
-  once the CI pull request has merged.
+Nothing is outstanding. The Release 1 workflow passed on `main`: Student 5 CI run #140
+on `49e5489`, https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36872202961 (screenshot `ci-run-green.png`).

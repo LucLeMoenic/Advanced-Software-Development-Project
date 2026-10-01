@@ -45,7 +45,8 @@ per step, each squash-merged into `main`.
 | #99 | `AC/backend-ui-integration` | `feat(student-5): integrate MCP and RAG through backend and UI` | MCP/RAG clients, `/api/mcp/*`, `/api/rag/ask`, `/ui/mcp`, `/ui/rag`, the "Live tools & knowledge base" section, Compose flags; backend suite 68 -> 125 |
 | #101 | `AC/ci-mcp-rag-smoke-test` | `ci(student-5): run MCP and RAG suites and smoke-test the stack` | `student-5.ps1` runs the new suites; `student-5.yml` path filters, start, smoke test and stop steps |
 | #100 | `AC/agentic-loop-validation` | `feat(agentic-loop): add student-5 MCP and RAG validation fixtures` | `--feature student-5` for `validate-mcp` / `validate-rag`; 4 tests; the two validation records |
-| (this PR) | `AC/docs-and-evidence` | `docs(student-5): add Release 1 docs and evidence` | Release 1 docs and `evidence/release-1/` |
+| #102 | `AC/docs-and-evidence` | `docs(student-5): add Release 1 docs and evidence` | Release 1 docs and `evidence/release-1/` |
+| (this PR) | `AC/ci-green-evidence` | `docs(student-5): record green Release 1 CI run` | Records Student 5 CI run #140 on `main` as Release 1 CI evidence |
 
 ## Pull requests
 
@@ -66,6 +67,7 @@ per step, each squash-merged into `main`.
 | #99 | `AC/backend-ui-integration` | `1083525` | Release 1: backend and UI integration of MCP and RAG |
 | #101 | `AC/ci-mcp-rag-smoke-test` | `7dd74d5` | Release 1: test script and CI smoke test |
 | #100 | `AC/agentic-loop-validation` | `12008ea` | Release 1: agentic-loop `student-5` validation fixtures |
+| #102 | `AC/docs-and-evidence` | `49e5489` | Release 1: docs and evidence |
 
 ## Summary by area
 
