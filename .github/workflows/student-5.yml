@@ -11,6 +11,15 @@ on:
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"
+      - "ai-services/mcp-server/requirements.txt"
+      - "ai-services/mcp-server/tools/__init__.py"
+      - "ai-services/mcp-server/tools/logistics.py"
+      - "ai-services/mcp-server/tests/test_logistics_tools.py"
+      - "ai-services/rag-server/requirements.txt"
+      - "ai-services/rag-server/retrieval.py"
+      - "ai-services/rag-server/confidence.py"
+      - "ai-services/rag-server/knowledge/student-5/**"
+      - "ai-services/rag-server/tests/test_student5_retrieval.py"
   pull_request:
     paths:
       - "student-5/**"
@@ -18,10 +27,24 @@ on:
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
       - ".github/workflows/student-5.yml"
+      - "ai-services/mcp-server/requirements.txt"
+      - "ai-services/mcp-server/tools/__init__.py"
+      - "ai-services/mcp-server/tools/logistics.py"
+      - "ai-services/mcp-server/tests/test_logistics_tools.py"
+      - "ai-services/rag-server/requirements.txt"
+      - "ai-services/rag-server/retrieval.py"
+      - "ai-services/rag-server/confidence.py"
+      - "ai-services/rag-server/knowledge/student-5/**"
+      - "ai-services/rag-server/tests/test_student5_retrieval.py"
 
 jobs:
   logistics-services:
     runs-on: ubuntu-latest
+    # CI has no native Ollama, MCP or RAG server, so the integrations stay
+    # disabled and the smoke test asserts they fail closed.
+    env:
+      MCP_ENABLED: "false"
+      RAG_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,8 +54,10 @@ jobs:
           cache-dependency-path: |
             student-5/database/requirements.txt
             student-5/backend/requirements.txt
+            ai-services/mcp-server/requirements.txt
+            ai-services/rag-server/requirements.txt
 
-      - name: Test Student 5 services
+      - name: Test Student 5 services, MCP tools and RAG retrieval
         run: pwsh -NoProfile -File scripts/test/student-5.ps1
 
       - name: Validate Docker Compose config
@@ -40,3 +65,37 @@ jobs:
 
       - name: Build integrated Student 5 containers
         run: docker compose build student5-database student5-backend student5-frontend
+
+      - name: Start Student 5 services
+        run: docker compose up --detach --no-deps --wait student5-database student5-backend student5-frontend
+
+      - name: Smoke test Student 5 integration
+        run: |
+          curl --fail --silent http://localhost:5305/health
+          curl --fail --silent http://localhost:5205/health
+          curl --fail --silent http://localhost:5105/ > /dev/null
+          curl --fail --silent http://localhost:5205/api/destinations | python -c "import json,sys; assert len(json.load(sys.stdin)) >= 12"
+
+          # MCP/RAG are integrated but disabled here: assert the documented
+          # fail-closed 503 bodies instead of calling servers CI does not run.
+          check_disabled() {
+            curl --silent --write-out '\n%{http_code}' "$@" | python -c "
+          import json, sys
+          *body, status = sys.stdin.read().splitlines()
+          assert status == '503', status
+          error = json.loads('\n'.join(body))['error']
+          assert error in ('mcp_disabled', 'rag_disabled'), error
+          "
+          }
+          check_disabled http://localhost:5205/api/mcp/tools
+          check_disabled -X POST http://localhost:5205/api/mcp/invoke -H 'Content-Type: application/json' \
+            -d '{"tool":"logistics.get_weather","arguments":{"destination_id":1}}'
+          check_disabled -X POST http://localhost:5205/api/rag/ask -H 'Content-Type: application/json' \
+            -d '{"question":"What is an eVisa?"}'
+          # Through the frontend proxy too, so the browser path is covered.
+          check_disabled -X POST http://localhost:5105/api/rag/ask -H 'Content-Type: application/json' \
+            -d '{"question":"What is an eVisa?"}'
+
+      - name: Stop Student 5 services
+        if: always()
+        run: docker compose down
