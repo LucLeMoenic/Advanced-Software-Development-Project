@@ -123,6 +123,19 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 - Backend images build from the repository root to include both shared prompts.
 	Itinerary nginx proxies allow 75 seconds for bounded multi-service requests.
 
+## Release 1 Advice Knowledge Coverage
+
+- The thirteen project knowledge passages cover six application topics and seven
+	general travel topics: weather, daily pacing, transport buffers, travel expenses,
+	packing, accessibility and family/group planning.
+- Travel guidance is labelled as project-authored general advice, not external
+	destination research. It must not invent live timetables, prices, entry eligibility,
+	venue accessibility, booking confirmations or activity feasibility.
+- Grounding fixtures cover each added topic and refusal boundaries. Offline
+	retrieval tests do not certify model claim support; live responses still require
+	comparison with the full cited sources. Restart RAG after corpus updates because
+	indexes are cached.
+
 ## Evidence Required
 
 - Frontend, backend, and database automated-test output.
