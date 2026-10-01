@@ -40,7 +40,7 @@ public sealed class AgenticLoopTests
     [Fact]
     public void ValidationModes_CheckStructuredResultsAndRejectInsufficientAsGroundedSuccess()
     {
-        Assert.True(ServiceValidation.IsValid("mcp", """
+        Assert.False(ServiceValidation.IsValid("mcp", """
             {"tool":"itinerary.get_summary","summary":{"tripId":10,"dayCount":2,"plannedDayCount":1,"stopCount":2,"unplannedDays":[2]}}
             """, 10));
         Assert.False(ServiceValidation.IsValid("mcp", "{}", 10));
@@ -48,7 +48,7 @@ public sealed class AgenticLoopTests
             {"answer":"Not enough information","citations":[],"confidence":"insufficient"}
             """, 10));
         Assert.True(ServiceValidation.IsValid("rag", """
-            {"answer":"Budget is total. [budget#1]","confidence":"high","citations":[{"source":"Budget","chunk_id":"budget#1","snippet":"Budget is total.","score":0.5}]}
+            {"tripId":10,"contextNotice":"Advice used 2 saved stops.","answer":"Budget is total. [budget#1]","confidence":"high","citations":[{"source":"Budget","chunk_id":"budget#1","snippet":"Budget is total.","score":0.5}]}
             """, 10));
     }
 
@@ -60,6 +60,115 @@ public sealed class AgenticLoopTests
     {
         using var client = new HttpClient();
         await Assert.ThrowsAsync<LoopException>(() => ServiceValidation.CaptureAsync(client, "mcp", url, 10, "budget"));
+    }
+
+    private static JsonObject Student2Preview(string kind = "add_stop")
+    {
+        var before = new { id = 12, day = 1, activity = "Walk", notes = "Morning", sortOrder = 0 };
+        object change = kind switch
+        {
+            "add_stop" => new { kind, id = 0, before = (object?)null, after = new { id = 0, day = 1, activity = "Coffee break", notes = "", sortOrder = 1 } },
+            "remove_stop" => new { kind, id = 12, before, after = (object?)null },
+            "update_stop" => new { kind, id = 12, before, after = new { id = 12, day = 1, activity = "Walk", notes = "Bring tickets", sortOrder = 0 } },
+            "shift_dates" => new { kind, fromStartDate = "2026-11-01", fromEndDate = "2026-11-02", toStartDate = "2027-06-01", toEndDate = "2027-06-02" },
+            _ => new { id = 12, activity = "Walk", notes = "Morning", fromDay = 1, toDay = 2, fromOrder = 0, toOrder = 1 }
+        };
+        return JsonSerializer.SerializeToNode(new
+        {
+            tripId = 10, tool = "itinerary.preview_edit", clarification = "",
+            preview = new { tripId = 10, token = "private-confirmation-token", expiresIn = 600, changes = new[] { change } }
+        })!.AsObject();
+    }
+
+    [Theory]
+    [InlineData("add_stop")]
+    [InlineData("remove_stop")]
+    [InlineData("update_stop")]
+    [InlineData("shift_dates")]
+    [InlineData("move_stop")]
+    public void Student2PreviewValidation_AcceptsCurrentChangeShapes(string kind)
+    {
+        Assert.True(ServiceValidation.IsValid("mcp", Student2Preview(kind).ToJsonString(), 10));
+    }
+
+    [Theory]
+    [InlineData("trip")]
+    [InlineData("preview-trip")]
+    [InlineData("token")]
+    [InlineData("expiry")]
+    [InlineData("clarification")]
+    [InlineData("empty")]
+    [InlineData("duplicate")]
+    [InlineData("unknown-kind")]
+    [InlineData("wrong-id")]
+    [InlineData("wrong-day")]
+    [InlineData("null-after")]
+    [InlineData("unchanged-update")]
+    [InlineData("moved-update")]
+    [InlineData("duration")]
+    [InlineData("invalid-date")]
+    public void Student2PreviewValidation_RejectsMalformedChanges(string defect)
+    {
+        var root = Student2Preview(defect.Contains("update") ? "update_stop"
+            : defect is "duration" or "invalid-date" ? "shift_dates" : "add_stop");
+        var preview = root["preview"]!.AsObject();
+        var changes = preview["changes"]!.AsArray();
+        var change = changes[0]!.AsObject();
+        switch (defect)
+        {
+            case "trip": root["tripId"] = 11; break;
+            case "preview-trip": preview["tripId"] = 11; break;
+            case "token": preview["token"] = ""; break;
+            case "expiry": preview["expiresIn"] = 3600; break;
+            case "clarification": root["clarification"] = "Which day?"; break;
+            case "empty": changes.Clear(); break;
+            case "duplicate": changes.Add(change.DeepClone()); break;
+            case "unknown-kind": change["kind"] = "delete_trip"; break;
+            case "wrong-id": change["after"]!["id"] = 44; break;
+            case "wrong-day": change["after"]!["day"] = 32; break;
+            case "null-after": change["after"] = null; break;
+            case "unchanged-update": change["after"] = change["before"]!.DeepClone(); break;
+            case "moved-update": change["after"]!["day"] = 2; break;
+            case "duration": change["toEndDate"] = "2027-06-03"; break;
+            case "invalid-date": change["toStartDate"] = "2027-02-30"; break;
+        }
+        Assert.False(ServiceValidation.IsValid("mcp", root.ToJsonString(), 10));
+    }
+
+    [Fact]
+    public async Task Student2Validation_PostsOnlyPreviewAndRedactsConfirmationToken()
+    {
+        var handler = new RecordingHandler(Student2Preview().ToJsonString());
+        using var client = new HttpClient(handler);
+        var question = ServiceValidation.DefaultQuestion("student-2", "mcp");
+        var evidence = await ServiceValidation.CaptureAsync(client, "mcp", "http://127.0.0.1:5202", 10, question);
+        Assert.Equal("http://127.0.0.1:5202/api/trips/10/edit-preview", handler.Uri);
+        Assert.Equal(JsonSerializer.Serialize(new { question }), handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.DoesNotContain("private-confirmation-token", evidence.Result);
+        using var captured = JsonDocument.Parse(result.RootElement.GetProperty("response").GetString()!);
+        Assert.False(captured.RootElement.GetProperty("preview").TryGetProperty("token", out _));
+        Assert.Equal(1, captured.RootElement.GetProperty("preview").GetProperty("changes").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Student2GuideValidation_PostsSelectedTripAndRejectsOtherTripResponses()
+    {
+        const string body = """
+            {"tripId":10,"contextNotice":"Advice used 2 saved stops.","answer":"Budget is total. [budget#1]","confidence":"high","citations":[{"source":"Budget","chunk_id":"budget#1","snippet":"Budget is total.","score":0.5}]}
+            """;
+        var handler = new RecordingHandler(body);
+        using var client = new HttpClient(handler);
+        var evidence = await ServiceValidation.CaptureAsync(client, "rag", "http://127.0.0.1:5202", 10, "Budget?");
+        Assert.Equal("http://127.0.0.1:5202/api/itinerary-advice", handler.Uri);
+        Assert.Equal("""{"question":"Budget?","tripId":10}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.False(ServiceValidation.IsValid("rag", body, 11));
+        var missingContext = JsonNode.Parse(body)!.AsObject();
+        missingContext.Remove("contextNotice");
+        Assert.False(ServiceValidation.IsValid("rag", missingContext.ToJsonString(), 10));
     }
 
     [Fact]

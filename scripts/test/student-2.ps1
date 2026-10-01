@@ -43,7 +43,7 @@ if ($Smoke) {
         "Smoke checks require AI_ENABLED=false, MCP_ENABLED=false and RAG_ENABLED=false; no trips were changed."
     $baseline = @(Invoke-SmokeRequest GET "/trips")
     Assert-Smoke ($baseline.Count -ge 10) "Expected at least ten saved trips."
-    foreach ($path in @("/trips/$($baseline[0].id)/mcp-summary", "/itinerary-advice")) {
+    foreach ($path in @("/trips/$($baseline[0].id)/mcp-summary", "/trips/$($baseline[0].id)/review", "/trips/$($baseline[0].id)/edit-preview", "/trips/$($baseline[0].id)/edit-operation-preview", "/trips/$($baseline[0].id)/edit-confirm", "/itinerary-advice")) {
         $disabled = Invoke-SmokeRequest POST $path @{} 503
         Assert-Smoke ($disabled.error.code -eq "mode_disabled") "$path did not report mode_disabled."
     }

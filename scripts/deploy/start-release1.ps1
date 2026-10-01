@@ -11,7 +11,9 @@ contains no services.
 
 The first run creates the MCP and RAG Python virtual environments (outside the
 repository by default) and pulls the application model if it is missing.
-Services that are already running are reused, so the script is safe to rerun.
+Ollama is reused when reachable. MCP and RAG are refreshed on every start so
+dependency, prompt and model changes take effect. NativeHost must be a local
+loopback or private IPv4 address; no firewall changes are performed.
 -Stop shuts down every Compose service, the MCP and RAG servers and Ollama
 (installed models stay on disk). Native logs are kept under $env:TEMP\asd-release1.
 
@@ -26,7 +28,9 @@ param(
     [switch]$Stop,
     [string]$McpVenv = (Join-Path $PSScriptRoot "../../../venv-mcp"),
     [string]$RagVenv = (Join-Path $PSScriptRoot "../../../venv-rag"),
-    [string]$Model = $(if ($env:APPLICATION_MODEL) { $env:APPLICATION_MODEL } else { "llama3.2:3b" })
+    [ValidateNotNullOrEmpty()]
+    [string]$Model = $(if ($env:APPLICATION_MODEL) { $env:APPLICATION_MODEL } else { "llama3.2:3b" }),
+    [string]$NativeHost = $(if ($env:LOCAL_AI_HOST -and $env:LOCAL_AI_HOST -ne "host-gateway") { $env:LOCAL_AI_HOST } else { "127.0.0.1" })
 )
 
 Set-StrictMode -Version Latest
@@ -36,20 +40,47 @@ $stateDirectory = Join-Path $env:TEMP "asd-release1"
 $composeFiles = @("-f", "docker-compose.yml", "-f", "docker-compose.gpu.yml")
 $binDirectory = if ($IsWindows) { "Scripts" } else { "bin" }
 
-function Test-Url([string]$Url) {
+function Set-NativeConfiguration([string]$Address, [string]$SelectedModel) {
+    $parsed = $null
+    if (-not [System.Net.IPAddress]::TryParse($Address, [ref]$parsed) -or
+        $parsed.AddressFamily -ne [System.Net.Sockets.AddressFamily]::InterNetwork) {
+        throw "NativeHost must be a local loopback or private IPv4 address."
+    }
+    $octets = $parsed.GetAddressBytes()
+    $loopback = [System.Net.IPAddress]::IsLoopback($parsed)
+    $private = $octets[0] -eq 10 -or ($octets[0] -eq 172 -and $octets[1] -ge 16 -and $octets[1] -le 31) -or
+        ($octets[0] -eq 192 -and $octets[1] -eq 168)
+    if (-not $loopback -and (-not $private -or -not (Get-NetIPAddress -AddressFamily IPv4 -IPAddress $Address -ErrorAction SilentlyContinue))) {
+        throw "NativeHost must belong to a local private interface; wildcard/public binds are not allowed."
+    }
+    $env:APPLICATION_MODEL = $SelectedModel
+    $env:RAG_MODEL = $SelectedModel
+    $env:MCP_HOST = $Address
+    $env:MCP_PORT = "5400"
+    $env:OLLAMA_HOST = "${Address}:11434"
+    $env:OLLAMA_URL = "http://${Address}:11434"
+    $env:MCP_SERVER_URL = "http://host.docker.internal:5400/mcp"
+    $env:RAG_SERVER_URL = "http://host.docker.internal:5500"
+    $env:LOCAL_AI_HOST = if ($loopback) { "host-gateway" } else { $Address }
+    $env:AI_ENABLED = "true"
+    $env:MCP_ENABLED = "true"
+    $env:RAG_ENABLED = "true"
+}
+
+function Test-Url([string]$Url, [int[]]$ExpectedStatus = @(200)) {
     try {
-        Invoke-WebRequest -Uri $Url -TimeoutSec 2 -SkipHttpErrorCheck | Out-Null
-        return $true
+        $response = Invoke-WebRequest -Uri $Url -TimeoutSec 2 -SkipHttpErrorCheck
+        return [int]$response.StatusCode -in $ExpectedStatus
     }
     catch {
         return $false
     }
 }
 
-function Wait-Url([string]$Name, [string]$Url, [int]$Seconds = 30) {
+function Wait-Url([string]$Name, [string]$Url, [int]$Seconds = 30, [int[]]$ExpectedStatus = @(200)) {
     $deadline = (Get-Date).AddSeconds($Seconds)
     while ((Get-Date) -lt $deadline) {
-        if (Test-Url $Url) {
+        if (Test-Url $Url $ExpectedStatus) {
             Write-Host "  $Name is ready at $Url" -ForegroundColor Green
             return
         }
@@ -84,9 +115,9 @@ function Get-VenvPython([string]$Venv, [string]$Requirements) {
         $launcher = if (Get-Command py -ErrorAction SilentlyContinue) { @("py", "-3") } else { @("python") }
         & $launcher[0] @($launcher | Select-Object -Skip 1) -m venv $Venv
         if ($LASTEXITCODE -ne 0) { throw "Could not create $Venv. Install Python 3.11 or later." }
-        & $python -m pip install --quiet -r $Requirements
-        if ($LASTEXITCODE -ne 0) { throw "Could not install $Requirements." }
     }
+    & $python -m pip install --quiet -r $Requirements | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "Could not install $Requirements." }
     return $python
 }
 
@@ -111,70 +142,87 @@ try {
 
     New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
 
+    Set-NativeConfiguration $NativeHost $Model
+    $ollamaUrl = $env:OLLAMA_URL
+    $mcpUrl = "http://${NativeHost}:5400/mcp"
+    $ragUrl = "http://${NativeHost}:5500"
+    $ollamaCommand = Get-Command ollama -ErrorAction SilentlyContinue
+    $ollama = if ($ollamaCommand) { $ollamaCommand.Source } else { Join-Path $env:LOCALAPPDATA "Programs/Ollama/ollama.exe" }
     Write-Host "Starting native services (not containerised)..."
-    if (Test-Url "http://127.0.0.1:11434/api/tags") {
+    if (Test-Url "$ollamaUrl/api/tags") {
         Write-Host "  Ollama is already running." -ForegroundColor Green
     }
-    elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
+    elseif (Test-Path $ollama) {
         # The tray app can be running with a server that failed to start; it would hold the port.
         Get-Process "ollama app" -ErrorAction SilentlyContinue | Stop-Process -Force
         Stop-Port "unresponsive Ollama" 11434
-        Start-Native "ollama" "ollama" @("serve")
-        Wait-Url "Ollama" "http://127.0.0.1:11434/api/tags"
+        Start-Native "ollama" $ollama @("serve")
+        Wait-Url "Ollama" "$ollamaUrl/api/tags"
     }
     else {
-        Write-Warning "Ollama is not installed. The app runs, but lookup extraction, grounded answers and AI ranking return 'unavailable'."
+        throw "Ollama is not installed. Install it before starting Release 1."
     }
 
-    if (Test-Url "http://127.0.0.1:11434/api/tags") {
-        $installed = (Invoke-RestMethod "http://127.0.0.1:11434/api/tags").models.name
+    if (Test-Url "$ollamaUrl/api/tags") {
+        $installed = @((Invoke-RestMethod "$ollamaUrl/api/tags").models | ForEach-Object { $_.name })
         if ($installed -notcontains $Model) {
             Write-Host "  Pulling $Model (first run only)..."
-            ollama pull $Model
+            & $ollama pull $Model
             if ($LASTEXITCODE -ne 0) { throw "Could not pull $Model." }
         }
         # Preload the model so the first request is not a cold load against the 12-20 s deadlines.
-        Invoke-RestMethod -Method Post -Uri "http://127.0.0.1:11434/api/generate" -TimeoutSec 120 `
+        Invoke-RestMethod -Method Post -Uri "$ollamaUrl/api/generate" -TimeoutSec 120 `
             -ContentType "application/json" -Body (@{ model = $Model; keep_alive = "30m" } | ConvertTo-Json) | Out-Null
         Write-Host "  $Model is loaded." -ForegroundColor Green
     }
 
+    Stop-Port "MCP server" 5400
+    Stop-Port "RAG server" 5500
     $mcpPython = Get-VenvPython $McpVenv "ai-services/mcp-server/requirements.txt"
     $ragPython = Get-VenvPython $RagVenv "ai-services/rag-server/requirements.txt"
-    if (Test-Url "http://127.0.0.1:5400/mcp") {
-        Write-Host "  MCP server is already running." -ForegroundColor Green
-    }
-    else {
-        Start-Native "mcp" $mcpPython @("ai-services/mcp-server/server.py")
-        Wait-Url "MCP server" "http://127.0.0.1:5400/mcp"
-    }
-    if (Test-Url "http://127.0.0.1:5500/health") {
-        Write-Host "  RAG server is already running." -ForegroundColor Green
-    }
-    else {
-        Start-Native "rag" $ragPython @("-m", "uvicorn", "server:app", "--host", "127.0.0.1", "--port", "5500", "--app-dir", "ai-services/rag-server")
-        Wait-Url "RAG server" "http://127.0.0.1:5500/health"
-    }
+    Start-Native "mcp" $mcpPython @("ai-services/mcp-server/server.py")
+    Wait-Url "MCP server" $mcpUrl -ExpectedStatus @(400, 406)
+    Start-Native "rag" $ragPython @("-m", "uvicorn", "server:app", "--host", $NativeHost, "--port", "5500", "--app-dir", "ai-services/rag-server")
+    Wait-Url "RAG server" "$ragUrl/health"
 
     Write-Host "Starting all Docker Compose services with MCP and RAG enabled (first build takes a few minutes)..."
-    $env:MCP_ENABLED = "true"
-    $env:RAG_ENABLED = "true"
     docker compose @composeFiles up -d --build --wait
     if ($LASTEXITCODE -ne 0) {
         throw "Docker Compose failed to start. Native services are still running; run with -Stop to shut them down."
     }
 
-    docker compose @composeFiles exec -T student1-backend curl -sS -m 5 -o /dev/null http://host.docker.internal:5500/health
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "The backend container cannot reach the native services. See section 3 of student-1/docs/release-1-runbook.md (LOCAL_AI_HOST)."
-    }
+    docker compose @composeFiles exec -T student1-backend curl --fail -sS -m 5 -o /dev/null http://host.docker.internal:5500/health
+    if ($LASTEXITCODE -ne 0) { throw "Student 1 cannot reach RAG. Check NativeHost and trusted-host network access." }
+    $probe = @'
+import os, requests
+from ai_clients import McpClient, validate_summary
+backend = 'http://127.0.0.1:8080/api'
+response = requests.get(backend + '/capabilities', timeout=5)
+response.raise_for_status()
+assert response.json() == dict(aiEnabled=True, mcpEnabled=True, ragEnabled=True)
+response = requests.get(os.environ['RAG_SERVER_URL'] + '/health', timeout=5)
+response.raise_for_status()
+assert response.json()['status'] == 'ok'
+response = requests.post(os.environ['OLLAMA_URL'] + '/api/generate', json=dict(model=os.environ['APPLICATION_MODEL'], stream=False, keep_alive='30m'), timeout=20)
+response.raise_for_status()
+assert response.json()['done'] is True
+response = requests.get(backend + '/trips', timeout=5)
+response.raise_for_status()
+trips = response.json()
+assert trips, 'A saved trip is required for the read-only MCP check'
+trip_id = trips[0]['id']
+validate_summary(McpClient(os.environ['MCP_SERVER_URL']).summary(trip_id), trip_id)
+print('Student 2: enabled modes, RAG health, configured model and real MCP tool result verified; no saved data changed.')
+'@
+    docker compose @composeFiles exec -T student2-backend python -c $probe
+    if ($LASTEXITCODE -ne 0) { throw "Student 2 native-service validation failed. Check NativeHost and trusted-host network access. No firewall rules were changed." }
 
     Write-Host ""
     Write-Host "Release 1 is running:" -ForegroundColor Green
     Write-Host "  Shared entry page:  http://localhost:5100"
     Write-Host "  Accommodation:      http://localhost:5100/accommodation/"
-    Write-Host "  MCP server:         http://127.0.0.1:5400/mcp"
-    Write-Host "  RAG server:         http://127.0.0.1:5500/health"
+    Write-Host "  MCP server:         $mcpUrl"
+    Write-Host "  RAG server:         $ragUrl/health"
     Write-Host "  Native logs:        $stateDirectory"
     Write-Host "  Stop everything:    pwsh -File scripts/deploy/start-release1.ps1 -Stop"
 }

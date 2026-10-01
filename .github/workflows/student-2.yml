@@ -12,6 +12,8 @@ on:
       - "ai-services/agentic-loop/prompts/rag-grounding-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-review-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-edit-v1.txt"
+      - "scripts/deploy/start-release1.ps1"
+      - "scripts/test/release1-launcher.ps1"
       - "shared/vue-frontend/**"
       - ".github/workflows/student-2.yml"
       - "docker-compose.yml"
@@ -24,6 +26,8 @@ on:
       - "ai-services/agentic-loop/prompts/rag-grounding-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-review-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-edit-v1.txt"
+      - "scripts/deploy/start-release1.ps1"
+      - "scripts/test/release1-launcher.ps1"
       - "shared/vue-frontend/**"
       - ".github/workflows/student-2.yml"
       - "docker-compose.yml"
@@ -46,6 +50,9 @@ jobs:
       - name: Test Student 2 services
         run: pwsh -NoProfile -File scripts/test/student-2.ps1
 
+      - name: Test native launcher configuration
+        run: pwsh -NoProfile -File scripts/test/release1-launcher.ps1
+
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
@@ -66,6 +73,13 @@ jobs:
           curl --fail --silent http://localhost:5302/health
           curl --fail --silent http://localhost:5202/api/trips | python -c "import json,sys; trips=json.load(sys.stdin); assert len(trips) >= 10"
           curl --fail --silent http://localhost:5202/api/capabilities | python -c "import json,sys; assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False}"
+
+      - name: Verify disabled modes, CRUD and restart persistence
+        env:
+          AI_ENABLED: "false"
+          MCP_ENABLED: "false"
+          RAG_ENABLED: "false"
+        run: pwsh -NoProfile -File scripts/test/student-2.ps1 -Smoke
 
       - name: Stop Student 2 services
         if: always()

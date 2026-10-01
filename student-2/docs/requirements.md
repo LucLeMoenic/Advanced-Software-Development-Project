@@ -122,6 +122,14 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 	controls stop waiting without claiming to undo a server-side save.
 - Backend images build from the repository root to include both shared prompts.
 	Itinerary nginx proxies allow 75 seconds for bounded multi-service requests.
+- Browser deadlines are 35 seconds for edit preview, 10 for confirmation and 55
+	for contextual advice. Preview uses one 20-second model call and two five-second
+	MCP calls; confirmation invokes no model. Contextual advice allows three seconds
+	for database access, fifteen for weather and thirty for RAG.
+- Date shifts preserve duration; newly added stops use placeholder ID 0 until
+	saved. Changed/replayed previews return 409 and invalid/expired tokens return
+	400. Database restart invalidates previews; uncertain saves require a refresh,
+	not automatic retries. Undo is revision-guarded and restores full stop content.
 
 ## Release 1 Advice Knowledge Coverage
 

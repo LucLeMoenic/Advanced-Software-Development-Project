@@ -1,5 +1,353 @@
 # Student 2 Review Record
 
+## 2026-10-01 - Final Chunk Integration Check
+
+Resolved the shared loop merge by preserving Student 3 routes, request bodies and
+validators while adding Student 2 preview/context checks. All 69 loop tests pass.
+The five feature/shared suites add 431 passes; 39 opt-in live cases skip. Frontend
+build, isolated launcher regressions, PowerShell parsing and CI wiring assertions
+pass. Snapshot comparison accounts for all forty tracked and twelve new original
+files; intentional differences retain current docs, Student 3 changes and the
+previous chunk's edit-prompt Docker allowlist fix. Student 1 docs are untouched.
+
+This verifies the local merge and offline gates, not fresh runtime health, full
+launcher startup, Compose smoke execution, remote Actions or live loop records.
+Historical runtime reviews below retain their original date and scope.
+
+## 2026-10-01 - Pre-recording Runtime Check
+
+Verdict: Student 2's itinerary UI segment is ready for recording. All sixteen
+application containers are healthy. Through the integrated browser UI, "Swap
+day 1 and day 2" returned a valid itinerary.preview_edit result (first request
+about four seconds); the preview was cancelled without saving. After reloading
+an initially stale tab, displayed current days matched the preview. A fresh
+pacing question returned four supported claims, a low source-relevance category
+and the full expandable daily-pacing passage in about thirteen seconds. No
+saved-data writes or application edits were performed. Confirm/save and undo
+were not repeated in this read-only check.
+
+Reload before recording, keep native AI terminals running and allow for model
+latency. This check certifies neither the other students' workflows nor the
+complete group recording: Release 1 also requires local terminal validation and
+both shared loop validation modes. Those demonstrations were not rerun here.
+
+## 2026-10-01 - Expanded Travel Knowledge Validation
+
+Six new topic passages are project-authored general guidance, not destination
+research or current provider facts. Labels sit with the heading outside indexed
+paragraphs; each indexed passage remains bounded and contains its own relevant
+limitations. Total Student 2 passages increased from seven to thirteen.
+
+All six new topics produced useful cited gateway answers. Inspection identified
+an expense claim attributed to budget-basics instead of travel-budget-planning.
+An added prompt sentence did not fix it and was removed; duplicated budget
+calculation content was removed from the new planning source instead. The final
+expense answer cited its supporting planning source correctly. The final fourteen
+itinerary live cases pass, including live-train and named-venue-accessibility
+abstention; these contract checks are not proof of arbitrary claim entailment.
+
+A copied example source identifier caused an existing ownership case to fail.
+Constraining the generation schema to retained source IDs resolved that case while
+keeping strict server validation. The broad shared live run passed 26/28 cases;
+Reykjavik season and Barcelona/Dubai nightlife still abstain. An old-versus-new
+schema comparison reproduced both failures, so unrelated accommodation behaviour
+was left unchanged. Offline suite: 77 passed, 28 live cases skipped.
+
+## 2026-10-01 - RAG Grounding and Full-Passage Follow-up
+
+Resolution of the two RAG findings only; other showcase-review items were excluded
+by the user. Student 2 now receives complete retained passages, up to 2000 characters
+each, through its existing citation field. Other features keep 280-character
+excerpts. The shared prompt now says to report source disclaimers as limitations,
+not new recommendations or requirements. No source facts were invented or expanded.
+
+The first, longer prompt revision caused a supported budget question to abstain;
+an original-versus-revised real-model comparison confirmed the regression. Replaced
+it with a narrow single-sentence rule. Five focused live cases then passed: the
+reported weather question, itinerary budget, off-topic budget abstention, attraction
+ratings and Tokyo safety. These checks establish response/citation/abstention
+contracts, not universal semantic correctness.
+
+After backend deployment and native RAG restart, the original weather question
+returned four source-supported claims in the browser: check forecasts near departure
+and activities; keep outdoor plans flexible with indoor alternatives; match dates
+and locations and do not confuse rain probability with amount/duration; missing
+dates do not imply dry weather or establish suitability. The unsupported final
+opening-hours/booking prescription was absent. The full 763-character source was
+visible, with plain citation numbers and no horizontal overflow at 1280/320px.
+
+Verification: 69 shared RAG tests pass (20 live cases skipped in the offline run),
+five selected live cases pass, six focused backend validation cases pass, and all
+30 frontend tests pass. The deployed sample was compared with its full cited source;
+broader grounding reliability remains unproven. No saved-trip writes or git actions.
+
+## 2026-10-01 - Remaining Showcase Readiness Review
+
+Scope: current Release 1 brief/project specification, runbook/plan/known issues,
+contribution log, workflow, shared loop guide and retained JSON records, current
+git status, container/native health, and a real unsupported RAG request. No
+application edits, saved-data writes, loop executions, commits or pushes.
+
+### Prioritized Findings
+
+1. High, mandatory shared evidence: none of the five retained JSON records in
+	`docs/agentic-loop-records/` has `validationMode`. Run and capture both
+	`validate-mcp` and `validate-rag`, inspect the actual outputs, then finalise
+	with a human decision and real post-test evidence. The guide's default
+	qwen2.5-coder:7b is absent; installed models are qwen2.5:3b and llama3.2:3b.
+	Explicitly configure distinct models and the reachable Ollama address before
+	rehearsal; do not mistake existing general development records for mode evidence.
+2. High, submission traceability: recent implementation/workflow changes remain
+	unstaged or untracked on LLM/student-2-trip-overview-clean. Remote CI cannot
+	validate this uncommitted state. After review, use the repository's required
+	BCP feature-branch process, retain all changes, and record commit/PR and successful
+	workflow links. This review did not query remote Actions or alter git state.
+3. Medium, RAG grounding/traceability: the earlier captured weather answer's final
+	prescription was only partially supported; the shared renderer still returns
+	280-character citation excerpts without full-source access. Resolve the recorded
+	findings or explicitly disclose the limitation; verify the actual recorded answer
+	against its full source, not merely a valid citation identifier or relevance score.
+4. Medium, rehearsal/reliability: native terminals must remain running and cold
+	model loading previously exceeded request deadlines. Rehearse startup with the
+	verified private address, prewarm before recording, and avoid model switching
+	while demonstrating requests. Full updated-launcher execution is still not
+	certified. Healthy containers are not proof of every team's MCP/RAG workflows.
+5. Medium, evidence/documentation: contribution and known-issues files contain old
+	branch/status statements; the runbook's UI section still describes linked inline
+	citations. Reconcile the current summary, add video/evidence links and timestamps,
+	and rehearse all five features plus terminal validation and both loop modes
+	within the ten-minute group limit. Retain source/response examples and CI results
+	for the report; broad model evaluation remains a separate quality limitation.
+
+### Verified Now
+
+- All 16 Compose containers running and healthy; native 11434/5400/5500 listeners
+  present on 172.23.64.1.
+- Deployed gateway question "Who won the 2022 FIFA World Cup?" returned the fixed
+  insufficient-context answer, no citations and confidence insufficient.
+- Previous task's real browser weather-to-budget sequence and 181 backend passes
+  (11 skipped), 30 frontend passes remain recent evidence, not rerun in this review.
+
+Recommended order: resolve the bounded RAG issues, rehearse/finalise both shared
+loop modes, capture current feature and team evidence, then commit/push with green
+CI and assemble the report/video. No additional cosmetic redesign is recommended.
+
+## 2026-10-01 - RAG Response and Release 1 Specification Check
+
+Scope: the captured 7.35-second outdoor/weather advice response, its full cited
+weather-planning source, shared grounding prompt/renderer, current UI, Release 1
+brief and project specifications. No new model request or application change.
+
+- Medium: the final claim says it is essential to consider opening hours and
+	booking confirmations. The cited source identifies itself as not supplying
+	those facts; that limitation does not fully support the generated prescription.
+	The earlier weather guidance is substantially supported. Valid citation IDs
+	alone do not prove claim support; generation.py validates IDs, not entailment.
+- Medium: generation.py returns only the first 280 source characters and App.vue
+	displays that snippet without a full-source link. A focused source check confirms
+	the 763-character weather paragraph loses both missing-forecast and precipitation
+	guidance in that excerpt, preventing full in-app inspection of those claims.
+- The required confidence category is present as Source relevance: high; this is
+	retrieval similarity, not factual confidence. The label matches current feature
+	requirements; explaining its mapping to the rubric avoids presentation ambiguity.
+
+Release 1 requires grounded answers, source citations, a confidence category,
+insufficient-context handling, and frontend -> backend -> shared native RAG access.
+It does not prescribe day-by-day recommendations, live weather, a vector database,
+multiple distinct sources per answer, or itinerary modification. A successful
+response alone does not establish insufficient-context, every-feature integration,
+terminal/frontend evidence, or shared agentic-loop validation acceptance.
+
+Recommended correction: keep the final sentence to the source's actual limitation
+and expose complete retrieved passages for inspection. These are findings, not
+implemented fixes. The whole group video is limited to ten minutes and must also
+include local terminal validation and shared MCP/RAG agentic-loop execution.
+
+## 2026-10-01 - Pre-Showcase UI/UX Recommendations
+
+Scope: current Student 2 Vue template and request handlers, deployed initial
+screen and saved Copenhagen trip. Read-only browser inspection; no edits confirmed
+and no live model requests submitted. Recommendations, not implemented changes.
+
+- Prioritise access to planning advice: it follows all itinerary days, while the
+	editor is above them. A shared assistant area with Edit / Advice tabs would
+	reduce scrolling and make both workflows equally discoverable.
+- Replace the RAG result's generic Confidence label with Source relevance and
+	make answer citation markers open the corresponding source excerpt. Current
+	answer text and source disclosures are separate, with raw chunk IDs shown.
+- After confirmation, briefly highlight affected itinerary entries and give an
+	action-specific saved message. The current flow refreshes correctly but reports
+	only Itinerary changes saved and returns focus to the preview button.
+- Add a persistent selected-trip indication in the saved list and readable dates
+	alongside day headings. Current list buttons have no selected-state binding,
+	and itinerary headings display only Day N.
+- Make advice loading visible in its submit button, with a progress indicator and
+	cancel control for the bounded request. Current code disables Ask question and
+	updates status text but leaves the button label unchanged. Do not invent stages
+	or percentage progress without backend events.
+
+Keep the existing visual language and explicit preview/confirmation workflow.
+This review does not establish fresh live model, mobile or showcase acceptance.
+
+## 2026-10-01 - Supporting MCP and RAG Implementation Review
+
+Scope: shared native launcher, Student 2 backend/UI integration, proxy/image
+packaging, assigned CI and shared loop validation. No application fixes requested
+or applied; this is not an audit of every student feature.
+
+### Findings
+
+1. **High, shared startup:** [start-release1.ps1](../../scripts/deploy/start-release1.ps1#L144)
+	 cannot reproduce the verified private-interface setup from the runbook. MCP
+	 readiness always probes loopback even when `MCP_HOST` binds a private address;
+	 RAG startup hard-codes loopback. `LOCAL_AI_HOST` changes container DNS, not the
+	 native bind. Default Ollama startup also leaves its bind to inherited settings.
+	 The final check probes only RAG from Student 1, warns on failure and still
+	 prints that Release 1 is running. Parameterize consistent bind/probe origins
+	 and verify actual MCP and model access from Student 2 before declaring readiness.
+2. **Medium, model configuration:** the launcher's `-Model` selects only the model
+	 to pull/preload. Its only environment assignments are `MCP_ENABLED` and
+	 `RAG_ENABLED`; it does not export `APPLICATION_MODEL` or `RAG_MODEL`.
+	 [Compose](../../docker-compose.yml#L118) and
+	 [RAG generation](../../ai-services/rag-server/generation.py#L86) consequently
+	 retain their defaults or prior settings when a different model is requested.
+	 Propagate the selected model before starting both native and container consumers.
+3. **Medium, existing environments:**
+	 [Get-VenvPython](../../scripts/deploy/start-release1.ps1#L80) installs requirements
+	 only when the interpreter is absent. Updated requirements or a previously failed
+	 pip install are never repaired on rerun. A function-only mocked-path probe
+	 confirmed an existing interpreter returns without any Python/pip invocation.
+	 Synchronize dependencies on changes and cover recovery from partial installation.
+4. **Medium, validation coverage:**
+	 [ServiceValidation](../../ai-services/agentic-loop/ServiceValidation.cs#L36)
+	 still posts Student 2 MCP requests to the compatibility `mcp-summary` route
+	 with an empty body and sends RAG only `{question}`. It cannot exercise current
+	 model-selected edit previews or selected-trip/weather advice, even when a
+	 question or trip ID is supplied. Keep the legacy smoke fixture if useful, but
+	 add current preview/context fixtures and explicit disposable-data coverage for
+	 confirmation/undo. Do not turn validation into unconfirmed user-data writes.
+	 The 35-second fixture deadline also needs review if contextual RAG is added.
+5. **Medium, CI coverage:**
+	 [student-2.yml](../../.github/workflows/student-2.yml#L5) omits the edit runtime
+	 prompt from both trigger lists. Its integration step checks health, trip listing
+	 and flags only; it never invokes the existing
+	 [disabled-mode smoke runner](../../scripts/test/student-2.ps1#L15) covering
+	 disabled endpoints, fallback, CRUD, regeneration and restart persistence.
+	 Add the prompt trigger and run that fixture against disposable CI services.
+6. **Low, design drift:** the current section of
+	 [release-1-design.md](release-1-design.md#L22) still describes only moves/swaps,
+	 points selection at the review prompt and says tokens contain no stop text.
+	 Selection actually uses the separate edit prompt; add/update operations carry
+	 user text inside the signed operation token. Update the diagram and token/prompt
+	 descriptions before reusing them in report evidence. Signing is not encryption.
+
+### Validation and Boundaries
+
+- Fresh tests: backend 135, frontend 27, shared MCP 101, shared RAG 65 and loop 43
+	pass (371 total); 11 backend and 19 RAG live cases skipped. RAG emits the existing
+	Starlette/httpx deprecation warning. No database-suite rerun in this review.
+- Initial loop `--no-restore` failed on missing targeting packs; normal restore
+	succeeded and all 43 tests passed. These are model doubles, not live loop outputs.
+- PowerShell parser/model-assignment and existing-venv probes support findings
+	2 and 3 without launching services. Source/caller checks support other findings.
+- No listeners were found on 5400, 5500 or 11434 during the read-only runtime check;
+	loopback/private MCP and RAG URLs were unreachable. Services were not restarted.
+	Earlier successful live evidence remains historical, not current readiness.
+- Suspected prompt exclusion was not reproduced: the Podman image build with the
+	explicit Docker-specific ignore file succeeded using cached layers. No packaging
+	defect is claimed and a clean Docker/remote-CI run remains separate evidence.
+- No new backend/UI defect was established in the inspected paths. Existing
+	timeouts, server-side validation, text rendering and stale-response tests pass;
+	this does not certify general intent accuracy or claim entailment.
+- Shared loop outputs, current remote Actions evidence, all-feature integration,
+	contribution commits and report/video artifacts still need completion. Only this
+	review record changed; no saved trips, deployed services, commits or pushes changed.
+
+## 2026-10-01 - MCP and RAG Criteria Assessment
+
+Compared current Student 2 paths and recorded validation with Release 1 criteria
+3 and 4, plus related architecture, CI, integration and evidence requirements.
+This is a scoped source/evidence assessment, not a fresh runtime or group-wide audit.
+
+- Student 2 substantially satisfies the functional MCP contract: native shared
+	registered tools, frontend/backend access, bounded structured results and
+	confirmed edits. The runbook records real-model HTTP and browser validation.
+- RAG retrieves project Markdown context, generates with the local model, displays
+	source citations/confidence and handles insufficient context. TF-IDF is not
+	disallowed; the brief does not mandate embeddings, a vector database or a
+	minimum tool count. Source validity alone does not prove claim support.
+- Full marks are not established: both criteria allocate a report-evidence point
+	and require every feature's integration. Retain genuine cited-answer and
+	insufficient-context UI/terminal examples and human source-support checks.
+- The shared registry currently contains accommodation, attractions and itinerary
+	modules only. This review does not establish successful MCP/RAG interactions
+	for every student feature. Do not infer group completeness from Student 2 tests.
+- Both loop validation commands exist, but successful captured MCP/RAG loop
+	outputs remain open in the current runbook. Current-release remote CI evidence,
+	contribution commits, diagrams/report/video and Q&A are separate completion gates.
+- Small CI coverage gap: both path-filter lists in `student-2.yml` include the
+	review prompt but omit `ai-services/agentic-loop/prompts/itinerary-edit-v1.txt`;
+	an edit-prompt-only change will not trigger that workflow. Modes are correctly
+	disabled in its integration startup and checked by the capability smoke test.
+
+No runtime changes, live calls, new test runs, commits or pushes in this assessment.
+Prior runbook results are evidence of earlier runs, not fresh availability checks.
+
+## 2026-10-01 - Editor and Advice Implementation Checks
+
+Inspected the database save path: bulk replacement changes IDs and cannot safely
+confirm a stale preview. Added database-owned signed previews, full-state revision
+checks and atomic move/swap updates. Fixed empty-source-day swaps during focused
+validation. Confirmation accepts only a token and never calls the model.
+
+Weather now supports separate RAG guidance, with bounded context excluding
+traveller identity and a general weather-planning source. Retrieval, citations
+and abstention retain their existing contracts; forecasts are attributed
+separately. This is implementation review, not independent security/model review.
+
+Verified 289 offline tests (98 backend, 10 database, 94 MCP, 65 RAG, 22 frontend);
+19 live RAG cases skipped. Cross-service tests use real tools/SQLite with model
+doubles. Images build and targeted deployment is healthy with saved state
+unchanged. Real container MCP preview, contextual RAG abstention/weather and the
+actual gateway UI pass. Responsive browser fixtures pass without overflow or
+page errors. The [runbook](release-1-runbook.md) records verification boundaries.
+
+Open: live model selection/generation (Ollama unavailable), semantic intent and
+source-support checks, authentication (outside local-demo scope), remote CI,
+shared development-loop evidence and human acceptance. No commit or push made.
+
+## 2026-10-01 - Container Startup Follow-up
+
+Found and fixed an initialization defect: `parents[2]` was evaluated even when
+the prompt environment override was present, raising IndexError for the container's
+`/app/itinerary_review.py`. The override is now used first; chained parent access
+keeps the default path safe. A shallow-layout regression and an actual Linux image
+startup check verify the correction. Removed an empty duplicate checklist heading.
+
+Backend 85 tests pass. Explicit Podman image build and network-disabled prompt,
+health and disabled-review checks pass. Feature/shared nginx syntax checks pass.
+Live model and integrated review execution remain blocked by missing Ollama and
+the previously deferred host-connectivity gate. No running services were replaced.
+
+## 2026-09-30 - Itinerary Review Implementation Checks
+
+Inspected the actual UI/backend/tool path while implementing the requested review.
+Corrected the existing first-match rejection and removed the location picker and
+duplicate summary metrics. Added server-owned trip IDs, bounded tool selection,
+strict response validation, real source evidence, disabled-mode and stale-result
+guards. Preserved legacy overview/summary contracts and separate RAG behavior.
+
+Verified MCP 90, backend 84 and frontend 18 tests; production build and Compose
+configuration pass. Browser fixtures cover 320/768/1280px without overflow or
+page errors. These are implementation checks, not independent or live model review.
+
+Remaining risks: generated prose can misuse valid evidence; automatic geocoding
+can select the wrong place; two reads are not an atomic snapshot. No Ollama
+listener was available. The Docker build stalled after its buildx warning and was
+stopped. Live grounding/injection evaluation, actual image/nginx runtime, integrated
+MCP review, remote CI and genuine development-loop evidence remain open. No
+network policy or saved trips were changed. Human review is pending.
+
 ## 2026-09-29 - Pending Change Review and Corrections
 
 Reviewed the local pending changes, not a published PR or its remote CI results.
