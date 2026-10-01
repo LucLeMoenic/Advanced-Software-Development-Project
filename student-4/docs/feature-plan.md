@@ -98,8 +98,13 @@ ownership, and make no schema changes or cross-student calls.
 1. **Mode controls and capabilities - implemented:** strict lowercase mode flags
   with AI on and MCP/RAG off by default; `GET /api/capabilities`; disabled AI
   advice uses existing fallback with no Ollama call. Backend tests pass 68/68.
-2. **MCP budget check - planned:** register the read-only summary tool and fixed
-  dashboard callback; verify validation, error mapping, exact totals, and no writes.
+2. **MCP budget check - implemented, offline-tested:** registered read-only
+  `budget.get_summary` with a fixed dashboard callback and added `POST
+  /api/budget-check`. Strict bounded request parsing, response validation,
+  stable failures, cancellation, the browser safe-integer boundary, and an
+  in-process official SDK call are covered. Student 4 backend tests pass 106/106;
+  shared MCP tests pass 120/120. Live native/container connectivity, callback
+  re-entry, and database non-mutation evidence remain pending.
 3. **Student 4 RAG guidance - planned:** add the feature corpus and backend route;
   verify supported, cited, unsupported, and malformed-response cases.
 4. **Static UI - planned:** add budget-check and guidance panels without replacing

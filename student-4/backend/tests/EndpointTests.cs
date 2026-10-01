@@ -1,5 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using BudgetTracker.Backend.Api;
 using BudgetTracker.Backend.Clients;
 using BudgetTracker.Backend.Services;
@@ -215,6 +218,204 @@ public sealed class EndpointTests
         Assert.Equal("warning", dashboard.Categories.Single().Status);
         Assert.Equal("ai", result!.Source);
         Assert.Equal(1, advice.CallCount);
+    }
+
+    [Fact]
+    public async Task BudgetCheckCallsOnlyTheFixedToolAndReturnsValidatedSummary()
+    {
+        var mcp = new FakeBudgetCheck(ValidBudgetSummary());
+        using var client = CreateBudgetCheckClient(mcp);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "  Journey  " });
+        var body = await response.Content.ReadFromJsonAsync<BudgetCheckResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Journey", mcp.JourneyLabel);
+        Assert.Equal("budget.get_summary", body!.Tool);
+        Assert.True(body.Result.Ok);
+        Assert.Equal(1000, body.Result.Summary.PlannedAmountMinor);
+        Assert.Equal(1, mcp.CallCount);
+    }
+
+    [Fact]
+    public async Task DisabledBudgetCheckDoesNotConnectToMcp()
+    {
+        var mcp = new FakeBudgetCheck(ValidBudgetSummary());
+        using var client = CreateBudgetCheckClient(mcp, mcpEnabled: false);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("feature_disabled", error!.Error.Code);
+        Assert.Equal(0, mcp.CallCount);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"journeyLabel\":\"Journey\",\"url\":\"http://elsewhere\"}")]
+    [InlineData("{\"journeyLabel\":\"Journey\",\"journeyLabel\":\"Other\"}")]
+    [InlineData("{\"journeyLabel\":42}")]
+    [InlineData("{\"journeyLabel\":\"   \"}")]
+    [InlineData("{\"JourneyLabel\":\"Journey\"}")]
+    public async Task BudgetCheckRejectsInvalidJsonContractsBeforeMcp(string json)
+    {
+        var mcp = new FakeBudgetCheck(ValidBudgetSummary());
+        using var client = CreateBudgetCheckClient(mcp);
+
+        using var response = await client.PostAsync("/api/budget-check", new StringContent(json, Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, mcp.CallCount);
+    }
+
+    [Fact]
+    public async Task BudgetCheckRejectsOversizedRequestBeforeMcp()
+    {
+        var mcp = new FakeBudgetCheck(ValidBudgetSummary());
+        using var client = CreateBudgetCheckClient(mcp);
+        var json = "{\"journeyLabel\":\"" + new string('x', 8193) + "\"}";
+
+        using var response = await client.PostAsync("/api/budget-check", new StringContent(json, Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, mcp.CallCount);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest, "validation_error")]
+    [InlineData(HttpStatusCode.NotFound, "journey_not_found")]
+    [InlineData(HttpStatusCode.ServiceUnavailable, "dependency_unavailable")]
+    [InlineData(HttpStatusCode.GatewayTimeout, "dependency_timeout")]
+    [InlineData(HttpStatusCode.BadGateway, "dependency_response_invalid")]
+    public async Task BudgetCheckMapsStableMcpFailures(HttpStatusCode status, string expectedCode)
+    {
+        var mcp = new FakeBudgetCheck(ValidBudgetSummary()) { Failure = new BudgetCheckFailureException((int)status, expectedCode, "safe message") };
+        using var client = CreateBudgetCheckClient(mcp);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(status, response.StatusCode);
+        Assert.Equal(expectedCode, error!.Error.Code);
+        Assert.Equal("safe message", error.Error.Message);
+    }
+
+    [Theory]
+    [InlineData("\"JPY\"", "baseCurrency")]
+    [InlineData("\"Other\"", "journeyLabel")]
+    [InlineData("true", "plannedAmountMinor")]
+    [InlineData("9007199254740992", "plannedAmountMinor")]
+    [InlineData("1001", "remainingAmountMinor")]
+    [InlineData("\"secret\"", "unexpected")]
+    public async Task BudgetCheckRejectsMalformedOrUnsafeSummaries(string replacement, string field)
+    {
+        var summary = ValidBudgetSummary();
+        using var document = JsonDocument.Parse(summary);
+        var body = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(document.RootElement.GetRawText())!;
+        body[field] = JsonDocument.Parse(replacement).RootElement.Clone();
+        var mcp = new FakeBudgetCheck(JsonSerializer.Serialize(body));
+        using var client = CreateBudgetCheckClient(mcp);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal(field == "plannedAmountMinor" && replacement == "9007199254740992" ? "summary_out_of_display_range" : "dependency_response_invalid", error!.Error.Code);
+    }
+
+    [Fact]
+    public async Task BudgetCheckAcceptsSafeIntegerBoundaryAndNegativeRemainder()
+    {
+        const long safeMax = 9_007_199_254_740_991;
+        var safeSummary = JsonSerializer.Serialize(new
+        {
+            journeyLabel = "Journey",
+            baseCurrency = "AUD",
+            plannedAmountMinor = safeMax,
+            actualAmountMinor = 0,
+            remainingAmountMinor = safeMax,
+            percentageUsed = 0m,
+            categories = new[] { new { category = "food", plannedAmountMinor = safeMax, actualAmountMinor = 0L, remainingAmountMinor = safeMax, percentageUsed = 0m, status = "within_budget" } }
+        });
+        var safeMcp = new FakeBudgetCheck(safeSummary);
+        using var safeClient = CreateBudgetCheckClient(safeMcp);
+        using var safeResponse = await safeClient.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        Assert.Equal(HttpStatusCode.OK, safeResponse.StatusCode);
+
+        var overspentMcp = new FakeBudgetCheck(ValidBudgetSummary(planned: 1000, actual: 1001));
+        using var overspentClient = CreateBudgetCheckClient(overspentMcp);
+        using var overspentResponse = await overspentClient.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        var overspent = await overspentResponse.Content.ReadFromJsonAsync<BudgetCheckResponse>();
+        Assert.Equal(HttpStatusCode.OK, overspentResponse.StatusCode);
+        Assert.Equal(-1, overspent!.Result.Summary.RemainingAmountMinor);
+        Assert.Equal("overspent", overspent.Result.Summary.Categories.Single().Status);
+    }
+
+    [Theory]
+    [InlineData("duplicate")]
+    [InlineData("unsupported")]
+    [InlineData("incorrect-status")]
+    public async Task BudgetCheckRejectsInvalidCategorySummaries(string mutation)
+    {
+        var summary = JsonNode.Parse(ValidBudgetSummary())!.AsObject();
+        var categories = summary["categories"]!.AsArray();
+        if (mutation == "duplicate") categories.Add(categories[0]!.DeepClone());
+        if (mutation == "unsupported") categories[0]!["category"] = "medical";
+        if (mutation == "incorrect-status") categories[0]!["status"] = "overspent";
+        var mcp = new FakeBudgetCheck(summary.ToJsonString());
+        using var client = CreateBudgetCheckClient(mcp);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-check", new { journeyLabel = "Journey" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal("dependency_response_invalid", error!.Error.Code);
+    }
+
+    private static HttpClient CreateBudgetCheckClient(FakeBudgetCheck mcp, bool mcpEnabled = true)
+    {
+        var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), new Dictionary<string, string?>
+        {
+            ["MCP_ENABLED"] = mcpEnabled ? "true" : "false"
+        }).WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IMcpBudgetCheckClient>();
+            services.AddSingleton<IMcpBudgetCheckClient>(mcp);
+        }));
+        return factory.CreateClient();
+    }
+
+    private static string ValidBudgetSummary(long planned = 1000, long actual = 800)
+    {
+        var remaining = planned - actual;
+        var percentage = Math.Round(actual * 100m / planned, 2, MidpointRounding.AwayFromZero);
+        var status = actual > planned ? "overspent" : actual * 100m / planned >= 80m ? "warning" : "within_budget";
+        return JsonSerializer.Serialize(new
+        {
+            journeyLabel = "Journey",
+            baseCurrency = "AUD",
+            plannedAmountMinor = planned,
+            actualAmountMinor = actual,
+            remainingAmountMinor = remaining,
+            percentageUsed = percentage,
+            categories = new[] { new { category = "food", plannedAmountMinor = planned, actualAmountMinor = actual, remainingAmountMinor = remaining, percentageUsed = percentage, status } }
+        });
+    }
+
+    private sealed class FakeBudgetCheck(string json) : IMcpBudgetCheckClient
+    {
+        public int CallCount { get; private set; }
+        public string? JourneyLabel { get; private set; }
+        public BudgetCheckFailureException? Failure { get; init; }
+
+        public Task<JsonElement> CallAsync(string journeyLabel, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            JourneyLabel = journeyLabel;
+            if (Failure is not null) throw Failure;
+            return Task.FromResult(JsonDocument.Parse(json).RootElement.Clone());
+        }
     }
 
     [Fact]

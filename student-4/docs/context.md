@@ -71,9 +71,14 @@ static HTML/JavaScript/HTMX UI, backend/database ownership, and native Ollama/MC
 runtime arrangement. No schema changes, cross-student calls, model-authored money
 values, or autonomous writes are in scope.
 
-Only R1 mode controls and `GET /api/capabilities` are implemented so far. The
-read-only MCP tool/route, Student 4 RAG corpus/route, UI, and integrated evidence
-remain planned and unverified.
+R1 mode controls and `GET /api/capabilities` are implemented. The read-only
+`budget.get_summary` tool and `POST /api/budget-check` backend route are now
+implemented on `BCP/R1_Budget_MCP`; the backend uses the official
+`ModelContextProtocol.Core` 2.2.0 client and fixed `MCP_URL` endpoint. Offline
+backend and shared MCP suites passed 106/106 and 120/120 on 2026-10-01. The
+in-process SDK test uses a scripted HTTP protocol handler; live native/container
+connectivity, callback re-entry, and database immutability were not exercised.
+Student 4 RAG corpus/route, UI, and integrated evidence remain planned.
 
 ## Development Workflow
 
