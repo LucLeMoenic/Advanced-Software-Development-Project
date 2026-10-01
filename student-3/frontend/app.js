@@ -345,6 +345,12 @@ function handleRecommendStart(form) {
  * own allow list matches exactly these two) falls back to a plain message
  * instead of a broken form - see renderMcpArgs.
  */
+/** User-facing labels for the tool picker; falls back to the raw tool name for any unmapped value. */
+const MCP_TOOL_LABELS = {
+  'attractions.search': 'Search',
+  'attractions.get_reviews': 'Get Reviews',
+};
+
 const MCP_TOOL_SCHEMAS = {
   'attractions.search': [
     { name: 'category', label: 'Category', type: 'select', options: ['', 'sight', 'restaurant', 'activity'] },
@@ -352,7 +358,7 @@ const MCP_TOOL_SCHEMAS = {
     { name: 'limit', label: 'Limit (max 10)', type: 'number', min: 1, max: 10, value: 5 },
   ],
   'attractions.get_reviews': [
-    { name: 'attraction_id', label: 'Attraction ID', type: 'number', min: 1, required: true },
+    { name: 'attraction_id', label: 'Attraction', type: 'attraction-select', required: true },
   ],
 };
 
@@ -377,6 +383,45 @@ function mcpArgFieldHtml(field) {
   return `${label}<input id="${id}" type="number" data-arg="${field.name}" ${attrs}>`;
 }
 
+/** Sorted <option> list of {value: id, text: name} for an attraction-picking dropdown. */
+function attractionOptionsHtml(attractions) {
+  return attractions
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((attraction) => `<option value="${attraction.id}">${escapeHtml(attraction.name)}</option>`)
+    .join('');
+}
+
+/**
+ * Renders the "Get Reviews" attraction picker by name rather than asking the
+ * user to type a raw ID. Reuses attractionsCache (populated by the Browse
+ * Attractions section, which loads on page load) when available; falls back
+ * to a direct fetch if the panel is used before that load completes.
+ */
+function renderAttractionSelectField(field) {
+  const id = `mcp-arg-${field.name}`;
+  const label = `<label for="${id}">${escapeHtml(field.label)}</label>`;
+  const cached = Object.values(attractionsCache);
+  const options = cached.length
+    ? attractionOptionsHtml(cached)
+    : '<option value="">Loading attractions...</option>';
+  const html = `${label}<select id="${id}" data-arg="${field.name}">${options}</select>`;
+
+  if (!cached.length) {
+    fetch('/attractions-api/attractions')
+      .then((response) => response.json())
+      .then((attractions) => {
+        const select = document.getElementById(id);
+        if (select) select.innerHTML = attractionOptionsHtml(attractions);
+      })
+      .catch(() => {
+        const select = document.getElementById(id);
+        if (select) select.innerHTML = '<option value="">Could not load attractions.</option>';
+      });
+  }
+  return html;
+}
+
 function renderMcpArgs(toolName) {
   const container = document.getElementById('mcp-args');
   const schema = MCP_TOOL_SCHEMAS[toolName];
@@ -384,7 +429,9 @@ function renderMcpArgs(toolName) {
     container.innerHTML = '<p class="empty">No input form available for this tool.</p>';
     return;
   }
-  container.innerHTML = schema.map(mcpArgFieldHtml).join('');
+  container.innerHTML = schema
+    .map((field) => (field.type === 'attraction-select' ? renderAttractionSelectField(field) : mcpArgFieldHtml(field)))
+    .join('');
 }
 
 /** Reads #mcp-args' current inputs into a {tool_arg: value} object, skipping blank optional fields. */
@@ -423,7 +470,7 @@ function initMcpPanel() {
         setMcpStatus('No MCP tools are currently registered.', 'empty');
         return;
       }
-      select.innerHTML = data.tools.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+      select.innerHTML = data.tools.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(MCP_TOOL_LABELS[name] || name)}</option>`).join('');
       select.disabled = false;
       runButton.disabled = false;
       renderMcpArgs(select.value);
