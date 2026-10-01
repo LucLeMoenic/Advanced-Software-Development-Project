@@ -67,3 +67,17 @@
 
 All implementation and tests are initially pending. A requirement becomes
 verified only when its listed evidence is actually produced.
+
+## Release 1 Planned Requirements
+
+| ID | Requirement | Acceptance criterion | State |
+|---|---|---|---|
+| R1-01 | Runtime modes shall be explicit and strict. | `AI_ENABLED` accepts exactly lowercase `true` or `false` and defaults to true; `MCP_ENABLED` and `RAG_ENABLED` accept the same values and default to false; invalid values fail startup. | Implemented; backend tests pass. |
+| R1-02 | The backend shall expose enabled capabilities. | `GET /api/capabilities` returns boolean `aiEnabled`, `mcpEnabled`, and `ragEnabled` values matching configuration. | Implemented; backend tests pass. |
+| R1-03 | Disabled AI advice shall remain useful without contacting Ollama. | Advice returns the existing deterministic `fallback` contract with zero Ollama-client calls; enabled `ai`, `ai_retry`, and failure fallback behavior remains unchanged. | Implemented; backend tests pass. |
+| R1-04 | Budget check shall read authoritative current totals through MCP. | Read-only `budget.get_summary` uses a fixed callback to the existing dashboard endpoint; no second money calculator, database access, or write operation is introduced. | Planned. |
+| R1-05 | Budgeting guidance shall be grounded in Student 4 knowledge. | Shared native RAG receives `feature: student-4`; supported answers include validated citations, while insufficient context explicitly abstains; guidance does not consume private spending records. | Planned. |
+| R1-06 | Release 1 shall preserve the application boundaries. | Retain the static Student 4 UI and native Ollama/MCP/RAG arrangement; make no database schema changes or cross-student runtime calls. | Planned. |
+
+Only R1-01 through R1-03 are implemented in the current segment. Remaining
+requirements are planned; no live integration or release acceptance is implied.

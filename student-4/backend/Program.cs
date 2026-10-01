@@ -16,6 +16,7 @@ var rateValues = rateSection.GetSection("AudUnits").GetChildren().ToDictionary(v
 var prompt = File.ReadAllText(Path.Combine(builder.Environment.ContentRootPath, "Prompts", "budget-insights-v1.txt"));
 
 builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow);
+builder.Services.AddSingleton(serviceProvider => FeatureModeSettings.FromConfiguration(serviceProvider.GetRequiredService<IConfiguration>()));
 builder.Services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings(rateSection["Version"] ?? "demo-v1", rateDate, rateSection["Disclaimer"] ?? "Demonstration rates only.", rateValues)));
 builder.Services.AddSingleton(new OllamaInsightsSettings(model, prompt));
 builder.Services.AddScoped<IAdviceService, AdviceService>();
@@ -23,6 +24,7 @@ builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => 
 builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>(client => { client.BaseAddress = new Uri(ollamaUrl); client.Timeout = TimeSpan.FromSeconds(ollamaTimeout); });
 
 var app = builder.Build();
+_ = app.Services.GetRequiredService<FeatureModeSettings>();
 
 app.Use(async (context, next) =>
 {
@@ -36,6 +38,7 @@ app.Use(async (context, next) =>
 
 app.MapGet("/", () => Results.Ok(new { service = "budget-backend", status = "ready" }));
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "budget-backend" }));
+app.MapGet("/api/capabilities", (FeatureModeSettings modes) => Results.Ok(new { aiEnabled = modes.AiEnabled, mcpEnabled = modes.McpEnabled, ragEnabled = modes.RagEnabled }));
 app.MapBudgetEndpoints();
 app.Run();
 

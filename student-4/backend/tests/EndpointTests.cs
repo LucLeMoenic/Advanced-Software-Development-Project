@@ -5,6 +5,7 @@ using BudgetTracker.Backend.Clients;
 using BudgetTracker.Backend.Services;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -12,6 +13,113 @@ namespace BudgetTracker.Backend.Tests;
 
 public sealed class EndpointTests
 {
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, false, true)]
+    [InlineData(false, true, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(true, true, true)]
+    public async Task CapabilitiesReportConfiguredModes(bool aiEnabled, bool mcpEnabled, bool ragEnabled)
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["AI_ENABLED"] = aiEnabled ? "true" : "false",
+            ["MCP_ENABLED"] = mcpEnabled ? "true" : "false",
+            ["RAG_ENABLED"] = ragEnabled ? "true" : "false"
+        };
+        using var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), settings);
+        using var client = factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<CapabilitiesResponse>("/api/capabilities");
+
+        Assert.Equal(new CapabilitiesResponse(aiEnabled, mcpEnabled, ragEnabled), response);
+    }
+
+    [Fact]
+    public async Task CapabilitiesUseDocumentedDefaultsWhenFlagsAreMissing()
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["AI_ENABLED"] = null,
+            ["MCP_ENABLED"] = null,
+            ["RAG_ENABLED"] = null
+        };
+        using var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), settings);
+        using var client = factory.CreateClient();
+
+        var response = await client.GetFromJsonAsync<CapabilitiesResponse>("/api/capabilities");
+
+        Assert.Equal(new CapabilitiesResponse(true, false, false), response);
+    }
+
+    [Theory]
+    [InlineData("AI_ENABLED")]
+    [InlineData("MCP_ENABLED")]
+    [InlineData("RAG_ENABLED")]
+    public void InvalidModeFlagFailsApplicationStartup(string name)
+    {
+        var settings = new Dictionary<string, string?> { [name] = "True" };
+        using var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), settings);
+
+        var exception = Assert.ThrowsAny<Exception>(() => factory.CreateClient());
+
+        Assert.Contains(name, exception.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("AI_ENABLED", "true", true)]
+    [InlineData("AI_ENABLED", "false", false)]
+    [InlineData("MCP_ENABLED", "true", true)]
+    [InlineData("MCP_ENABLED", "false", false)]
+    [InlineData("RAG_ENABLED", "true", true)]
+    [InlineData("RAG_ENABLED", "false", false)]
+    public void ModeFlagsAcceptOnlyExactBooleanSpellings(string name, string value, bool expected)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [name] = value })
+            .Build();
+
+        var settings = FeatureModeSettings.FromConfiguration(configuration);
+
+        Assert.Equal(expected, name switch
+        {
+            "AI_ENABLED" => settings.AiEnabled,
+            "MCP_ENABLED" => settings.McpEnabled,
+            _ => settings.RagEnabled
+        });
+    }
+
+    [Theory]
+    [InlineData("AI_ENABLED", "TRUE")]
+    [InlineData("AI_ENABLED", "False")]
+    [InlineData("AI_ENABLED", " true")]
+    [InlineData("AI_ENABLED", "false ")]
+    [InlineData("AI_ENABLED", "1")]
+    [InlineData("AI_ENABLED", "")]
+    [InlineData("MCP_ENABLED", "TRUE")]
+    [InlineData("MCP_ENABLED", "False")]
+    [InlineData("MCP_ENABLED", " true")]
+    [InlineData("MCP_ENABLED", "false ")]
+    [InlineData("MCP_ENABLED", "1")]
+    [InlineData("MCP_ENABLED", "")]
+    [InlineData("RAG_ENABLED", "TRUE")]
+    [InlineData("RAG_ENABLED", "False")]
+    [InlineData("RAG_ENABLED", " true")]
+    [InlineData("RAG_ENABLED", "false ")]
+    [InlineData("RAG_ENABLED", "1")]
+    [InlineData("RAG_ENABLED", "")]
+    public void ModeFlagsRejectNonCanonicalValues(string name, string value)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [name] = value })
+            .Build();
+
+        Assert.Throws<InvalidOperationException>(() => FeatureModeSettings.FromConfiguration(configuration));
+    }
+
     [Fact]
     public async Task ValidationHappensBeforeDatabaseCalls()
     {
@@ -137,18 +245,26 @@ public sealed class EndpointTests
         Assert.Equal("database_response_invalid", (await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>())!.Error.Code);
     }
 
-    private static HttpClient CreateClient(IDatabaseApiClient database, IAdviceService advice)
+    private static HttpClient CreateClient(IDatabaseApiClient database, IAdviceService advice) => CreateFactory(database, advice).CreateClient();
+
+    private static WebApplicationFactory<Program> CreateFactory(IDatabaseApiClient database, IAdviceService advice, IDictionary<string, string?>? configuration = null)
     {
-        var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
-            services.RemoveAll<IDatabaseApiClient>();
-            services.RemoveAll<IAdviceService>();
-            services.RemoveAll<IExchangeRateProvider>();
-            services.AddSingleton(database);
-            services.AddSingleton(advice);
-            services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings("test", new(2026, 8, 1), "Demo", new Dictionary<string, decimal> { ["AUD"] = 1m, ["USD"] = 0.65m, ["EUR"] = 0.6m, ["GBP"] = 0.51m, ["NZD"] = 1.08m, ["CAD"] = 0.89m, ["SGD"] = 0.86m })));
-        }));
-        return factory.CreateClient();
+            if (configuration is not null)
+            {
+                builder.ConfigureAppConfiguration((_, config) => config.AddInMemoryCollection(configuration));
+            }
+            builder.ConfigureTestServices(services =>
+            {
+                services.RemoveAll<IDatabaseApiClient>();
+                services.RemoveAll<IAdviceService>();
+                services.RemoveAll<IExchangeRateProvider>();
+                services.AddSingleton(database);
+                services.AddSingleton(advice);
+                services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings("test", new(2026, 8, 1), "Demo", new Dictionary<string, decimal> { ["AUD"] = 1m, ["USD"] = 0.65m, ["EUR"] = 0.6m, ["GBP"] = 0.51m, ["NZD"] = 1.08m, ["CAD"] = 0.89m, ["SGD"] = 0.86m })));
+            });
+        });
     }
 
     private sealed class FakeAdvice : IAdviceService
@@ -156,6 +272,8 @@ public sealed class EndpointTests
         public int CallCount { get; private set; }
         public Task<AdviceResponse> GetAdviceAsync(DashboardResponse dashboard, CancellationToken cancellationToken) { CallCount++; return Task.FromResult(new AdviceResponse("Advice.", [new("food", "Track food.")], "ai")); }
     }
+
+    private sealed record CapabilitiesResponse(bool AiEnabled, bool McpEnabled, bool RagEnabled);
 
     private sealed class FakeDatabase : IDatabaseApiClient
     {
