@@ -18,6 +18,54 @@ def trip():
     }
 
 
+@pytest.mark.parametrize("operation", [
+    {"action": "swap_days", "sourceDay": 1, "targetDay": 2, "stopId": 0},
+    {"action": "reorder_before", "sourceDay": 1, "targetDay": 1, "stopId": 2, "targetStopId": 1},
+    {"action": "reorder_after", "sourceDay": 1, "targetDay": 1, "stopId": 1, "targetStopId": 2},
+    {"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0},
+    {"action": "add_stop", "sourceDay": 2, "targetDay": 2, "stopId": 0, "activity": "Lunch", "notes": ""},
+    {"action": "remove_stop", "sourceDay": 1, "targetDay": 1, "stopId": 2},
+    {"action": "update_stop", "sourceDay": 1, "targetDay": 1, "stopId": 2, "notes": "Bring tickets"},
+    {"action": "shift_dates", "sourceDay": 1, "targetDay": 1, "stopId": 0, "startDate": "2027-06-01"},
+])
+def test_edit_tools_enforce_boundaries_and_forward_preview_token(monkeypatch, operation):
+    from unittest.mock import Mock
+
+    server = MCPServer("edit-test")
+    itinerary.register(server)
+    calls = []
+    def post(url, **kwargs):
+        calls.append((url, kwargs))
+        body = {"tripId": 12, "changes": []}
+        body.update({"token": "signed", "expiresIn": 600} if url.endswith("edit-preview") else {"applied": True})
+        return Mock(status_code=200, json=lambda: body)
+    monkeypatch.setattr(itinerary.requests, "post", post)
+    result = asyncio.run(server.call_tool("itinerary.preview_edit", {"params": {"trip_id": 12, "operation": operation}})).structured_content
+    assert result["token"] == "signed"
+    assert calls[0][1]["json"] == operation
+    result = asyncio.run(server.call_tool("itinerary.apply_edit", {"params": {"trip_id": 12, "token": "signed"}})).structured_content
+    assert result["applied"] is True
+    assert calls[1][1]["json"] == {"token": "signed"}
+    for params in [{"trip_id": 12, "operation": {**operation, "action": "delete"}},
+                   {"trip_id": True, "operation": operation}, {"trip_id": 12, "operation": {**operation, "targetDay": "2"}}]:
+        with pytest.raises(ToolError):
+            asyncio.run(server.call_tool("itinerary.preview_edit", {"params": params}))
+    with pytest.raises(ToolError):
+        asyncio.run(server.call_tool("itinerary.apply_edit", {"params": {"trip_id": 12, "token": "signed"}, "operation": operation}))
+    assert len(calls) == 2
+
+
+@pytest.mark.parametrize("status,code", [(400, "invalid_edit"), (404, "trip_not_found"), (409, "stale_preview")])
+def test_edit_tools_map_database_rejections(monkeypatch, status, code):
+    from unittest.mock import Mock
+
+    monkeypatch.setattr(itinerary.requests, "post", lambda *args, **kwargs: Mock(status_code=status))
+    server = MCPServer("edit-test")
+    itinerary.register(server)
+    result = asyncio.run(server.call_tool("itinerary.apply_edit", {"params": {"trip_id": 12, "token": "signed"}})).structured_content
+    assert result["error"]["code"] == code
+
+
 def call(params):
     server = MCPServer("itinerary-test")
     itinerary.register(server)
@@ -77,6 +125,24 @@ def test_empty_stops_and_corrupt_data():
     data["stops"][0]["tripId"] = 13
     with pytest.raises(ValueError):
         itinerary.summarize(data, 12)
+
+
+def test_review_tool_returns_bounded_stops_without_identity(monkeypatch):
+    from unittest.mock import Mock
+
+    data = trip()
+    for index, stop in enumerate(data["stops"]):
+        stop.update(id=index + 1, activity="Park walk", notes="Outdoor path", private="omitted")
+    monkeypatch.setattr(itinerary.requests, "get", lambda *args, **kwargs: Mock(status_code=200, json=lambda: data))
+    server = MCPServer("review-test")
+    itinerary.register(server)
+    result = asyncio.run(server.call_tool("itinerary.get_itinerary", {"params": {"trip_id": 12}})).structured_content
+    assert result["ok"] is True
+    assert result["stops"][0] == {"id": 1, "day": 1, "activity": "Park walk", "notes": "Outdoor path", "sortOrder": 0}
+    assert "Private name" not in str(result)
+    data["stops"][1]["id"] = 1
+    result = asyncio.run(server.call_tool("itinerary.get_itinerary", {"params": {"trip_id": 12}})).structured_content
+    assert result["error"]["code"] == "invalid_dependency_response"
 
 
 def test_invalid_database_json_is_not_a_network_failure(monkeypatch):
@@ -149,14 +215,16 @@ def test_weather_uses_fixed_provider_urls_and_only_destination_coordinates(weath
     assert "trip_id" not in calls[1][1]
 
 
-def test_ambiguous_destination_requires_allowlisted_choice(weather_provider):
+def test_ambiguous_destination_defaults_to_first_result(weather_provider):
     summary, geocoding, forecast, calls = weather_provider
     geocoding["results"].append({**geocoding["results"][0], "id": 123, "country": "Other country"})
-    for location_id in (None, 999):
-        result = weather.trip_weather(summary, location_id)
-        assert result["status"] == "choose_location"
-        assert result["location"] is None
+    result = weather.trip_weather(summary)
+    assert result["status"] == "available"
+    assert result["location"] == geocoding["results"][0]
     assert len(calls) == 2
+    result = weather.trip_weather(summary, 999)
+    assert result["status"] == "choose_location"
+    assert result["location"] is None
     result = weather.trip_weather(summary, 123)
     assert result["location"]["country"] == "Other country"
     assert result["status"] == "available"

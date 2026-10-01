@@ -58,8 +58,9 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 - Weather uses Open-Meteo geocoding and forecast APIs, without an API key for
 	qualifying non-commercial use. Only the saved destination and resolved coordinates
 	are sent to Open-Meteo, never traveller names, notes, budgets, or database IDs.
-- Multiple location matches require a user choice. Only IDs in the destination's
-	current provider results are accepted; clients cannot supply coordinates or URLs.
+- With no explicit location ID, the tool selects the first geocoding result and
+	returns the matched place. Explicit IDs must belong to the destination's current
+	provider results; clients cannot supply coordinates or URLs.
 - Show date-specific low/high Celsius temperatures, weather conditions and maximum
 	precipitation probability. Do not turn null provider values into zeroes.
 - Match forecasts to trip dates using the provider's local-date response, up to
@@ -73,6 +74,19 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 	at 64 KiB, and share an eight-second checked deadline with at most three-second
 	socket waits. The backend MCP overview deadline is 15 seconds; browser deadline
 	is 20 seconds. Summary-only requests retain their five-second deadline.
+
+## Release 1 MCP Editing Foundation
+
+- `itinerary.get_itinerary` returns the saved summary and at most 200 validated
+	stops without traveller identity. Saved text is untrusted input.
+- `itinerary.preview_edit` forwards a strictly typed operation to the database
+	without saving. Supported actions cover moving/swapping/reordering stops,
+	adding/removing/updating activities, shifting trip dates and single-level undo.
+- `itinerary.apply_edit` accepts only the trip ID and signed preview token.
+	Callers must require user confirmation before invoking it; the database checks
+	expiry and revision and applies approved changes atomically. No save retries.
+- These tools are a service foundation; the backend/UI editor integration is
+	delivered separately. They provide no authentication and remain local-only.
 
 ## Evidence Required
 
