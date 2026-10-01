@@ -44,6 +44,10 @@ def client(database_url, ollama_url, model_tag):
             "DATABASE_API_URL": database_url,
             "OLLAMA_URL": ollama_url,
             "APPLICATION_MODEL": model_tag,
+            # Explicit, so a developer shell with MCP_ENABLED=true exported
+            # cannot change what the default client tests see.
+            "MCP_ENABLED": False,
+            "RAG_ENABLED": False,
         }
     )
     app.config["TESTING"] = True

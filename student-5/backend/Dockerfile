@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # APPLICATION_MODEL is deliberately not defaulted here: compose passes the
 # team-wide tag, and ollama_client.py carries the fallback for bare runs.
-COPY app.py db_client.py ollama_client.py advisory.py ui.py ./
+COPY app.py db_client.py ollama_client.py advisory.py ui.py integrations.py mcp_client.py rag_client.py ./
 COPY templates ./templates
 COPY tests ./tests
 
