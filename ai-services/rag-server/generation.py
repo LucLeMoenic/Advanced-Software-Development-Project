@@ -12,6 +12,7 @@ import confidence
 
 INSUFFICIENT_ANSWER = "Not enough information in the knowledge base to answer this."
 PROMPT_PATH = Path(__file__).resolve().parents[1] / "agentic-loop" / "prompts" / "rag-grounding-v1.txt"
+SELECTION_PROMPT_PATH = Path(__file__).resolve().parents[1] / "agentic-loop" / "prompts" / "rag-budget-selection-v1.txt"
 _capacity = BoundedSemaphore(1)
 
 
@@ -31,6 +32,12 @@ class GeneratedAnswer(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     status: Literal["answered", "insufficient"]
     claims: list[Claim] = Field(max_length=4)
+
+
+class PassageSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    status: Literal["answered", "insufficient"]
+    chunk_ids: list[str] = Field(max_length=3)
 
 
 def insufficient():
@@ -71,7 +78,33 @@ def render_answer(payload, ranked):
         raise GenerationError(502, "invalid_dependency_response", "The model returned an invalid grounded answer.") from None
 
 
-async def generate(question, ranked, trip_context=None):
+def render_selection(payload, ranked):
+    try:
+        selection = PassageSelection.model_validate(payload)
+        if selection.status == "insufficient":
+            if selection.chunk_ids:
+                raise ValueError("Abstention selected sources")
+            return insufficient()
+        if not selection.chunk_ids or len(selection.chunk_ids) != len(set(selection.chunk_ids)):
+            raise ValueError("Empty or repeated source selection")
+        chunks = {chunk.chunk_id: (chunk, score) for chunk, score in ranked}
+        if any(identifier not in chunks for identifier in selection.chunk_ids):
+            raise ValueError("Unknown source")
+        answer = "\n\n".join(
+            f"{chunks[identifier][0].text} [{identifier}]" for identifier in selection.chunk_ids
+        )
+        if len(answer) > 2000:
+            raise ValueError("Answer too long")
+        citations = [{"source": chunks[identifier][0].source, "chunk_id": identifier,
+                      "snippet": chunks[identifier][0].text[:280], "score": round(float(chunks[identifier][1]), 4)}
+                     for identifier in selection.chunk_ids]
+        return {"answer": answer, "citations": citations,
+                "confidence": confidence.categorize(min(chunks[identifier][1] for identifier in selection.chunk_ids))}
+    except (ValidationError, ValueError, TypeError):
+        raise GenerationError(502, "invalid_dependency_response", "The model returned an invalid grounded answer.") from None
+
+
+async def generate(question, ranked, trip_context=None, *, selection_mode=False):
     if not _capacity.acquire(blocking=False):
         raise GenerationError(503, "dependency_unavailable", "The local model is busy. Try again shortly.")
     try:
@@ -79,9 +112,12 @@ async def generate(question, ranked, trip_context=None):
         prompt = {"question": question, "context": context}
         if trip_context is not None:
             prompt["tripContext"] = trip_context
-        output_schema = GeneratedAnswer.model_json_schema()
-        if ranked:
-            output_schema["$defs"]["Claim"]["properties"]["chunk_ids"]["items"]["enum"] = [
+        response_model = PassageSelection if selection_mode else GeneratedAnswer
+        schema = response_model.model_json_schema()
+        if selection_mode:
+            schema["properties"]["chunk_ids"]["items"]["enum"] = [chunk.chunk_id for chunk, score in ranked]
+        elif ranked:
+            schema["$defs"]["Claim"]["properties"]["chunk_ids"]["items"]["enum"] = [
                 chunk.chunk_id for chunk, score in ranked
             ]
         with anyio.fail_after(20):
@@ -89,9 +125,9 @@ async def generate(question, ranked, trip_context=None):
                 async with client.stream(
                     "POST", os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/generate",
                     json={"model": os.getenv("RAG_MODEL", "llama3.2:3b"), "stream": False,
-                          "system": PROMPT_PATH.read_text(encoding="utf-8"),
+                          "system": (SELECTION_PROMPT_PATH if selection_mode else PROMPT_PATH).read_text(encoding="utf-8"),
                           "prompt": json.dumps(prompt),
-                          "format": output_schema,
+                          "format": schema,
                           "options": {"temperature": 0, "num_predict": 600, "num_ctx": 8192 if trip_context is not None else 4096}},
                 ) as response:
                     response.raise_for_status()
@@ -103,7 +139,8 @@ async def generate(question, ranked, trip_context=None):
                     body = json.loads(content)
                     if not isinstance(body, dict) or body.get("done") is not True:
                         raise ValueError("Incomplete generation")
-                    return render_answer(json.loads(body["response"]), ranked)
+                    payload = json.loads(body["response"])
+                    return render_selection(payload, ranked) if selection_mode else render_answer(payload, ranked)
     except GenerationError:
         raise
     except (TimeoutError, httpx.TimeoutException):

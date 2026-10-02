@@ -252,6 +252,9 @@ services:
       Services__OllamaUrl: http://host.docker.internal:11434
       MCP_SERVER_URL: http://host.docker.internal:5400/mcp
       RAG_SERVER_URL: http://host.docker.internal:5500
+      AI_ENABLED: ${STUDENT4_AI_ENABLED:-true}
+      MCP_ENABLED: ${STUDENT4_MCP_ENABLED:-false}
+      RAG_ENABLED: ${STUDENT4_RAG_ENABLED:-false}
       STUDENT4_MODEL: ${STUDENT4_MODEL:-llama3.2:3b}
       ASPNETCORE_HTTP_PORTS: 8080
     ports:

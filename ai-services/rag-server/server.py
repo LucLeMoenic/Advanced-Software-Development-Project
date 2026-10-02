@@ -114,8 +114,12 @@ async def query(request: QueryRequest):
                     length += len(chunk.text)
             if not ranked:
                 return generation.insufficient()
+            if request.feature == "student-4":
+                return await generation.generate(request.question, ranked, selection_mode=True)
             if request.tripContext is not None:
-                result = await generation.generate(request.question, ranked, request.tripContext.model_dump())
+                result = await generation.generate(
+                    request.question, ranked, request.tripContext.model_dump()
+                )
             else:
                 result = await generation.generate(request.question, ranked)
             if request.feature == "student-2":

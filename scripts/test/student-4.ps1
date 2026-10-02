@@ -4,14 +4,14 @@
 Runs Student 4 tests and source builds.
 
 .PARAMETER Area
-Selects all checks or one service test suite.
+Selects all checks, a service test suite, or one shared validation suite.
 
 .EXAMPLE
 ./scripts/test/student-4.ps1 -Area All
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet("All", "Backend", "Database")]
+    [ValidateSet("All", "Backend", "Database", "Shared", "Loop", "Mcp", "Rag")]
     [string]$Area = "All"
 )
 
@@ -34,6 +34,50 @@ function Invoke-CheckedCommand {
     if ($LASTEXITCODE -ne 0) {
         throw $FailureMessage
     }
+}
+
+function Resolve-Student4Python {
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet("Mcp", "Rag")]
+        [string]$Service,
+
+        [Parameter(Mandatory)]
+        [string]$RepositoryRoot
+    )
+
+    $overrideName = "STUDENT4_$($Service.ToUpperInvariant())_PYTHON"
+    $pythonPath = [Environment]::GetEnvironmentVariable($overrideName)
+    if ([string]::IsNullOrWhiteSpace($pythonPath)) {
+        $pythonPath = $env:STUDENT4_PYTHON
+    }
+    if (-not [string]::IsNullOrWhiteSpace($pythonPath)) {
+        if (-not (Test-Path -LiteralPath $pythonPath -PathType Leaf)) {
+            throw "$overrideName/STUDENT4_PYTHON does not point to a Python executable: $pythonPath"
+        }
+        return [IO.Path]::GetFullPath($pythonPath)
+    }
+
+    $candidatePaths = @(
+        (Join-Path $RepositoryRoot "../venv-$($Service.ToLowerInvariant())/Scripts/python.exe"),
+        (Join-Path $RepositoryRoot "../venv-$($Service.ToLowerInvariant())/bin/python"),
+        (Join-Path $RepositoryRoot "ai-services/venv-$($Service.ToLowerInvariant())/Scripts/python.exe"),
+        (Join-Path $RepositoryRoot "ai-services/venv-$($Service.ToLowerInvariant())/bin/python")
+    )
+    foreach ($candidatePath in $candidatePaths) {
+        if (Test-Path -LiteralPath $candidatePath -PathType Leaf) {
+            return [IO.Path]::GetFullPath($candidatePath)
+        }
+    }
+
+    foreach ($commandName in @("python3", "python")) {
+        $command = Get-Command $commandName -ErrorAction SilentlyContinue
+        if ($null -ne $command) {
+            return $command.Source
+        }
+    }
+
+    throw "No Python interpreter found for the $Service validation suite. Set $overrideName or STUDENT4_PYTHON."
 }
 
     function Install-NodeDependency {
@@ -79,6 +123,35 @@ function Invoke-Student4Validation {
 
     if ($Area -in @("All", "Database")) {
         Invoke-CheckedCommand dotnet @("test", $databaseTests, "--configuration", "Release") "Student 4 database tests failed."
+    }
+
+    if ($Area -in @("All", "Shared", "Loop")) {
+        $loopTests = Join-Path $repositoryRoot "ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj"
+        Invoke-CheckedCommand dotnet @("test", $loopTests, "--configuration", "Release") "Shared agentic-loop tests failed."
+    }
+
+    if ($Area -in @("All", "Shared", "Mcp")) {
+        $mcpPath = Join-Path $repositoryRoot "ai-services/mcp-server"
+        $mcpPython = Resolve-Student4Python -Service Mcp -RepositoryRoot $repositoryRoot
+        Push-Location -LiteralPath $mcpPath
+        try {
+            Invoke-CheckedCommand -FilePath $mcpPython -ArgumentList @("-m", "pytest", "-q") -FailureMessage "Shared MCP tests failed."
+        }
+        finally {
+            Pop-Location
+        }
+    }
+
+    if ($Area -in @("All", "Shared", "Rag")) {
+        $ragPath = Join-Path $repositoryRoot "ai-services/rag-server"
+        $ragPython = Resolve-Student4Python -Service Rag -RepositoryRoot $repositoryRoot
+        Push-Location -LiteralPath $ragPath
+        try {
+            Invoke-CheckedCommand -FilePath $ragPython -ArgumentList @("-m", "pytest", "-q") -FailureMessage "Shared RAG tests failed."
+        }
+        finally {
+            Pop-Location
+        }
     }
 
     if ($Area -eq "All") {

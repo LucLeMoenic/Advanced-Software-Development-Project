@@ -14,11 +14,12 @@ from typing import Callable, List
 
 from mcp.server.mcpserver import MCPServer
 
-from . import accommodation, attractions, itinerary, logistics
+from . import accommodation, attractions, budget, itinerary, logistics
 
 REGISTRARS: List[Callable[[MCPServer], None]] = [
     accommodation.register,
     attractions.register,
+    budget.register,
     itinerary.register,
     logistics.register,
 ]

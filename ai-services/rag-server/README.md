@@ -1,8 +1,8 @@
 # Shared RAG Server (Release 1)
 
 One native shared service retrieves feature-isolated Markdown knowledge and
-uses native Ollama for constrained grounded generation. Student 1, Student 2 and
-Student 3 knowledge is present. Automated model-double tests pass; native model generation
+uses native Ollama for constrained grounded generation. Student 1 through
+Student 5 knowledge is present. Automated model-double tests pass; native model generation
 and cross-feature grounding evaluation remain release gates, not completed evidence.
 
 ## Contract
@@ -52,6 +52,13 @@ never a guess dressed up as fact.
   Student 2 receives complete cited passages (up to 2000 characters each); other
   features retain 280-character excerpts. Source disclaimers must remain limitations,
   not become new traveller requirements.
+- Students 1-3 and 5 use the structured-claim flow and versioned grounding prompt.
+  Student 4 uses an isolated extractive-selection mode and the
+  [selection prompt](../agentic-loop/prompts/rag-budget-selection-v1.txt): Ollama
+  returns only a status and up to three retrieved paragraph IDs. The server
+  assembles answer text from the exact original paragraphs and does not accept
+  model-authored answer text in that mode. Citation titles, snippets and scores
+  still come from retrieval.
 - Confidence is the lowest cited retrieval score: low from 0.15, medium from
   0.30, high from 0.40. These provisional thresholds were measured on the small
   Student 2 fixture set, not a statistically independent or cross-feature
@@ -64,6 +71,9 @@ never a guess dressed up as fact.
   output above 16000 bytes before buffering the whole body and closing the stream.
   Citation validation does not establish that claims are supported;
   human source checks and adversarial/live-model evaluation remain necessary.
+  Extractive Student 4 output guarantees that displayed text is quoted from its
+  cited source, but model selection can still be irrelevant or abstain on an
+  answerable question; live relevance and abstention checks remain necessary.
 
 ## Grounding Evaluation
 
@@ -73,6 +83,12 @@ with misleading lexical overlap. Offline tests verify retained candidates, not
 answerability. These are development regressions, not an untouched held-out
 evaluation. Unrelated government-budget and live hotel-price questions score
 above 0.40; a higher threshold is not an entailment check.
+
+`tests/test_student4_retrieval.py` separately covers Student 4 known and
+paraphrased questions, unsupported topics, topical overlap, and an
+injection-shaped question. Its offline retrieval check confirms ranking only;
+it does not prove that a live model follows the grounding prompt or supports
+every generated claim.
 
 After starting native Ollama with the approved model, run from this directory:
 
