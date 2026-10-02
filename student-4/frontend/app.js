@@ -305,7 +305,7 @@ async function runBudgetCheck() {
   elements.budgetCheckResult.hidden = true;
   setToolStatus(elements.budgetCheckStatus, `Checking ${journeyLabel}...`, "loading", true);
   try {
-    const payload = await api("/api/budget-check", { method: "POST", body: JSON.stringify({ journeyLabel }), signal: controller.signal });
+    const payload = await api("/budget-check", { method: "POST", body: JSON.stringify({ journeyLabel }), signal: controller.signal });
     if (version !== state.budgetCheckVersion || journeyLabel !== state.selectedJourney) return;
     const summary = validateBudgetCheck(payload, journeyLabel);
     renderBudgetCheck(payload, summary);
@@ -373,7 +373,7 @@ async function submitGuidance(event) {
   elements.guidanceResult.hidden = true;
   setToolStatus(elements.guidanceStatus, "Retrieving general budgeting guidance...", "loading", true);
   try {
-    const response = await api("/api/budget-guidance", { method: "POST", body: JSON.stringify({ question }), signal: controller.signal });
+    const response = await api("/budget-guidance", { method: "POST", body: JSON.stringify({ question }), signal: controller.signal });
     if (version !== state.guidanceVersion || question !== elements.guidanceQuestion.value.trim()) return;
     renderGuidance(response);
   } catch (error) {

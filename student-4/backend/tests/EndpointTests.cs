@@ -16,6 +16,20 @@ namespace BudgetTracker.Backend.Tests;
 
 public sealed class EndpointTests
 {
+    [Fact]
+    public void McpEndpointUsesTheComposeConfigurationKey()
+    {
+        var configuration = new Dictionary<string, string?>
+        {
+            ["MCP_SERVER_URL"] = "http://host.docker.internal:5400/mcp"
+        };
+        using var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), configuration);
+
+        var settings = factory.Services.GetRequiredService<McpBudgetCheckSettings>();
+
+        Assert.Equal(new Uri("http://host.docker.internal:5400/mcp"), settings.Endpoint);
+    }
+
     [Theory]
     [InlineData(false, false, false)]
     [InlineData(false, false, true)]

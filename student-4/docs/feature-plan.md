@@ -108,14 +108,15 @@ ownership, and make no schema changes or cross-student calls.
   in-process official SDK call are covered. Student 4 backend tests pass 106/106;
   shared MCP tests pass 120/120. Live native/container connectivity, callback
   re-entry, and database non-mutation evidence remain pending.
-3. **Student 4 RAG guidance - implemented, offline-tested:** added three source-
-  grounded knowledge documents and `POST /api/budget-guidance`. Strict request
-  parsing, fixed Student4 feature routing, response/citation validation, exact
-  abstention, disabled no-call behavior, size limits and timeout/error mapping
-  have focused tests. On 2026-10-02, Student 4 retrieval tests passed 17/17,
-  focused RAG backend/client tests passed 29/29, the full backend suite passed
-  135/135, and the shared RAG suite passed 79 with 19 live-model cases skipped.
-  Compose configuration parsed; live generation remains open.
+3. **Student 4 RAG guidance - implemented, offline-tested, direct live selection
+  checked:** added three source-grounded knowledge documents and `POST
+  /api/budget-guidance`. The shared native RAG model now selects one to three
+  retrieved paragraph IDs only for Student 4; the service returns their exact
+  full source text with citations. Strict parsing, feature isolation, selection
+  validation, exact abstention, size limits and timeout/error mapping have
+  focused tests. The final direct `llama3.2:3b` set grounded all five answerable
+  questions and abstained on Mars. The Student 4 backend route, browser flow,
+  loop, CI and release acceptance remain open.
 4. **Static UI - implemented, offline-tested:** added compact MCP budget-check
   and separate RAG-guidance panels without replacing the existing frontend or
   combining guidance with private financial data. Capabilities fail closed for
@@ -125,6 +126,7 @@ ownership, and make no schema changes or cross-student calls.
 5. **Integration and evidence - planned:** validate native connectivity, mode-off
   behavior, live MCP/RAG paths, accessibility, and the affected release gates.
 
-Steps 1-3 are implemented with offline evidence. Static UI, live/integrated
-validation and release evidence remain pending; no human review or release
-sign-off is recorded here.
+Steps 1-3 have offline evidence; direct live RAG selection is now observed as
+recorded above. Static UI acceptance, integrated MCP/RAG validation, loop/CI and
+release evidence remain pending; no human review or release sign-off is recorded
+here.

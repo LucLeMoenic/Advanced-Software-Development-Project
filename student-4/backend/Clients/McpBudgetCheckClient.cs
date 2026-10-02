@@ -18,7 +18,7 @@ public sealed record McpBudgetCheckSettings(Uri Endpoint)
             || string.IsNullOrWhiteSpace(endpoint.Host)
             || !string.IsNullOrEmpty(endpoint.UserInfo))
         {
-            throw new InvalidOperationException("MCP_URL must be an absolute HTTP URL without user information.");
+            throw new InvalidOperationException("MCP_SERVER_URL must be an absolute HTTP URL without user information.");
         }
 
         return new(endpoint);

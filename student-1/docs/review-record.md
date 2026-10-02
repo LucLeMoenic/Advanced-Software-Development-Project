@@ -1,5 +1,15 @@
 # Review Record
 
+## 2026-10-02 - Student 4 Shared RAG Allowlist Claim Adjudication
+
+**Scope:** The review claim that `budgeting-workflow#2` is absent from the
+shared Student 4 retrieval corpus and should be removed from the loop citation
+allowlist. No Student 1 feature code, corpus, or runtime prompt was changed.
+
+**Finding:** Rejected. Using the configured `C:\Users\Liam.Zelmanowski\ASD\venv-rag\Scripts\python.exe`, loaded the production `retrieval.get_index("student-4")` implementation and printed the actual cached index IDs and text. It returned six chunks; `budgeting-workflow#2` is real and contains the second body paragraph stating that the knowledge base has no access to saved expenses or current journey totals. The matching `ServiceValidation.Student4RagSources` entry is valid. No parser-based consistency test was added because this direct source/index evidence resolves the claim without brittle code parsing.
+
+**Verification:** Full shared RAG suite 79 passed, 19 live-model tests skipped. Student 4 post-refresh generation exposed separate grounding failures documented in `student-4/docs/evidence/release-1/rag-guidance-live-2026-10-02.json`; those do not make the citation ID phantom. The existing shared reviewer prompt and loop allowlist were not modified.
+
 ## 2026-10-02 - Student 4 RAG Shared-Surface Review
 
 **Scope:** Student 4 RAG implementation against HLD sections 4-6, plus the

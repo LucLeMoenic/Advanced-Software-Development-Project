@@ -73,6 +73,8 @@ async def query(request: QueryRequest):
                     length += len(chunk.text)
             if not ranked:
                 return generation.insufficient()
+            if request.feature == "student-4":
+                return await generation.generate(request.question, ranked, selection_mode=True)
             return await generation.generate(request.question, ranked)
     except TimeoutError:
         raise generation.GenerationError(504, "dependency_timeout", "The grounded response timed out.") from None

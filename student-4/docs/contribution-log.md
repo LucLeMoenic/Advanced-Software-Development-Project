@@ -1,5 +1,18 @@
 # Student 4 Contribution Log
 
+## Release 1 PR Attribution - 2026-10-02
+
+The following PRs were published by `Liam-zel`. Their implementation was
+AI-assisted under Liam's ownership; publication does not establish approval,
+merge, or human review.
+
+| Pull request | Publisher | Contribution attribution | Approval/evidence status |
+|---|---|---|---|
+| #104 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #105 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #106 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #107 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+
 ## 2026-09-03
 
 Owner: Liam Zelmanowski
@@ -24,7 +37,7 @@ No commit or push was performed by the AI assistant.
 |---|---|
 | Branch | `[pending Liam]` |
 | Commit hashes | `[pending Liam]` |
-| Pull request | `[pending Liam]` |
+| Pull request | PRs #104-#107 published by `Liam-zel`; see Release 1 attribution above. |
 | Human review outcome | `[pending Liam]` |
 | Attendance checkpoint | `[pending Liam]` |
 | Showcase URL | `[pending team]` |
