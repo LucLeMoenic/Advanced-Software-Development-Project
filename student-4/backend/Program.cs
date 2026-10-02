@@ -7,6 +7,7 @@ using BudgetTracker.Backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 var databaseUrl = builder.Configuration["Services:DatabaseUrl"] ?? "http://localhost:5304";
 var ollamaUrl = builder.Configuration["Services:OllamaUrl"] ?? "http://localhost:11434";
+var mcpUrl = builder.Configuration["MCP_URL"] ?? "http://localhost:5400/mcp";
 var databaseTimeout = builder.Configuration.GetValue("Services:DatabaseTimeoutSeconds", 4);
 var ollamaTimeout = builder.Configuration.GetValue("Services:OllamaTimeoutSeconds", 15);
 var model = builder.Configuration["STUDENT4_MODEL"] ?? "llama3.2:3b";
@@ -19,9 +20,12 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.U
 builder.Services.AddSingleton(serviceProvider => FeatureModeSettings.FromConfiguration(serviceProvider.GetRequiredService<IConfiguration>()));
 builder.Services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings(rateSection["Version"] ?? "demo-v1", rateDate, rateSection["Disclaimer"] ?? "Demonstration rates only.", rateValues)));
 builder.Services.AddSingleton(new OllamaInsightsSettings(model, prompt));
+builder.Services.AddSingleton(McpBudgetCheckSettings.FromUrl(mcpUrl));
 builder.Services.AddScoped<IAdviceService, AdviceService>();
 builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => { client.BaseAddress = new Uri(databaseUrl); client.Timeout = TimeSpan.FromSeconds(databaseTimeout); });
 builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>(client => { client.BaseAddress = new Uri(ollamaUrl); client.Timeout = TimeSpan.FromSeconds(ollamaTimeout); });
+builder.Services.AddHttpClient<IMcpBudgetCheckClient, McpBudgetCheckClient>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+    .ConfigurePrimaryHttpMessageHandler(() => new BoundedMcpResponseHandler());
 
 var app = builder.Build();
 _ = app.Services.GetRequiredService<FeatureModeSettings>();
@@ -40,6 +44,7 @@ app.MapGet("/", () => Results.Ok(new { service = "budget-backend", status = "rea
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "budget-backend" }));
 app.MapGet("/api/capabilities", (FeatureModeSettings modes) => Results.Ok(new { aiEnabled = modes.AiEnabled, mcpEnabled = modes.McpEnabled, ragEnabled = modes.RagEnabled }));
 app.MapBudgetEndpoints();
+app.MapBudgetCheckEndpoints();
 app.Run();
 
 public partial class Program;
