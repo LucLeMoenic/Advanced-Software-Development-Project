@@ -34,7 +34,10 @@ from advisory import (
     parse_destination_id,
 )
 from db_client import DatabaseUnavailable
+from integrations import InvalidRequest, clean_question, invoke_tool, rag
+from mcp_client import McpDisabled, McpToolError, McpUnavailable
 from ollama_client import OllamaUnavailable
+from rag_client import RagDisabled, RagTimeout, RagUnavailable
 
 ui_bp = Blueprint("ui", __name__, url_prefix="/ui")
 
@@ -99,6 +102,33 @@ def fragment_database_unavailable(_exc):
 @ui_bp.errorhandler(OllamaUnavailable)
 def fragment_ai_unavailable(_exc):
     return notice("The travel adviser is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(McpDisabled)
+def fragment_mcp_disabled(_exc):
+    return notice("Live tool lookups are switched off for this deployment (MCP is disabled).")
+
+
+@ui_bp.errorhandler(McpUnavailable)
+def fragment_mcp_unavailable(_exc):
+    return notice("The shared tool server is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(RagDisabled)
+def fragment_rag_disabled(_exc):
+    return notice("Knowledge-base answers are switched off for this deployment (RAG is disabled).")
+
+
+@ui_bp.errorhandler(RagUnavailable)
+def fragment_rag_unavailable(exc):
+    if isinstance(exc, RagTimeout):
+        return notice("The knowledge base took too long to answer. Please try again.")
+    return notice("The knowledge base is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(InvalidRequest)
+def fragment_invalid_request(exc):
+    return notice(exc.message)
 
 
 # ---------------------------------------------------------------------------
@@ -252,3 +282,50 @@ def advisory_fragment():
         model=result.model,
         destination=result.destination,
     )
+
+
+# ---------------------------------------------------------------------------
+# Release 1: MCP tool and RAG knowledge-base fragments
+#
+# Same calls as the JSON routes in integrations.py, rendered as content. Every
+# outcome -- disabled, unavailable, a rejected argument, an insufficient
+# answer -- is still a 200 fragment the traveller can read.
+# ---------------------------------------------------------------------------
+
+MCP_DOMAIN_MESSAGES = {
+    "destination_not_found": "That destination could not be found.",
+}
+
+
+@ui_bp.post("/mcp")
+def mcp_fragment():
+    """Call one Student 5 MCP tool for the selected destination."""
+    destination_id = parse_destination_id(request.form.get("destination_id"))
+    if destination_id is None:
+        return notice("Choose a destination before running a tool.")
+
+    tool = request.form.get("tool")
+    arguments = {"destination_id": destination_id}
+    transit_type = form_value("transit_type")
+    if tool == "logistics.get_transit" and transit_type:
+        arguments["type"] = transit_type
+
+    try:
+        result = invoke_tool(tool, arguments)
+    except McpToolError:
+        return notice("The tool rejected that request. Check the destination and transit type.")
+
+    if result.get("ok") is False:
+        error = result.get("error")
+        code = error.get("code") if isinstance(error, dict) else None
+        return notice(MCP_DOMAIN_MESSAGES.get(
+            code, "The tool could not read the travel database right now."))
+    return render_template("mcp_result.html", tool=tool, result=result)
+
+
+@ui_bp.post("/rag")
+def rag_fragment():
+    """Answer a travel logistics question from the curated knowledge base."""
+    question = clean_question(request.form.get("question"))
+    answer = rag().ask(question)
+    return render_template("rag_answer.html", question=question, **answer)

@@ -1,0 +1,36 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal: Validate the captured visa guidance answer against its cited knowledge chunks.
+Requirements: Ensure all sentences in the answer are supported by cited snippets.
+Files: visa-categories.md
+Steps:
+1. Review the captured answer and its citations.
+2. Compare each sentence in the answer with the cited snippets.
+3. Identify any sentences not supported by the cited snippets.
+4. Propose a small, bounded improvement if a real gap exists.
+Risks: Incorrect validation could lead to misinformation.
+Validation: Manually review the captured answer and citations.
+
+[ACT]
+Proposed change: No change is needed.
+Unresolved: The captured answer is supported by the cited snippets.
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: ACCEPT
+
+Findings:
+- Severity: SUGGESTION
+  Evidence: The captured answer correctly states that a visa on arrival is issued at the border, usually at a major airport, after landing, and that an eVisa is an electronic visa applied for online before departure.
+  Failure mode: The answer does not provide additional information about the requirements for a visa on arrival.
+  Required correction: Consider adding more details about the requirements for a visa on arrival.
+
+Validation gaps:
+The pre-test evidence does not yet prove that the captured answer correctly identifies the requirements for an eVisa.
+
+Scope check:
+The proposal stayed within the requested scope, as it only focused on validating the captured visa guidance answer against its cited knowledge chunks.
+[ADAPT] No model revision generated because reviewer verdict is ACCEPT.
+Agentic-loop record awaiting human finalisation: C:\Users\alex\repos\Advanced-Software-Development-Project\docs\agentic-loop-records\20261001T114858Z-e3385d8dc6f1499db6c99f34beee5180.json

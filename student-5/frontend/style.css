@@ -181,13 +181,14 @@ textarea:focus-visible {
   font-weight: 600;
 }
 
-/* Rows: composer (auto), planner grid (fills), manage section (auto).
+/* Rows: composer (auto), planner grid (fills), live tools section (auto),
+   manage section (auto).
    overflow-y on the shell rather than the body means the normal state -- with
    "Manage destinations" collapsed -- shows no scrollbar at all, but opening
    that section scrolls the shell instead of being clipped by body overflow. */
 .page-shell {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 16px;
   width: min(100% - 2rem, 88rem);
   height: calc(100dvh - 3.75rem);
@@ -246,6 +247,7 @@ select {
    -------------------------------------------------------------------------- */
 
 .trip-composer,
+.assist-section,
 .manage-section {
   border-top: 1px solid var(--color-border);
   border-bottom: 1px solid var(--color-border);
@@ -253,6 +255,7 @@ select {
 }
 
 .trip-composer > summary,
+.assist-section > summary,
 .manage-section > summary {
   display: flex;
   min-height: 82px;
@@ -265,11 +268,13 @@ select {
 }
 
 .trip-composer > summary::-webkit-details-marker,
+.assist-section > summary::-webkit-details-marker,
 .manage-section > summary::-webkit-details-marker {
   display: none;
 }
 
 .trip-composer > summary > span:first-child,
+.assist-section > summary > span:first-child,
 .manage-section > summary > span:first-child {
   display: grid;
   gap: 3px;
@@ -310,6 +315,7 @@ select {
 }
 
 .trip-composer[open] .composer-toggle::after,
+.assist-section[open] .composer-toggle::after,
 .manage-section[open] .composer-toggle::after {
   transform: rotate(0);
 }
@@ -870,6 +876,171 @@ td.fragment-empty {
 }
 
 /* --------------------------------------------------------------------------
+   Live tools & knowledge base (Release 1 MCP and RAG panels)
+   Collapsed by default. Opening it keeps the planner at a usable height and
+   lets the shell scroll, instead of squeezing the planner to nothing.
+   -------------------------------------------------------------------------- */
+
+.page-shell:has(.assist-section[open]) {
+  grid-template-rows: auto minmax(32rem, 1fr) auto auto;
+}
+
+.assist-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+}
+
+.assist-card {
+  min-width: 0;
+  padding: 20px 24px 24px;
+}
+
+.assist-card + .assist-card {
+  border-left: 1px solid var(--color-border);
+}
+
+.assist-card h2 {
+  margin-bottom: 14px;
+  font-size: 1.05rem;
+}
+
+/* Fields share the row; the button sits on the inputs' baseline. */
+.assist-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.assist-form .assist-question {
+  grid-column: span 2;
+}
+
+.assist-form .primary-button[disabled] {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+/* Same no-layout-jump treatment as .advisory-loading. */
+.assist-loading {
+  visibility: hidden;
+  margin: 10px 0 0;
+  color: var(--color-muted);
+  font-size: 0.84rem;
+}
+
+.assist-loading.htmx-request {
+  visibility: visible;
+}
+
+.assist-panel {
+  margin-top: 12px;
+}
+
+/* backend fragment: mcp_result.html */
+.mcp-provenance {
+  margin: 0 0 10px;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.mcp-tool-name,
+.citation-id {
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+.mcp-destination {
+  margin: 0 0 8px;
+  font-weight: 700;
+}
+
+/* backend fragment: rag_answer.html */
+.rag-question {
+  margin: 0 0 8px;
+  color: var(--color-muted);
+  font-size: 0.86rem;
+  font-style: italic;
+}
+
+.rag-confidence {
+  margin: 0 0 10px;
+}
+
+.confidence-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.confidence-high { color: var(--color-success); }
+.confidence-medium { color: var(--color-primary); }
+.confidence-low,
+.confidence-insufficient { color: var(--color-warning); }
+
+.rag-answer-text,
+.rag-insufficient {
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+.rag-insufficient {
+  font-weight: 600;
+}
+
+.rag-caution {
+  margin: 0 0 10px;
+  color: var(--color-warning);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.rag-sources-heading {
+  margin: 14px 0 6px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rag-citations {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.rag-citation {
+  margin-bottom: 10px;
+  font-size: 0.86rem;
+}
+
+.citation-source {
+  font-weight: 600;
+}
+
+.citation-score {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+}
+
+.citation-snippet {
+  margin: 4px 0 0;
+  padding-left: 10px;
+  border-left: 2px solid var(--color-border-strong);
+  color: var(--color-muted);
+}
+
+/* --------------------------------------------------------------------------
    Advisory
    -------------------------------------------------------------------------- */
 
@@ -1076,6 +1247,19 @@ td.fragment-empty {
     height: min(680px, calc(100dvh - 32px));
     margin-bottom: 16px;
   }
+
+  .assist-section {
+    margin-bottom: 16px;
+  }
+
+  .assist-body {
+    grid-template-columns: 1fr;
+  }
+
+  .assist-card + .assist-card {
+    border-top: 1px solid var(--color-border);
+    border-left: 0;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1088,6 +1272,7 @@ td.fragment-empty {
   }
 
   .trip-composer > summary,
+  .assist-section > summary,
   .manage-section > summary {
     min-height: 64px;
     padding: 12px 16px;
@@ -1174,6 +1359,18 @@ td.fragment-empty {
   .destinations-table {
     min-width: 34rem;
   }
+
+  .assist-card {
+    padding: 16px;
+  }
+
+  .assist-form {
+    grid-template-columns: 1fr;
+  }
+
+  .assist-form .assist-question {
+    grid-column: auto;
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -1185,6 +1382,7 @@ td.fragment-empty {
 @media print {
   .app-header,
   .trip-composer,
+  .assist-section,
   .manage-section,
   .advisory-loading,
   .advisory-progress,

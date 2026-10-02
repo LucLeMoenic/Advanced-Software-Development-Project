@@ -72,15 +72,81 @@ Boundary rules:
 
 **Done when:** create, edit, delete, and review-submission are all demonstrable through the browser against the integrated app, not just via `curl`.
 
-### Chunk 5 — Report and Demonstration Evidence (in progress)
+### Chunk 5 — Release 0 Report and Demonstration Evidence (done)
+
+**Produced**
+- The Release 0 documentation set, plus a finalised agentic-loop record (`20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json`, `formatElapsed`, PR #55).
+- Screenshots: browse/filter, create/edit/delete in the browser, review submission, AI loading state — `docs/evidence/01-*.png` through `12-*.png`.
+
+**Done when:** every checklist row in `known-issues.md` has an exact evidence location — met for Release 0 as of PR #55.
+
+## Release 1 Implementation Sequence (as actually built)
+
+Detailed contracts for each stage are in `requirements.md` §§1.3–1.4, 3.6–3.7, 4.4, and NFR-07–11. Every stage's agentic-loop evidence is in `prompt-log.md` and analysed phase by phase in `reviewrecord.md`.
+
+### Stage 0 — Shared Contracts and Infrastructure (`#61`, `#62`)
+
+**Implemented** (some as shared, cross-student chunks; student-3's own additions confirmed with the group lead first)
+- Shared MCP server (`ai-services/mcp-server/`) and RAG server (`ai-services/rag-server/`) scaffolding, host-native (not Compose services), per the Release 1 brief.
+- `docker-compose.yml`/`.env.example` wiring for `MCP_SERVER_URL`/`RAG_SERVER_URL`/`host.docker.internal` across all backends.
+
+### Stage 1 — Knowledge Base and MCP Tools (`KSS/r1-knowledge-and-tools`, PR `#62`)
+
+**Implemented**
+- `attractions.search`/`attractions.get_reviews` read-only MCP tools (category enum, `limit` ≤10, `extra="forbid"` unknown-field rejection — including a top-level wrapper gap found and fixed while preparing Stage 2).
+- 8-doc RAG knowledge base under `ai-services/rag-server/knowledge/student-3/`.
+- A real retrieval bug found and fixed while validating the knowledge base (no stopword stripping let irrelevant questions score too close to genuine matches).
+- Agentic-loop record: `total_matches` field added to `attractions.search`, `changed` (hallucinated reviewer finding rejected).
+
+**Done when:** both tools pass their own input-validation tests and return correctly-shaped, correctly-filtered results against the real database service.
+
+### Stage 2 — Backend Integration (`KSS/r1-backend-mcp-rag`, PR `#79`)
+
+**Implemented**
+- `mcp_client.py` (streamable-HTTP MCP client) and `rag_client.py`, following `database_client.py`'s existing shape.
+- `GET /api/mcp/tools`, `POST /api/mcp/invoke` (backend allow list), `POST /api/rag/ask` routes.
+- Two real bugs found and fixed live: the Stage 1 top-level-field gap, and an `anyio` `ExceptionGroup` swallowing a tool's own validation error into a misleading "unavailable" result.
+- Agentic-loop record: `RagResponseError.code` addition, `rejected` after review (correctly) caught bugs the reviewer's own stated finding had missed.
+
+**Done when:** all three new routes work end to end against the real, live shared servers and the real student-3 database (verified, not just mocked).
+
+### Stage 3 — Frontend Panels (`KSS/r1-frontend-panels`, PR `#80`)
+
+**Implemented**
+- "Attraction Tools (MCP)" panel (dynamic per-tool argument form) and "Ask the Destination Guide (RAG)" panel (confidence badge, citations, insufficient-context state), plus disabled/offline states for both.
+- Verified live in a real browser (Playwright): a real MCP search result, a real Ollama-backed grounded RAG answer with citations, the insufficient-context state, both disabled states, both offline states, and no horizontal overflow at 375px.
+- Agentic-loop record: `confidenceBadgeClass`, `kept` (reviewer's finding was hallucinated; code was already correct).
+
+**Done when:** both panels are demonstrable through the browser against the integrated app, matching the existing HTMX/`escapeHtml` conventions.
+
+### Stage 4 — Compose and CI (`KSS/r1-compose-ci`, PR `#86`)
+
+**Implemented**
+- `MCP_ENABLED`/`RAG_ENABLED` added to `student3-backend` in `docker-compose.yml`.
+- `student-3.yml` extended: new `on.paths` triggers, `MCP_ENABLED=false`/`RAG_ENABLED=false` for the CI run, and three new smoke assertions for the disabled-body contract.
+- `.env.example` documented.
+- A loop attempt to add local Compose-config validation to `scripts/test/student-3.ps1` failed outright (reviewer hallucination, then a malformed format-correction retry) — implemented by hand and verified live against both a valid and a deliberately-broken `docker-compose.yml`.
+
+**Done when:** `student-3.yml` passes end to end including the new disabled-body smoke assertions, verified via a full local run of the real recipe (build, db-init, up, smoke, down).
+
+### Stage 5 — Agentic Loop Validation Modes (`KSS/r1-loop-validation-student3`, PR `#89`)
+
+**Implemented**
+- Extended the shared `ai-services/agentic-loop/ServiceValidation.cs` (ownership confirmed with the group lead first) so `validate-mcp`/`validate-rag` support `student-3` alongside the pre-existing `student-1`/`student-2`.
+- Four loop attempts at the extension's own `IsValidStudent3Mcp` function all failed for host-environment reasons (implementer repetition once, then Ollama loading both loop models simultaneously three times) rather than a prompt problem — documented in full rather than hidden.
+- Implemented by hand; captured the required live student-3 evidence (`attractions.search` restaurant filter, one answerable and one unanswerable RAG question) via `ServiceValidation.CaptureAsync` directly, bypassing the crashing CLI.
+
+**Done when:** the shared validation modes correctly support student-3, and live evidence exists for all three required cases — met, with the answerable-RAG-question case additionally cross-referenced against its earlier Stage 3 success due to a host-timeout limitation (see `knownissues.md`).
+
+### Stage 6 — Evidence, Report, and Cleanup (`KSS/r1-evidence-report-cleanup`, in progress)
 
 **To produce**
-- This documentation set (`requirements.md`, `feature-plan.md`, `risk-plan.md`, `architecture.md`, `review-record.md`, `contribution-log.md`, `known-issues.md`).
-- A finalised agentic-loop record under `docs/agentic-loop-records/` for a real piece of student-3 work — done: `20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json` (`formatElapsed`, PR #55), reviewed in `reviewrecord.md`.
-- Screenshots: browse/filter, create/edit/delete in the browser, review submission, AI success, AI fallback, `student-3.yml` green run, `docker compose up` output.
-- My segment of the group showcase video.
+- Full Release 1 rewrite of `requirements.md`, `architecture.md`, `featureplan.md` (this document), `riskplan.md`, `knownissues.md`.
+- A green `student-3.yml` Actions run link.
+- Draft report paragraphs and a showcase-video script (delivered in conversation, not committed files, per the handoff).
+- My segment of the group showcase video and the Week 9 attendance checkpoint.
 
-**Done when:** every checklist row in `known-issues.md`/the technical report has an exact evidence location, and my segment of the group video shows CRUD, the AI loop, and the integrated feature.
+**Done when:** every checklist row in `knownissues.md` has an exact evidence location, and the group report/video are ready to submit.
 
 ## Working Rule
 

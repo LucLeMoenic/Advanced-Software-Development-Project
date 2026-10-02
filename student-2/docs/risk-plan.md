@@ -16,6 +16,31 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 | IT-R10 | Work without durable remote history cannot support contribution evidence. | 2 | 5 | 10 | Keep selective commits on the Student 2 branch, push with approval, and open a reviewed pull request. | Local branch and commits complete; push/PR open |
 | IT-R11 | Responsive or keyboard defects appear during the showcase. | 3 | 3 | 9 | Complete the browser checklist at 320px, 768px, and 1280px and capture evidence. | Open |
 | IT-R12 | Compose services build but fail when started together. | 2 | 4 | 8 | Validate Compose, wait for Student 2 health checks, and exercise backend-to-database HTTP integration in CI. | Mitigated locally and in workflow; remote run evidence pending |
-| IT-R13 | Weather provider outage, wrong location match, or forecasts used beyond their horizon mislead travellers. | 3 | 4 | 12 | Require ambiguous-location confirmation; use fixed provider URLs, response bounds and deadlines; retain summary after weather failures; show missing dates/values and attribution; never claim feasibility. | Overview implemented and tested 2026-09-28; native provider/SDK checked, integrated container gate remains open |
+| IT-R13 | Weather provider outage, wrong location match, or forecasts used beyond their horizon mislead travellers. | 3 | 4 | 12 | Return the selected top-match location explicitly; validate supplied location IDs; use fixed provider URLs, response bounds and deadlines; retain summary after weather failures; show missing dates/values and attribution; never claim feasibility. | Automatic top-match tool behavior covered by MCP tests; recording should verify the matched place |
+| IT-R14 | A tool caller bypasses confirmation or replays an edit. | 3 | 5 | 15 | UI requires confirmation; database enforces signed, expiring, revision-bound previews and atomic writes. No automatic save retries; keep unauthenticated MCP local-only. | Database/MCP foundations merged; backend/UI confirmation, cancellation and undo regression-tested |
+| IT-R15 | Context-aware advice is deployed against an older RAG server. | 3 | 4 | 12 | Deploy matching backend and shared RAG context contract, restart native RAG and verify a selected-trip query. Treat context as untrusted and keep identity excluded. | Context producer/consumer included together; live deployment not repeated for this branch |
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
+
+## Editor and Validation Follow-up - 1 October 2026
+
+- Model intent and source support remain separate from schema validity. Restrict
+	model authority to one action/replacement field, ground new text/day in the
+	request, derive existing stop days from saved IDs and show exact before/after
+	values. Ambiguous names and embedded instructions still require human review.
+- A save timeout has an uncertain outcome (P=3, I=4): never retry automatically;
+	discard the preview and refresh before requesting another edit.
+- Removal and undo can lose intended content (P=3, I=5). Atomically journal dates
+	and full stops, including IDs/creation times; undo removes added stops and rejects
+	intervening changes. Database restart invalidates outstanding preview tokens.
+- Weather context can be mistaken for cited knowledge (P=3, I=4). Keep provider
+	data/attribution separate, preserve abstention and report missing forecasts and
+	truncated plan context. Automatic geocoding is fallible; weather failure must not
+	block knowledge-based advice.
+- Earlier universal-schema extraction failed live intent cases. Action-specific
+	schemas and text/day grounding passed eleven retained cases and five isolated
+	confirmation/undo flows. This is historical, narrow evidence, not general model
+	accuracy or injection certification.
+- The launcher restarts MCP/RAG and binds native APIs to the chosen interface.
+	Use a local private address and administrator-managed access policy; the script
+	does not edit firewall rules. Full startup remains a separate acceptance check.

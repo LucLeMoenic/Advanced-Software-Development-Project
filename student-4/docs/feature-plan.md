@@ -86,8 +86,8 @@ Exit: ACT report distinguishes produced evidence from human-only pending work.
 
 Each substantive edit is followed by the narrowest relevant check. A failed
 check is repaired in the same slice and rerun before implementation expands.
-Liam performs all commits, pushes, PRs, approvals, attendance records, browser
-acceptance, and showcase publication.
+AI may commit and push feature branches when authorised by Liam. Liam retains
+PR merge, human approvals, attendance, acceptance and showcase publication.
 
 ## Release 1 Delivery
 
@@ -98,9 +98,10 @@ shared native RAG with `feature: student-4`, validated citations, and explicit
 insufficient-context abstention. Keep Ollama advice distinct, preserve database
 ownership, and make no schema changes or cross-student calls.
 
-Status checked 2026-10-02 at revision `3e8be05` on branch
-`BCP/R1_Budget_Validation_CI`. The cancellation-focus fix remains uncommitted,
-but its final browser replay passed. Detailed live results and
+Status checked 2026-10-02: final feature revision `c282a73` includes the
+cancellation-focus fix and its successful browser replay. The current
+`BCP/R1_Budget_RAG` merge preserves newer shared-service changes from main and
+requires fresh combined validation. Detailed historical live results and
 limitations are in the [Release 1 runbook](release-1-runbook.md) and
 [live-validation record](evidence/release-1/live-validation-2026-10-02.md).
 
@@ -130,7 +131,8 @@ limitations are in the [Release 1 runbook](release-1-runbook.md) and
 7. **Release evidence - partial:** Student 4 implementation criteria 2-7 have
   substantial implementation/runtime/CI evidence. All-five-feature integration,
   final group PDF/video links, attendance, Q&A and release sign-off are not
-  established. The five PRs (#104-#108) remain open/unmerged pending human review.
+  established. PRs #104-#108 were merged, but #105-#108 targeted feature branches;
+  the complete feature still requires the final integration PR into main.
 
 Two independent functional/rubric reviews found no current Student 4 functional
 blocker. No grade, group-wide completion, PR approval, or human loop decision is implied.

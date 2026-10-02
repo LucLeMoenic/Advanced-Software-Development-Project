@@ -1,7 +1,9 @@
 using System.Net.Http.Json;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Text.Json.Nodes;
 
 namespace AgenticLoop;
 
@@ -20,12 +22,14 @@ internal static class ServiceValidation
         ["budgeting-workflow#2"] = "Practical budgeting workflow in the tracker"
     };
     private const long MaxSafeInteger = 9_007_199_254_740_991;
+    private const int Student5DestinationId = 1;
 
     internal static string DefaultBackendUrl(string feature) => feature switch
     {
         "student-1" => "http://127.0.0.1:5201",
         "student-3" => "http://127.0.0.1:5203",
         "student-4" => "http://127.0.0.1:5204",
+        "student-5" => "http://127.0.0.1:5205",
         _ => "http://127.0.0.1:5202"
     };
 
@@ -41,6 +45,11 @@ internal static class ServiceValidation
         ("student-3", "mcp") => "attractions.search {category: restaurant}",
         ("student-3", _) => "Is Chin Chin busy? Do I need to book?",
         ("student-4", _) => "What does the 80% category budget warning mean?",
+        ("student-2", "mcp") => "Add a Coffee break to day 1",
+        // Like student-3, Student 5's mcp body is fixed (see CaptureAsync), so
+        // this value is unused for ("student-5", "mcp").
+        ("student-5", "mcp") => "logistics.check_visa_requirement {destination_id: 1}",
+        ("student-5", _) => "What is the difference between visa on arrival and an eVisa?",
         _ => "Is budget the total for the trip?"
     };
 
@@ -50,8 +59,8 @@ internal static class ServiceValidation
     {
         if (mode is not ("mcp" or "rag"))
             throw new LoopException("Validation mode must be mcp or rag.");
-        if (feature is not ("student-1" or "student-2" or "student-3" or "student-4"))
-            throw new LoopException("Validation feature must be student-1, student-2, student-3, or student-4.");
+        if (feature is not ("student-1" or "student-2" or "student-3" or "student-4" or "student-5"))
+            throw new LoopException("Validation feature must be student-1, student-2, student-3, student-4, or student-5.");
         if (!Uri.TryCreate(backendUrl, UriKind.Absolute, out var backend)
             || backend.Scheme != "http" || !backend.IsLoopback
             || backend.AbsolutePath != "/" || backend.UserInfo.Length != 0
@@ -69,14 +78,14 @@ internal static class ServiceValidation
         var path = feature switch
         {
             "student-1" => "/api/assistant",
-            // Student 3 has its own direct-invoke MCP/RAG routes (Stage 2),
-            // unlike student-1's single natural-language assistant endpoint or
-            // student-2's trip-scoped mcp-summary/itinerary-advice routes.
+            // Students 3 and 5 use direct-invoke MCP/RAG routes; Student 2 uses
+            // trip-scoped edit-preview/itinerary-advice routes.
             "student-3" => mode == "mcp" ? "/api/mcp/invoke" : "/api/rag/ask",
             "student-4" => mode == "mcp" ? "/api/budget-check" : "/api/budget-guidance",
-            _ => mode == "mcp" ? $"/api/trips/{tripId}/mcp-summary" : "/api/itinerary-advice"
+            "student-5" => mode == "mcp" ? "/api/mcp/invoke" : "/api/rag/ask",
+            _ => mode == "mcp" ? $"/api/trips/{tripId}/edit-preview" : "/api/itinerary-advice"
         };
-        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(35));
+        using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(feature == "student-2" && mode == "rag" ? 55 : 35));
         using var request = new HttpRequestMessage(HttpMethod.Post, new Uri(backend, path))
         {
             Content = student4Mcp ? JsonContent.Create(new { journeyLabel })
@@ -86,7 +95,11 @@ internal static class ServiceValidation
                 // {tool, arguments} invoke contract rather than a bare POST body.
                 : feature == "student-3" && mode == "mcp"
                     ? JsonContent.Create(new { tool = "attractions.search", arguments = new { category = "restaurant" } })
-                : mode == "rag" ? JsonContent.Create(new { question }) : JsonContent.Create(new { })
+                // Student 5's fixed case: the visa lookup for seeded destination 1.
+                : feature == "student-5" && mode == "mcp"
+                    ? JsonContent.Create(new { tool = "logistics.check_visa_requirement", arguments = new { destination_id = Student5DestinationId } })
+                : feature == "student-2" && mode == "rag" ? JsonContent.Create(new { question, tripId })
+                : JsonContent.Create(new { question })
         };
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, deadline.Token);
         await using var stream = await response.Content.ReadAsStreamAsync(deadline.Token);
@@ -101,12 +114,23 @@ internal static class ServiceValidation
         }
         var body = Encoding.UTF8.GetString(buffer.ToArray());
         var passed = response.IsSuccessStatusCode && IsValid(mode, body, tripId, feature, journeyLabel);
+        if (feature == "student-2" && mode == "mcp")
+        {
+            try
+            {
+                var captured = JsonNode.Parse(body);
+                if (captured is JsonObject envelope && envelope["preview"] is JsonObject preview)
+                    preview.Remove("token");
+                body = captured?.ToJsonString() ?? "null";
+            }
+            catch (JsonException) { body = "Invalid JSON preview response omitted."; }
+        }
         var result = JsonSerializer.Serialize(new
         {
             feature, mode, capturedAt = DateTimeOffset.UtcNow, endpoint = request.RequestUri,
             statusCode = (int)response.StatusCode, contractPassed = passed,
             response = body,
-            limitation = "Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately."
+            limitation = "Contract checks do not prove intent, claim entailment, protocol discovery, confirmation/undo, or browser behavior. Preview tokens are omitted; no edit is confirmed. Review cited sources and capture those checks separately."
         });
         return new TestEvidence($"POST {request.RequestUri}", result);
     }
@@ -122,26 +146,19 @@ internal static class ServiceValidation
                 return mode == "mcp" ? IsValidStudent3Mcp(root) : IsValidStudent3Rag(root);
             if (feature == "student-4")
                 return mode == "mcp" ? IsValidStudent4Mcp(root, journeyLabel) : IsValidStudent4Rag(root);
+            // Student 5's RAG contract also accepts "insufficient" as a correct
+            // abstention, with the same fixed sentence and no citations.
+            if (feature == "student-5")
+                return mode == "mcp" ? IsValidStudent5Visa(root) : IsValidStudent3Rag(root);
             if (feature == "student-1" && mode == "mcp")
                 return IsValidStudent1Lookup(root);
             if (feature == "student-1" && root.GetProperty("mode").GetString() != "guide")
                 return false;
             if (mode == "mcp")
-            {
-                var summary = root.GetProperty("summary");
-                var dayCount = summary.GetProperty("dayCount").GetInt32();
-                var plannedDays = summary.GetProperty("plannedDayCount").GetInt32();
-                var missingDays = summary.GetProperty("unplannedDays").EnumerateArray()
-                    .Select(day => day.GetInt32()).ToArray();
-                return root.GetProperty("tool").GetString() == "itinerary.get_summary"
-                    && summary.GetProperty("tripId").GetInt32() == tripId
-                    && dayCount is >= 1 and <= 31 && plannedDays >= 0 && plannedDays <= dayCount
-                    && missingDays.Length == dayCount - plannedDays
-                    && missingDays.Distinct().Count() == missingDays.Length
-                    && missingDays.All(day => day >= 1 && day <= dayCount)
-                    && summary.GetProperty("stopCount").GetInt32() >= plannedDays;
-            }
+                return IsValidStudent2Preview(root, tripId);
             if (mode != "rag") return false;
+            if (feature == "student-2" && (root.GetProperty("tripId").GetInt32() != tripId
+                || !HasText(root, "contextNotice", 1000))) return false;
             var answer = root.GetProperty("answer").GetString();
             var confidence = root.GetProperty("confidence").GetString();
             var citations = root.GetProperty("citations").EnumerateArray().ToArray();
@@ -387,6 +404,88 @@ internal static class ServiceValidation
                 || !double.IsFinite(score) || score <= 0 || score > 1) return false;
         }
         return true;
+    }
+
+    private static bool HasText(JsonElement value, string name, int maximum, bool allowEmpty = false)
+    {
+        var text = value.GetProperty(name).GetString();
+        return text is not null && text.Length <= maximum && (allowEmpty || !string.IsNullOrWhiteSpace(text));
+    }
+
+    private static bool IsValidStudent2Preview(JsonElement root, int tripId)
+    {
+        var preview = root.GetProperty("preview");
+        if (root.GetProperty("tool").GetString() != "itinerary.preview_edit"
+            || root.GetProperty("tripId").GetInt32() != tripId
+            || root.GetProperty("clarification").GetString() != ""
+            || preview.GetProperty("tripId").GetInt32() != tripId
+            || preview.GetProperty("expiresIn").GetInt32() != 600
+            || !HasText(preview, "token", 4096)) return false;
+        var changes = preview.GetProperty("changes").EnumerateArray().ToArray();
+        if (changes.Length is < 1 or > 200) return false;
+        var identifiers = new HashSet<int>();
+        foreach (var change in changes)
+        {
+            if (change.TryGetProperty("kind", out var kind) && kind.GetString() == "shift_dates")
+            {
+                var names = new[] { "fromStartDate", "fromEndDate", "toStartDate", "toEndDate" };
+                var dates = new List<DateOnly>();
+                foreach (var name in names)
+                {
+                    if (!DateOnly.TryParseExact(change.GetProperty(name).GetString(), "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var date)) return false;
+                    dates.Add(date);
+                }
+                return changes.Length == 1 && dates[1].DayNumber - dates[0].DayNumber is >= 0 and <= 30
+                    && dates[1].DayNumber - dates[0].DayNumber == dates[3].DayNumber - dates[2].DayNumber
+                    && dates[0] != dates[2];
+            }
+            var identifier = change.GetProperty("id").GetInt32();
+            if (!identifiers.Add(identifier)) return false;
+            if (kind.ValueKind == JsonValueKind.Undefined)
+            {
+                if (identifier <= 0 || !HasText(change, "activity", 160) || !HasText(change, "notes", 1000, true)
+                    || change.GetProperty("fromDay").GetInt32() is < 1 or > 31
+                    || change.GetProperty("toDay").GetInt32() is < 1 or > 31
+                    || change.GetProperty("fromOrder").GetInt32() < 0
+                    || change.GetProperty("toOrder").GetInt32() < 0) return false;
+                continue;
+            }
+            var action = kind.GetString();
+            if (action is not ("add_stop" or "remove_stop" or "update_stop") || identifier < 0
+                || (identifier == 0 && action != "add_stop")) return false;
+            var before = change.GetProperty("before");
+            var after = change.GetProperty("after");
+            if ((before.ValueKind == JsonValueKind.Null) != (action == "add_stop")
+                || (after.ValueKind == JsonValueKind.Null) != (action == "remove_stop")) return false;
+            foreach (var stop in new[] { before, after }.Where(stop => stop.ValueKind != JsonValueKind.Null))
+            {
+                if (stop.GetProperty("id").GetInt32() != identifier || stop.GetProperty("day").GetInt32() is < 1 or > 31
+                    || stop.GetProperty("sortOrder").GetInt32() < 0 || !HasText(stop, "activity", 160)
+                    || !HasText(stop, "notes", 1000, true)) return false;
+            }
+            if (action == "update_stop" && (before.GetProperty("day").GetInt32() != after.GetProperty("day").GetInt32()
+                || before.GetProperty("sortOrder").GetInt32() != after.GetProperty("sortOrder").GetInt32()
+                || (before.GetProperty("activity").GetString() == after.GetProperty("activity").GetString()
+                    && before.GetProperty("notes").GetString() == after.GetProperty("notes").GetString()))) return false;
+        }
+        return true;
+    }
+
+    // A passing check confirms the tool read the requested destination (not a
+    // fallback record) and kept the official-source reminder, so a visa
+    // category is never shown as an authoritative entry decision.
+    private static bool IsValidStudent5Visa(JsonElement root)
+    {
+        if (root.GetProperty("tool").GetString() != "logistics.check_visa_requirement") return false;
+        var result = root.GetProperty("result");
+        var destination = result.GetProperty("destination");
+        var reminder = result.GetProperty("official_source_reminder").GetString();
+        return result.GetProperty("ok").GetBoolean()
+            && destination.GetProperty("id").GetInt32() == Student5DestinationId
+            && !string.IsNullOrWhiteSpace(destination.GetProperty("country").GetString())
+            && !string.IsNullOrWhiteSpace(destination.GetProperty("visa_requirement").GetString())
+            && reminder is not null && reminder.Contains("Smartraveller", StringComparison.Ordinal);
     }
 
     private static bool IsValidStudent1Lookup(JsonElement root)

@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-Student 5 (Alex Chen), Release 0. Honest limitations of the delivered feature.
+Student 5 (Alex Chen), Release 0 and Release 1. Honest limitations of the delivered feature.
 Each entry says what the problem is, what it costs, and what would fix it.
 
 ## Development and tooling
@@ -151,8 +151,8 @@ evidence file to cite.
 
 ## Release 0 scope
 
-- **No MCP tools.** `get_weather` and `check_visa_requirement` are Release 1;
-  nothing in this release depends on them.
+- **No MCP tools in Release 0.** `get_weather` and `check_visa_requirement`
+  were delivered in Release 1 (below); nothing in Release 0 depends on them.
 - **No authentication and no per-user data.** Anyone reaching the page can edit
   the destination list.
 - **No live data.** Visa requirements, weather notes and transit options are
@@ -160,4 +160,45 @@ evidence file to cite.
   They are illustrative for the assignment and must not be relied on for travel.
 - **Single SQLite file, synchronous HTTP throughout.** Sized for a local
   classroom demonstration, not for concurrent production use.
-- **No RAG, no multi-agent application behaviour, no cloud deployment.**
+- **No RAG in Release 0, no multi-agent application behaviour, no cloud
+  deployment.**
+
+## Release 1
+
+### The first RAG question after a restart can time out
+
+The shared RAG server bounds generation at 18s. With a cold model the first
+question exceeded that and the backend answered `504 rag_timeout`
+(`evidence/release-1/rag-cold-start-timeout.json`); the next answered in about
+0.8s. The UI shows a readable notice. **Workaround:** ask one warm-up question
+before demonstrating. The bound belongs to the shared server, so it is not
+changed from Student 5.
+
+### Correct answers are often labelled low confidence
+
+The RAG server derives confidence from retrieval scores. Short, well-cited
+answers such as `rag-evisa.json` (score 0.27) are labelled `low`, so the UI shows
+the low-confidence caution more often than the content deserves. This is the
+safe direction to be wrong in, and the calibration is shared code, so it is left
+as is.
+
+### CI only exercises the disabled path
+
+CI has no model and no MCP or RAG server, so `student-5.yml` runs with both
+flags off and asserts the fail-closed 503 bodies. The live paths are covered by
+mocked unit tests in CI and by the local captures in `evidence/release-1/`.
+The Release 1 workflow is green on GitHub (Student 5 CI run #140 on `main`, `49e5489`).
+
+### The reviewer echo recurred on `validate-mcp`
+
+On `validate-mcp` the reviewer's first output copied the worked example from
+the reviewer prompt again (a division-by-zero on `count` with a REQUIRED finding
+under ACCEPT); `ParseVerdict` rejected it and the corrected review accepted.
+Both records were accepted with SUGGESTIONs that were not needed. Alex reviewed
+both and recorded his decision with `finalise`: (e) `kept`, (f) `kept`.
+
+### The backend still forwards database 5xx verbatim
+
+Release 1 adds no database routes, and the issue above remains as described.
+The new MCP and RAG routes do not have it: they use distinct `502` and `504`
+codes for dependency failures.

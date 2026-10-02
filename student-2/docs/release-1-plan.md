@@ -2,6 +2,26 @@
 
 Status: implementation in progress as of 27 September 2026, not release-complete. The baseline below describes the pre-implementation state; proposed sections remain the target, not proof of completion.
 
+1 October update: the user approved a distinct MCP itinerary editor with read-only
+previews and explicit confirmation, plus weather-aware RAG advice. This supersedes
+the historical review/overview UI and read-only-only MCP scope below. Supported
+operations are day moves/swaps, single-stop moves, additions/removals, title/notes
+updates, same-duration date shifts and one-level undo; no autonomous writes.
+The database signs previews and checks revisions atomically on confirmation.
+Offline, disposable live-model and deployed-browser edit checks have passed as
+recorded in the [runbook](release-1-runbook.md). The subsequent launcher/CI/loop
+improvements have local regression coverage, not a new live acceptance run.
+Broader model evaluation, live loop records, remote CI and report gates remain open.
+
+30 September update: replace the overview UI with a read-only, question-driven
+itinerary review. The local model chooses the saved-itinerary tool and optionally
+weather, then produces findings referencing validated tool evidence. Weather uses
+the top geocoding match without confirmation. See the current
+[design](release-1-design.md#itinerary-review-update---30-september-2026).
+Offline implementation is complete; live model quality, rebuilt-container
+acceptance and integrated evidence remain open. This supersedes the 28 September
+UI choice below, not its historical validation record.
+
 29 September handoff: offline overview/regression checks and the production build
 pass. The user explicitly deferred the VM-to-Windows connection timeout; preserve
 the required deployment architecture and do not mark integrated MCP/weather or
@@ -16,7 +36,7 @@ implemented; the existing summary-only contract is retained. See the updated
 [runbook](release-1-runbook.md#trip-overview-update---28-september-2026) for tests and
 the distinction between native provider checks and pending container acceptance.
 
-Current checkpoint: Student 2 summary/advice routes, UI controls, mode flags, shared itinerary tool, RAG generation/knowledge, native-service Compose/CI changes, and shared loop validation modes are implemented with isolated tests passing. Native MCP SDK execution against persisted data succeeded. Diagnostic frontend viewport/error checks and additional transport/race tests passed. Container-to-host integration remains blocked by unresolved VM/host connectivity, and native Ollama was not found at its standard installation location. Live generated-answer and loop evidence, integrated five-feature checks, cross-feature calibration, and remote CI/report evidence remain pending. See the [native-service runbook](release-1-runbook.md) and [prompt log](prompt-log.md) for exact results and limitations.
+Historical 27 September checkpoint: summary/advice routes and shared validation modes passed isolated tests, but host connectivity and missing Ollama blocked integration. The 1 October runbook records installation, restored connectivity and successful live editor/advice checks. Those later results supersede this historical blocker, without completing live loop, integrated five-feature, cross-feature calibration or remote CI/report gates.
 
 The [implementation design](release-1-design.md) defines proposed API/tool contracts, component changes, shared dependencies, and validation gates for this plan.
 

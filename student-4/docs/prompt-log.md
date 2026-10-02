@@ -1,7 +1,38 @@
 # Student 4 AI Prompt Log
 ## Current Entry
 
+### 2026-10-02: Resolve Main Integration Conflicts
+
+- **Plan:** merge `origin/main` at `23d1391` into `BCP/R1_Budget_RAG` for PR #109,
+  retaining the final Student 4 implementation and incoming shared features.
+- **Act:** resolved all 13 conflicted paths; combined Student 2 trip/weather
+  context and citation constraints with Student 4 extractive RAG; retained all
+  five MCP registrations, Student 5 loop contracts, Student 2 token redaction
+  and Student 4 validation. Preserved later documentation evidence and removed
+  five duplicate mode-test definitions introduced by Git's automatic merge.
+- **Observe:** the interrupted generator edit initially had invalid Python;
+  reconstruction passed focused RAG tests (34 passed, 28 live skipped). Full
+  shared MCP: 166 passed. Full shared RAG: 123 passed, 28 live skipped, one
+  existing Starlette deprecation warning. Student 4 backend: 136 passed after
+  correcting duplicate tests. Frontend: 19 passed. Shared loop: 87 passed;
+  the additional symlink test failed only because Windows denied link creation,
+  and the suite excluding that test passed 87/87. Total successful affected
+  tests: 531. `docker compose config --quiet` and editor diagnostics passed.
+- **Adapt:** kept both feature behaviors and existing test coverage; no new
+  feature, schema, native-service change, live-model run or fabricated loop
+  finalisation. Linux CI must check the complete suite, including symlink
+  handling, on the published merge resolution. Liam retains the final PR merge.
+
+Commands: `dotnet test student-4/backend/tests/Backend.Tests.csproj --configuration
+Release --no-restore`; `npm.cmd test --prefix student-4/frontend -- --run`;
+each shared Python suite ran `python -m pytest -q` from its own directory using
+its existing sibling `venv-mcp` or `venv-rag` interpreter. No dependencies were
+installed, and no private local context or unrelated untracked files were staged.
+
+### Earlier Checkpoints
+
 | Date | Owner | Activity | Context supplied | AI contribution | Validation status |
+|---|---|---|---|---|---|
 | 2026-10-02 | Liam Zelmanowski | Final Student 4 focus-cancellation replay and review reconciliation (Plan -> Act -> Observe -> Adapt) | Final section of `student-4/docs/evidence/release-1/live-validation-2026-10-02.md`; current cancellation-focus fix; two independent functional/rubric reviews; Linux Actions run 36947214508 | **Plan:** replay the real busy guidance request cancellation and reconcile only current status claims. **Act:** documented the already-applied small frontend focus correction; no additional application code or tests changed in this documentation pass. **Observe:** browser showed `Guidance request cancelled.`, cleared the result, aborted the real request (`net::ERR_ABORTED`), and restored focus to `guidance-question`; frontend 19/19 passed; frontend image rebuilt and service healthy. Two independent functional/rubric reviews found no current Student 4 functional blocker. **Adapt:** retained earlier failures as history; stated that CI passed 439 tests at revision `3e8be05` on branch `BCP/R1_Budget_Validation_CI`, but does not cover the uncommitted focus fix. | Human loop decisions remain null and unfinalised; human PR review/merge and group evidence/acceptance remain open. No human approval or release sign-off is inferred. | Browser replay and healthy service are recorded in the final live-validation evidence. The two fresh loop records still have `humanDecision=null`, `postTest=null`, and no finalisation. No new CI result, commit revision, or published state is claimed for the uncommitted fix. |
 |---|---|---|---|---|---|
 | 2026-10-02 | Liam Zelmanowski | Reconcile Student 4 Release 1 implementation and evidence status | Final section of the live-validation record, extractive RAG evidence, both fresh validation-mode records, and Linux Actions run 36947214508 | Updated the Student 4 requirements, plan, runbook, contribution/review records and private context to separate completed integrated evidence from historical failures and remaining human gates. No application source, tests, CI, services, or evidence artifacts were changed. | At this earlier status checkpoint, the final cancellation-focus replay had not yet been recorded; that status is superseded by the current entry above. The focus fix remains uncommitted and CI does not cover it. Both fresh loop records remain unfinalised; PR review/merge and group evidence remain open. |
@@ -24,6 +55,7 @@
 ## Earlier Entries
 
 | Date | Owner | Activity | Context supplied | AI contribution | Validation status |
+|---|---|---|---|---|---|
 | 2026-09-03 | Liam Zelmanowski | Release 0 design validation and implementation kickoff | Approved Budget & Expense Tracker design; repository instructions; project specification; Release 0 brief; root README and Compose; shared Vue/nginx/CSS; Student 1 ASP.NET, EF Core, typed client, Ollama, test, health, and Docker patterns; Student 2 static frontend, nginx, Vitest, CI, and architecture patterns | Identified the Student 4 placeholder state, confirmed the approved architecture against repository conventions, documented two non-blocking stack/integration differences, and created the initial feature context | Design documents require Liam review; no runtime, test, Compose, browser, GitHub Actions, or live-model result claimed |
 | 2026-09-03 | Liam Zelmanowski | Database implementation | Approved schema/invariants, Student 1 EF patterns, fixed Student 4 architecture | Implemented EF Core SQLite ownership, migration, constraints, HTTP CRUD/filtering, health, transactional idempotent 12/24 seeds, stable errors, and integration tests | `dotnet test student-4/database/tests/Database.Tests.csproj --configuration Release --no-restore`: 8 passed, 0 failed |
 | 2026-09-03 | Liam Zelmanowski | Backend and application-AI implementation | Public/internal API requirements, fixed-rate and dashboard rules, Student 1 typed-client/Ollama patterns | Implemented typed database transport, authoritative conversion snapshots, deterministic dashboard, strict Ollama schema/semantic validation, one corrective retry, fallback, public CRUD, and tests | `dotnet test student-4/backend/tests/Backend.Tests.csproj --configuration Release`: 26 passed, 0 failed |

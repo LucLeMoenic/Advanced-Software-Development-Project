@@ -1,0 +1,43 @@
+=== Release 0 regression check: CRUD + AI-Mode, post-Release-1 ===
+Date: Wed Sep 30 18:38:26 AUSEST 2026
+
+--- health ---
+healthy
+
+{"status":"ok"}
+
+{"status":"ok"}
+
+
+--- list attractions (>=10) ---
+12 attractions
+
+--- create ---
+{"category":"restaurant","description":"temp","id":16,"name":"Regression Test Cafe","rating":4.0}
+created id=16
+
+--- read ---
+{"category":"restaurant","description":"temp","id":16,"name":"Regression Test Cafe","rating":4.0,"reviews":[]}
+
+
+--- update ---
+{"category":"restaurant","description":"temp2","id":16,"name":"Regression Test Cafe Updated","rating":4.5}
+
+
+--- create review ---
+{"attraction_id":16,"comment":"regression test review","id":18,"rating":5.0}
+
+
+--- delete ---
+204
+
+--- confirm deleted (expect 404) ---
+404
+
+=== AI-Mode regression check ===
+{"attractions_considered":[1,2,3,4,5,6],"recommendation":"Based on your interest in casual Thai food, I recommend visiting Chat Thai Sydney CBD. It's a popular no-frills Thai restaurant favored by locals and students.\n\nAlternatively, Mr. Wong is another option with high ratings. It offers upscale Cantonese dining in a converted Sydney CBD warehouse, though it may be more on the upscale side for casual Thai food.","source":"ai"}
+
+
+=== Release 1 routes still working (same container run) ===
+{"error":"mcp_unavailable","message":"All connection attempts failed"}
+

@@ -1,5 +1,77 @@
 [
   {
+    "id": "itinerary-daily-pacing",
+    "feature": "student-2",
+    "question": "How can I avoid a rushed itinerary with too many activities each day?",
+    "answerable": true,
+    "candidate": "daily-pacing#1",
+    "rubric": "Prioritise activities, group nearby stops, allow breaks and travel time, and keep optional stops. No invented optimal activity count or guarantee of feasibility."
+  },
+  {
+    "id": "itinerary-transport-buffers",
+    "feature": "student-2",
+    "question": "How should I allow travel time and buffers between transport connections and activities?",
+    "answerable": true,
+    "candidate": "transport-buffers#1",
+    "rubric": "Include the whole journey and a context-dependent buffer; check operator requirements. Do not invent minutes, timetables, fares or routes."
+  },
+  {
+    "id": "itinerary-expense-planning",
+    "feature": "student-2",
+    "question": "How should I split my travel budget between expenses and unexpected costs?",
+    "answerable": true,
+    "candidate": "travel-budget-planning#1",
+    "rubric": "Separate fixed costs, flexible spending and a contingency. No invented percentages or prices; do not claim the app tracks expense categories."
+  },
+  {
+    "id": "itinerary-packing",
+    "feature": "student-2",
+    "question": "What should I include in a packing checklist before my trip?",
+    "answerable": true,
+    "candidate": "packing-preparation#1",
+    "rubric": "Use the general checklist, verify relevant operator/official requirements. Do not invent visa eligibility, baggage limits or medical instructions."
+  },
+  {
+    "id": "itinerary-accessibility",
+    "feature": "student-2",
+    "question": "How can I plan a wheelchair-accessible itinerary with rest breaks?",
+    "answerable": true,
+    "candidate": "accessible-planning#1",
+    "rubric": "Start with the traveller's access needs, verify facilities and routes, include rest and backups. Do not certify a named attraction as accessible."
+  },
+  {
+    "id": "itinerary-family-planning",
+    "feature": "student-2",
+    "question": "How should I plan activities for children and a group with different interests?",
+    "answerable": true,
+    "candidate": "family-group-planning#1",
+    "rubric": "Agree priorities, allow meals/rest, vary activity intensity and keep optional activities. No universal child schedule or invented venue suitability."
+  },
+  {
+    "id": "itinerary-specific-train-time",
+    "feature": "student-2",
+    "question": "What time does the next train depart from Tokyo station today?",
+    "answerable": false,
+    "candidate": "transport-buffers#1",
+    "rubric": "Abstain: general transport planning does not provide a current train timetable."
+  },
+  {
+    "id": "itinerary-specific-accessibility",
+    "feature": "student-2",
+    "question": "Is the Eiffel Tower wheelchair accessible with step-free entrances and accessible toilets?",
+    "answerable": false,
+    "candidate": "accessible-planning#1",
+    "rubric": "Abstain: general access guidance cannot verify a named venue's facilities."
+  },
+  {
+    "id": "itinerary-weather-source-limits",
+    "feature": "student-2",
+    "question": "What should I consider when planning outdoor activities in this itinerary around rain and missing forecast dates?",
+    "answerable": true,
+    "candidate": "weather-planning#1",
+    "rubric": "Check forecasts near departure and the activity; missing forecasts do not mean dry weather. Preserve the source's uncertainty. Do not turn its lack of opening-hours, local-safety or booking verification into new requirements or claims that those checks are essential. Every clause must be supported by its cited full passage."
+  },
+  {
     "id": "itinerary-budget",
     "feature": "student-2",
     "question": "Is my budget for the entire trip or each night?",

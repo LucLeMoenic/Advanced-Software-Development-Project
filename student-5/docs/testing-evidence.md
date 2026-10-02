@@ -1,7 +1,8 @@
 # Testing and Evidence Index
 
-Student 5 (Alex Chen), Release 0. Every artefact in `student-5/docs/evidence/`,
-what it proves, and the exact commands to reproduce the results.
+Student 5 (Alex Chen), Release 0 and Release 1. Every artefact in `student-5/docs/evidence/`,
+what it proves, and the exact commands to reproduce the results. Release 1
+artefacts are indexed in "Release 1 evidence" at the end.
 
 ## Evidence index
 
@@ -276,4 +277,64 @@ the medium rather than gaps in the work: a still screenshot cannot show the
 is covered by a test instead, named in the table above.
 
 Out of Release 0 scope entirely, and therefore not evidence gaps: the MCP tools
-`get_weather` and `check_visa_requirement` (Release 1 - see `feature-plan.md`).
+`get_weather` and `check_visa_requirement` (delivered in Release 1, below).
+
+## Release 1 evidence
+
+Everything below is in `student-5/docs/evidence/release-1/`, captured on the Release 1
+working tree with MCP and RAG enabled (the `.json` files are response
+bodies from `curl` against the running stack). Text captures are UTF-8.
+
+| File | Type | What it proves |
+|---|---|---|
+| `pytest-database.txt` | Test output | `26 passed` - the database suite is unchanged by Release 1. |
+| `pytest-backend.txt` | Test output | `125 passed` - the Release 0 suite plus 57 tests in `tests/test_integrations.py` for the MCP/RAG clients, routes, allow-list, response validation, error mapping and `/ui/mcp`, `/ui/rag` fragments. |
+| `pytest-mcp-server.txt` | Test output | The whole shared MCP server suite passes with `logistics` registered (135 tests, 34 of them `test_logistics_tools.py`), so the new tools do not break other students' tools. TL-FR-11. |
+| `pytest-rag-server.txt` | Test output | The whole shared RAG suite: 94 passed, 28 skipped (all 28 are the existing opt-in native-Ollama evaluation in `test_query.py`), including the 17 Student 5 retrieval tests. TL-FR-13, TL-NFR-08. |
+| `dotnet-agentic-loop-tests.txt` | Test output | `73 passed` - the agentic-loop suite including the 4 Student 5 validation tests. TL-FR-15. |
+| `mcp-tools.json` | API capture | `GET /api/mcp/tools` lists exactly the three `logistics.*` tools. |
+| `mcp-visa-japan.json` | API capture | `logistics.check_visa_requirement` for id 1: `visa-free`, the stored entry notes, and the Smartraveller `official_source_reminder`. |
+| `mcp-weather-japan.json` | API capture | `logistics.get_weather` for id 1: the two stored seasonal notes, `count: 2`. |
+| `mcp-transit-japan-metro.json` | API capture | `logistics.get_transit` with `type: metro`: only the metro row. |
+| `mcp-destination-not-found.json` | API capture | Unknown destination: `404` with `{"ok": false, "error": {"code": "destination_not_found"}}`. |
+| `mcp-unknown-tool.json` | API capture | A tool outside the allow-list: `400 unknown_tool`. TL-NFR-07. |
+| `mcp-invalid-arguments.json` | API capture | `type: "teleport"`: `400 invalid_arguments` with the Pydantic literal error. |
+| `rag-evisa.json` | API capture | The benchmark question answered in about 0.8s, citing `visa-categories#2` and `#3`, with both ids in the answer. |
+| `rag-smartraveller.json` | API capture | A multi-source answer citing `official-sources` and `travel-insurance-and-health`. |
+| `rag-insufficient.json` | API capture | An out-of-scope question: the fixed insufficient sentence, no citations, confidence `insufficient`. |
+| `rag-invalid-question.json` | API capture | An empty question: `400 invalid_question`. |
+| `rag-cold-start-timeout.json` | API capture | The first question after a RAG server restart: `504 rag_timeout` after about 18s, because the model was cold. See `known-issues.md`. |
+| `proxy-rag-travel-insurance.json` | API capture | `POST /api/rag/ask` through the nginx edge on `:5105`, so the browser path works end to end. |
+| `ui-mcp-fragment.html`, `ui-rag-fragment.html` | Fragment capture | The HTML that `/ui/mcp` (transit filtered to rail) and `/ui/rag` return. |
+| `screenshots/assist-desktop-transit-and-rag.png` | Application screenshot | The "Live tools & knowledge base" section with a transit tool result and a cited RAG answer with its confidence badge. TL-FR-14. |
+| `screenshots/assist-desktop-visa-and-insufficient.png` | Application screenshot | The visa tool result with its Smartraveller reminder, and the distinct insufficient-knowledge state. |
+| `screenshots/page-desktop-assist-open.png` | Application screenshot | The full page with the section open, in the existing app shell. |
+| `screenshots/assist-mobile-375.png` | Application screenshot | The section at 375px wide with no horizontal overflow. |
+| `loop/validate-mcp-terminal.txt` | Terminal output | `validate-mcp --feature student-5`: live pre-test 200 with the contract passing, Plan/Act, the reviewer's malformed first review and format correction, final ACCEPT. Record `20261001T114821Z-cafe2142e4624e52807d4b54c983d954.json`. |
+| `loop/validate-rag-terminal.txt` | Terminal output | `validate-rag --feature student-5`: live pre-test 200 with the contract passing, Plan/Act, ACCEPT. Record `20261001T114858Z-e3385d8dc6f1499db6c99f34beee5180.json`. |
+| `ci-smoke-local.txt` | Script output | The CI "Smoke test Student 5 integration" step run locally with `bash -ex`: exit 0 with both flags `false` (as in CI), and exit 1 with `AssertionError: 200` with them `true` - so the step really detects the flag state. TL-NFR-06, TL-NFR-09. |
+| `ci-run-green.png` | CI screenshot | Student 5 CI run #140 on `main` (`49e5489`) succeeded: the four test suites, Compose validation, the image builds and the fail-closed smoke test. TL-NFR-05, TL-NFR-09. |
+| `compose-ps.txt` | Container status | All three Student 5 services `healthy` with `MCP_ENABLED=true RAG_ENABLED=true`. |
+
+### Reproducing Release 1
+
+```powershell
+pwsh -File scripts/deploy/start-release1.ps1       # MCP :5400, RAG :5500, flags on
+pwsh -NoProfile -File scripts/test/student-5.ps1   # 26 + 125 + 34 + 17
+Invoke-RestMethod -Method Post -Uri http://localhost:5205/api/mcp/invoke -ContentType application/json -Body '{"tool":"logistics.check_visa_requirement","arguments":{"destination_id":1}}'
+Invoke-RestMethod -Method Post -Uri http://localhost:5205/api/rag/ask -ContentType application/json -Body '{"question":"What is the difference between visa on arrival and an eVisa?"}'
+```
+
+The `validate-mcp` / `validate-rag` commands are in `prompt-log.md`.
+
+### Release 1 workflow changes
+
+The Release 1 version of `student-5.yml` (described in `architecture.md`)
+replaces steps 3-6 above with one `scripts/test/student-5.ps1` step that runs all
+four suites, keeps the Compose config and build steps, and adds three: start the
+three containers with `--wait`, smoke-test them, and always stop them.
+
+### Release 1 outstanding items
+
+Nothing is outstanding. The Release 1 workflow passed on `main`: Student 5 CI run #140
+on `49e5489`, https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36872202961 (screenshot `ci-run-green.png`).

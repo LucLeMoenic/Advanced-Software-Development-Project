@@ -1,37 +1,48 @@
 # Local Experience & Attraction Recommender — Known Issues and Limitations
 
-## Open Evidence Gaps
+Rewritten for Release 1 on 2026-09-30. Release 0's own known-issues history
+(PR #38 merge, the `currentCategory` bug, the first agentic-loop record) is
+preserved in `reviewrecord.md` and `contributionlog.md`, not repeated here —
+every item below that referenced them as "open" has been resolved and
+removed rather than carried forward stale.
 
-- PR #38 (frontend CRUD UI) is open, not yet merged to `main` as of this document (confirmed via `git merge-base --is-ancestor`, not assumed). Until it merges, the deployed/integrated app only has backend/database CRUD, not frontend CRUD.
-- ~~No browser-based visual verification has been performed on PR #38's UI~~ **Resolved 2026-09-04.** Card layout, the edit-form inline swap, the review-toggle expand/collapse, empty-name/out-of-range-rating client-side validation, and responsive behaviour at 375px were all click-tested against the integrated app with Playwright and pass — see `review-record.md`'s 2026-09-04 entry and `docs/evidence/03-*.png` through `10-*.png`. Not covered by this pass: the "Ask the AI" recommendation flow (success/fallback screenshots).
-- ~~`refreshAttractions()`'s attempt to preserve the active category filter... not yet confirmed either way~~ **Resolved 2026-09-04.** Confirmed broken in a real browser (filtering to "Restaurants" then deleting a card reset the list to "All"), fixed by capturing the category at each filter button's own `hx-on:click`, and re-verified. See `riskplan.md` R-06 and `review-record.md`.
-- No successful `student-3.yml` GitHub Actions run URL/screenshot has been captured for the PR #38 branch specifically (earlier workflow runs on `main` have passed). Still open — not addressed by the 2026-09-04 verification pass, which ran `pytest` and the live containers locally, not GitHub Actions itself.
-- ~~No finalised agentic-loop development record (`docs/agentic-loop-records/<record>.json`) exists for student-3.~~ **Resolved 2026-09-06.** Record `20260906T104055Z-f52cc6be69164e07b0502a263671ee67.json` was produced and finalised (`humanDecision: changed`) for the `formatElapsed` recommend-wait indicator and merged in PR #55 (`eb40659`). Phase-by-phase analysis added to `reviewrecord.md` on 2026-09-25. Still open against it: no terminal screenshots of the `run`/`finalise` invocations were captured at the time, so the JSON record and `prompt-log.md` are the only evidence of the run itself.
-- Integrated-app screenshots for CRUD and review submission now exist (`docs/evidence/`, 2026-09-04). Still pending: AI-recommendation screenshots (success + fallback), the attendance checkpoint, and my segment of the group showcase video.
-- The project specification lists Release 0 as due 30 August 2026; the latest repository commit is still dated 3 September 2026 as of 2026-09-04. Not yet confirmed with the tutor whether an extension applies.
+## Open Evidence Gaps (Release 1)
 
-## Product/Scope Limitations (intentional, Release 0 scope)
+- No successful `student-3.yml` GitHub Actions run link/screenshot has been captured for a Release 1 branch or PR. Local validation (real `docker compose build`/`run`/`up`, real smoke curls including the new disabled-body assertions) is captured in `docs/evidence/release-1/stage4-compose-ci-terminal.txt`, but that is not the same evidence as a green Actions run.
+- ~~The answerable-RAG-question case in Stage 5's live evidence capture timed out 4/4 times...~~ **Re-attempted 2026-09-30 after the Ollama restart (see below).** Still timed out once, then succeeded with a full grounded answer and citations on the immediate retry — confirms the timeout is a real, but intermittent, CPU-inference-speed limit against the RAG server's fixed 25s deadline, independent of the Ollama model-loading bug (that fix did not resolve this). Evidence: `docs/evidence/release-1/stage6-regression/rag-answerable-rerun-post-ollama-restart.txt`. Mitigation for the live demo unchanged: pre-warm the model and be prepared to retry once.
+- The group showcase video and my segment within it have not been recorded.
+- The Week 9 showcase attendance checkpoint has not been recorded.
 
-- RAG-based grounding over a curated destination knowledge base is explicitly Release 1 scope for this feature (per the Group 45 registration form). Release 0 uses closed-context prompting only — the model is limited to attractions the database's own filtered query returned.
-- Review CRUD is create/list only; there is no review update/delete. This is a deliberate scope decision — the feature's primary CRUD resource is the attraction, and full CRUD is implemented there.
-- `POST /api/itinerary` ("Add to itinerary") is an intentional Release 0 stub that logs the request and returns `202`; real itinerary persistence is owned by Student 1's feature and is a later integration point, not a student-3 defect.
-- `category` is a free-text column, not a database-level enum — the `sight`/`restaurant`/`activity` set is enforced only by the frontend, not by the schema. A malformed category submitted directly to the API (bypassing the UI) would be stored as-is. Considered low risk for Release 0 since the only write path in normal use is the frontend's `<select>`.
-- Cascade-delete of a review when its parent attraction is deleted is enforced in application code (`student-3/database/app.py`), not by a SQLite foreign-key constraint — `schema.sql` does not declare `ON DELETE CASCADE`. Functionally equivalent for Release 0, but worth tightening at the schema level if there's time.
-- No authentication — reviews and attraction edits are not attributed to a user. Acceptable for a Release 0 classroom demonstration; would need addressing before any real deployment.
+## Release 1 Local-Execution Limits
 
-## Release 1 Local-Execution Limits (living note; Stage 6 rewrites this whole file for Release 1)
+- ~~**Ollama does not reliably honour `OLLAMA_MAX_LOADED_MODELS=1`** on this host.~~ **Resolved 2026-09-30.** Confirmed on the same day: three consecutive agentic-loop attempts (Stage 5, `IsValidStudent3Mcp`) showed both loop models (`qwen2.5:3b`, `llama3.2:3b`, ~6.8GB combined) loaded simultaneously via `ollama ps`, despite the variable being set in the user environment — the running Ollama server had never actually been restarted after the setting was applied, so it was still using the old default. Fixed by fully restarting the Ollama background service (both `ollama.exe` and `ollama app.exe` processes); re-verified immediately afterward by loading `qwen2.5:3b` then `llama3.2:3b` back-to-back and confirming via `ollama ps` that only the second remained loaded (the first was correctly evicted). See `reviewrecord.md` 2026-09-30 for the original account.
+- **The shared RAG server's fixed 25-second generation deadline** (`ai-services/rag-server/server.py`) can be too tight for a full grounded answer under host load, even with the model pre-warmed — observed 4/4 times on 2026-09-30 for a question that had succeeded (with a full answer and citations) in Stage 3's browser test under lighter load. Not a correctness defect in student-3's own code; flagged for whoever owns that shared file if it recurs during the group demo. Mitigation for the demo: pre-warm the model with a throwaway Ollama call and close other CPU-heavy applications immediately beforehand.
+- **The shared agentic loop's reviewer model (`llama3.2:3b`, `student3-reviewer-llama32-v1`) has not yet correctly identified a real defect on its own initiative** across all three finalised Release 1 records (`total_matches`, `RagResponseError.code`, `confidenceBadgeClass`) plus the shared `IsValidStudent3Mcp` extension. It either hallucinates a finding against code that contradicts it, or reuses boilerplate text from an unrelated earlier task. The one real defect caught this release (`RagResponseError`'s backwards branch order and `TypeError`-on-error-path bug) was found by the human re-deriving the code's behaviour against the task's own worked examples, not by trusting the reviewer's stated finding. Every reviewer finding in Release 1 was independently verified against the actual code before being accepted or rejected — see `reviewrecord.md` for the full, dated account across all records. This is a documented limitation of the current reviewer prompt, not something papered over.
+- **A local implementer model (`qwen2.5:3b`) can degenerate into runaway token repetition** on a real (not toy) task, most reliably avoided by keeping loop task descriptions short and example-light rather than long and multi-constraint. Observed on the `RagResponseError.code` task (Stage 2), the compose-validation task (Stage 4), and the `IsValidStudent3Mcp` task (Stage 5). When it happens, the run either errors outright (if the resulting reviewer output is also unparseable) or wastes a full model-load cycle for nothing; the fix each time was shortening the task text, not changing the code being asked for.
+- **scikit-learn has no prebuilt wheel for this host's Python 3.14** and failed to build from source during Stage 1 development; the RAG server's retrieval module was deliberately written as hand-rolled TF-IDF using only the standard library to avoid depending on it (see `ai-services/rag-server/retrieval.py`'s own header comment). This also means retrieval quality is bounded by TF-IDF's lexical-overlap limitations (no semantic matching), not embedding-based similarity — acceptable for a knowledge base this small, but worth stating plainly rather than implying embedding-quality retrieval.
 
-- **Ollama does not reliably honour `OLLAMA_MAX_LOADED_MODELS=1`** on this host. Confirmed 2026-09-30: three consecutive agentic-loop attempts (Stage 5, `IsValidStudent3Mcp`) showed both loop models (`qwen2.5:3b`, `llama3.2:3b`, ~6.8GB combined) loaded simultaneously via `ollama ps`, despite the variable being set in the user environment. Most likely cause: the setting is read at Ollama server startup, not per-request, and the running server was never actually restarted after it was set. Mitigation used: manually killing the loop process and stopping both models the moment double-loading is observed, rather than relying on the setting alone. See `reviewrecord.md` 2026-09-30 for the full account.
-- **The shared RAG server's fixed 25-second generation deadline** (`ai-services/rag-server/server.py`) can be too tight for a full grounded answer under host load, even with the model pre-warmed — observed 4/4 times on 2026-09-30 for a question that had succeeded (with a full answer and citations) in Stage 3's browser test under lighter load. Not a correctness defect in student-3's own code; flagged for whoever owns that shared file if it recurs during the group demo.
+## Product/Scope Limitations (intentional)
+
+- RAG's retrieval is TF-IDF/lexical, not embedding-based (see above) — a question that doesn't share vocabulary with the relevant knowledge doc may score as insufficient even if a human would consider it answerable. Confidence thresholds (`ai-services/rag-server/confidence.py`) were calibrated by another student's chunk against a small fixture set, not an independent held-out evaluation.
+- MCP tools are read-only by design (`attractions.search`, `attractions.get_reviews`); there is no MCP tool for creating, updating, or deleting attractions or reviews — the existing CRUD API is the only write path.
+- `attractions.search`'s `category` filter accepts exactly `sight`/`restaurant`/`activity` (the allow-listed set the tool itself enforces); an unrecognised category is rejected with a structured error rather than silently ignored.
+- Review CRUD is create/list only; there is no review update/delete. This remains a deliberate scope decision carried over from Release 0 — the feature's primary CRUD resource is the attraction, and full CRUD is implemented there.
+- `POST /api/itinerary` ("Add to itinerary") remains an intentional stub that logs the request and returns `202`; real itinerary persistence is owned by Student 2's feature.
+- `category` is still a free-text column, not a database-level enum, enforced only by the frontend `<select>` and the MCP tool's own allow list — not by the schema.
+- No authentication — reviews, attraction edits, and MCP/RAG queries are not attributed to a user. Acceptable for a classroom demonstration; would need addressing before any real deployment.
+- Ownership of the shared MCP server (`ai-services/mcp-server/`), RAG server (`ai-services/rag-server/`), and the `validate-mcp`/`validate-rag` loop extension is informal — these were built collaboratively across students' "chunks" without a single named owner. Student 3's contributions to shared code (the `ServiceValidation.cs` student-3 extension, the extra-top-level-field fix to the MCP tool wrapper, the retrieval stopword fix) were each confirmed with the group lead before merging, per the project's own coordination rule, but the shared files themselves have no single point of contact if something regresses.
 
 ## Rollover Checklist (close before submission)
 
-- [ ] Merge PR #38 (browser pass below is done; this is the remaining blocker).
-- [x] Filter to "Restaurants," delete an attraction, confirm the list stays filtered — done 2026-09-04, bug found and fixed (`riskplan.md` R-06).
-- [x] Click through: create, edit, delete an attraction; submit a review — all against the integrated app — done 2026-09-04 (`review-record.md`).
-- [ ] Capture a green `student-3.yml` Actions run for the merged branch.
-- [x] Produce and finalise a student-3 agentic-loop record — done 2026-09-06, record `20260906T104055Z`, PR #55; analysed in `reviewrecord.md` 2026-09-25.
-- [x] Capture CRUD/review/validation/responsive screenshots — done 2026-09-04, see `docs/evidence/`.
-- [ ] Capture AI-recommendation screenshots (success + fallback) — not covered by the 2026-09-04 pass.
-- [ ] Record the Week 6 attendance checkpoint.
-- [ ] Confirm the Release 0 due date/extension with the tutor.
+- [x] Release 1 Stage 1 — MCP tools + RAG knowledge base (PR #62).
+- [x] Release 1 Stage 2 — backend MCP/RAG integration (PR #79).
+- [x] Release 1 Stage 3 — frontend MCP/RAG panels, verified live in a browser (PR #80).
+- [x] Release 1 Stage 4 — Compose/CI wiring, verified live against real containers (PR #86).
+- [x] Release 1 Stage 5 — shared loop validation-mode extension for student-3 (PR #89).
+- [ ] Release 1 Stage 6 — this evidence/report/cleanup pass (in progress).
+- [ ] Capture a green `student-3.yml` Actions run link for a Release 1 PR.
+- [ ] Re-capture the answerable-RAG-question live evidence once Ollama has more headroom (see Local-Execution Limits above).
+- [ ] Restart Ollama's background service so `OLLAMA_MAX_LOADED_MODELS=1` actually takes effect, for any further loop runs.
+- [ ] Record the Week 9 showcase attendance checkpoint.
+- [ ] Record my segment of the group showcase video.
+- [ ] Confirm the Release 1 due date (4 Oct 2026 vs. 27 Sept per `Project_Specifications.md`) with the tutor.

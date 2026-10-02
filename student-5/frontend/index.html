@@ -215,6 +215,86 @@
 
   </div>
 
+  <!-- Release 1: the shared MCP tools and RAG knowledge base, reached only
+       through this service's backend (/ui/mcp, /ui/rag), never directly from
+       the browser. Collapsed by default, like the admin section, so the
+       fixed-viewport planner above keeps its height. The MCP form uses the
+       same destination <select> as every other panel (rule 1 above). -->
+  <details class="assist-section" id="assist-section">
+    <summary>
+      <span>
+        <span class="step-label">Live tools &amp; knowledge base</span>
+        <span class="composer-title">Look up and ask</span>
+        <span class="composer-summary">Run a read-only MCP tool for the chosen destination, or ask a question answered from the curated travel knowledge base with citations.</span>
+      </span>
+      <span class="composer-toggle" aria-hidden="true"></span>
+    </summary>
+    <div class="assist-body">
+
+      <section class="assist-card" aria-labelledby="mcp-heading">
+        <p class="eyebrow">MCP tool</p>
+        <h2 id="mcp-heading">Destination lookup</h2>
+        <form class="assist-form"
+              hx-post="/ui/mcp"
+              hx-include="#destination-select"
+              hx-target="#mcp-panel"
+              hx-swap="innerHTML"
+              hx-indicator="#mcp-loading"
+              hx-disabled-elt="find button">
+          <div class="field-group">
+            <label for="mcp-tool">Tool</label>
+            <select id="mcp-tool" name="tool">
+              <option value="logistics.check_visa_requirement">Visa requirement</option>
+              <option value="logistics.get_weather">Weather notes</option>
+              <option value="logistics.get_transit">Transit options</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="mcp-transit-type">Transit type (transit tool only)</label>
+            <select id="mcp-transit-type" name="transit_type">
+              <option value="">Any type</option>
+              <option value="metro">metro</option>
+              <option value="rail">rail</option>
+              <option value="bus">bus</option>
+              <option value="rideshare">rideshare</option>
+              <option value="ferry">ferry</option>
+              <option value="airport-link">airport-link</option>
+            </select>
+          </div>
+          <button class="primary-button" type="submit">Run tool</button>
+        </form>
+        <p class="assist-loading htmx-indicator" id="mcp-loading" role="status">Calling the MCP server&hellip;</p>
+        <div class="assist-panel" id="mcp-panel" aria-live="polite">
+          <p class="panel-hint">Runs against the destination chosen in Trip details.</p>
+        </div>
+      </section>
+
+      <section class="assist-card" aria-labelledby="rag-heading">
+        <p class="eyebrow">Knowledge base</p>
+        <h2 id="rag-heading">Ask a logistics question</h2>
+        <form class="assist-form"
+              hx-post="/ui/rag"
+              hx-target="#rag-panel"
+              hx-swap="innerHTML"
+              hx-indicator="#rag-loading"
+              hx-disabled-elt="find button">
+          <div class="field-group assist-question">
+            <label for="rag-question">Question</label>
+            <input id="rag-question" name="question" type="text" required
+                   maxlength="500" autocomplete="off"
+                   placeholder="What is the difference between visa on arrival and an eVisa?">
+          </div>
+          <button class="primary-button" type="submit">Ask</button>
+        </form>
+        <p class="assist-loading htmx-indicator" id="rag-loading" role="status">Searching the knowledge base and writing a grounded answer&hellip; this can take up to 30 seconds.</p>
+        <div class="assist-panel" id="rag-panel" aria-live="polite">
+          <p class="panel-hint">Covers visas, passports and documents, seasonal packing, local transit, airport arrival and insurance. Answers cite their sources.</p>
+        </div>
+      </section>
+
+    </div>
+  </details>
+
   <!-- Admin-style CRUD, collapsed by default so it does not compete with the
        traveller-facing panels. -->
   <details class="manage-section" id="manage-section">

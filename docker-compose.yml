@@ -104,8 +104,8 @@ services:
 
   student2-backend:
     build:
-      context: ./student-2/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: student-2/backend/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: http://student2-database:8080
@@ -315,6 +315,8 @@ services:
       OLLAMA_URL: http://host.docker.internal:11434
       MCP_SERVER_URL: http://host.docker.internal:5400/mcp
       RAG_SERVER_URL: http://host.docker.internal:5500
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      RAG_ENABLED: ${RAG_ENABLED:-false}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
     ports:
       - "5205:8080"

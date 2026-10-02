@@ -1,0 +1,3 @@
+$ dotnet test ./ai-services/agentic-loop/tests/AgenticLoop.Tests.csproj
+A total of 1 test files matched the specified pattern.
+Passed!  - Failed:     0, Passed:    73, Skipped:     0, Total:    73, Duration: 156 ms - AgenticLoop.Tests.dll (net8.0)

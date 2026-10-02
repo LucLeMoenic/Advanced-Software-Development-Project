@@ -1,8 +1,8 @@
 # Shared RAG Server (Release 1)
 
 One native shared service retrieves feature-isolated Markdown knowledge and
-uses native Ollama for constrained grounded generation. Student 1, Student 2,
-Student 3 and Student 4 knowledge is present. Automated model-double tests pass; native model generation
+uses native Ollama for constrained grounded generation. Student 1 through
+Student 5 knowledge is present. Automated model-double tests pass; native model generation
 and cross-feature grounding evaluation remain release gates, not completed evidence.
 
 ## Contract
@@ -43,14 +43,22 @@ never a guess dressed up as fact.
   knows about. Retrieval does not require a second embedding model.
 - Retain at most three chunks scoring at least 0.15, each at most 2000 characters
   and at most 6000 characters combined. Below-threshold results skip generation.
-- Students 1-3 retain Ollama's structured-claim flow and the versioned
-  [grounding prompt](../agentic-loop/prompts/rag-grounding-v1.txt). Student 4 uses
-  an isolated extractive-selection mode and
+- Ollama returns structured claims using the versioned
+  [grounding prompt](../agentic-loop/prompts/rag-grounding-v1.txt). Only retrieved
+  IDs are accepted. Citation titles, snippets and scores come from the index;
+  public answer markers are assembled from validated claims.
+- The output schema restricts citation IDs to retained passages. This prevents
+  invented IDs, not unsupported claims or attribution to the wrong retained source.
+  Student 2 receives complete cited passages (up to 2000 characters each); other
+  features retain 280-character excerpts. Source disclaimers must remain limitations,
+  not become new traveller requirements.
+- Students 1-3 and 5 use the structured-claim flow and versioned grounding prompt.
+  Student 4 uses an isolated extractive-selection mode and the
   [selection prompt](../agentic-loop/prompts/rag-budget-selection-v1.txt): Ollama
   returns only a status and up to three retrieved paragraph IDs. The server
-  assembles answer text from the exact original paragraphs; it does not accept
-  model-authored answer text in this mode. Citation titles, snippets and scores
-  still come from the retrieval index.
+  assembles answer text from the exact original paragraphs and does not accept
+  model-authored answer text in that mode. Citation titles, snippets and scores
+  still come from retrieval.
 - Confidence is the lowest cited retrieval score: low from 0.15, medium from
   0.30, high from 0.40. These provisional thresholds were measured on the small
   Student 2 fixture set, not a statistically independent or cross-feature
@@ -97,7 +105,7 @@ check every generated claim against its cited full source; passing citation IDs
 alone do not pass that gate. Retain the output and human decisions with the
 commit/model identity, and evaluate a separately authored, untouched hold-out set
 before accepting or recalibrating the shared thresholds. Normal CI skips these
-nine live cases explicitly and never downloads a model.
+28 live cases explicitly and never downloads a model.
 
 Student 1's ten destination guides (`knowledge/student-1/`, one per catalogue city)
 keep review metadata in the heading paragraph so it is never indexed, and start
@@ -107,6 +115,15 @@ still retrieve at low confidence; see the
 [Student 1 RAG HLD](../../student-1/docs/release-1-rag-hld.md) calibration note.
 
 ## Adding a feature's knowledge base
+
+Student 2 has thirteen topic passages: six application topics plus weather-aware
+planning, daily pacing, transport buffers, expense/contingency planning,
+packing/preparation, accessibility and family/group planning. The seven added
+sources are project-authored general guidance reviewed October 2026, not verified
+destination research. They do not supply current timetables, fares, entry
+eligibility or named-venue accessibility. The grounding fixtures include supported
+planning questions and unsupported live-train/named-venue questions. Unsupported
+questions may retrieve no passages; lexical overlap does not prove answerability.
 
 1. Create `knowledge/<feature>/*.md` — 6–10 short docs, one clear topic
    each, with a `# Title` heading.
@@ -132,9 +149,13 @@ python -m uvicorn server:app --host 127.0.0.1 --port 5500 --app-dir ai-services/
 | `RAG_MODEL` | `llama3.2:3b` | Approved local generation model |
 
 Backends consume `RAG_SERVER_URL` / `RAG_ENABLED`; browsers call only their backend.
-Requests accept only `feature` (student-1 through student-5) and a nonblank question
-of at most 1000 characters. Unknown fields/features return 400. Empty feature
-corpora return insufficient context.
+Requests accept `feature` (student-1 through student-5), a nonblank question of at
+most 1000 characters, and optional `tripContext` for Student 2 only. Context holds
+bounded destination/dates, up to twenty stops with 160-character notes, an omitted
+count and optional weather. It is untrusted context, never a cited source, and
+does not change lexical retrieval. Unknown fields/features return 400. Empty
+feature corpora return insufficient context. Restart the native service when
+deploying the context-aware Student 2 backend; older servers reject the new field.
 
 See [Student 2 deployment](../../student-2/docs/release-1-runbook.md) for private
 host bindings, VM routing limitations, and reproducible checks. Do not expose

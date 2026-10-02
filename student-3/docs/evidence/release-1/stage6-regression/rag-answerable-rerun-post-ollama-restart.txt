@@ -1,0 +1,12 @@
+Rerun of the Stage 5 answerable-RAG-question case (2026-09-30), after
+restarting Ollama to fix OLLAMA_MAX_LOADED_MODELS. Attempt 1 (model warm
+via a throwaway "hi" prompt beforehand) still timed out - confirms the
+Ollama restart fixed model-loading, but the RAG server's own 25s
+generation deadline is a separate, independent limitation (raw CPU
+inference speed, not a loading issue). Attempt 2 (immediately after) succeeded.
+
+Attempt 1:
+{"error":"rag_unavailable","message":"The local model timed out."}
+
+Attempt 2 (success):
+{"answer":"Chin Chin Melbourne is a loud, popular modern Thai/Asian restaurant on Flinders Lane, rated 4.4. [melbourne-attractions-overview#3]\n\nBusy, popular restaurants such as Chin Chin Melbourne and Mr. Wong are noted in reviews as needing advance booking, while casual options such as Chat Thai Sydney CBD are described as fast and no-frills with no booking expected. [category-guide-restaurants#3]\n\nReviewers recommend booking ahead rather than walking in due to weekend crowds. [melbourne-attractions-overview#3]\n\nIt is well known for weekend crowds. [melbourne-attractions-overview#3]","citations":[{"chunk_id":"melbourne-attractions-overview#3","score":0.3206,"snippet":"Chin Chin Melbourne is a loud, popular modern Thai/Asian restaurant on Flinders Lane, rated 4.4. It is well known for weekend crowds, and reviewers recommend booking ahead rather than walking in.","source":"Melbourne Attractions Overview"},{"chunk_id":"category-guide-restaurants#3","score":0.3531,"snippet":"Busy, popular restaurants such as Chin Chin Melbourne and Mr. Wong are noted in reviews as needing advance booking, while casual options such as Chat Thai Sydney CBD are described as fast and no-frills with no booking expected.","source":"Category Guide: Restaurants"}],"confidence":"medium"}

@@ -180,8 +180,10 @@ public static partial class AgenticLoopApplication
         if (validationMode is not null)
         {
             using var handler = new HttpClientHandler { AllowAutoRedirect = false };
-            using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
+            using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
             var validationOptions = ParseValidationOptions(arguments, validationMode);
+            if (validationOptions.Feature == "student-5" && arguments.SingleOrDefault("trip-id") is not null)
+                throw new LoopException("--trip-id applies only to --feature student-2.");
             var evidence = await ServiceValidation.CaptureAsync(
                 validationClient, validationMode,
                 validationOptions.BackendUrl,

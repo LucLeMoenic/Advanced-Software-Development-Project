@@ -50,16 +50,18 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 
 ## Release 1 Trip Overview
 
-- The saved-trip UI offers one **Trip overview** action: day/stop coverage,
-	unplanned days, daily budget allocation, and destination weather. It is read-only.
-- Browser requests go through the backend's `POST /api/trips/{id}/mcp-overview`
-	and the shared `itinerary.get_overview` MCP tool. The existing summary-only
-	endpoint/tool remain supported. RAG advice remains separate.
+- The saved-trip UI offers a collapsible **Trip assistant** with separate Edit
+	and Advice tabs outside the stop list. Day/stop counts and daily allocation
+	remain visible in the trip summary.
+- The backend's `POST /api/trips/{id}/mcp-overview` and shared
+	`itinerary.get_overview` tool remain available, along with the summary-only
+	endpoint/tool. Advice uses overview weather only for weather-related questions.
 - Weather uses Open-Meteo geocoding and forecast APIs, without an API key for
 	qualifying non-commercial use. Only the saved destination and resolved coordinates
 	are sent to Open-Meteo, never traveller names, notes, budgets, or database IDs.
-- Multiple location matches require a user choice. Only IDs in the destination's
-	current provider results are accepted; clients cannot supply coordinates or URLs.
+- With no explicit location ID, the tool selects the first geocoding result and
+	returns the matched place. Explicit IDs must belong to the destination's current
+	provider results; clients cannot supply coordinates or URLs.
 - Show date-specific low/high Celsius temperatures, weather conditions and maximum
 	precipitation probability. Do not turn null provider values into zeroes.
 - Match forecasts to trip dates using the provider's local-date response, up to
@@ -73,6 +75,74 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 	at 64 KiB, and share an eight-second checked deadline with at most three-second
 	socket waits. The backend MCP overview deadline is 15 seconds; browser deadline
 	is 20 seconds. Summary-only requests retain their five-second deadline.
+
+## Release 1 MCP Editing Foundation
+
+- `itinerary.get_itinerary` returns the saved summary and at most 200 validated
+	stops without traveller identity. Saved text is untrusted input.
+- `itinerary.preview_edit` forwards a strictly typed operation to the database
+	without saving. Supported actions cover moving/swapping/reordering stops,
+	adding/removing/updating activities, shifting trip dates and single-level undo.
+- `itinerary.apply_edit` accepts only the trip ID and signed preview token.
+	Callers must require user confirmation before invoking it; the database checks
+	expiry and revision and applies approved changes atomically. No save retries.
+- These tools provide no authentication and remain local-only.
+
+## Release 1 Editor and Advice Integration
+
+- Edit accepts natural-language move/swap/add/remove/title/notes/date-shift/undo
+	requests through `POST /api/trips/{id}/edit-preview`. Action-specific model
+	schemas and saved-stop validation bound the proposal; ambiguity requests
+	clarification. Runtime prompts live only under
+	`ai-services/agentic-loop/prompts/itinerary-edit-v1.txt` and
+	`ai-services/agentic-loop/prompts/itinerary-review-v1.txt`.
+- Preview displays current/proposed values without saving. Confirm sends only
+	the signed token to `POST /api/trips/{id}/edit-confirm`; cancellation discards
+	the preview. The model-free Undo button requests a preview through
+	`edit-operation-preview` and still requires confirmation. No manual reorder
+	panel is exposed. Successful saves reload the trip and briefly highlight changes.
+- Edit endpoints require both MCP and AI mode. The legacy read-only `/review`
+	endpoint remains supported. Disabled modes, stale previews and malformed
+	dependencies produce controlled errors rather than unvalidated writes.
+- Advice accepts `{question}` or `{question,tripId}`. Selected-trip context is
+	read from the database, limited to destination/dates, twenty stops, 160-character
+	notes and an omitted-stop count. Traveller identity is excluded.
+- Only explicit weather-related questions trigger MCP weather lookup. The weather
+	report is separate from knowledge citations; missing forecasts never imply dry
+	weather. Other questions clear the prior weather result.
+- The shared RAG service accepts bounded Student 2 `tripContext` as untrusted
+	context, not a knowledge source. Retrieved knowledge supports every claim;
+	context neither changes the retrieval query nor establishes unsupported facts.
+- Student 2 citations contain complete retained passages, up to 2000 characters;
+	other features retain 280-character excerpts. The UI uses plain numbered markers
+	and independently expandable sources. Source relevance is lexical similarity,
+	not a probability that the answer is true.
+- Changing trips or editing clears obsolete assistant results; late responses
+	must not replace newer state. Collapse preserves drafts/results and cancel
+	controls stop waiting without claiming to undo a server-side save.
+- Backend images build from the repository root to include both shared prompts.
+	Itinerary nginx proxies allow 75 seconds for bounded multi-service requests.
+- Browser deadlines are 35 seconds for edit preview, 10 for confirmation and 55
+	for contextual advice. Preview uses one 20-second model call and two five-second
+	MCP calls; confirmation invokes no model. Contextual advice allows three seconds
+	for database access, fifteen for weather and thirty for RAG.
+- Date shifts preserve duration; newly added stops use placeholder ID 0 until
+	saved. Changed/replayed previews return 409 and invalid/expired tokens return
+	400. Database restart invalidates previews; uncertain saves require a refresh,
+	not automatic retries. Undo is revision-guarded and restores full stop content.
+
+## Release 1 Advice Knowledge Coverage
+
+- The thirteen project knowledge passages cover six application topics and seven
+	general travel topics: weather, daily pacing, transport buffers, travel expenses,
+	packing, accessibility and family/group planning.
+- Travel guidance is labelled as project-authored general advice, not external
+	destination research. It must not invent live timetables, prices, entry eligibility,
+	venue accessibility, booking confirmations or activity feasibility.
+- Grounding fixtures cover each added topic and refusal boundaries. Offline
+	retrieval tests do not certify model claim support; live responses still require
+	comparison with the full cited sources. Restart RAG after corpus updates because
+	indexes are cached.
 
 ## Evidence Required
 

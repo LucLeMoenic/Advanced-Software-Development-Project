@@ -67,7 +67,7 @@ def trip_weather(summary, location_id=None):
             result["status"] = "not_found"
             return result
         selected = next((item for item in locations if item["id"] == location_id), None)
-        if location_id is None and len(locations) == 1:
+        if location_id is None:
             selected = locations[0]
         if selected is None:
             result["status"] = "choose_location"

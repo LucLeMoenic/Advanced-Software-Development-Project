@@ -52,7 +52,7 @@
 | EV-08 | AI success and forced fallback | Captured responses from live Ollama and unavailable/invalid-model scenarios |
 | EV-09 | GitHub Actions execution | [Student 4 Actions run 36947214508](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36947214508); run passed, with 19 live-model RAG tests skipped |
 | EV-10 | Development agentic loop | Fresh MCP/RAG records under `docs/agentic-loop-records/`; Liam's explicit keep/change/reject decisions remain pending |
-| EV-11 | Collaboration and publication | Student 4 contribution log; five open PRs #104-#108; attendance and showcase evidence remain human-supplied |
+| EV-11 | Collaboration and publication | Student 4 contribution log; PRs #104-#108 plus the final integration PR into main; attendance and showcase evidence remain human-supplied |
 
 ## Traceability
 
@@ -70,7 +70,7 @@ status depends on its listed evidence. The latest integrated run, post-tests and
 known limitations are recorded in the Release 1 runbook; CI, direct model checks,
 browser checks and human sign-off are distinct evidence types.
 
-## Release 1 Planned Requirements
+## Release 1 Requirements
 
 | ID | Requirement | Acceptance criterion | State |
 |---|---|---|---|
@@ -79,7 +79,7 @@ browser checks and human sign-off are distinct evidence types.
 | R1-03 | Disabled AI advice shall remain useful without contacting Ollama. | Advice returns the existing deterministic `fallback` contract with zero Ollama-client calls; enabled `ai`, `ai_retry`, and failure fallback behavior remains unchanged. | Implemented; backend tests pass. |
 | R1-04 | Budget check shall read authoritative current totals through MCP. | Read-only `budget.get_summary` uses a fixed callback to the existing dashboard endpoint; no second money calculator, database access, or write operation is introduced. | Integrated UI/backend/native MCP call passed; all summary fields/categories matched the dashboard; before/after read-only data was byte-identical (12 budgets/26 expenses). |
 | R1-05 | Budgeting guidance shall be grounded in Student 4 knowledge. | Shared native RAG receives `feature: student-4`; the local model selects one to three retrieved paragraph IDs only, and the server returns their exact source text with validated citations. Invalid selections fail as dependency errors; insufficient context explicitly abstains; guidance does not consume private spending records. | Integrated UI/backend/RAG passed five answerable gateway cases with exact source text/citations and one UI Mars abstention. Fresh loop contract passed; human finalisation remains pending. Earlier freeform failures are retained as historical evidence. |
-| R1-06 | Release 1 shall preserve the application boundaries. | Retain the static Student 4 UI and native Ollama/MCP/RAG arrangement; make no database schema changes or cross-student runtime calls. | Integrated UI CRUD/MCP/RAG, responsive checks, and final cancellation-focus replay passed; the focus fix remains uncommitted. CI passed with all six modes false at revision `3e8be05` (it does not validate the uncommitted focus fix). Group acceptance and human release sign-off remain open. |
+| R1-06 | Release 1 shall preserve the application boundaries. | Retain the static Student 4 UI and native Ollama/MCP/RAG arrangement; make no database schema changes or cross-student runtime calls. | Integrated UI CRUD/MCP/RAG, responsive checks, and final cancellation-focus replay passed; the focus fix is committed in `c282a73`, whose CI passed. Fresh checks of the resolved merge with main are required separately. Group acceptance and human release sign-off remain open. |
 
 Historical baseline status (superseded 2026-10-02): R1-01 through R1-05 had
 offline evidence only, and R1-06 was partially implemented at that checkpoint.

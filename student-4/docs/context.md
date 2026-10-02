@@ -3,7 +3,7 @@
 ## Ownership
 
 - Owner: Liam Zelmanowski (Student 4)
-- Release: Release 0
+- Release: Release 1, preserving Release 0 functionality
 - Feature: Budget & Expense Tracker
 - Supported route: `http://localhost:5100/budget/`
 
@@ -45,8 +45,8 @@ Two repository-specific decisions require explicit treatment:
    is Vue. Student 4 will preserve the existing shared Vue home and bundle HTMX
    locally only in its independently served static frontend.
 
-Neither point blocks implementation. Release 1 MCP/RAG and Release 2
-multi-agent/cloud capabilities remain intentionally out of scope.
+Neither point blocks implementation. MCP/RAG was excluded from Release 0 and is
+implemented by Release 1 below. Release 2 multi-agent/cloud work remains out of scope.
 
 ## Fixed Boundaries
 
@@ -55,7 +55,7 @@ multi-agent/cloud capabilities remain intentionally out of scope.
 - `student4-database`: data API and SQLite owner, host 5304/container 8080.
 - Browser API requests use `/budget-api/`.
 - Internal database requests use `http://student4-database:8080`.
-- Internal model requests use `http://ollama:11434`.
+- Model requests reach native Ollama through the configured host URL; Compose uses `host.docker.internal:11434`.
 - No Student 4 service calls a Student 1, 2, 3, or 5 service.
 - Money is represented as integer minor units at service and storage boundaries.
 - Demonstration exchange rates are versioned configuration, never live data.
@@ -70,8 +70,10 @@ cross-student calls, model-authored money values, or autonomous writes are in
 scope.
 
 **SOURCE AND EVIDENCE CHECKPOINT - 2026-10-02:** The implementation is recorded
-at revision `3e8be05` on branch `BCP/R1_Budget_Validation_CI`; the cancellation-
-focus correction remains uncommitted, but its final browser replay passed. The
+at revision `c282a73` on branch `BCP/R1_Budget_Validation_CI`; the cancellation-
+focus correction is committed and its final browser replay passed. Integration
+with newer main changes is being resolved on `BCP/R1_Budget_RAG`; earlier CI
+and runtime results do not certify the combined merge. The
 live evidence is in
 [`live-validation-2026-10-02.md`](evidence/release-1/live-validation-2026-10-02.md).
 The real MCP journey check returned the same complete dashboard summary, and

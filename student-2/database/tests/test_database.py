@@ -1,7 +1,242 @@
+import sqlite3
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from app import create_app
+
+
+@pytest.mark.parametrize("action,details", [
+    ("add_stop", {"activity": "Lunch break", "notes": "Vegetarian"}),
+    ("remove_stop", {}),
+    ("update_stop", {"notes": "Bring tickets"}),
+    ("shift_dates", {"startDate": "2027-04-10"}),
+])
+def test_content_edit_preview_confirm_undo(tmp_path, action, details):
+    database = str(tmp_path / "itinerary.db")
+    client = create_app(database).test_client()
+    before = client.get("/api/data/trips/1").json
+    stop = before["stops"][0]
+    operation = {"action": action, "sourceDay": 1, "targetDay": 1,
+                 "stopId": stop["id"] if action in ("remove_stop", "update_stop") else 0, **details}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation)
+    assert preview.status_code == 200
+    assert preview.json["changes"][0]["kind"] == action
+    assert client.get("/api/data/trips/1").json == before
+    token = {"token": preview.json["token"]}
+    assert client.post("/api/data/trips/2/edit-apply", json=token).status_code == 400
+    assert client.post("/api/data/trips/1/edit-apply", json=token).status_code == 200
+    assert client.post("/api/data/trips/1/edit-apply", json=token).status_code == 409
+    after = client.get("/api/data/trips/1").json
+    if action == "add_stop":
+        added = next(saved for saved in after["stops"] if saved["activity"] == "Lunch break")
+        assert added["notes"] == "Vegetarian" and added["sortOrder"] == stop["sortOrder"] + 1
+    elif action == "remove_stop":
+        assert stop["id"] not in {saved["id"] for saved in after["stops"]}
+    elif action == "update_stop":
+        assert after["stops"][0]["notes"] == "Bring tickets"
+        assert after["stops"][0]["activity"] == stop["activity"]
+    else:
+        assert (after["startDate"], after["endDate"]) == ("2027-04-10", "2027-04-11")
+        assert after["stops"] == before["stops"]
+    client = create_app(database).test_client()
+    undo = {"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0}
+    preview = client.post("/api/data/trips/1/edit-preview", json=undo)
+    assert preview.status_code == 200
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview.json["token"]}).status_code == 200
+    restored = client.get("/api/data/trips/1").json
+    assert (restored["startDate"], restored["endDate"]) == (before["startDate"], before["endDate"])
+    fields = ("id", "day", "sortOrder", "activity", "notes", "createdAt")
+    assert [[saved[field] for field in fields] for saved in restored["stops"]] == [[saved[field] for field in fields] for saved in before["stops"]]
+    assert client.post("/api/data/trips/1/edit-preview", json=undo).status_code == 400
+
+
+@pytest.mark.parametrize("operation", [
+    {"action": "add_stop", "activity": " "},
+    {"action": "add_stop", "activity": "Lunch", "notes": False},
+    {"action": "add_stop", "activity": "Lunch", "targetDay": 3},
+    {"action": "add_stop", "activity": "Lunch", "stopId": 1},
+    {"action": "add_stop", "activity": "Lunch", "notes": "x" * 1001},
+    {"action": "update_stop", "stopId": 1, "activity": "x" * 161},
+    {"action": "update_stop", "stopId": 1},
+    {"action": "update_stop", "stopId": 3, "notes": "Other trip"},
+    {"action": "remove_stop", "stopId": 1, "notes": "Unexpected"},
+    {"action": "shift_dates", "startDate": "2027-02-29"},
+    {"action": "shift_dates", "startDate": "9999-12-31"},
+    {"action": "shift_dates", "startDate": "20270601"},
+    {"action": "shift_dates", "startDate": "2027-06-01", "stopId": 1},
+])
+def test_invalid_content_edits_do_not_write(tmp_path, operation):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    before = client.get("/api/data/trips/1").json
+    operation = {"sourceDay": 1, "targetDay": 1, "stopId": 0, **operation}
+    assert client.post("/api/data/trips/1/edit-preview", json=operation).status_code == 400
+    assert client.get("/api/data/trips/1").json == before
+
+
+@pytest.mark.parametrize("action,details", [
+    ("add_stop", {"activity": "Lunch"}), ("remove_stop", {"stopId": 1}),
+    ("update_stop", {"stopId": 1, "notes": "Bring tickets"}), ("shift_dates", {"startDate": "2027-06-01"}),
+])
+def test_content_edits_reject_stale_preview_and_undo(tmp_path, action, details):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    operation = {"action": action, "sourceDay": 1, "targetDay": 1, "stopId": 0, **details}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation).json
+    stop = client.get("/api/data/stops/2").json
+    client.put("/api/data/stops/2", json={**stop, "notes": "Manual change"})
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 409
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation).json
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 200
+    client.put("/api/data/stops/2", json={**stop, "notes": "Another manual change"})
+    assert client.post("/api/data/trips/1/edit-preview", json={"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0}).status_code == 400
+
+
+def test_remove_final_stop_and_restore_it_without_changing_identity(tmp_path):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    client.delete("/api/data/stops/2")
+    before = client.get("/api/data/stops/1").json
+    operation = {"action": "remove_stop", "sourceDay": 1, "targetDay": 1, "stopId": 1}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation).json
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 200
+    assert client.get("/api/data/trips/1").json["stops"] == []
+    preview = client.post("/api/data/trips/1/edit-preview", json={**operation, "action": "undo", "stopId": 0}).json
+    assert preview["changes"][0]["after"]["id"] == 1
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 200
+    restored = client.get("/api/data/stops/1").json
+    for field in ("id", "tripId", "day", "activity", "notes", "sortOrder", "createdAt"):
+        assert restored[field] == before[field]
+
+
+def test_existing_database_migrates_without_changing_saved_trips(tmp_path):
+    database = str(tmp_path / "itinerary.db")
+    client = create_app(database).test_client()
+    before = client.get("/api/data/trips/1").json
+    with sqlite3.connect(database) as connection:
+        connection.execute("ALTER TABLE trips DROP COLUMN last_edit")
+    client = create_app(database).test_client()
+    assert client.get("/api/data/trips/1").json == before
+    with sqlite3.connect(database) as connection:
+        assert "last_edit" in {row[1] for row in connection.execute("PRAGMA table_info(trips)")}
+
+
+@pytest.mark.parametrize("action", ["reorder_before", "reorder_after"])
+def test_reorder_and_undo_preserve_exact_order_across_restart(tmp_path, action):
+    database = str(tmp_path / "itinerary.db")
+    client = create_app(database).test_client()
+    for activity, order in [("Lunch", 0), ("Gallery", 8)]:
+        assert client.post("/api/data/stops", json={"tripId": 1, "day": 1, "activity": activity,
+                                                   "notes": "Keep these notes", "sortOrder": order}).status_code == 201
+    before = client.get("/api/data/trips/1").json
+    day_stops = [stop for stop in before["stops"] if stop["day"] == 1]
+    moving, anchor = (day_stops[-1], day_stops[0]) if action == "reorder_before" else (day_stops[0], day_stops[-1])
+    operation = {"action": action, "sourceDay": 1, "targetDay": 1,
+                 "stopId": moving["id"], "targetStopId": anchor["id"]}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation)
+    assert preview.status_code == 200
+    assert client.get("/api/data/trips/1").json == before
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview.json["token"]}).status_code == 200
+    after = client.get("/api/data/trips/1").json
+    ordered = [stop["id"] for stop in after["stops"] if stop["day"] == 1]
+    assert ordered == ([moving["id"]] + [stop["id"] for stop in day_stops[:-1]] if action == "reorder_before"
+                       else [stop["id"] for stop in day_stops[1:]] + [moving["id"]])
+    assert client.post("/api/data/trips/1/edit-preview", json=operation).status_code == 400
+    client = create_app(database).test_client()
+    undo = {"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0}
+    preview = client.post("/api/data/trips/1/edit-preview", json=undo)
+    assert preview.status_code == 200
+    assert client.get("/api/data/trips/1").json == after
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview.json["token"]}).status_code == 200
+    restored = client.get("/api/data/trips/1").json
+    fields = ("id", "day", "sortOrder", "activity", "notes", "createdAt")
+    assert [[stop[field] for field in fields] for stop in restored["stops"]] == [[stop[field] for field in fields] for stop in before["stops"]]
+    assert "last_edit" not in restored
+    assert client.post("/api/data/trips/1/edit-preview", json=undo).status_code == 400
+
+
+@pytest.mark.parametrize("action", ["move_day", "swap_days", "move_stop"])
+def test_undo_rejects_intervening_changes_and_wrong_trip(tmp_path, action):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    trip = client.get("/api/data/trips/1").json
+    operation = {"action": action, "sourceDay": 1, "targetDay": 2,
+                 "stopId": trip["stops"][0]["id"] if action == "move_stop" else 0}
+    undo = {"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0}
+    assert client.post("/api/data/trips/1/edit-preview", json=undo).status_code == 400
+    token = client.post("/api/data/trips/1/edit-preview", json=operation).json["token"]
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": token}).status_code == 200
+    preview = client.post("/api/data/trips/1/edit-preview", json=undo)
+    assert preview.status_code == 200
+    assert client.post("/api/data/trips/2/edit-apply", json={"token": preview.json["token"]}).status_code == 400
+    stop = client.get("/api/data/trips/1").json["stops"][0]
+    client.put(f"/api/data/stops/{stop['id']}", json={**stop, "notes": "Manual change"})
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview.json["token"]}).status_code == 409
+    assert client.post("/api/data/trips/1/edit-preview", json=undo).status_code == 400
+
+
+def test_reordering_rejects_invalid_stop_selection(tmp_path):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    trip = client.get("/api/data/trips/1").json
+    first, second = trip["stops"]
+    operation = {"action": "reorder_before", "sourceDay": 1, "targetDay": 1,
+                 "stopId": first["id"], "targetStopId": second["id"]}
+    for invalid in [operation, {**operation, "targetStopId": first["id"]},
+                    {**operation, "targetStopId": True}, {**operation, "targetStopId": 99999},
+                    {**operation, "action": "undo"}, {**operation, "targetDay": 2}]:
+        assert client.post("/api/data/trips/1/edit-preview", json=invalid).status_code == 400
+    assert client.get("/api/data/trips/1").json == trip
+
+
+@pytest.mark.parametrize("action", ["move_day", "swap_days", "move_stop"])
+def test_confirmed_edit_preserves_ids_and_rejects_replay(tmp_path, action):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    before = client.get("/api/data/trips/1").json
+    operation = {"action": action, "sourceDay": 1, "targetDay": 2,
+                 "stopId": before["stops"][0]["id"] if action == "move_stop" else 0}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation)
+    assert preview.status_code == 200
+    assert client.get("/api/data/trips/1").json == before
+    token = {"token": preview.json["token"]}
+    assert client.post("/api/data/trips/2/edit-apply", json=token).status_code == 400
+    applied = client.post("/api/data/trips/1/edit-apply", json=token)
+    assert applied.status_code == 200
+    assert applied.json["changes"] == preview.json["changes"]
+    after = client.get("/api/data/trips/1").json
+    assert {stop["id"] for stop in before["stops"]} == {stop["id"] for stop in after["stops"]}
+    for change in preview.json["changes"]:
+        stop = next(stop for stop in after["stops"] if stop["id"] == change["id"])
+        assert (stop["day"], stop["sortOrder"]) == (change["toDay"], change["toOrder"])
+        assert stop["activity"] == change["activity"]
+    assert client.post("/api/data/trips/1/edit-apply", json=token).status_code == 409
+
+
+def test_edit_rejects_stale_tampered_expired_and_invalid_requests(tmp_path, monkeypatch):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    operation = {"action": "swap_days", "sourceDay": 1, "targetDay": 2, "stopId": 0}
+    token = client.post("/api/data/trips/1/edit-preview", json=operation).json["token"]
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": token + "tampered"}).status_code == 400
+    with monkeypatch.context() as patch:
+        patch.setattr("itsdangerous.timed.TimestampSigner.get_timestamp", lambda self: 9999999999)
+        assert client.post("/api/data/trips/1/edit-apply", json={"token": token}).status_code == 400
+    trip = client.get("/api/data/trips/1").json
+    stop = trip["stops"][0]
+    client.put(f"/api/data/stops/{stop['id']}", json={**stop, "notes": "Changed since preview"})
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": token}).status_code == 409
+    for invalid in [None, [], {**operation, "targetDay": 3}, {**operation, "sourceDay": True},
+                    {**operation, "action": "delete"}, {**operation, "extra": 1},
+                    {**operation, "action": "move_stop", "stopId": 99999}]:
+        assert client.post("/api/data/trips/1/edit-preview", json=invalid).status_code == 400
+
+
+def test_swap_with_an_empty_source_day_and_move_appends(tmp_path):
+    client = create_app(str(tmp_path / "itinerary.db")).test_client()
+    operation = {"action": "move_day", "sourceDay": 1, "targetDay": 2, "stopId": 0}
+    preview = client.post("/api/data/trips/1/edit-preview", json=operation).json
+    assert preview["changes"][0]["toOrder"] == 1
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 200
+    preview = client.post("/api/data/trips/1/edit-preview", json={**operation, "action": "swap_days"}).json
+    assert len(preview["changes"]) == 2
+    assert all(change["toDay"] == 1 for change in preview["changes"])
+    assert client.post("/api/data/trips/1/edit-apply", json={"token": preview["token"]}).status_code == 200
 
 
 def test_seed_and_trip_stop_crud():
