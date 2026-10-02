@@ -1,5 +1,76 @@
 # Student 4 Review Record
 
+## 2026-10-02 - Integrated Release 1 Evidence Re-review
+
+**Scope:** Latest integrated Student 4 live-validation evidence, extractive RAG
+results, the two fresh validation-mode records, Actions run 36947214508, and
+Release 1 functional/rubric status. This documentation review did not change
+application code or test behavior.
+
+| Finding | Adjudication | Resolution/status |
+|---|---|---|
+| Earlier MCP/RAG browser requests returned 404 because of the doubled `/api` path. | Superseded by the final live evidence: corrected same-origin MCP and RAG requests returned 200; the MCP summary matched the dashboard, and RAG citations expanded in the UI. | Mark integrated route behavior passed; preserve the pre-fix 404s as historical evidence. |
+| Fresh live RAG answers and unsupported-question behavior. | Five answerable gateway cases returned their exact cited source paragraphs; the UI Mars question returned the exact insufficient-context response. The earlier freeform model failures and direct prompt-iteration abstentions remain valid historical observations. | Mark the tested cases passed, not universal grounding or accuracy. |
+| Browser CRUD and database preservation. | Temporary budget and expense create/read/update/delete flows completed and were cleaned up; seeded totals remained 12 budgets/26 expenses. Budget deletion with a still-linked expense was not separately tested. | Mark exercised CRUD and cleanup passed; retain the cascade edge case as an evidence limitation. |
+| Guidance cancellation focus. | The final browser replay of the uncommitted correction showed `Guidance request cancelled.`, cleared the result, recorded the real request as `net::ERR_ABORTED`, and restored focus to `guidance-question`. The frontend image was rebuilt and its service reported healthy. | Mark cancellation focus verified for this replay; CI at revision `3e8be05` does not include the uncommitted fix. |
+| Shared loop and CI. | Both fresh mode records have HTTP 200 and `contractPassed=true`; their human decision, embedded post-test and finalisation fields remain null. Separate post-tests passed backend 136/136 and frontend 19/19. Linux Actions run 36947214508 passed 439 tests; 19 live RAG tests were skipped. | Record loop contract and CI as passed, not loop finalisation, live-model coverage in CI, or human approval. |
+| Current functional/rubric review. | Two independent functional/rubric reviews found no current Student 4 functional blocker after the route, grounding, and focus corrections. All-five-feature integration and rubric criteria requiring a final group report/video or human demonstration remain open. | Student 4 functional evidence is substantially complete; do not claim all ten group criteria or release acceptance. |
+
+**Remaining gates:** Liam's explicit keep/change/reject decision and finalisation
+for both loop records;
+manual review/merge of PRs #104-#108; group-wide integration/report/video,
+attendance and Q&A evidence.
+
+
+## 2026-10-02 - Student 4 ADAPT Route and Live-Grounding Adjudication
+
+**Scope:** Student 4 static UI route construction and frontend tests, the shared
+nginx browser-prefix rewrite, Student 4 RAG corpus/retrieval IDs, the loop's
+Student 4 citation allowlist, and actual post-refresh model answers. Backend
+routes, shared generation prompt, confidence thresholds and loop records were
+not changed.
+
+| Finding | Adjudication | Resolution |
+|---|---|---|
+| Live UI calls returned 404 at `/budget-api/api/budget-check` and `/budget-api/api/budget-guidance`. | Confirmed root cause: `api()` already prefixes `/budget-api`, while shared nginx rewrites that browser prefix to backend `/api/`. The backend's `/api/budget-check` and `/api/budget-guidance` routes are correct. | Changed the two caller paths to `/budget-check` and `/budget-guidance`; corrected all corresponding mocks; existing tests now assert exact browser URLs, reject the doubled URLs, and read the real shared nginx location/rewrite. Updated the browser checklist. The old 404 is preserved as historical evidence; integrated browser replay is pending. |
+| Reviewer claimed `budgeting-workflow#2` was a phantom and should be removed from the loop allowlist. | Rejected with source/runtime evidence. The configured `venv-rag` loaded six real chunks. `budgeting-workflow#1` is the first body paragraph; `budgeting-workflow#2` is the second body paragraph: “This knowledge base provides general tracker guidance and has no access to saved expenses or current journey totals...” | Kept the valid `ServiceValidation` allowlist entry. No extra brittle source-parsing consistency test was added; direct index output is recorded in the Student 1 prompt log. |
+| The prior live answer claimed 80% or more was overspent; the 80%-100% band is warning. | Confirmed. `DashboardCalculator.Status` uses the unrounded ratio, with `>100` overspent, `>=80` warning, otherwise within budget. The historical loop record is retained unchanged and its reviewer ACCEPT does not establish entailment. | Updated only the compressed `category-budgets#2` paragraph and review date, explicitly stating exactly 80% and exactly 100% are warning, only strictly above 100% is overspent, decisions use the unrounded ratio, and display rounds to two decimals. No shared prompt or threshold change. |
+| Did the source clarification make every live answer grounded? | No. Of four required real-model questions, the canonical threshold and held-out conversion paraphrase were grounded. A threshold paraphrase added the contradictory claim “80 percent or more” is warning; the broad conversion answer attached an expense-entry claim to `budgeting-workflow#2`, whose text does not support it. A separate exact-limit question was grounded. | Recorded exact questions, answers, citations, snippets, confidence and assessments in `docs/evidence/release-1/rag-guidance-live-2026-10-02.json`. Do not claim all four passed; bounded live evaluation stopped without changing the shared prompt or selecting substitute questions. |
+
+**Validation:** frontend suite 19/19; Student 4 retrieval 17/17; full shared RAG
+79 passed, 19 live-model tests skipped, one Starlette deprecation warning. Five
+sequential real `llama3.2:3b` requests ran through the refreshed native RAG and
+existing backend. The frontend Docker image build passed and the recreated
+`student4-frontend` container reports healthy. Integrated browser replay,
+citation expansion, and browser-rendered abstention remain pending.
+
+## 2026-10-02 - Student 4 Shared Loop Fixtures and CI
+
+**Scope:** `ServiceValidation`, validation CLI arguments, shared reviewer prompt
+and parser, agentic-loop tests, `scripts/test/student-4.ps1`, Student 4 workflow,
+and the Student 4 Release 1 runbook. No UI, database schema, or runtime service
+was changed.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | Student 4 was rejected as an unsupported loop feature; its MCP path needs a journey label rather than a trip ID, and its HTTP RAG response uses `chunkId` rather than shared retrieval's internal `chunk_id`. | Added Student 4-specific route/body/default handling and exact MCP/RAG validators. MCP verifies the requested journey, result envelope, full totals/categories, supported currency/status boundaries and malformed/error cases. RAG requires known cited answered content with matching `chunkId`; insufficient context remains a failed positive gate. |
+| Required | MCP/RAG loop commands did not exercise actual Student 4 CLI option rules. | Added parsing tests for mandatory `--journey-label`, ignored trip-ID rejection, feature-specific option rejection, 1-80 label bounds, fixed backend origin/question, and captured HTTP bodies. |
+| Reliability | The reviewer prompt showed alternative verdict/severity values as literal template text and left required sections blank; headings with leading indentation were accepted. | Replaced the template with one complete standalone ACCEPT example, explicitly required column-one headings and one severity value, and tightened parser recognition without weakening the no-ACCEPT-with-required-finding guard. Added nested-heading and enum-echo regressions. |
+| Environment | This Windows account cannot create symbolic links (`ERROR_PRIVILEGE_NOT_HELD`), so one existing loop security test cannot run locally. | Left the security test intact. Local loop validation excludes only that test; Linux CI retains it. |
+
+**Validation:** Student 4 frontend 19/19 and production build passed; backend
+135/135 (also with all generic and Student 4 AI/MCP/RAG flags false); database
+12/12; shared Vue build passed; loop suite 60/60 excluding the Windows-only
+symlink privilege case; shared MCP 120/120; shared RAG 79 passed and 19 live
+model tests skipped; `docker compose config --quiet` exited 0 with all six mode
+variables false. The complete `All` runner reaches the loop stage, then exits
+non-zero on the symlink test in this Windows environment.
+
+**Open limits:** no Docker build/start/stop, native MCP/RAG/Ollama process, real
+Student 4 loop mode, database non-mutation check, browser, GitHub Actions run,
+human source review, or release approval was performed. Offline fixtures do not
+prove model grounding or live host-to-container connectivity.
+
 ## 2026-10-02 - Student 4 RAG HLD Verification
 
 **Scope:** Current `POST /api/budget-guidance`, `RagClient`, Student 4 corpus and

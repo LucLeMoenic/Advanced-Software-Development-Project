@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "capturedOn": "2026-10-02",
+  "model": "llama3.2:3b",
+  "ragEndpoint": "http://127.0.0.1:5500/query",
+  "freshRagProcessId": 140280,
+  "feature": "student-4",
+  "responseMode": "model-selected extractive passages; server-rendered source text",
+  "selectionPrompt": "ai-services/agentic-loop/prompts/rag-budget-selection-v1.txt",
+  "selectionPromptSha256": "776183C69D0E4CE27B5C09721FADC0AAB007DC41254EA0037244BE70103A870F",
+  "corpusSha256": {
+    "category-budgets.md": "9FC700E2DADFFD0E7D89E3C79E8701A1C103E485DD3FFC1B88B9AF01BE86169D",
+    "expense-conversion.md": "DA8DF3E141116A050B2753A47E7A6B12EE81472F2643ED6945BEFF3A323E9C10",
+    "budgeting-workflow.md": "7A5D371AA916100E36FA2ACA37CAA935FE4DA1F1AB1B0435E8BAE97E5116E81F"
+  },
+  "requestsSequential": true,
+  "adaptationHistory": [
+    {
+      "iteration": 0,
+      "promptChange": "Initial Student 4 selection prompt.",
+      "answerableCases": 5,
+      "answerableCasesGrounded": 3,
+      "failures": [
+        "Held-out threshold paraphrase selected category-budgets#1 and made an overbroad warning claim.",
+        "Conversion paraphrase abstained; direct conversion question selected unrelated budgeting-workflow#2 for an expense-entry claim."
+      ],
+      "fullResponsesPreservedIn": "student-4/docs/evidence/release-1/rag-guidance-live-2026-10-02.json"
+    },
+    {
+      "iteration": 1,
+      "promptChange": "Added a fact-by-fact checklist for compound questions and clarified that one paragraph can cover several facts.",
+      "answerableCasesRetested": 2,
+      "answerableCasesGrounded": 0,
+      "responses": [
+        {
+          "question": "When an expense uses a different currency from its budget, what gets converted, how is it rounded, and which exchange-rate details are saved?",
+          "status": 200,
+          "answer": "Not enough information in the knowledge base to answer this.",
+          "citations": [],
+          "confidence": "insufficient"
+        },
+        {
+          "question": "How does the tracker convert an expense and save its exchange rate snapshot?",
+          "status": 200,
+          "answer": "Not enough information in the knowledge base to answer this.",
+          "citations": [],
+          "confidence": "insufficient"
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "promptChange": "Added an explicit source-backed example mapping conversion, rounding, and saved rate/date details to the complete conversion paragraph.",
+      "answerableCasesRetested": 2,
+      "answerableCasesGrounded": 2,
+      "selectedSource": "expense-conversion#1",
+      "note": "Both answers were the exact original retrieved paragraph, with no model-authored answer text."
+    }
+  ],
+  "requiredQuestionCount": 4,
+  "requiredQuestionsGrounded": 4,
+  "additionalPositiveQuestionCount": 1,
+  "additionalPositiveQuestionsGrounded": 1,
+  "negativeQuestionCount": 1,
+  "negativeAbstentionsCorrect": 1,
+  "allRequiredQuestionsGrounded": true,
+  "results": [
+    {
+      "coverage": "required-known-threshold",
+      "question": "What does the 80% category budget warning mean?",
+      "status": 200,
+      "answer": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 100 percent are `overspent`. The displayed percentage is rounded to two decimal places, but the status decision uses the unrounded ratio. [category-budgets#2]",
+      "confidence": "medium",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunk_id": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.3041
+        }
+      ],
+      "assessment": "grounded; answer is the complete cited paragraph verbatim"
+    },
+    {
+      "coverage": "required-held-out-threshold-paraphrase",
+      "question": "When does my category budget become a warning, and when is it actually overspent?",
+      "status": 200,
+      "answer": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 100 percent are `overspent`. The displayed percentage is rounded to two decimal places, but the status decision uses the unrounded ratio. [category-budgets#2]",
+      "confidence": "low",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunk_id": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.194
+        }
+      ],
+      "assessment": "grounded; answer is the complete cited paragraph verbatim"
+    },
+    {
+      "coverage": "required-held-out-conversion-paraphrase",
+      "question": "When an expense uses a different currency from its budget, what gets converted, how is it rounded, and which exchange-rate details are saved?",
+      "status": 200,
+      "answer": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint values away from zero, and saves the converted amount with the applied rate and rate date as a historical snapshot. [expense-conversion#1]",
+      "confidence": "medium",
+      "citations": [
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunk_id": "expense-conversion#1",
+          "snippet": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint v",
+          "score": 0.3328
+        }
+      ],
+      "assessment": "grounded; answer is the complete cited paragraph verbatim"
+    },
+    {
+      "coverage": "required-conversion-question",
+      "question": "How does the tracker convert an expense and save its exchange rate snapshot?",
+      "status": 200,
+      "answer": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint values away from zero, and saves the converted amount with the applied rate and rate date as a historical snapshot. [expense-conversion#1]",
+      "confidence": "low",
+      "citations": [
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunk_id": "expense-conversion#1",
+          "snippet": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint v",
+          "score": 0.1613
+        }
+      ],
+      "assessment": "grounded; answer is the complete cited paragraph verbatim"
+    },
+    {
+      "coverage": "additional-exact-boundary-probe",
+      "question": "If I hit the spending limit exactly, is it overspent or still a warning?",
+      "status": 200,
+      "answer": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 100 percent are `overspent`. The displayed percentage is rounded to two decimal places, but the status decision uses the unrounded ratio. [category-budgets#2]",
+      "confidence": "low",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunk_id": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.2714
+        }
+      ],
+      "assessment": "grounded; answer is the complete cited paragraph verbatim"
+    },
+    {
+      "coverage": "unsupported-mars",
+      "question": "What visa do I need to visit Mars?",
+      "status": 200,
+      "answer": "Not enough information in the knowledge base to answer this.",
+      "confidence": "insufficient",
+      "citations": [],
+      "assessment": "correct insufficient-context abstention"
+    }
+  ],
+  "sourceText": {
+    "category-budgets#2": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 100 percent are `overspent`. The displayed percentage is rounded to two decimal places, but the status decision uses the unrounded ratio.",
+    "expense-conversion#1": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint values away from zero, and saves the converted amount with the applied rate and rate date as a historical snapshot."
+  },
+  "limits": [
+    "Requests were sent directly to the shared RAG endpoint; this evidence does not exercise the Student 4 backend route, browser workflow, or development validation loop.",
+    "The two initial conversion failures are preserved in the linked earlier evidence artifact; iteration 1's abstentions are recorded above.",
+    "Exact source quotation prevents model-authored paraphrase but does not prove that a future model selection is relevant; live relevance/abstention remains model-dependent.",
+    "No Student 1, 2, 3, or 5 production behavior, corpus, threshold, or existing shared grounding prompt was changed."
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "capturedAtUtc": "2026-10-02T00:09:28.9217212Z",
+  "model": "llama3.2:3b",
+  "backendEndpoint": "http://127.0.0.1:5204/api/budget-guidance",
+  "ragEndpoint": "http://127.0.0.1:5500/query",
+  "freshRagProcessId": 192944,
+  "corpusSource": "ai-services/rag-server/knowledge/student-4/category-budgets.md",
+  "expectedStatusRule": "Use the unrounded actual-to-planned ratio: below 80% is within_budget; 80%-100% inclusive is warning; strictly above 100% is overspent. Display rounds to two decimal places.",
+  "requiredQuestionCount": 4,
+  "requiredQuestionsGrounded": 2,
+  "allRequiredQuestionsGrounded": false,
+  "results": [
+    {
+      "coverage": "required-known-threshold",
+      "question": "What does the 80% category budget warning mean?",
+      "answer": "A budget category is considered `within_budget` if its actual spending is less than 80% of its planned spending. [category-budgets#1]\n\nA budget category is considered `warning` if its actual spending is exactly 80% of its planned spending or if its actual spending is between 80% and 100% of its planned spending. [category-budgets#2]\n\nThe budget status uses the unrounded actual-to-planned ratio to determine the budget status. [category-budgets#2]\n\nA budget category is considered `overspent` if its actual spending is more than 100% of its planned spending. [category-budgets#2]",
+      "confidence": "medium",
+      "assessment": "grounded",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunkId": "category-budgets#1",
+          "snippet": "Set a positive limit for each budget category and its date period. The dashboard groups planned and actual minor-unit amounts by category and shows each category's remaining amount and percentage used. Review category totals separately; a journey-wide total does not replace a cat",
+          "score": 0.3376
+        },
+        {
+          "source": "Category budgets and spending statuses",
+          "chunkId": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.3041
+        }
+      ]
+    },
+    {
+      "coverage": "required-held-out-threshold-paraphrase",
+      "question": "When does my category budget become a warning, and when is it actually overspent?",
+      "answer": "A category budget becomes a warning when its actual-to-planned ratio is between 80 percent and 100 percent, inclusive. [category-budgets#2]\n\nA category budget is overspent when its actual-to-planned ratio is strictly above 100 percent. [category-budgets#2]\n\nThe budget status uses the unrounded actual-to-planned ratio. [category-budgets#2]\n\nA category budget becomes a warning when its actual percentage used is 80 percent or more. [category-budgets#1]",
+      "confidence": "low",
+      "assessment": "contradicts-source: the final claim says 80 percent or more is warning, which includes values above 100 percent that the source classifies as overspent",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunkId": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.194
+        },
+        {
+          "source": "Category budgets and spending statuses",
+          "chunkId": "category-budgets#1",
+          "snippet": "Set a positive limit for each budget category and its date period. The dashboard groups planned and actual minor-unit amounts by category and shows each category's remaining amount and percentage used. Review category totals separately; a journey-wide total does not replace a cat",
+          "score": 0.3376
+        }
+      ]
+    },
+    {
+      "coverage": "required-held-out-conversion-paraphrase",
+      "capturedAtUtc": "2026-10-02T00:10:49.7291612Z",
+      "question": "When an expense uses a different currency from its budget, what gets converted, how is it rounded, and which exchange-rate details are saved?",
+      "answer": "The expense amount gets converted to the budget's base currency. [expense-conversion#1]\n\nThe conversion is rounded once to minor units with midpoint values away from zero. [expense-conversion#1]\n\nThe applied exchange rate and rate date are saved with the converted amount. [expense-conversion#1]\n\nThe exchange rates are fixed demonstration values and not live or current market rates. [expense-conversion#2]",
+      "confidence": "low",
+      "assessment": "grounded",
+      "citations": [
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunkId": "expense-conversion#1",
+          "snippet": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint v",
+          "score": 0.3328
+        },
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunkId": "expense-conversion#2",
+          "snippet": "The configured exchange rates are fixed demonstration values, not live or current market rates. The sample configuration is version `demo-2026-08-v1`, dated 2026-08-01; do not use it to make a current exchange-rate decision. A saved expense's conversion snapshot records the rate ",
+          "score": 0.2195
+        }
+      ]
+    },
+    {
+      "coverage": "required-conversion-question",
+      "question": "How does the tracker convert an expense and save its exchange rate snapshot?",
+      "answer": "The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint values away from zero, and saves the converted amount with the applied rate and rate date as a historical snapshot. [expense-conversion#1]\n\nA saved expense's conversion snapshot records the rate used for that save. [expense-conversion#2]\n\nRecord an expense against its budget with a description, positive amount, original currency, and date inside the budget period. [budgeting-workflow#2]\n\nThe configured exchange rates are fixed demonstration values, not live or current market rates. [expense-conversion#2]",
+      "confidence": "low",
+      "assessment": "fails-citation-entailment: the expense-entry claim cites budgeting-workflow#2, whose text is only a no-live-totals limitation and does not support that claim",
+      "citations": [
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunkId": "expense-conversion#1",
+          "snippet": "Record an expense against its budget with a description, positive amount, original currency, and date inside the budget period. The backend converts from the original currency to the budget's base currency using configured decimal rates, rounds once to minor units with midpoint v",
+          "score": 0.1613
+        },
+        {
+          "source": "Expense entry and conversion snapshots",
+          "chunkId": "expense-conversion#2",
+          "snippet": "The configured exchange rates are fixed demonstration values, not live or current market rates. The sample configuration is version `demo-2026-08-v1`, dated 2026-08-01; do not use it to make a current exchange-rate decision. A saved expense's conversion snapshot records the rate ",
+          "score": 0.3408
+        },
+        {
+          "source": "Practical budgeting workflow in the tracker",
+          "chunkId": "budgeting-workflow#2",
+          "snippet": "This knowledge base provides general tracker guidance and has no access to saved expenses or current journey totals. Use the dashboard or the read-only budget check for current spending figures; do not infer a remaining balance from these notes or from an exchange-rate example.",
+          "score": 0.2086
+        }
+      ]
+    },
+    {
+      "coverage": "additional-exact-boundary-probe",
+      "question": "If I hit the spending limit exactly, is it overspent or still a warning?",
+      "answer": "The spending limit is still a warning if hit exactly. [category-budgets#2]\n\nRatios strictly above 100 percent are `overspent`. [category-budgets#2]\n\nEvery ratio from 80 percent through exactly 100 percent is also `warning`. [category-budgets#2]\n\nThe budget status uses the unrounded actual-to-planned ratio. [category-budgets#2]",
+      "confidence": "low",
+      "assessment": "grounded",
+      "citations": [
+        {
+          "source": "Category budgets and spending statuses",
+          "chunkId": "category-budgets#2",
+          "snippet": "The budget status uses the unrounded actual-to-planned ratio: below 80 percent is `within_budget`; at exactly 80 percent the status is `warning`. Every ratio from 80 percent through exactly 100 percent is also `warning`, including exactly 100 percent; only ratios strictly above 1",
+          "score": 0.2714
+        }
+      ]
+    }
+  ],
+  "historicalMisgroundedResult": {
+    "historical": true,
+    "record": "docs/agentic-loop-records/20261001T235806Z-03533a8d644b4ba79a09ed8415cd954c.json",
+    "capturedAtUtc": "2026-10-01T23:57:46.9348204+00:00",
+    "note": "Before the corpus clarification, the real model said spending at 80 percent or more indicates overspending. The original loop record is preserved unchanged; its ACCEPT verdict does not establish entailment."
+  },
+  "limits": [
+    "Citation membership and confidence are not proof of entailment; each answer was manually compared with its cited snippet and the authoritative dashboard rule.",
+    "No live model answer was intercepted, substituted, or used as a test fixture.",
+    "No backend route, shared generation prompt, retrieval threshold, loop allowlist, or database was changed."
+  ]
+}

@@ -11,6 +11,9 @@ on:
       - "shared/vue-frontend/**"
       - "package.json"
       - "scripts/test/student-4.ps1"
+      - "ai-services/agentic-loop/**"
+      - "ai-services/mcp-server/**"
+      - "ai-services/rag-server/**"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -20,6 +23,9 @@ on:
       - "shared/vue-frontend/**"
       - "package.json"
       - "scripts/test/student-4.ps1"
+      - "ai-services/agentic-loop/**"
+      - "ai-services/mcp-server/**"
+      - "ai-services/rag-server/**"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -28,6 +34,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      AI_ENABLED: "false"
+      MCP_ENABLED: "false"
+      RAG_ENABLED: "false"
+      STUDENT4_AI_ENABLED: "false"
+      STUDENT4_MCP_ENABLED: "false"
+      STUDENT4_RAG_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -42,6 +55,20 @@ jobs:
           cache-dependency-path: |
             student-4/frontend/package-lock.json
             shared/vue-frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install isolated shared Python test dependencies
+        shell: bash
+        run: |
+          python -m venv .venv-student4-mcp
+          python -m venv .venv-student4-rag
+          .venv-student4-mcp/bin/python -m pip install --disable-pip-version-check -r ai-services/mcp-server/requirements.txt
+          .venv-student4-rag/bin/python -m pip install --disable-pip-version-check -r ai-services/rag-server/requirements.txt
+          echo "STUDENT4_MCP_PYTHON=$GITHUB_WORKSPACE/.venv-student4-mcp/bin/python" >> "$GITHUB_ENV"
+          echo "STUDENT4_RAG_PYTHON=$GITHUB_WORKSPACE/.venv-student4-rag/bin/python" >> "$GITHUB_ENV"
 
       - name: Validate source and tests
         run: pwsh -NoProfile -File scripts/test/student-4.ps1 -Area All

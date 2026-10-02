@@ -43,6 +43,20 @@ complete from jsdom tests alone.
 - [ ] Stopping Ollama produces labelled reliable fallback advice.
 - [ ] Dashboard and CRUD remain usable while Ollama is unavailable.
 
+## Release 1 Tools
+
+- [ ] With MCP enabled, the selected journey check calls `/budget-api/budget-check` with only `journeyLabel` and identifies `budget.get_summary`.
+- [ ] Budget-check planned, actual, remaining, percentage, categories, and statuses match the authoritative response, including negative remaining amounts.
+- [ ] The optional raw validated response is readable and contains no executable markup.
+- [ ] With MCP disabled or capabilities unavailable, the new check stays disabled while existing CRUD remains usable.
+- [ ] A failed budget-check request shows an error state; a journey change or successful selected-journey mutation clears the previous result.
+- [ ] Guidance calls `/budget-api/budget-guidance` with the entered question and remains visibly separate from journey totals.
+- [ ] Supported guidance shows its confidence label and expandable source name, snippet, and chunk identifier.
+- [ ] Insufficient knowledge shows the fixed abstention state without citations; dependency failures remain errors rather than abstentions.
+- [ ] Guidance cancellation and edits prevent a late answer from replacing the current question state.
+- [ ] MCP/RAG disabled or capability failure disables only the corresponding new control.
+- [ ] Both panels remain usable without overlap at 320px, 768px, and 1280px; keyboard focus and screen-reader status are clear.
+
 ## Accessibility and Responsive Layout
 
 - [ ] Keyboard reaches every selector, command, form field, and dialog action.

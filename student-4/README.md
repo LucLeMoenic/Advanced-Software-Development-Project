@@ -20,22 +20,21 @@ ports do not replace shared integration.
 
 ## Source Validation
 
-The npm aliases live in [frontend/package.json](frontend/package.json). Run
-them from the Student 4 frontend package:
+From the repository root, run the complete Student 4 and shared validation set:
 
 ```powershell
-cd student-4/frontend
+pwsh -NoProfile -File scripts/test/student-4.ps1 -Area All
 ```
 
-| Command | Purpose |
-|---|---|
-| `npm run validation` | Install dependencies, run all 53 tests, and build both frontends. |
-| `npm run fe-test` | Run only the 10 frontend tests. |
-| `npm run be-test` | Run only the 31 backend tests. |
-| `npm run db-test` | Run only the 12 database tests. |
+The script runs the Student 4 frontend tests/build, backend and database suites,
+shared frontend build, shared agentic-loop tests, and the full shared MCP/RAG
+Python suites. Use `-Area Shared` for all shared suites or `-Area Loop`,
+`-Area Mcp`, and `-Area Rag` separately. Separate
+`STUDENT4_MCP_PYTHON` and `STUDENT4_RAG_PYTHON` overrides keep local dependency
+environments isolated; see the [Release 1 runbook](docs/release-1-runbook.md).
 
-From the repository root, use the same scripts with `--prefix`, for example
-`npm --prefix student-4/frontend run validation`.
+The npm aliases remain available for frontend-only development from
+`student-4/frontend`; they are not a substitute for the shared validation set.
 
 ## Integrated Startup
 
@@ -102,6 +101,7 @@ Dashboard calculations and CRUD continue to use deterministic backend logic.
 - [Architecture and data design](docs/architecture.md)
 - [Release 0 checklist](docs/release-0-checklist.md)
 - [Browser checklist](docs/frontend-browser-checklist.md)
+- [Release 1 validation runbook](docs/release-1-runbook.md)
 - [Prompt log](docs/prompt-log.md)
 - [Review record](docs/review-record.md)
 - [Contribution log](docs/contribution-log.md)

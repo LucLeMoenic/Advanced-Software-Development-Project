@@ -49,6 +49,58 @@
       <div id="notices" class="notices" aria-live="polite"></div>
     </section>
 
+    <div class="r1-tools" aria-label="Release 1 tools">
+      <section class="tool-panel" aria-labelledby="budget-check-heading" aria-describedby="budget-check-description">
+        <div class="section-heading">
+          <div>
+            <h2 id="budget-check-heading">Live budget check</h2>
+            <p id="budget-check-description" class="section-note">Read-only current totals from budget.get_summary.</p>
+          </div>
+          <button id="run-budget-check" class="secondary-button" type="button" disabled>Check this journey</button>
+        </div>
+        <p id="budget-check-status" class="tool-status" data-state="disabled" role="status" aria-live="polite" aria-busy="false" tabindex="-1">Checking capability availability...</p>
+        <div id="budget-check-result" class="tool-result" hidden>
+          <p class="tool-identity">Tool: <code id="budget-check-tool"></code> · Journey: <strong id="budget-check-journey"></strong></p>
+          <dl class="summary-strip tool-summary">
+            <div><dt>Planned</dt><dd id="check-planned"></dd></div>
+            <div><dt>Actual</dt><dd id="check-actual"></dd></div>
+            <div><dt>Remaining</dt><dd id="check-remaining"></dd></div>
+            <div><dt>Used</dt><dd id="check-percentage"></dd></div>
+          </dl>
+          <h3>Categories</h3>
+          <ul id="budget-check-categories" class="category-summary"></ul>
+          <details class="raw-details">
+            <summary>Raw validated response</summary>
+            <pre id="budget-check-raw"></pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="tool-panel guidance-panel" aria-labelledby="guidance-heading" aria-describedby="guidance-description">
+        <div class="section-heading">
+          <div>
+            <h2 id="guidance-heading">Budgeting guidance</h2>
+            <p id="guidance-description" class="section-note">General knowledge only; it does not use this journey's saved totals.</p>
+          </div>
+        </div>
+        <form id="guidance-form" class="guidance-form" novalidate>
+          <label for="guidance-question">Question</label>
+          <textarea id="guidance-question" maxlength="1000" rows="3" required aria-describedby="guidance-description guidance-count"></textarea>
+          <div class="guidance-actions">
+            <span id="guidance-count" class="character-count">0 / 1000</span>
+            <button id="cancel-guidance" class="text-button" type="button" hidden>Cancel request</button>
+            <button id="submit-guidance" class="secondary-button" type="submit" disabled>Ask guidance</button>
+          </div>
+        </form>
+        <p id="guidance-status" class="tool-status" data-state="disabled" role="status" aria-live="polite" aria-busy="false" tabindex="-1">Checking capability availability...</p>
+        <div id="guidance-result" class="tool-result" hidden>
+          <div class="guidance-answer-heading"><span id="guidance-confidence" class="source-badge"></span></div>
+          <p id="guidance-answer" class="guidance-answer"></p>
+          <div id="guidance-citations"></div>
+        </div>
+      </section>
+    </div>
+
     <section class="data-section" aria-labelledby="budgets-heading">
       <div class="section-heading">
         <div>
