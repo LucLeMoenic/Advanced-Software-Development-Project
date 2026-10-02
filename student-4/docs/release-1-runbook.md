@@ -1,6 +1,6 @@
 # Student 4 Release 1 Validation Runbook
 
-Status: implementation and offline contract checks are distinct from live model, integrated-app, CI, and human acceptance. This runbook does not claim those gates passed.
+Status: Student 4 integrated runtime and CI evidence is recorded below. The final cancellation-focus browser replay passed; its source fix remains uncommitted and is not covered by CI. Two fresh loop records remain unfinalised, PRs remain open/unmerged, and group/human release acceptance is not claimed. See the dated [live-validation evidence](evidence/release-1/live-validation-2026-10-02.md) for raw results and historical failures.
 
 ## Architecture
 
@@ -160,15 +160,15 @@ Student 4 CI sets generic `AI_ENABLED`, `MCP_ENABLED`, and `RAG_ENABLED` false a
 | Release 1 criterion | Current Student 4 evidence | Status |
 |---|---|---|
 | 1. Setup and architecture | HLD plus architecture and interaction diagrams above; native/container boundary is explicit. | Documented; final report evidence unverified. |
-| 2. Student services | Student 4 frontend 19/19, backend 135/135, database 12/12; Student 4 and shared frontend production builds passed. Backend tests also passed with all generic and Student 4 AI/MCP/RAG flags false. | Offline checks passed; integrated runtime and CRUD acceptance unverified. |
-| 3. MCP | Shared MCP suite 120/120; loop checks the requested journey, full totals/categories, status thresholds, error/malformed/mismatched responses, and required CLI label. | Offline checks passed; live UI/API success and database non-mutation unverified. |
-| 4. RAG | Shared RAG suite 91 passed, 19 live-model tests skipped; Student 4 retrieval 17/17. Final direct live set: 5/5 answerable cases quote their selected source paragraphs; Mars correctly abstains. Prompt iteration 1's two conversion abstentions and the original freeform grounding failures are preserved. | Student 4 extractive mode and direct native model behavior observed; backend route/browser workflow, shared-loop finalisation, CI, independent hold-out evaluation, and human release acceptance remain unverified. |
-| 5. Shared loop | Student 4 CLI/contract and reviewer-parser suite: 60 passed. The full suite has one existing symbolic-link test that this Windows account cannot execute (OS error 1314); Linux CI is expected to run it. | Offline contract checks passed with that local platform limitation; real mode outputs, post-tests, and Liam's decision unverified. |
-| 6. CI | Workflow includes pinned shared Python requirements, all AI modes disabled, and shared code trigger paths. | Workflow source updated; successful GitHub Actions run unverified. |
-| 7. Compose | `docker compose config --quiet` exited 0 with generic and Student 4 AI/MCP/RAG flags false; existing build/seed/health/route steps are preserved. | Config parse passed; no local image build/start/stop or container evidence claimed. |
-| 8. Integrated software | Student 4 remains on the shared `/budget/` route and uses the existing backend/database owners. | All-five-feature validation and live MCP/RAG integration unverified. |
-| 9. Report and contributions | This runbook maps evidence to criteria; PRs #104-#107 were published by `Liam-zel`. Implementation was AI-assisted under Liam's ownership. | Contribution provenance recorded; final group report/video links and review approvals unverified. |
-| 10. Demonstration and Q&A | No attendance, video, tutor approval, or demonstration claim is made here. | Unverified; human-owned. |
+| 2. Student services | Student 4 frontend 19/19, backend 136/136, database 12/12; Student 4 and shared frontend builds passed. CI ran all six mode flags false. | Automated tests, integrated Student 4 browser CRUD/runtime checks, and final cancellation-focus replay passed; see dated live evidence. The focus fix is uncommitted. |
+| 3. MCP | Shared MCP suite 120/120; integrated UI call returned the complete `budget.get_summary` result matching both seeded journey dashboards. Before/after dashboard and list data were byte-identical (12 budgets/26 expenses). | Live UI/backend/native MCP callback and non-mutation checks passed. Fresh loop contract passed; human finalisation is pending. |
+| 4. RAG | Shared RAG suite 91 passed, 19 live-model tests skipped; Student 4 retrieval 17/17. Five answerable gateway cases returned exact cited paragraphs; the UI Mars query abstained. Earlier failures and prompt iterations are preserved. | Integrated backend/browser paths passed. The new MCP/RAG loop records are contract-passing but unfinalised; broad hold-out evaluation and human release acceptance remain open. |
+| 5. Shared loop | Both fresh Student 4 mode records use the two distinct models and report HTTP 200 plus `contractPassed=true`; external post-tests passed backend 136/136 and frontend 19/19. Linux CI loop suite passed 61 tests. | Runtime contracts and tests passed; `humanDecision`, record `postTest`, and finalisation remain null. Liam's explicit keep/change/reject decisions are pending. |
+| 6. CI | Linux [Actions run 36947214508](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36947214508) passed at revision `3e8be05`: 439 tests (frontend 19, backend 136, database 12, loop 61, MCP 120, RAG 91), 19 live-model cases skipped; all six mode flags false. | Required workflow execution passed. The later uncommitted focus fix is not covered by this CI run; this is offline CI evidence, not live-model or human acceptance. |
+| 7. Compose | The same run built four images, started services, passed startup/health/seed-count/shared-gateway checks and teardown. Live integrated browser calls also traversed the gateway to native MCP/RAG. | Student 4 runtime and host-service connectivity checks passed; this is not evidence for every group's feature or a complete showcase rehearsal. |
+| 8. Integrated software | Student 4 `/budget/` MCP/RAG journeys, dashboard matching, temporary CRUD cleanup and responsive views were exercised. | Student 4 integrated behavior passed. All-five-feature validation is still unverified. |
+| 9. Report and contributions | HLD/runbook diagrams and evidence are recorded; PRs #104-#108 were published by `Liam-zel`, and CI passed on the implementation revision. | Final group PDF/video links and manual review/merge remain pending. |
+| 10. Demonstration and Q&A | No attendance, video, tutor approval, or Q&A claim is made here. | Unverified; human-owned. |
 
 | Pull request | Published by | Contribution attribution |
 |---|---|---|
@@ -176,5 +176,9 @@ Student 4 CI sets generic `AI_ENABLED`, `MCP_ENABLED`, and `RAG_ENABLED` false a
 | #105 | `Liam-zel` | AI-assisted implementation; human authorship/review outcome is not inferred. |
 | #106 | `Liam-zel` | AI-assisted implementation; human authorship/review outcome is not inferred. |
 | #107 | `Liam-zel` | AI-assisted implementation; human authorship/review outcome is not inferred. |
+| #108 | `Liam-zel` | Validation/CI integration; AI-assisted implementation; human review outcome is not inferred. |
 
 The `All` runner executed the frontend, backend, and database checks, then returned non-zero when the Windows account could not create the symlink required by one existing loop test. The loop suite excluding only that OS-dependent test passed 60/60; MCP and RAG were run separately and passed as listed. Do not replace any unverified row with code existence, an offline fixture, or a workflow definition. Record the actual run URL/output and a human decision when those are produced.
+The earlier Windows `All` run stopped on the existing symlink privilege test (OS error 1314); Linux CI subsequently ran the full loop suite, including that test, and passed. The local limitation remains environment-specific. The final live run exposed cancellation focus returning to `body`; the correction remains uncommitted, but the final browser replay passed and is recorded in the dated evidence. The CI result above predates and does not cover that uncommitted correction.
+
+Still open: human keep/change/reject decisions and finalisation for both loop records; manual review/merge of PRs #104-#108; all-five-feature integration; final group PDF/video, attendance, Q&A, and release acceptance. Budget-delete cascade with a linked row was not separately exercised. Two independent functional/rubric reviews found no current Student 4 functional blocker.

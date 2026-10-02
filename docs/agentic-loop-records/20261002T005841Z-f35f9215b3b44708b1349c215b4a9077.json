@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-02T00:58:41.9977279+00:00",
+  "task": "Check that the budgeting answer is supported by the cited Student 4 knowledge and report unsupported claims.",
+  "contextFiles": [
+    "ai-services/rag-server/knowledge/student-4/category-budgets.md",
+    "student-4/backend/Api/BudgetGuidanceEndpoints.cs"
+  ],
+  "models": {
+    "implementer": "qwen2.5-coder:7b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "C:\\Users\\Liam.Zelmanowski\\ASD\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\implementer.md",
+    "reviewer": "C:\\Users\\Liam.Zelmanowski\\ASD\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\reviewer.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "shared-reviewer-v1"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "ai-services/rag-server/knowledge/student-4/category-budgets.md": "9FC700E2DADFFD0E7D89E3C79E8701A1C103E485DD3FFC1B88B9AF01BE86169D",
+      "student-4/backend/Api/BudgetGuidanceEndpoints.cs": "7BD90C9CBBD8FE5CCE03D8BA1624C9755161A376A0D19731E00E027EBC2C0D6A"
+    },
+    "implementerPromptSha256": "84A995BA031FB6D4DCCCBC8EFAFE98213B4404F7BF454D537E7860AF1315C50A",
+    "reviewerPromptSha256": "8EA3F061D1CABF54442D2F3F65C53F714C1E97C5F74144E2CA823915C7BC218B"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.34.2",
+  "preTest": {
+    "command": "POST http://127.0.0.1:5204/api/budget-guidance",
+    "result": "{\u0022feature\u0022:\u0022student-4\u0022,\u0022mode\u0022:\u0022rag\u0022,\u0022capturedAt\u0022:\u00222026-10-02T00:58:08.3637934\u002B00:00\u0022,\u0022endpoint\u0022:\u0022http://127.0.0.1:5204/api/budget-guidance\u0022,\u0022statusCode\u0022:200,\u0022contractPassed\u0022:true,\u0022response\u0022:\u0022{\\u0022answer\\u0022:\\u0022The budget status uses the unrounded actual-to-planned ratio: below 80 percent is \\u0060within_budget\\u0060; at exactly 80 percent the status is \\u0060warning\\u0060. Every ratio from 80 percent through exactly 100 percent is also \\u0060warning\\u0060, including exactly 100 percent; only ratios strictly above 100 percent are \\u0060overspent\\u0060. The displayed percentage is rounded to two decimal places, but the status decision uses the unrounded ratio. [category-budgets#2]\\u0022,\\u0022citations\\u0022:[{\\u0022source\\u0022:\\u0022Category budgets and spending statuses\\u0022,\\u0022chunkId\\u0022:\\u0022category-budgets#2\\u0022,\\u0022snippet\\u0022:\\u0022The budget status uses the unrounded actual-to-planned ratio: below 80 percent is \\u0060within_budget\\u0060; at exactly 80 percent the status is \\u0060warning\\u0060. Every ratio from 80 percent through exactly 100 percent is also \\u0060warning\\u0060, including exactly 100 percent; only ratios strictly above 1\\u0022,\\u0022score\\u0022:0.3041}],\\u0022confidence\\u0022:\\u0022medium\\u0022}\u0022,\u0022limitation\u0022:\u0022Contract checks do not prove claim entailment, protocol discovery, or browser behavior. Review cited sources and capture those checks separately.\u0022}"
+  },
+  "planAct": "\u0060\u0060\u0060text\n[PLAN]\nGoal: Check that the budgeting answer is supported by the cited Student 4 knowledge and report unsupported claims.\nRequirements:\n- The answer must be supported by the cited sources.\n- The cited sources must be verified against the provided context.\nFiles:\n- ai-services/rag-server/knowledge/student-4/category-budgets.md\n- student-4/backend/Api/BudgetGuidanceEndpoints.cs\nSteps:\n1. Extract the answer and citations from the response.\n2. Verify each citation against the provided context.\n3. Report any unsupported claims.\nRisks:\n- Incorrectly identifying supported claims.\n- Missing or incorrect citations.\nValidation:\n- Manually review the cited sources and the extracted answer.\n\n[ACT]\nProposed change:\n\u0060\u0060\u0060csharp\nprivate static BudgetGuidanceResponse ValidateResponse(JsonElement response)\n{\n    if (!HasExactProperties(response, \u0022answer\u0022, \u0022citations\u0022, \u0022confidence\u0022)) throw InvalidResponse();\n    var answer = ReadString(response, \u0022answer\u0022, 2000);\n    var confidence = ReadString(response, \u0022confidence\u0022, 20);\n    var citationValues = response.GetProperty(\u0022citations\u0022);\n    if (citationValues.ValueKind != JsonValueKind.Array) throw InvalidResponse();\n\n    if (confidence == \u0022insufficient\u0022)\n    {\n        if (answer != InsufficientAnswer || citationValues.GetArrayLength() != 0) throw InvalidResponse();\n        return new(answer, [], confidence);\n    }\n\n    if (confidence is not (\u0022high\u0022 or \u0022medium\u0022 or \u0022low\u0022) || string.IsNullOrWhiteSpace(answer)\n        || answer.Contains(\u0027\u003C\u0027) || answer.Contains(\u0027\u003E\u0027) || answer.Contains(\u0027\\0\u0027)\n        || citationValues.GetArrayLength() is \u003C 1 or \u003E 3)\n    {\n        throw InvalidResponse();\n    }\n\n    var citations = new List\u003CBudgetGuidanceCitation\u003E();\n    var identifiers = new HashSet\u003Cstring\u003E(StringComparer.Ordinal);\n    var minimumScore = 1d;\n    foreach (var value in citationValues.EnumerateArray())\n    {\n        if (!HasExactProperties(value, \u0022source\u0022, \u0022chunk_id\u0022, \u0022snippet\u0022, \u0022score\u0022)) throw InvalidResponse();\n        var source = ReadString(value, \u0022source\u0022, 200);\n        var chunkId = ReadString(value, \u0022chunk_id\u0022, 160);\n        var snippet = ReadString(value, \u0022snippet\u0022, 280);\n        var scoreValue = value.GetProperty(\u0022score\u0022);\n        if (scoreValue.ValueKind != JsonValueKind.Number || !scoreValue.TryGetDouble(out var score)\n            || !double.IsFinite(score) || score is \u003C MinimumRelevance or \u003E 1d\n            || !KnownSources.TryGetValue(chunkId, out var expectedSource)\n            || source != expectedSource || !identifiers.Add(chunkId))\n        {\n            throw InvalidResponse();\n        }\n\n        minimumScore = Math.Min(minimumScore, score);\n        citations.Add(new(source, chunkId, snippet, score));\n    }\n\n    var markers = CitationMarker.Matches(answer);\n    var withoutMarkers = CitationMarker.Replace(answer, string.Empty);\n    if (withoutMarkers.Contains(\u0027[\u0027) || withoutMarkers.Contains(\u0027]\u0027)\n        || !markers.Select(match =\u003E match.Groups[1].Value).ToHashSet(StringComparer.Ordinal).SetEquals(identifiers)\n        || !ConfidenceMatchesRoundedScore(confidence, minimumScore))\n    {\n        throw InvalidResponse();\n    }\n\n    // Verify each citation\n    foreach (var citation in citations)\n    {\n        if (!KnownSources.ContainsKey(citation.ChunkId))\n        {\n            throw new InvalidResponse(\u0022Citation chunk ID is not recognized.\u0022);\n        }\n    }\n\n    return new(answer, citations, confidence);\n}\n\u0060\u0060\u0060\n\nUnresolved:\n- Manually review the cited sources and the extracted answer to ensure all claims are supported.\n\u0060\u0060\u0060",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n  - Concrete evidence: The code does not manually review the cited sources and the extracted answer to ensure all claims are supported.\n  - Failure mode: The code may incorrectly identify supported claims or miss unsupported claims.\n  - Required correction: Manually review the cited sources and the extracted answer to ensure all claims are supported.\n\nValidation gaps:\n- Severity: SUGGESTION\n  - Concrete evidence: The code does not verify each citation against the provided context.\n  - Failure mode: The code may incorrectly identify supported claims or miss unsupported claims.\n  - Required correction: Verify each citation against the provided context.\n\nScope check:\nThe proposal stays within the requested change.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": null,
+  "humanNotes": null,
+  "postTest": null,
+  "finalisedAt": null,
+  "validationMode": "rag"
+}

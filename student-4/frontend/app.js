@@ -558,7 +558,10 @@ document.addEventListener("click", async (event) => {
 
 elements.budgetCheckButton.addEventListener("click", runBudgetCheck);
 elements.guidanceForm.addEventListener("submit", submitGuidance);
-elements.guidanceCancel.addEventListener("click", () => invalidateGuidance("Guidance request cancelled."));
+elements.guidanceCancel.addEventListener("click", () => {
+  invalidateGuidance("Guidance request cancelled.");
+  elements.guidanceQuestion.focus();
+});
 elements.guidanceQuestion.addEventListener("input", () => {
   document.querySelector("#guidance-count").textContent = `${elements.guidanceQuestion.value.length} / 1000`;
   if (state.guidanceController || !elements.guidanceResult.hidden) invalidateGuidance("Question changed; submit it again for a fresh answer.");

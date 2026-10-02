@@ -1,5 +1,27 @@
 # Student 4 Review Record
 
+## 2026-10-02 - Integrated Release 1 Evidence Re-review
+
+**Scope:** Latest integrated Student 4 live-validation evidence, extractive RAG
+results, the two fresh validation-mode records, Actions run 36947214508, and
+Release 1 functional/rubric status. This documentation review did not change
+application code or test behavior.
+
+| Finding | Adjudication | Resolution/status |
+|---|---|---|
+| Earlier MCP/RAG browser requests returned 404 because of the doubled `/api` path. | Superseded by the final live evidence: corrected same-origin MCP and RAG requests returned 200; the MCP summary matched the dashboard, and RAG citations expanded in the UI. | Mark integrated route behavior passed; preserve the pre-fix 404s as historical evidence. |
+| Fresh live RAG answers and unsupported-question behavior. | Five answerable gateway cases returned their exact cited source paragraphs; the UI Mars question returned the exact insufficient-context response. The earlier freeform model failures and direct prompt-iteration abstentions remain valid historical observations. | Mark the tested cases passed, not universal grounding or accuracy. |
+| Browser CRUD and database preservation. | Temporary budget and expense create/read/update/delete flows completed and were cleaned up; seeded totals remained 12 budgets/26 expenses. Budget deletion with a still-linked expense was not separately tested. | Mark exercised CRUD and cleanup passed; retain the cascade edge case as an evidence limitation. |
+| Guidance cancellation focus. | The final browser replay of the uncommitted correction showed `Guidance request cancelled.`, cleared the result, recorded the real request as `net::ERR_ABORTED`, and restored focus to `guidance-question`. The frontend image was rebuilt and its service reported healthy. | Mark cancellation focus verified for this replay; CI at revision `3e8be05` does not include the uncommitted fix. |
+| Shared loop and CI. | Both fresh mode records have HTTP 200 and `contractPassed=true`; their human decision, embedded post-test and finalisation fields remain null. Separate post-tests passed backend 136/136 and frontend 19/19. Linux Actions run 36947214508 passed 439 tests; 19 live RAG tests were skipped. | Record loop contract and CI as passed, not loop finalisation, live-model coverage in CI, or human approval. |
+| Current functional/rubric review. | Two independent functional/rubric reviews found no current Student 4 functional blocker after the route, grounding, and focus corrections. All-five-feature integration and rubric criteria requiring a final group report/video or human demonstration remain open. | Student 4 functional evidence is substantially complete; do not claim all ten group criteria or release acceptance. |
+
+**Remaining gates:** Liam's explicit keep/change/reject decision and finalisation
+for both loop records;
+manual review/merge of PRs #104-#108; group-wide integration/report/video,
+attendance and Q&A evidence.
+
+
 ## 2026-10-02 - Student 4 ADAPT Route and Live-Grounding Adjudication
 
 **Scope:** Student 4 static UI route construction and frontend tests, the shared

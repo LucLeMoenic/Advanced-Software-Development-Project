@@ -98,35 +98,39 @@ shared native RAG with `feature: student-4`, validated citations, and explicit
 insufficient-context abstention. Keep Ollama advice distinct, preserve database
 ownership, and make no schema changes or cross-student calls.
 
-1. **Mode controls and capabilities - implemented:** strict lowercase mode flags
-  with AI on and MCP/RAG off by default; `GET /api/capabilities`; disabled AI
-  advice uses existing fallback with no Ollama call. Backend tests pass 68/68.
-2. **MCP budget check - implemented, offline-tested:** registered read-only
-  `budget.get_summary` with a fixed dashboard callback and added `POST
-  /api/budget-check`. Strict bounded request parsing, response validation,
-  stable failures, cancellation, the browser safe-integer boundary, and an
-  in-process official SDK call are covered. Student 4 backend tests pass 106/106;
-  shared MCP tests pass 120/120. Live native/container connectivity, callback
-  re-entry, and database non-mutation evidence remain pending.
-3. **Student 4 RAG guidance - implemented, offline-tested, direct live selection
-  checked:** added three source-grounded knowledge documents and `POST
-  /api/budget-guidance`. The shared native RAG model now selects one to three
-  retrieved paragraph IDs only for Student 4; the service returns their exact
-  full source text with citations. Strict parsing, feature isolation, selection
-  validation, exact abstention, size limits and timeout/error mapping have
-  focused tests. The final direct `llama3.2:3b` set grounded all five answerable
-  questions and abstained on Mars. The Student 4 backend route, browser flow,
-  loop, CI and release acceptance remain open.
-4. **Static UI - implemented, offline-tested:** added compact MCP budget-check
-  and separate RAG-guidance panels without replacing the existing frontend or
-  combining guidance with private financial data. Capabilities fail closed for
-  new controls only; safe money formatting, request invalidation, response states,
-  and text-only citation rendering have Vitest coverage. Browser/live acceptance
-  and responsive viewport evidence remain pending.
-5. **Integration and evidence - planned:** validate native connectivity, mode-off
-  behavior, live MCP/RAG paths, accessibility, and the affected release gates.
+Status checked 2026-10-02 at revision `3e8be05` on branch
+`BCP/R1_Budget_Validation_CI`. The cancellation-focus fix remains uncommitted,
+but its final browser replay passed. Detailed live results and
+limitations are in the [Release 1 runbook](release-1-runbook.md) and
+[live-validation record](evidence/release-1/live-validation-2026-10-02.md).
 
-Steps 1-3 have offline evidence; direct live RAG selection is now observed as
-recorded above. Static UI acceptance, integrated MCP/RAG validation, loop/CI and
-release evidence remain pending; no human review or release sign-off is recorded
-here.
+1. **Modes/capabilities - implemented and tested:** strict flags and
+  `GET /api/capabilities`; disabled advice preserves fallback behavior.
+2. **MCP budget check - integrated and verified:** the UI-to-backend-to-native
+  MCP callback returned HTTP 200 and matched every dashboard field/category.
+  Before/after dashboard, budgets and expenses were byte-identical (12/26).
+3. **Student 4 RAG - integrated and verified:** five answerable live gateway
+  questions returned exact cited source paragraphs; the unsupported Mars query
+  abstained in the UI. Earlier freeform failures remain preserved as history.
+4. **Static UI - integrated and verified:** real budget/expense create, read,
+  update and confirmed delete flows were exercised and cleaned up; canceling
+  delete dialogs preserved records and focus. Screenshots at 320/768/1280px
+  showed no horizontal overflow. After guidance cancellation, the final browser
+  replay confirmed the visible cancelled status, request abort (`net::ERR_ABORTED`),
+  and focus restoration to `guidance-question`. The frontend image was rebuilt
+  and its container reported healthy.
+5. **CI - passed:** Linux Actions run [36947214508](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36947214508)
+  passed at the implementation commit with 439 tests; 19 live RAG tests were
+  skipped and all six AI/MCP/RAG flags were false. Windows local `All` remains
+  subject to its symlink privilege limitation.
+6. **Shared validation loop - records produced, not finalised:** fresh MCP/RAG
+  records both passed their runtime contracts and post-loop backend/frontend
+  suites passed 136/136 and 19/19. Both records have null human decisions and
+  post-tests; Liam's decisions and finalisation remain pending.
+7. **Release evidence - partial:** Student 4 implementation criteria 2-7 have
+  substantial implementation/runtime/CI evidence. All-five-feature integration,
+  final group PDF/video links, attendance, Q&A and release sign-off are not
+  established. The five PRs (#104-#108) remain open/unmerged pending human review.
+
+Two independent functional/rubric reviews found no current Student 4 functional
+blocker. No grade, group-wide completion, PR approval, or human loop decision is implied.

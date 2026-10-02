@@ -36,7 +36,7 @@
 | NFR-07 | Isolation | Student 4 code contains no runtime calls to `student1-*`, `student2-*`, `student3-*`, or `student5-*`. |
 | NFR-08 | Configuration | Dependency URLs, timeouts, model, rates, rate date, ports, and connection string are environment/configuration driven. |
 | NFR-09 | CI | Student 4 CI tests all three services, validates the shared Compose file, builds the shared frontend plus Student 4 images, runs model-independent health/data/route smoke checks, and always tears down. |
-| NFR-10 | Scope | Release 0 adds no authentication, cloud, MCP, RAG, multi-agent, payment/bank, live-rate, or cross-feature integration. |
+| NFR-10 | Release 0 scope | Release 0 adds no authentication, cloud, MCP, RAG, multi-agent, payment/bank, live-rate, or cross-feature integration. Release 1 scope is defined separately below. |
 
 ## Evidence Requirements
 
@@ -48,11 +48,11 @@
 | EV-04 | Database test result and seed counts | `dotnet test student-4/database/tests/Database.Tests.csproj` and database API counts |
 | EV-05 | Compose configuration and image build | `docker compose config --quiet` and targeted `docker compose build` |
 | EV-06 | Integrated health and HTTP boundary | Health URLs plus backend/data API requests after Compose startup |
-| EV-07 | Browser CRUD, conversion, status, and responsive checks | Liam-completed frontend browser checklist and screenshots |
+| EV-07 | Browser CRUD, conversion, status, and responsive checks | [Integrated live evidence and screenshots](evidence/release-1/live-validation-2026-10-02.md) |
 | EV-08 | AI success and forced fallback | Captured responses from live Ollama and unavailable/invalid-model scenarios |
-| EV-09 | GitHub Actions execution | Repository Actions run URL and screenshot supplied after push |
-| EV-10 | Development agentic loop | Shared runner record with real tests and Liam's explicit keep/change/reject decision |
-| EV-11 | Collaboration and publication | Commit/PR log, attendance checkpoint, and showcase URL supplied by Liam |
+| EV-09 | GitHub Actions execution | [Student 4 Actions run 36947214508](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36947214508); run passed, with 19 live-model RAG tests skipped |
+| EV-10 | Development agentic loop | Fresh MCP/RAG records under `docs/agentic-loop-records/`; Liam's explicit keep/change/reject decisions remain pending |
+| EV-11 | Collaboration and publication | Student 4 contribution log; five open PRs #104-#108; attendance and showcase evidence remain human-supplied |
 
 ## Traceability
 
@@ -65,8 +65,10 @@
 | FR-17, FR-18, NFR-07-NFR-09 | Stage 5: integration and CI | Compose config/build/smoke; EV-05, EV-06, EV-09 |
 | NFR-10, EV-10, EV-11 | Stage 6: evidence reconciliation | Document review and human-supplied records |
 
-All implementation and tests are initially pending. A requirement becomes
-verified only when its listed evidence is actually produced.
+Implementation status is source-verified, but each requirement's acceptance
+status depends on its listed evidence. The latest integrated run, post-tests and
+known limitations are recorded in the Release 1 runbook; CI, direct model checks,
+browser checks and human sign-off are distinct evidence types.
 
 ## Release 1 Planned Requirements
 
@@ -75,10 +77,13 @@ verified only when its listed evidence is actually produced.
 | R1-01 | Runtime modes shall be explicit and strict. | `AI_ENABLED` accepts exactly lowercase `true` or `false` and defaults to true; `MCP_ENABLED` and `RAG_ENABLED` accept the same values and default to false; invalid values fail startup. | Implemented; backend tests pass. |
 | R1-02 | The backend shall expose enabled capabilities. | `GET /api/capabilities` returns boolean `aiEnabled`, `mcpEnabled`, and `ragEnabled` values matching configuration. | Implemented; backend tests pass. |
 | R1-03 | Disabled AI advice shall remain useful without contacting Ollama. | Advice returns the existing deterministic `fallback` contract with zero Ollama-client calls; enabled `ai`, `ai_retry`, and failure fallback behavior remains unchanged. | Implemented; backend tests pass. |
-| R1-04 | Budget check shall read authoritative current totals through MCP. | Read-only `budget.get_summary` uses a fixed callback to the existing dashboard endpoint; no second money calculator, database access, or write operation is introduced. | Implemented; offline backend/MCP tests pass. Live connectivity and database non-mutation remain unverified. |
-| R1-05 | Budgeting guidance shall be grounded in Student 4 knowledge. | Shared native RAG receives `feature: student-4`; the local model selects one to three retrieved paragraph IDs only, and the server returns their exact source text with validated citations. Invalid selections fail as dependency errors; insufficient context explicitly abstains; guidance does not consume private spending records. | Extractive mode implemented and offline-tested. Final direct live RAG set: all five answerable cases grounded and the Mars negative case abstained; Student 4 backend route, browser workflow, and release acceptance remain unverified. |
-| R1-06 | Release 1 shall preserve the application boundaries. | Retain the static Student 4 UI and native Ollama/MCP/RAG arrangement; make no database schema changes or cross-student runtime calls. | Static UI is implemented and offline-tested; live integration, browser acceptance and responsive evidence remain open. |
+| R1-04 | Budget check shall read authoritative current totals through MCP. | Read-only `budget.get_summary` uses a fixed callback to the existing dashboard endpoint; no second money calculator, database access, or write operation is introduced. | Integrated UI/backend/native MCP call passed; all summary fields/categories matched the dashboard; before/after read-only data was byte-identical (12 budgets/26 expenses). |
+| R1-05 | Budgeting guidance shall be grounded in Student 4 knowledge. | Shared native RAG receives `feature: student-4`; the local model selects one to three retrieved paragraph IDs only, and the server returns their exact source text with validated citations. Invalid selections fail as dependency errors; insufficient context explicitly abstains; guidance does not consume private spending records. | Integrated UI/backend/RAG passed five answerable gateway cases with exact source text/citations and one UI Mars abstention. Fresh loop contract passed; human finalisation remains pending. Earlier freeform failures are retained as historical evidence. |
+| R1-06 | Release 1 shall preserve the application boundaries. | Retain the static Student 4 UI and native Ollama/MCP/RAG arrangement; make no database schema changes or cross-student runtime calls. | Integrated UI CRUD/MCP/RAG, responsive checks, and final cancellation-focus replay passed; the focus fix remains uncommitted. CI passed with all six modes false at revision `3e8be05` (it does not validate the uncommitted focus fix). Group acceptance and human release sign-off remain open. |
 
-R1-01 through R1-05 have offline implementation/test evidence. R1-06 is partially
-implemented as described in its row. No live integration, database non-mutation,
-UI acceptance, or release sign-off is implied.
+Historical baseline status (superseded 2026-10-02): R1-01 through R1-05 had
+offline evidence only, and R1-06 was partially implemented at that checkpoint.
+R1-01 through R1-06 have implementation evidence; integrated live and CI evidence
+is distinguished in the state column and runbook. Fresh loop records are not
+finalised: Liam's human decisions are absent. No group-wide completion, grade, or
+release sign-off is implied.

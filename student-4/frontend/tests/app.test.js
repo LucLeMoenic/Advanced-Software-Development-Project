@@ -227,7 +227,9 @@ describe("Budget & Expense Tracker", () => {
       document.querySelector("#guidance-question").value = "How do I plan?";
       document.querySelector("#guidance-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
       expect(document.querySelector("#cancel-guidance").hidden).toBe(false);
+      document.querySelector("#cancel-guidance").focus();
       document.querySelector("#cancel-guidance").click();
+      expect(document.activeElement).toBe(document.querySelector("#guidance-question"));
       resolveGuidance(await response({ answer: "Late answer.", citations: [], confidence: "insufficient" }));
       await vi.waitFor(() => expect(document.querySelector("#guidance-status").textContent).toBe("Guidance request cancelled."));
       expect(document.querySelector("#guidance-result").hidden).toBe(true);
