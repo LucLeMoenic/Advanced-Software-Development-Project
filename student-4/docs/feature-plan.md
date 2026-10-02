@@ -85,3 +85,27 @@ Each substantive edit is followed by the narrowest relevant check. A failed
 check is repaired in the same slice and rerun before implementation expands.
 Liam performs all commits, pushes, PRs, approvals, attendance records, browser
 acceptance, and showcase publication.
+
+## Release 1 Delivery
+
+Retain the current static HTML/JavaScript/HTMX frontend and deterministic budget
+backend. Add a read-only `budget.get_summary` MCP tool whose fixed callback reads
+the existing dashboard endpoint, and separate grounded budgeting guidance using
+shared native RAG with `feature: student-4`, validated citations, and explicit
+insufficient-context abstention. Keep Ollama advice distinct, preserve database
+ownership, and make no schema changes or cross-student calls.
+
+1. **Mode controls and capabilities - implemented:** strict lowercase mode flags
+  with AI on and MCP/RAG off by default; `GET /api/capabilities`; disabled AI
+  advice uses existing fallback with no Ollama call. Backend tests pass 68/68.
+2. **MCP budget check - planned:** register the read-only summary tool and fixed
+  dashboard callback; verify validation, error mapping, exact totals, and no writes.
+3. **Student 4 RAG guidance - planned:** add the feature corpus and backend route;
+  verify supported, cited, unsupported, and malformed-response cases.
+4. **Static UI - planned:** add budget-check and guidance panels without replacing
+  the existing frontend or combining guidance with private financial data.
+5. **Integration and evidence - planned:** validate native connectivity, mode-off
+  behavior, live MCP/RAG paths, accessibility, and the affected release gates.
+
+Only step 1 is implemented. The remaining steps and all live/integrated evidence
+are pending; no human review or release sign-off is recorded here.

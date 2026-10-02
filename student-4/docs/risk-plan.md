@@ -20,3 +20,12 @@ Scale: likelihood and impact are 1 (low) to 5 (high). Score is their product.
 
 Risks are reviewed after each implementation stage and whenever Liam supplies an
 OBSERVE result.
+
+## Release 1 Risks
+
+| ID | Risk | Control | Current state |
+|---|---|---|---|
+| R1-01 | Invalid or disabled mode configuration is silently accepted, or disabled AI still contacts Ollama. | Exact lowercase parsing, startup validation, capability combinations, and a counting fake proving zero disabled-mode calls. | Covered by the implemented mode-control tests. |
+| R1-02 | MCP introduces duplicate financial rules, writes, or recursive dashboard calls. | Keep `budget.get_summary` read-only and route it through a fixed callback to the existing MCP-free deterministic dashboard; add no database or money-calculation path. | Planned; not implemented. |
+| R1-03 | RAG guidance is mistaken for live budget facts or returns unsupported claims/citations. | Keep RAG separate from saved spending data; validate citations and expose explicit insufficient-context abstention. | Planned; not implemented. |
+| R1-04 | Native MCP/RAG/Ollama dependencies are unavailable during local or CI validation. | Preserve explicit mode flags and deterministic fallback; test disabled behavior offline and record live connectivity separately from unit-test evidence. | Planned beyond mode controls; live evidence pending. |

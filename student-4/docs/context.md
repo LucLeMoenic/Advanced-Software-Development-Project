@@ -60,6 +60,21 @@ multi-agent/cloud capabilities remain intentionally out of scope.
 - Money is represented as integer minor units at service and storage boundaries.
 - Demonstration exchange rates are versioned configuration, never live data.
 
+## Release 1 Direction
+
+The agreed Release 1 scope adds a read-only budget check through the registered
+`budget.get_summary` MCP tool, using a fixed callback to the existing deterministic
+dashboard endpoint, plus grounded budgeting guidance from shared native RAG under
+`feature: student-4`. Guidance remains separate from saved spending totals and
+returns citations or an explicit insufficient-context result. Keep the current
+static HTML/JavaScript/HTMX UI, backend/database ownership, and native Ollama/MCP/RAG
+runtime arrangement. No schema changes, cross-student calls, model-authored money
+values, or autonomous writes are in scope.
+
+Only R1 mode controls and `GET /api/capabilities` are implemented so far. The
+read-only MCP tool/route, Student 4 RAG corpus/route, UI, and integrated evidence
+remain planned and unverified.
+
 ## Development Workflow
 
 Development uses Plan -> Act -> Observe -> Adapt. This is evidence for the

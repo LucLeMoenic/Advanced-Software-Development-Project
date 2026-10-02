@@ -8,10 +8,12 @@ public interface IAdviceService
     Task<AdviceResponse> GetAdviceAsync(DashboardResponse dashboard, CancellationToken cancellationToken);
 }
 
-public sealed class AdviceService(IOllamaInsightsClient ollama) : IAdviceService
+public sealed class AdviceService(IOllamaInsightsClient ollama, FeatureModeSettings modes) : IAdviceService
 {
     public async Task<AdviceResponse> GetAdviceAsync(DashboardResponse dashboard, CancellationToken cancellationToken)
     {
+        if (!modes.AiEnabled) return Fallback(dashboard);
+
         try
         {
             return await ollama.GenerateAsync(dashboard, false, cancellationToken);
