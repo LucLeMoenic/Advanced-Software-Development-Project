@@ -62,39 +62,51 @@ multi-agent/cloud capabilities remain intentionally out of scope.
 
 ## Release 1 Direction
 
-The agreed Release 1 scope adds a read-only budget check through the registered
-`budget.get_summary` MCP tool, using a fixed callback to the existing deterministic
-dashboard endpoint, plus grounded budgeting guidance from shared native RAG under
-`feature: student-4`. Guidance remains separate from saved spending totals and
-returns citations or an explicit insufficient-context result. Keep the current
-static HTML/JavaScript/HTMX UI, backend/database ownership, and native Ollama/MCP/RAG
-runtime arrangement. No schema changes, cross-student calls, model-authored money
-values, or autonomous writes are in scope.
+The Release 1 scope adds a read-only budget check through `budget.get_summary`
+and separate Student 4-grounded guidance through shared native RAG. The browser
+remains static HTML/JavaScript/HTMX; backend/database ownership, native
+Ollama/MCP/RAG, and the shared loop remain in place. No schema changes,
+cross-student calls, model-authored money values, or autonomous writes are in
+scope.
 
-R1 mode controls and `GET /api/capabilities` are implemented. The read-only
-`budget.get_summary` tool and `POST /api/budget-check` backend route were added on
-`BCP/R1_Budget_MCP`; the backend uses the official `ModelContextProtocol.Core`
-2.2.0 client and fixed `MCP_URL` endpoint. Its offline backend and shared MCP
-suites passed 106/106 and 120/120 on 2026-10-01. The in-process SDK test uses a
-scripted HTTP protocol handler; live native/container connectivity, callback
-re-entry, and database immutability remain unverified.
+**SOURCE AND EVIDENCE CHECKPOINT - 2026-10-02:** The implementation is recorded
+at revision `3e8be05` on branch `BCP/R1_Budget_Validation_CI`; the cancellation-
+focus correction remains uncommitted, but its final browser replay passed. The
+live evidence is in
+[`live-validation-2026-10-02.md`](evidence/release-1/live-validation-2026-10-02.md).
+The real MCP journey check returned the same complete dashboard summary, and
+read-only before/after lists and dashboard were byte-identical (12 budgets,
+26 expenses). The integrated UI exercised MCP and RAG, including exact-source
+citations, an insufficient-context response, temporary budget/expense CRUD and
+cleanup; seeded records remained unchanged. Screenshots at 320/768/1280px show
+no page-level overflow. Release 0 insights returned `source=ai` in the earlier
+capture.
 
-and the full shared RAG suite 78 passed with 19 live-model cases skipped. Compose
-Student 4 RAG guidance uses a three-document corpus under the shared RAG
-knowledge root and `POST /api/budget-guidance`, with fixed `student-4` routing
-and `RAG_SERVER_URL`. On 2026-10-02, Student 4 retrieval tests passed 17/17,
-focused RAG backend/client tests 29/29, the full backend suite 135/135, and the
-full shared RAG suite 79 passed with 19 live-model cases skipped. Compose
-configuration parsed successfully. No live RAG/Ollama response, UI, native
-connectivity, or release acceptance was tested. Compose uses Student4-prefixed
-mode variables; `.env.example` enables them for an explicitly started local demo.
+The Student 4 extractive RAG mode selects retrieved paragraph IDs and returns
+their exact source text. Five answerable live cases were grounded and the Mars
+negative case abstained; earlier freeform failures and prompt iterations remain
+historical. Linux Actions run [36947214508](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36947214508)
+passed at the implementation commit: 439 tests (frontend 19, backend 136,
+database 12, loop 61, MCP 120, RAG 91), with 19 live-model RAG tests skipped;
+all six AI/MCP/RAG mode flags were false in CI. This does not replace live
+acceptance or establish group completion.
+
+Fresh MCP and RAG loop records each have `contractPassed=true`, but both retain
+`humanDecision=null`, `postTest=null`, and no finalisation. The post-loop
+backend/frontend suites separately passed 136/136 and 19/19. Human loop
+decisions, PR review/merge, and group report/video/attendance evidence remain
+pending. Do not infer them from CI,
+reviewer output, source quotations, or this status note. Compose uses
+Student4-prefixed mode variables; `.env.example` enables them for an explicitly
+started local demo.
 
 ## Development Workflow
 
 Development uses Plan -> Act -> Observe -> Adapt. This is evidence for the
 development process and is not exposed as a Budget Tracker runtime workflow.
-Liam supplies observations and the final keep/change/reject decision; those
-human actions must not be inferred or pre-recorded.
+The two required Student 4 validation-mode records exist; Liam still supplies
+the explicit keep/change/reject decisions before either record is finalised.
+Those human actions must not be inferred or pre-recorded.
 
 ## Evidence Policy
 

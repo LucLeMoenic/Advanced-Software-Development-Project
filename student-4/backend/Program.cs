@@ -7,7 +7,6 @@ using BudgetTracker.Backend.Services;
 var builder = WebApplication.CreateBuilder(args);
 var databaseUrl = builder.Configuration["Services:DatabaseUrl"] ?? "http://localhost:5304";
 var ollamaUrl = builder.Configuration["Services:OllamaUrl"] ?? "http://localhost:11434";
-var mcpUrl = builder.Configuration["MCP_URL"] ?? "http://localhost:5400/mcp";
 var ragUrl = builder.Configuration["RAG_SERVER_URL"] ?? "http://localhost:5500";
 var databaseTimeout = builder.Configuration.GetValue("Services:DatabaseTimeoutSeconds", 4);
 var ollamaTimeout = builder.Configuration.GetValue("Services:OllamaTimeoutSeconds", 15);
@@ -21,7 +20,8 @@ builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.U
 builder.Services.AddSingleton(serviceProvider => FeatureModeSettings.FromConfiguration(serviceProvider.GetRequiredService<IConfiguration>()));
 builder.Services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings(rateSection["Version"] ?? "demo-v1", rateDate, rateSection["Disclaimer"] ?? "Demonstration rates only.", rateValues)));
 builder.Services.AddSingleton(new OllamaInsightsSettings(model, prompt));
-builder.Services.AddSingleton(McpBudgetCheckSettings.FromUrl(mcpUrl));
+builder.Services.AddSingleton(serviceProvider => McpBudgetCheckSettings.FromUrl(
+    serviceProvider.GetRequiredService<IConfiguration>()["MCP_SERVER_URL"] ?? "http://localhost:5400/mcp"));
 builder.Services.AddSingleton(RagSettings.FromUrl(ragUrl));
 builder.Services.AddScoped<IAdviceService, AdviceService>();
 builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => { client.BaseAddress = new Uri(databaseUrl); client.Timeout = TimeSpan.FromSeconds(databaseTimeout); });

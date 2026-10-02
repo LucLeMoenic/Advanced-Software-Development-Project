@@ -43,10 +43,14 @@ never a guess dressed up as fact.
   knows about. Retrieval does not require a second embedding model.
 - Retain at most three chunks scoring at least 0.15, each at most 2000 characters
   and at most 6000 characters combined. Below-threshold results skip generation.
-- Ollama returns structured claims using the versioned
-  [grounding prompt](../agentic-loop/prompts/rag-grounding-v1.txt). Only retrieved
-  IDs are accepted. Citation titles, snippets and scores come from the index;
-  public answer markers are assembled from validated claims.
+- Students 1-3 retain Ollama's structured-claim flow and the versioned
+  [grounding prompt](../agentic-loop/prompts/rag-grounding-v1.txt). Student 4 uses
+  an isolated extractive-selection mode and
+  [selection prompt](../agentic-loop/prompts/rag-budget-selection-v1.txt): Ollama
+  returns only a status and up to three retrieved paragraph IDs. The server
+  assembles answer text from the exact original paragraphs; it does not accept
+  model-authored answer text in this mode. Citation titles, snippets and scores
+  still come from the retrieval index.
 - Confidence is the lowest cited retrieval score: low from 0.15, medium from
   0.30, high from 0.40. These provisional thresholds were measured on the small
   Student 2 fixture set, not a statistically independent or cross-feature
@@ -59,6 +63,9 @@ never a guess dressed up as fact.
   output above 16000 bytes before buffering the whole body and closing the stream.
   Citation validation does not establish that claims are supported;
   human source checks and adversarial/live-model evaluation remain necessary.
+  Extractive Student 4 output guarantees that displayed text is quoted from its
+  cited source, but model selection can still be irrelevant or abstain on an
+  answerable question; live relevance and abstention checks remain necessary.
 
 ## Grounding Evaluation
 

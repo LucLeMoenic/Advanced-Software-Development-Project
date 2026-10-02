@@ -44,7 +44,8 @@ def test_corpus_provenance_is_present_but_not_retrieved_as_guidance(index):
     }
     for path in documents:
         text = path.read_text(encoding="utf-8")
-        assert "Reviewed: 2026-10-01" in text
+        reviewed_date = "2026-10-02" if path.stem == "category-budgets" else "2026-10-01"
+        assert f"Reviewed: {reviewed_date}" in text
         assert "student-4/" in text
     assert len(index.chunks) == 6
     assert not any("Reviewed:" in chunk.text or "Source:" in chunk.text for chunk in index.chunks)
@@ -54,8 +55,10 @@ def test_status_guidance_covers_all_unrounded_boundaries(index):
     status_chunk = next(chunk for chunk in index.chunks if "unrounded actual-to-planned ratio" in chunk.text)
 
     assert "below 80 percent is `within_budget`" in status_chunk.text
-    assert "from 80 percent through exactly 100 percent is `warning`" in status_chunk.text
-    assert "strictly above 100 percent is `overspent`" in status_chunk.text
+    assert "at exactly 80 percent the status is `warning`" in status_chunk.text
+    assert "from 80 percent through exactly 100 percent is also `warning`" in status_chunk.text
+    assert "including exactly 100 percent" in status_chunk.text
+    assert "only ratios strictly above 100 percent are `overspent`" in status_chunk.text
     assert "status decision uses the unrounded ratio" in status_chunk.text
 
 

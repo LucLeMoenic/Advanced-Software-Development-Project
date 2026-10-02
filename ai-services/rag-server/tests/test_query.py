@@ -8,6 +8,7 @@ import hashlib
 import pytest
 from fastapi.testclient import TestClient
 
+import confidence
 import generation
 import retrieval
 from server import app
@@ -64,6 +65,133 @@ def test_invalid_model_output_is_not_accepted(payload):
     with pytest.raises(generation.GenerationError) as caught:
         generation.render_answer(payload, [(retrieval.Chunk("Budget", "budget#1", "Budget is total."), 0.5)])
     assert caught.value.status == 502
+
+
+def test_student4_selection_renders_exact_full_paragraphs_and_source_metadata():
+    first = retrieval.Chunk("Budget rules", "category-budgets#2", "The complete first source paragraph.")
+    second = retrieval.Chunk("Conversion", "expense-conversion#1", "The complete second source paragraph.")
+    ranked = [(first, 0.5), (second, 0.3)]
+
+    result = generation.render_selection({"status": "answered", "chunk_ids": [first.chunk_id, second.chunk_id]}, ranked)
+
+    assert result["answer"] == (
+        "The complete first source paragraph. [category-budgets#2]\n\n"
+        "The complete second source paragraph. [expense-conversion#1]"
+    )
+    assert [citation["chunk_id"] for citation in result["citations"]] == [first.chunk_id, second.chunk_id]
+    assert [citation["snippet"] for citation in result["citations"]] == [first.text, second.text]
+    assert [citation["score"] for citation in result["citations"]] == [0.5, 0.3]
+    assert result["confidence"] == confidence.categorize(0.3)
+
+
+def test_student4_selection_transport_constrains_ids_and_renders_source(monkeypatch):
+    chunk = retrieval.Chunk("Budget", "budget#1", "The original source paragraph.")
+
+    def respond(request):
+        body = json.loads(request.content)
+        assert body["format"]["additionalProperties"] is False
+        assert body["format"]["properties"]["chunk_ids"]["maxItems"] == 3
+        assert body["format"]["properties"]["chunk_ids"]["items"]["enum"] == ["budget#1"]
+        assert body["system"] == generation.SELECTION_PROMPT_PATH.read_text(encoding="utf-8")
+        assert "Do not answer, summarize, paraphrase" in body["system"]
+        assert json.loads(body["prompt"]) == {
+            "question": "What is the budget rule?",
+            "context": [{"chunk_id": "budget#1", "source": "Budget", "text": chunk.text}],
+        }
+        return httpx.Response(200, json={"done": True, "response": json.dumps({
+            "status": "answered", "chunk_ids": ["budget#1"]
+        })})
+
+    client_type = httpx.AsyncClient
+    monkeypatch.setattr(generation.httpx, "AsyncClient", lambda **kwargs: client_type(transport=httpx.MockTransport(respond), **kwargs))
+
+    async def generate():
+        return await generation.generate("What is the budget rule?", [(chunk, 0.5)], selection_mode=True)
+
+    result = anyio.run(generate)
+
+    assert result["answer"] == "The original source paragraph. [budget#1]"
+
+
+@pytest.mark.parametrize("payload", [
+    {"status": "answered", "chunk_ids": []},
+    {"status": "answered", "chunk_ids": ["not-retrieved#1"]},
+    {"status": "answered", "chunk_ids": ["budget#1", "budget#1"]},
+    {"status": "insufficient", "chunk_ids": ["budget#1"]},
+    {"status": "answered", "chunk_ids": ["budget#1"], "answer": "freeform claim"},
+])
+def test_invalid_student4_selection_is_rejected(payload):
+    ranked = [(retrieval.Chunk("Budget", "budget#1", "Budget is total."), 0.5)]
+
+    with pytest.raises(generation.GenerationError) as caught:
+        generation.render_selection(payload, ranked)
+
+    assert caught.value.status == 502
+
+
+def test_student4_selection_rejects_more_than_three_valid_ids():
+    ranked = [(retrieval.Chunk("Budget", f"budget#{index}", f"Source paragraph {index}."), 0.5)
+              for index in range(1, 5)]
+
+    with pytest.raises(generation.GenerationError) as caught:
+        generation.render_selection(
+            {"status": "answered", "chunk_ids": [chunk.chunk_id for chunk, score in ranked]}, ranked
+        )
+
+    assert caught.value.status == 502
+
+
+def test_student4_selection_rejects_answer_over_2000_characters():
+    chunk = retrieval.Chunk("Budget", "budget#1", "x" * 2000)
+
+    with pytest.raises(generation.GenerationError) as caught:
+        generation.render_selection({"status": "answered", "chunk_ids": ["budget#1"]}, [(chunk, 0.5)])
+
+    assert caught.value.status == 502
+
+
+def test_student4_model_abstention_requires_empty_selection():
+    assert generation.render_selection({"status": "insufficient", "chunk_ids": []}, []) == generation.insufficient()
+
+
+def test_student4_selection_copies_every_status_boundary_sentence_verbatim(client):
+    status_chunk = next(
+        chunk for chunk in retrieval.get_index("student-4").chunks
+        if chunk.chunk_id == "category-budgets#2"
+    )
+
+    result = generation.render_selection(
+        {"status": "answered", "chunk_ids": [status_chunk.chunk_id]}, [(status_chunk, 0.5)]
+    )
+
+    assert result["answer"] == f"{status_chunk.text} [{status_chunk.chunk_id}]"
+    for rule in (
+        "below 80 percent is `within_budget`",
+        "at exactly 80 percent the status is `warning`",
+        "including exactly 100 percent",
+        "only ratios strictly above 100 percent are `overspent`",
+        "status decision uses the unrounded ratio",
+    ):
+        assert rule in result["answer"]
+
+
+def test_student4_query_uses_selection_mode_without_changing_other_feature_call(client, monkeypatch):
+    calls = []
+
+    async def generate(question, ranked, selection_mode=False):
+        calls.append((question, selection_mode))
+        return generation.insufficient()
+
+    monkeypatch.setattr(generation, "generate", generate)
+
+    student4 = client.post("/query", json={"feature": "student-4", "question": "How is a budget category status decided?"})
+    student2 = client.post("/query", json={"feature": "student-2", "question": "What is a trip budget?"})
+
+    assert student4.status_code == student2.status_code == 200
+    assert calls == [
+        ("How is a budget category status decided?", True),
+        ("What is a trip budget?", False),
+    ]
 
 
 def test_model_abstention_and_dependency_failure_are_distinct(client, monkeypatch):

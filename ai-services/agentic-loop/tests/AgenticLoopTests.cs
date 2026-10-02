@@ -35,6 +35,12 @@ public sealed class AgenticLoopTests
         var student1Guide = await AgenticLoopApplication.LoadContextAsync(workspace,
             ["ai-services/rag-server/knowledge/student-1/tokyo.md"]);
         Assert.Single(student1Guide.Paths);
+        var student4Mcp = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/mcp-server/tools/budget.py", "student-4/backend/Api/BudgetCheckEndpoints.cs"]);
+        Assert.Equal(2, student4Mcp.Paths.Count);
+        var student4Rag = await AgenticLoopApplication.LoadContextAsync(workspace,
+            ["ai-services/rag-server/knowledge/student-4/category-budgets.md", "student-4/backend/Api/BudgetGuidanceEndpoints.cs"]);
+        Assert.Equal(2, student4Rag.Paths.Count);
     }
 
     [Fact]
@@ -112,6 +118,31 @@ public sealed class AgenticLoopTests
     }
 
     [Fact]
+    public void Student4McpArguments_RequireJourneyLabelAndRejectTripOptions()
+    {
+        var options = AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4", "--journey-label", "Sydney Weekender"]),
+            "mcp");
+
+        Assert.Equal("student-4", options.Feature);
+        Assert.Equal("http://127.0.0.1:5204", options.BackendUrl);
+        Assert.Equal("Sydney Weekender", options.JourneyLabel);
+        Assert.Equal("What does the 80% category budget warning mean?", options.Question);
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4"]), "mcp"));
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4", "--journey-label", "Sydney Weekender", "--trip-id", "10"]), "mcp"));
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-1", "--journey-label", "Sydney Weekender"]), "mcp"));
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4", "--question", "budget?", "--journey-label", "Sydney Weekender"]), "mcp"));
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4", "--journey-label", "Sydney Weekender"]), "rag"));
+        Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseValidationOptions(
+            ParsedArguments.Parse(["--feature", "student-4", "--trip-id", "10"]), "rag"));
+    }
+
+    [Fact]
     public async Task Student1GuideValidation_ReusesRagContractAndRejectsInsufficient()
     {
         const string grounded = """
@@ -141,13 +172,102 @@ public sealed class AgenticLoopTests
     }
 
     [Theory]
-    [InlineData("student-4", "mcp")]
     [InlineData("student-5", "rag")]
     public async Task ValidationModes_RejectUnsupportedFeatureFixtures(string feature, string mode)
     {
         using var client = new HttpClient(new RecordingHandler("{}"));
         await Assert.ThrowsAsync<LoopException>(() =>
             ServiceValidation.CaptureAsync(client, mode, "http://127.0.0.1:5201", 1, "Tokyo", feature));
+    }
+
+    [Fact]
+    public async Task Student4McpValidation_PostsRequestedJourneyAndChecksAuthoritativeSummary()
+    {
+        var response = BudgetCheckResponse("Sydney Weekender", 10000, 8000, 80, "warning");
+        var handler = new RecordingHandler(response);
+        using var client = new HttpClient(handler);
+
+        var evidence = await ServiceValidation.CaptureAsync(
+            client, "mcp", "http://127.0.0.1:5204", 1, "unused", "student-4", "Sydney Weekender");
+
+        Assert.Equal("http://127.0.0.1:5204/api/budget-check", handler.Uri);
+        Assert.Equal("""{"journeyLabel":"Sydney Weekender"}""", handler.Body);
+        using var result = JsonDocument.Parse(evidence.Result);
+        Assert.True(result.RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("http://127.0.0.1:5204", ServiceValidation.DefaultBackendUrl("student-4"));
+    }
+
+    [Theory]
+    [InlineData(7999, 79.99, "within_budget")]
+    [InlineData(8000, 80, "warning")]
+    [InlineData(10000, 100, "warning")]
+    [InlineData(10001, 100.01, "overspent")]
+    public void Student4McpValidation_EnforcesBudgetStatusBoundaries(int actualMinor, double percentage, string status)
+    {
+        var response = BudgetCheckResponse("Sydney Weekender", 10000, actualMinor, percentage, status);
+
+        Assert.True(ServiceValidation.IsValid("mcp", response, 1, "student-4", "Sydney Weekender"));
+    }
+
+    [Theory]
+    [InlineData("{\"tool\":\"budget.get_summary\",\"result\":{\"ok\":false,\"error\":{\"code\":\"not_found\"}}}")]
+    [InlineData("{\"tool\":\"budget.get_summary\",\"result\":{\"ok\":true,\"summary\":{\"journeyLabel\":\"Other Journey\"}}}")]
+    [InlineData("{\"tool\":\"other.tool\",\"result\":{\"ok\":true,\"summary\":{}}}")]
+    [InlineData("not-json")]
+    public void Student4McpValidation_RejectsErrorsMismatchesAndMalformedResults(string response)
+    {
+        Assert.False(ServiceValidation.IsValid("mcp", response, 1, "student-4", "Sydney Weekender"));
+    }
+
+    [Fact]
+    public void Student4McpValidation_RejectsInconsistentCategoryStatus()
+    {
+        var response = BudgetCheckResponse("Sydney Weekender", 10000, 8000, 80, "overspent");
+
+        Assert.False(ServiceValidation.IsValid("mcp", response, 1, "student-4", "Sydney Weekender"));
+    }
+
+    [Fact]
+    public void Student4RagValidation_RequiresGroundedAnswerAndStudent4CitationContract()
+    {
+        Assert.True(ServiceValidation.IsValid("rag", """
+            {"answer":"At 80% of a category budget, the application shows a warning. [category-budgets#1]","citations":[{"source":"Category budgets and spending statuses","chunkId":"category-budgets#1","snippet":"From 80 percent through exactly 100 percent is warning.","score":0.35}],"confidence":"medium"}
+            """, 1, "student-4"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}
+            """, 1, "student-4"));
+        Assert.False(ServiceValidation.IsValid("rag", """
+            {"answer":"At 80% the application warns. [category-budgets#1]","citations":[{"source":"Category budgets and spending statuses","chunk_id":"category-budgets#1","snippet":"80% to 100% is a warning.","score":0.35}],"confidence":"medium"}
+            """, 1, "student-4"));
+    }
+
+    [Fact]
+    public async Task Student4Validation_UsesBudgetDefaultsAndEnforcesJourneyLabelLength()
+    {
+        const string grounded = """
+            {"answer":"At 80% of a category budget, the application shows a warning. [category-budgets#1]","citations":[{"source":"Category budgets and spending statuses","chunkId":"category-budgets#1","snippet":"From 80 percent through exactly 100 percent is warning.","score":0.35}],"confidence":"medium"}
+            """;
+        var ragHandler = new RecordingHandler(grounded);
+        using var ragClient = new HttpClient(ragHandler);
+        var ragEvidence = await ServiceValidation.CaptureAsync(
+            ragClient, "rag", "http://127.0.0.1:5204", 1,
+            ServiceValidation.DefaultQuestion("student-4", "rag"), "student-4");
+
+        Assert.Equal("http://127.0.0.1:5204/api/budget-guidance", ragHandler.Uri);
+        Assert.Equal("""{"question":"What does the 80% category budget warning mean?"}""", ragHandler.Body);
+        Assert.True(JsonDocument.Parse(ragEvidence.Result).RootElement.GetProperty("contractPassed").GetBoolean());
+        Assert.Equal("What does the 80% category budget warning mean?", ServiceValidation.DefaultQuestion("student-4", "rag"));
+
+        var label = new string('A', 80);
+        using var validClient = new HttpClient(new RecordingHandler("{}"));
+        await ServiceValidation.CaptureAsync(validClient, "mcp", "http://127.0.0.1:5204", 1, "unused", "student-4", label);
+
+        using var invalidClient = new HttpClient(new RecordingHandler("{}"));
+        await Assert.ThrowsAsync<LoopException>(() => ServiceValidation.CaptureAsync(
+            invalidClient, "mcp", "http://127.0.0.1:5204", 1, "unused", "student-4", label + "A"));
+        using var missingClient = new HttpClient(new RecordingHandler("{}"));
+        await Assert.ThrowsAsync<LoopException>(() => ServiceValidation.CaptureAsync(
+            missingClient, "mcp", "http://127.0.0.1:5204", 1, "unused", "student-4", " "));
     }
 
     [Fact]
@@ -481,6 +601,65 @@ public sealed class AgenticLoopTests
     }
 
     [Fact]
+    public void ParseVerdict_RejectsNestedRequiredHeadings()
+    {
+        var exception = Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseVerdict(
+            """
+            [OBSERVE]
+            Verdict: ACCEPT
+
+            - Findings:
+              - None
+
+            Validation gaps:
+            - None
+
+            - Scope check:
+              The proposal stays in scope.
+            """));
+
+        Assert.Contains("Findings:", exception.Message);
+    }
+
+    [Fact]
+    public void ParseVerdict_RejectsSeverityEnumEcho()
+    {
+        var exception = Assert.Throws<LoopException>(() => AgenticLoopApplication.ParseVerdict(
+            """
+            [OBSERVE]
+            Verdict: REVISE
+
+            Findings:
+            - Severity: BLOCKING | REQUIRED | SUGGESTION
+              Evidence: The route does not validate the request.
+              Failure mode: Invalid journeys reach the backend.
+              Required correction: Add request validation.
+
+            Validation gaps:
+            - None
+
+            Scope check:
+            The proposal stays in scope.
+            """));
+
+        Assert.Contains("valid Severity", exception.Message);
+    }
+
+    [Fact]
+    public async Task ReviewerPrompt_UsesConcreteStandaloneHeadingsWithoutPlaceholderEnums()
+    {
+        var workspace = AgenticLoopApplication.ResolveWorkspace(null, AppContext.BaseDirectory);
+        var prompt = await File.ReadAllTextAsync(
+            Path.Combine(workspace, "ai-services", "agentic-loop", "prompts", "reviewer.md"));
+        var normalizedPrompt = prompt.Replace("\r\n", "\n", StringComparison.Ordinal);
+
+        Assert.Contains("Each heading below must start at the first", normalizedPrompt);
+        Assert.Contains("[OBSERVE]\nVerdict: ACCEPT", normalizedPrompt);
+        Assert.DoesNotContain("Verdict: ACCEPT | REVISE | REJECT", normalizedPrompt);
+        Assert.DoesNotContain("Severity: BLOCKING | REQUIRED | SUGGESTION", normalizedPrompt);
+    }
+
+    [Fact]
     public void ParseVerdict_RejectsMissingReviewSections()
     {
         var exception = Assert.Throws<LoopException>(() =>
@@ -512,7 +691,6 @@ public sealed class AgenticLoopTests
     [Theory]
     [InlineData("- Severity: REQUIRED")]
     [InlineData("Severity: REQUIRED")]
-    [InlineData("- Severity: REQUIRED because validation is missing")]
     public void ParseVerdict_RejectsAcceptWithRequiredFinding(string severityLine)
     {
         var review = ReviewerResponse("ACCEPT", includeRequiredFinding: true)
@@ -754,6 +932,40 @@ public sealed class AgenticLoopTests
             Scope check:
             aligned
             """;
+    }
+
+    private static string BudgetCheckResponse(string journeyLabel, long plannedMinor, long actualMinor, double percentage, string status)
+    {
+        var remainingMinor = plannedMinor - actualMinor;
+        return JsonSerializer.Serialize(new
+        {
+            tool = "budget.get_summary",
+            result = new
+            {
+                ok = true,
+                summary = new
+                {
+                    journeyLabel,
+                    baseCurrency = "AUD",
+                    plannedAmountMinor = plannedMinor,
+                    actualAmountMinor = actualMinor,
+                    remainingAmountMinor = remainingMinor,
+                    percentageUsed = percentage,
+                    categories = new[]
+                    {
+                        new
+                        {
+                            category = "food",
+                            plannedAmountMinor = plannedMinor,
+                            actualAmountMinor = actualMinor,
+                            remainingAmountMinor = remainingMinor,
+                            percentageUsed = percentage,
+                            status
+                        }
+                    }
+                }
+            }
+        }, new JsonSerializerOptions(JsonSerializerDefaults.Web));
     }
 
     private static string CreateTemporaryDirectory()

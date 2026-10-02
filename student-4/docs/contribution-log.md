@@ -1,6 +1,28 @@
 # Student 4 Contribution Log
 
+## Release 1 PR Attribution - 2026-10-02
+
+The following five PRs were published by `Liam-zel` for the Student 4 Release 1
+stack. Their implementation was AI-assisted under Liam's ownership; publication
+does not establish approval, merge, or human review. All five remain open and
+unmerged. PR #108's Actions run passed; see the runbook for the run URL and scope.
+Current implementation revision: `3e8be05` on branch
+`BCP/R1_Budget_Validation_CI`. The cancellation-focus correction remains
+uncommitted, but its final browser replay passed; the recorded CI run does not
+cover that uncommitted fix.
+
+| Pull request | Publisher | Contribution attribution | Approval/evidence status |
+|---|---|---|---|
+| #104 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #105 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #106 | `Liam-zel` | AI-assisted Release 1 implementation contribution; see the published PR for its file-level scope. | Published; approval, merge, and CI result are not inferred. |
+| #107 | `Liam-zel` | Student 4 UI; AI-assisted implementation contribution. | Published, open/unmerged; manual review pending. |
+| #108 | `Liam-zel` | Student 4 validation/CI integration; AI-assisted implementation contribution. | Published, open/unmerged; Actions run passed; manual review pending. |
+
 ## 2026-09-03
+Historical Release 0 contribution snapshot from 2026-09-03; its pending-value
+placeholders below describe that record and are superseded for Release 1 by the
+current PR attribution above.
 
 Owner: Liam Zelmanowski
 
@@ -24,7 +46,7 @@ No commit or push was performed by the AI assistant.
 |---|---|
 | Branch | `[pending Liam]` |
 | Commit hashes | `[pending Liam]` |
-| Pull request | `[pending Liam]` |
+| Pull request | PRs #104-#107 published by `Liam-zel`; see Release 1 attribution above. |
 | Human review outcome | `[pending Liam]` |
 | Attendance checkpoint | `[pending Liam]` |
 | Showcase URL | `[pending team]` |

@@ -181,15 +181,14 @@ public static partial class AgenticLoopApplication
         {
             using var handler = new HttpClientHandler { AllowAutoRedirect = false };
             using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(40) };
-            var feature = arguments.SingleOrDefault("feature") ?? "student-2";
-            if (feature == "student-1" && arguments.SingleOrDefault("trip-id") is not null)
-                throw new LoopException("--trip-id applies only to --feature student-2.");
+            var validationOptions = ParseValidationOptions(arguments, validationMode);
             var evidence = await ServiceValidation.CaptureAsync(
                 validationClient, validationMode,
-                arguments.SingleOrDefault("backend-url") ?? ServiceValidation.DefaultBackendUrl(feature),
-                arguments.OptionalPositiveInt("trip-id", 1),
-                arguments.SingleOrDefault("question") ?? ServiceValidation.DefaultQuestion(feature, validationMode),
-                feature);
+                validationOptions.BackendUrl,
+                validationOptions.TripId,
+                validationOptions.Question,
+                validationOptions.Feature,
+                validationOptions.JourneyLabel);
             preTestCommand = evidence.Command;
             preTestResult = evidence.Result;
         }
@@ -214,6 +213,44 @@ public static partial class AgenticLoopApplication
         var recordPath = await WriteRecordAsync(recordDirectory, record);
         Console.WriteLine($"Agentic-loop record awaiting human finalisation: {recordPath}");
         return 0;
+    }
+
+    internal static ValidationOptions ParseValidationOptions(ParsedArguments arguments, string mode)
+    {
+        var feature = arguments.SingleOrDefault("feature") ?? "student-2";
+        var tripIdValue = arguments.SingleOrDefault("trip-id");
+        var journeyLabelValue = arguments.SingleOrDefault("journey-label");
+        var questionValue = arguments.SingleOrDefault("question");
+
+        if (feature == "student-4")
+        {
+            if (mode == "mcp")
+            {
+                if (tripIdValue is not null)
+                    throw new LoopException("--trip-id does not apply to Student 4 MCP validation; use --journey-label.");
+                if (questionValue is not null)
+                    throw new LoopException("--question does not apply to Student 4 MCP validation; use --journey-label.");
+                journeyLabelValue = arguments.RequiredSingle("journey-label");
+            }
+            else if (tripIdValue is not null || journeyLabelValue is not null)
+            {
+                throw new LoopException("Student 4 RAG validation accepts --question, not --trip-id or --journey-label.");
+            }
+        }
+        else
+        {
+            if (journeyLabelValue is not null)
+                throw new LoopException("--journey-label applies only to Student 4 MCP validation.");
+            if (feature == "student-1" && tripIdValue is not null)
+                throw new LoopException("--trip-id applies only to --feature student-2.");
+        }
+
+        return new ValidationOptions(
+            feature,
+            arguments.SingleOrDefault("backend-url") ?? ServiceValidation.DefaultBackendUrl(feature),
+            arguments.OptionalPositiveInt("trip-id", 1),
+            questionValue ?? ServiceValidation.DefaultQuestion(feature, mode),
+            journeyLabelValue);
     }
 
     private static async Task<int> FinaliseAsync(ParsedArguments arguments)
@@ -875,7 +912,7 @@ public static partial class AgenticLoopApplication
     }
 
     [GeneratedRegex(
-        @"^\s*Verdict:\s*(ACCEPT|REVISE|REJECT)\s*$",
+        @"^Verdict:\s*(ACCEPT|REVISE|REJECT)\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex VerdictRegex();
 
@@ -885,22 +922,22 @@ public static partial class AgenticLoopApplication
     [GeneratedRegex(@"^\s*\[ACT\]\s*$", RegexOptions.Multiline)]
     private static partial Regex ActHeadingRegex();
 
-    [GeneratedRegex(@"^\s*\[OBSERVE\]\s*$", RegexOptions.Multiline)]
+    [GeneratedRegex(@"^\[OBSERVE\]\s*$", RegexOptions.Multiline)]
     private static partial Regex ObserveHeadingRegex();
 
-    [GeneratedRegex(@"^\s*Findings:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    [GeneratedRegex(@"^Findings:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex FindingsHeadingRegex();
 
     [GeneratedRegex(
-        @"^\s*Validation gaps:\s*$",
+        @"^Validation gaps:\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex ValidationGapsHeadingRegex();
 
-    [GeneratedRegex(@"^\s*Scope check:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
+    [GeneratedRegex(@"^Scope check:\s*$", RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex ScopeCheckHeadingRegex();
 
     [GeneratedRegex(
-        @"^\s*(?:-\s*)?Severity:\s*(BLOCKING|REQUIRED|SUGGESTION)\b.*$",
+        @"^\s*(?:-\s*)?Severity:\s*(BLOCKING|REQUIRED|SUGGESTION)\s*$",
         RegexOptions.IgnoreCase | RegexOptions.Multiline)]
     private static partial Regex SeverityValueRegex();
 
@@ -1115,6 +1152,12 @@ internal sealed record LoadedContext(
     IReadOnlyList<string> Paths,
     IReadOnlyDictionary<string, string> Sha256ByPath,
     string Content);
+internal sealed record ValidationOptions(
+    string Feature,
+    string BackendUrl,
+    int TripId,
+    string Question,
+    string? JourneyLabel);
 internal sealed record LoopExecutionInput(
     string Task,
     LoadedContext Context,
