@@ -1,8 +1,8 @@
 # Shared RAG Server (Release 1)
 
 One native shared service retrieves feature-isolated Markdown knowledge and
-uses native Ollama for constrained grounded generation. Student 1, Student 2 and
-Student 3 knowledge is present. Automated model-double tests pass; native model generation
+uses native Ollama for constrained grounded generation. Student 1, Student 2,
+Student 3 and Student 4 knowledge is present. Automated model-double tests pass; native model generation
 and cross-feature grounding evaluation remain release gates, not completed evidence.
 
 ## Contract
@@ -68,6 +68,12 @@ with misleading lexical overlap. Offline tests verify retained candidates, not
 answerability. These are development regressions, not an untouched held-out
 evaluation. Unrelated government-budget and live hotel-price questions score
 above 0.40; a higher threshold is not an entailment check.
+
+`tests/test_student4_retrieval.py` separately covers Student 4 known and
+paraphrased questions, unsupported topics, topical overlap, and an
+injection-shaped question. Its offline retrieval check confirms ranking only;
+it does not prove that a live model follows the grounding prompt or supports
+every generated claim.
 
 After starting native Ollama with the approved model, run from this directory:
 

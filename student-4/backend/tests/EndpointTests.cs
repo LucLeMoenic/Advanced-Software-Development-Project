@@ -373,6 +373,185 @@ public sealed class EndpointTests
         Assert.Equal("dependency_response_invalid", error!.Error.Code);
     }
 
+    [Fact]
+    public async Task BudgetGuidanceReturnsValidatedCitationsFromTheStudent4Feature()
+    {
+        var rag = new FakeRag(GuidanceAnswer());
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "  How are category limits used?  " });
+        var body = await response.Content.ReadFromJsonAsync<BudgetGuidanceResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("How are category limits used?", rag.Question);
+        Assert.Equal("Budget status is based on actual spending. [category-budgets#1]", body!.Answer);
+        Assert.Equal("high", body.Confidence);
+        Assert.Equal("Category budgets and spending statuses", body.Citations.Single().Source);
+        Assert.Equal("category-budgets#1", body.Citations.Single().ChunkId);
+        Assert.Equal(0.45, body.Citations.Single().Score);
+        Assert.Equal(1, rag.CallCount);
+    }
+
+    [Fact]
+    public async Task BudgetGuidancePreservesTheExactStrictInsufficientResponse()
+    {
+        var rag = new FakeRag("""{"answer":"Not enough information in the knowledge base to answer this.","citations":[],"confidence":"insufficient"}""");
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "What is the current balance?" });
+        var body = await response.Content.ReadFromJsonAsync<BudgetGuidanceResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Not enough information in the knowledge base to answer this.", body!.Answer);
+        Assert.Empty(body.Citations);
+        Assert.Equal("insufficient", body.Confidence);
+    }
+
+    [Theory]
+    [InlineData(0.3, "low")]
+    [InlineData(0.4, "medium")]
+    [InlineData(0.4, "high")]
+    public async Task BudgetGuidanceAcceptsConfidenceConsistentWithRoundedBoundaryScore(double score, string confidence)
+    {
+        var json = JsonNode.Parse(GuidanceAnswer())!.AsObject();
+        json["citations"]![0]!["score"] = score;
+        json["confidence"] = confidence;
+        var rag = new FakeRag(json.ToJsonString());
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "budget status" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"question\":\"budget\",\"feature\":\"student-1\"}")]
+    [InlineData("{\"question\":\"budget\",\"question\":\"other\"}")]
+    [InlineData("{\"question\":42}")]
+    [InlineData("{\"question\":\"   \"}")]
+    [InlineData("{\"Question\":\"budget\"}")]
+    public async Task BudgetGuidanceRejectsInvalidRequestsBeforeRag(string json)
+    {
+        var rag = new FakeRag(GuidanceAnswer());
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsync("/api/budget-guidance", new StringContent(json, Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, rag.CallCount);
+    }
+
+    [Theory]
+    [InlineData(1001)]
+    [InlineData(8193)]
+    public async Task BudgetGuidanceRejectsOversizedQuestionOrBodyBeforeRag(int length)
+    {
+        var rag = new FakeRag(GuidanceAnswer());
+        using var client = CreateBudgetGuidanceClient(rag);
+        var json = "{\"question\":\"" + new string('x', length) + "\"}";
+
+        using var response = await client.PostAsync("/api/budget-guidance", new StringContent(json, Encoding.UTF8, "application/json"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(0, rag.CallCount);
+    }
+
+    [Fact]
+    public async Task DisabledBudgetGuidanceDoesNotCallRag()
+    {
+        var rag = new FakeRag(GuidanceAnswer());
+        using var client = CreateBudgetGuidanceClient(rag, ragEnabled: false);
+
+        using var response = await client.PostAsync("/api/budget-guidance", new StringContent("{}", Encoding.UTF8, "application/json"));
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal("feature_disabled", error!.Error.Code);
+        Assert.Equal(0, rag.CallCount);
+    }
+
+    [Theory]
+    [InlineData("\"foreign#1\"", "Category budgets and spending statuses", "0.45", "high", "[foreign#1]")]
+    [InlineData("\"category-budgets#1\"", "Other feature source", "0.45", "high", "[category-budgets#1]")]
+    [InlineData("\"category-budgets#1\"", "Category budgets and spending statuses", "1.1", "high", "[category-budgets#1]")]
+    [InlineData("\"category-budgets#1\"", "Category budgets and spending statuses", "0.45", "low", "[category-budgets#1]")]
+    [InlineData("\"category-budgets#1\"", "Category budgets and spending statuses", "0.45", "high", "[other#1]")]
+    public async Task BudgetGuidanceRejectsForeignOrMismatchedCitations(string chunkId, string source, string score, string confidence, string marker)
+    {
+        var json = $"{{\"answer\":\"Claim {marker}\",\"citations\":[{{\"source\":\"{source}\",\"chunk_id\":{chunkId},\"snippet\":\"A bounded source snippet.\",\"score\":{score}}}],\"confidence\":\"{confidence}\"}}";
+        var rag = new FakeRag(json);
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "budget status" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        Assert.Equal("dependency_response_invalid", error!.Error.Code);
+    }
+
+    [Fact]
+    public async Task BudgetGuidanceRejectsDuplicateCitationIdsAndUnusableAbstention()
+    {
+        var duplicate = """{"answer":"One. [category-budgets#1]","citations":[{"source":"Category budgets and spending statuses","chunk_id":"category-budgets#1","snippet":"First.","score":0.45},{"source":"Category budgets and spending statuses","chunk_id":"category-budgets#1","snippet":"Second.","score":0.45}],"confidence":"high"}""";
+        var invalidRefusal = """{"answer":"Not enough information in the knowledge base to answer this.","citations":[{"source":"Category budgets and spending statuses","chunk_id":"category-budgets#1","snippet":"A snippet.","score":0.45}],"confidence":"insufficient"}""";
+        foreach (var json in new[] { duplicate, invalidRefusal })
+        {
+            var rag = new FakeRag(json);
+            using var client = CreateBudgetGuidanceClient(rag);
+            using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "budget" });
+            Assert.Equal(HttpStatusCode.BadGateway, response.StatusCode);
+        }
+    }
+
+    [Theory]
+    [InlineData(503, "dependency_unavailable")]
+    [InlineData(504, "dependency_timeout")]
+    [InlineData(502, "dependency_response_invalid")]
+    public async Task BudgetGuidanceMapsRagFailuresToStableErrors(int statusCode, string code)
+    {
+        var rag = new FakeRag(GuidanceAnswer()) { Failure = new RagFailureException(statusCode, code, "safe message") };
+        using var client = CreateBudgetGuidanceClient(rag);
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "budget" });
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal((HttpStatusCode)statusCode, response.StatusCode);
+        Assert.Equal(code, error!.Error.Code);
+        Assert.Equal("safe message", error.Error.Message);
+    }
+
+    private static string GuidanceAnswer() =>
+        """{"answer":"Budget status is based on actual spending. [category-budgets#1]","citations":[{"source":"Category budgets and spending statuses","chunk_id":"category-budgets#1","snippet":"Set a positive limit for each budget category.","score":0.45}],"confidence":"high"}""";
+
+    private static HttpClient CreateBudgetGuidanceClient(FakeRag rag, bool ragEnabled = true)
+    {
+        var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), new Dictionary<string, string?>
+        {
+            ["RAG_ENABLED"] = ragEnabled ? "true" : "false"
+        }).WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IRagClient>();
+            services.AddSingleton<IRagClient>(rag);
+        }));
+        return factory.CreateClient();
+    }
+
+    private sealed class FakeRag(string json) : IRagClient
+    {
+        public int CallCount { get; private set; }
+        public string? Question { get; private set; }
+        public RagFailureException? Failure { get; init; }
+
+        public Task<JsonElement> AskAsync(string question, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            Question = question;
+            if (Failure is not null) throw Failure;
+            return Task.FromResult(JsonDocument.Parse(json).RootElement.Clone());
+        }
+    }
+
     private static HttpClient CreateBudgetCheckClient(FakeBudgetCheck mcp, bool mcpEnabled = true)
     {
         var factory = CreateFactory(new FakeDatabase(), new FakeAdvice(), new Dictionary<string, string?>

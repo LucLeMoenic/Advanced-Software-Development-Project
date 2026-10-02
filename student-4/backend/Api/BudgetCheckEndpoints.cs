@@ -7,7 +7,6 @@ namespace BudgetTracker.Backend.Api;
 
 public static class BudgetCheckEndpoints
 {
-    private const int MaxRequestBytes = 8 * 1024;
     private const long MaxSafeInteger = 9_007_199_254_740_991;
     private static readonly HashSet<string> AllowedCategories = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -29,7 +28,7 @@ public static class BudgetCheckEndpoints
             return BudgetEndpoints.Error(context, 503, "feature_disabled", "Budget check is disabled.");
         }
 
-        var journeyLabel = await ReadJourneyLabelAsync(context.Request, cancellationToken);
+        var journeyLabel = await ReadStrictStringAsync(context.Request, "journeyLabel", 80, cancellationToken);
         if (journeyLabel is null)
         {
             return BudgetEndpoints.Error(context, 400, "invalid_request", "The request body must contain only a valid journeyLabel.");
@@ -47,17 +46,18 @@ public static class BudgetCheckEndpoints
         }
     }
 
-    private static async Task<string?> ReadJourneyLabelAsync(HttpRequest request, CancellationToken cancellationToken)
+    internal static async Task<string?> ReadStrictStringAsync(HttpRequest request, string propertyName, int maximumCharacters, CancellationToken cancellationToken)
     {
-        if (request.ContentLength is > MaxRequestBytes) return null;
+        const int maximumRequestBytes = 8 * 1024;
+        if (request.ContentLength is > maximumRequestBytes) return null;
 
         using var body = new MemoryStream();
         var buffer = new byte[4096];
         while (true)
         {
-            var count = await request.Body.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, MaxRequestBytes + 1 - (int)body.Length)), cancellationToken);
+            var count = await request.Body.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, maximumRequestBytes + 1 - (int)body.Length)), cancellationToken);
             if (count == 0) break;
-            if (body.Length + count > MaxRequestBytes) return null;
+            if (body.Length + count > maximumRequestBytes) return null;
             body.Write(buffer, 0, count);
         }
 
@@ -67,15 +67,15 @@ public static class BudgetCheckEndpoints
             if (document.RootElement.ValueKind != JsonValueKind.Object) return null;
 
             var seen = false;
-            string? label = null;
+            string? value = null;
             foreach (var property in document.RootElement.EnumerateObject())
             {
-                if (property.Name != "journeyLabel" || seen || property.Value.ValueKind != JsonValueKind.String) return null;
+                if (property.Name != propertyName || seen || property.Value.ValueKind != JsonValueKind.String) return null;
                 seen = true;
-                label = property.Value.GetString()?.Trim();
+                value = property.Value.GetString()?.Trim();
             }
 
-            return seen && IsValidLabel(label) ? label : null;
+            return seen && IsValidString(value, maximumCharacters) ? value : null;
         }
         catch (JsonException)
         {
@@ -83,12 +83,12 @@ public static class BudgetCheckEndpoints
         }
     }
 
-    private static bool IsValidLabel(string? label)
+    private static bool IsValidString(string? value, int maximumCharacters)
     {
-        if (string.IsNullOrWhiteSpace(label)) return false;
+        if (string.IsNullOrWhiteSpace(value)) return false;
         var characterCount = 0;
-        foreach (var _ in label.EnumerateRunes()) characterCount++;
-        return characterCount is >= 1 and <= 80;
+        foreach (var _ in value.EnumerateRunes()) characterCount++;
+        return characterCount >= 1 && characterCount <= maximumCharacters;
     }
 
     private static DashboardResponse ValidateSummary(JsonElement summary, string requestedLabel, IReadOnlyList<string> currencies)
@@ -102,7 +102,7 @@ public static class BudgetCheckEndpoints
 
         var label = ReadString(summary, "journeyLabel");
         var currency = ReadString(summary, "baseCurrency");
-        if (!IsValidLabel(label) || label != label.Trim()
+        if (!IsValidString(label, 80) || label != label.Trim()
             || !string.Equals(label, requestedLabel, StringComparison.OrdinalIgnoreCase)
             || !currencies.Contains(currency, StringComparer.OrdinalIgnoreCase))
         {

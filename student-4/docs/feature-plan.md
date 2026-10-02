@@ -105,12 +105,19 @@ ownership, and make no schema changes or cross-student calls.
   in-process official SDK call are covered. Student 4 backend tests pass 106/106;
   shared MCP tests pass 120/120. Live native/container connectivity, callback
   re-entry, and database non-mutation evidence remain pending.
-3. **Student 4 RAG guidance - planned:** add the feature corpus and backend route;
-  verify supported, cited, unsupported, and malformed-response cases.
+3. **Student 4 RAG guidance - implemented, offline-tested:** added three source-
+  grounded knowledge documents and `POST /api/budget-guidance`. Strict request
+  parsing, fixed Student4 feature routing, response/citation validation, exact
+  abstention, disabled no-call behavior, size limits and timeout/error mapping
+  have focused tests. On 2026-10-02, Student 4 retrieval tests passed 17/17,
+  focused RAG backend/client tests passed 29/29, the full backend suite passed
+  135/135, and the shared RAG suite passed 79 with 19 live-model cases skipped.
+  Compose configuration parsed; live generation remains open.
 4. **Static UI - planned:** add budget-check and guidance panels without replacing
   the existing frontend or combining guidance with private financial data.
 5. **Integration and evidence - planned:** validate native connectivity, mode-off
   behavior, live MCP/RAG paths, accessibility, and the affected release gates.
 
-Only step 1 is implemented. The remaining steps and all live/integrated evidence
-are pending; no human review or release sign-off is recorded here.
+Steps 1-3 are implemented with offline evidence. Static UI, live/integrated
+validation and release evidence remain pending; no human review or release
+sign-off is recorded here.
