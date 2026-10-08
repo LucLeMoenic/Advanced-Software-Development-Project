@@ -20,13 +20,12 @@
   <main class="page-shell">
     <section class="workspace-heading" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">Student 4 · Release 0</p>
         <h1 id="page-title">Planned versus actual spending</h1>
       </div>
       <div class="journey-control">
         <label for="journey-select">Journey</label>
-        <select id="journey-select" aria-describedby="journey-help"></select>
-        <span id="journey-help">Choose a locally owned budget group.</span>
+        <select id="journey-select"></select>
+        <button id="new-journey" class="secondary-button" type="button" disabled><span aria-hidden="true">+</span> New journey</button>
       </div>
     </section>
 
@@ -49,12 +48,12 @@
       <div id="notices" class="notices" aria-live="polite"></div>
     </section>
 
-    <div class="r1-tools" aria-label="Release 1 tools">
+    <div class="r1-tools" aria-label="Budget assistant">
       <section class="tool-panel" aria-labelledby="budget-check-heading" aria-describedby="budget-check-description">
         <div class="section-heading">
           <div>
             <h2 id="budget-check-heading">Live budget check</h2>
-            <p id="budget-check-description" class="section-note">Read-only current totals from budget.get_summary.</p>
+            <p id="budget-check-description" class="section-note">Current journey totals.</p>
           </div>
           <button id="run-budget-check" class="secondary-button" type="button" disabled>Check this journey</button>
         </div>
@@ -122,7 +121,7 @@
       <div class="section-heading">
         <div>
           <h2 id="expenses-heading">Expense ledger</h2>
-          <p class="section-note">Original values and saved demonstration-rate conversions.</p>
+          <p class="section-note">Original values and saved exchange-rate conversions.</p>
         </div>
         <button id="add-expense" class="primary-button" type="button"><span aria-hidden="true">+</span> Add expense</button>
       </div>
@@ -156,9 +155,10 @@
   <dialog id="budget-dialog" aria-labelledby="budget-dialog-title">
     <form id="budget-form" novalidate>
       <div class="dialog-heading"><p class="eyebrow">Category limit</p><h2 id="budget-dialog-title">Add budget</h2></div>
+      <p id="budget-form-error" class="form-error" role="alert" hidden></p>
       <input id="budget-id" type="hidden">
       <div class="form-grid">
-        <label class="full-field">Journey label<input id="budget-journey" maxlength="80" required></label>
+        <label class="full-field">Journey name<input id="budget-journey" maxlength="80" required></label>
         <label>Category<select id="budget-category" required><option value="accommodation">Accommodation</option><option value="food">Food</option><option value="transport">Transport</option><option value="activities">Activities</option><option value="shopping">Shopping</option><option value="other">Other</option></select></label>
         <label>Limit amount<input id="budget-amount" inputmode="decimal" placeholder="500.00" required></label>
         <label>Base currency<select id="budget-currency" required></select></label>

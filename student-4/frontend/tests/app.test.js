@@ -27,7 +27,7 @@ const dashboard = {
     { category: "shopping", plannedAmountMinor: 5000, actualAmountMinor: 6000, remainingAmountMinor: -1000, percentageUsed: 120, status: "overspent" },
   ],
 };
-const currencies = { rateAsOf: "2026-08-01", rateVersion: "demo-v1", disclaimer: "Demonstration rates only.", currencies: ["AUD", "USD", "EUR"].map((code) => ({ code })) };
+const currencies = { rateAsOf: null, rateVersion: "Frankfurter / ECB", disclaimer: "Daily reference rates; card fees may differ.", currencies: ["AUD", "USD", "EUR"].map((code) => ({ code })) };
 
 function response(value, status = 200) {
   return Promise.resolve({ ok: status >= 200 && status < 300, status, json: () => Promise.resolve(value) });
@@ -70,6 +70,13 @@ beforeEach(() => {
 });
 
 describe("Budget & Expense Tracker", () => {
+    test("uses traveller-facing copy without student or internal journey labels", () => {
+      expect(page).not.toContain("Student 4 · Release 0");
+      expect(page).not.toContain("Choose a locally owned budget group");
+      expect(page).not.toContain("demonstration-rate conversions");
+      expect(document.querySelector("#journey-select").getAttribute("aria-describedby")).toBeNull();
+    });
+
     test("renders a validated MCP budget check with exact money and category status", async () => {
       const summary = {
         ...dashboard,
@@ -284,7 +291,80 @@ describe("Budget & Expense Tracker", () => {
     expect(document.querySelector("#budget-rows").textContent).toContain("overspent");
     expect(document.querySelector("#expense-rows").textContent).toContain("Market lunch");
     expect(document.querySelector("#expense-rows").textContent).toContain("90.00");
-    expect(document.querySelector("#rate-date").textContent).toContain("demo-v1");
+    expect(document.querySelector("#rate-date").textContent).toContain("Frankfurter / ECB");
+    expect(document.querySelector("#rate-date").textContent).not.toContain("null");
+    expect(document.querySelector("#rate-disclaimer").textContent).not.toContain("Demonstration");
+  });
+
+  test("creates and reopens a custom journey with its first category budget", async () => {
+    const newBudget = { ...budgets[0], id: 20, journeyLabel: "Weekend away", category: "accommodation", baseCurrency: "EUR", limitAmountMinor: 32150, startDate: "2026-11-01", endDate: "2026-11-04" };
+    let created = false;
+    const fetchMock = await start(defaultFetch({
+      "POST /budget-api/budgets": () => { created = true; return response(newBudget, 201); },
+      "GET /budget-api/journeys": () => response(created ? [...journeys, newBudget] : journeys),
+      "GET /budget-api/budgets?journeyLabel=Weekend%20away": () => response([newBudget]),
+      "GET /budget-api/expenses?journeyLabel=Weekend%20away": () => response([]),
+      "GET /budget-api/dashboard?journeyLabel=Weekend%20away": () => response({ ...dashboard, journeyLabel: newBudget.journeyLabel, baseCurrency: "EUR", plannedAmountMinor: 32150, actualAmountMinor: 0, remainingAmountMinor: 32150, percentageUsed: 0, categories: [] }),
+    }));
+    document.querySelector("#new-journey").click();
+    expect(document.querySelector("#budget-dialog-title").textContent).toBe("New journey");
+    expect(document.querySelector("#budget-journey").value).toBe("");
+    expect(document.querySelector("#budget-start").value).toBe("");
+    document.querySelector("#budget-journey").value = "  Weekend away  ";
+    document.querySelector("#budget-amount").value = "321.50";
+    document.querySelector("#budget-currency").value = "EUR";
+    document.querySelector("#budget-start").value = "2026-11-01";
+    document.querySelector("#budget-end").value = "2026-11-04";
+    document.querySelector("#budget-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    document.querySelector("#budget-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(document.querySelector("#status").textContent).toBe("Journey created."));
+    const calls = fetchMock.mock.calls.filter(([url, options]) => url === "/budget-api/budgets" && options.method === "POST");
+    expect(calls).toHaveLength(1);
+    expect(JSON.parse(calls[0][1].body)).toEqual({ journeyLabel: "Weekend away", category: "accommodation", baseCurrency: "EUR", limitAmountMinor: 32150, startDate: "2026-11-01", endDate: "2026-11-04" });
+    expect(document.querySelector("#journey-select").value).toBe("Weekend away");
+    document.querySelector("#refresh").click();
+    await vi.waitFor(() => expect(document.querySelector("#status").textContent).toBe("Weekend away is up to date."));
+    expect(document.querySelector("#journey-select").value).toBe("Weekend away");
+    expect(document.querySelector("#budget-rows").textContent).toContain("Accommodation");
+  });
+
+  test("new journey cancellation, empty names and existing names do not create records", async () => {
+    const fetchMock = await start();
+    document.querySelector("#new-journey").focus();
+    document.querySelector("#new-journey").click();
+    document.querySelector("#budget-journey").value = "   ";
+    document.querySelector("#budget-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    expect(document.querySelector("#budget-form-error").textContent).toContain("1 to 80");
+    document.querySelector("#budget-journey").value = " journey ";
+    document.querySelector("#budget-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    expect(document.querySelector("#budget-form-error").textContent).toContain("already exists");
+    document.querySelector("#budget-dialog").dispatchEvent(new Event("cancel", { cancelable: true }));
+    expect(document.querySelector("#budget-dialog").open).toBe(false);
+    expect(document.activeElement).toBe(document.querySelector("#new-journey"));
+    expect(fetchMock.mock.calls.some(([, options]) => options.method === "POST")).toBe(false);
+  });
+
+  test("shows rate-provider failures without masking them as an invalid amount", async () => {
+    await start(defaultFetch({ "POST /budget-api/conversions/preview": () => response({ error: { message: "Exchange rates are unavailable." } }, 503) }));
+    document.querySelector("#add-expense").click();
+    document.querySelector("#expense-amount").value = "10.00";
+    document.querySelector("#expense-currency").value = "USD";
+    document.querySelector("#expense-amount").dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector("#conversion-preview").textContent).toBe("Exchange rates are unavailable."));
+    expect(document.querySelector("#total-planned").textContent).toContain("150.00");
+  });
+
+  test("labels cached reference rates after a failed provider refresh", async () => {
+    await start(defaultFetch({
+      "GET /budget-api/currencies": () => response({ ...currencies, rateAsOf: "2026-10-07", status: "cached_after_failure" }),
+      "POST /budget-api/conversions/preview": () => response({ convertedAmountMinor: 144, toCurrency: "AUD", rate: 1.44, rateAsOf: "2026-10-07", rateStatus: "cached_after_failure" }),
+    }));
+    expect(document.querySelector("#rate-date").textContent).toContain("Cached reference rates");
+    document.querySelector("#add-expense").click();
+    document.querySelector("#expense-amount").value = "1.00";
+    document.querySelector("#expense-currency").value = "USD";
+    document.querySelector("#expense-amount").dispatchEvent(new Event("change", { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector("#conversion-preview").textContent).toContain("Cached reference rate"));
   });
 
   test("creates and updates a budget with exact minor units", async () => {
@@ -302,6 +382,7 @@ describe("Budget & Expense Tracker", () => {
     await vi.waitFor(() => expect(fetchMock.mock.calls.some(([url, options]) => url === "/budget-api/budgets" && options.method === "POST")).toBe(true));
     const createCall = fetchMock.mock.calls.find(([url, options]) => url === "/budget-api/budgets" && options.method === "POST");
     expect(JSON.parse(createCall[1].body).limitAmountMinor).toBe(12345);
+    await vi.waitFor(() => expect(document.querySelector("#status").textContent).toBe("Budget created."));
 
     document.querySelector("[data-action='edit-budget']").click();
     document.querySelector("#budget-amount").value = "140.00";

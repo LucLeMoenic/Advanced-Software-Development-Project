@@ -40,9 +40,9 @@ button:disabled { cursor: wait; opacity: 0.58; }
 h1, h2, p { margin-top: 0; }
 h1 { margin-bottom: 0; font-size: clamp(1.75rem, 3vw, 2.4rem); line-height: 1.1; letter-spacing: 0; }
 h2 { margin-bottom: 0; font-size: 1.2rem; letter-spacing: 0; }
-.journey-control { min-width: min(100%, 19rem); display: grid; grid-template-columns: auto minmax(10rem, 1fr); align-items: center; gap: 0.3rem 0.65rem; }
+.journey-control { min-width: min(100%, 19rem); display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0.5rem 0.65rem; }
 .journey-control label { font-weight: 750; }
-.journey-control span { grid-column: 1 / -1; color: var(--muted); font-size: 0.78rem; text-align: right; }
+.journey-control > button { grid-column: 2; justify-self: end; white-space: nowrap; }
 input, select, textarea { width: 100%; border: 1px solid #aeb8c5; border-radius: 4px; background: white; color: var(--ink); padding: 0.58rem 0.65rem; }
 textarea { resize: vertical; }
 
@@ -133,6 +133,7 @@ dialog form, #confirm-dialog { padding: 1.25rem; }
 .full-field { grid-column: 1 / -1; }
 .dialog-actions { display: flex; justify-content: end; gap: 0.6rem; margin-top: 1.2rem; }
 .conversion-preview { min-height: 1.4rem; margin: 0.8rem 0 0; color: var(--blue-dark); font-size: 0.88rem; }
+.form-error { margin: 0.75rem 0 0; color: var(--red); overflow-wrap: anywhere; }
 
 @media (max-width: 700px) {
   .page-shell, .header-inner { width: min(100% - 1.25rem, 76rem); }

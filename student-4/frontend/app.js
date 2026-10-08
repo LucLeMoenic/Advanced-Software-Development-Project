@@ -128,6 +128,7 @@ async function loadApplication(preferredJourney = state.selectedJourney) {
   elements.journey.replaceChildren();
   elements.journey.disabled = true;
   document.querySelector("#add-budget").disabled = true;
+  document.querySelector("#new-journey").disabled = true;
   try {
     const [journeys, currencyData, capabilities] = await Promise.all([
       api("/journeys"), api("/currencies"), api("/capabilities").catch(() => null),
@@ -142,9 +143,10 @@ async function loadApplication(preferredJourney = state.selectedJourney) {
     renderToolAvailability();
     elements.journey.disabled = state.journeys.length === 0;
     document.querySelector("#add-budget").disabled = false;
+    document.querySelector("#new-journey").disabled = false;
     if (!state.selectedJourney) {
       clearWorkspace();
-      setStatus("No journeys are available. Add a budget to begin.");
+      setStatus("No journeys yet. Create a journey to begin.");
       return;
     }
     await loadJourney();
@@ -204,7 +206,8 @@ function populateCurrencies() {
   for (const selector of [document.querySelector("#budget-currency"), document.querySelector("#expense-currency")]) {
     selector.replaceChildren(...state.currencies.map((currency) => { const option = make("option", currency); option.value = currency; return option; }));
   }
-  document.querySelector("#rate-date").textContent = `Rates as of ${state.rate.rateAsOf} · ${state.rate.rateVersion}`;
+  const rateState = state.rate.status === "cached_after_failure" ? " · Cached reference rates" : state.rate.status === "expired" ? " · Rates expired" : "";
+  document.querySelector("#rate-date").textContent = `Exchange rates: ${state.rate.rateVersion}${state.rate.rateAsOf ? ` · ${state.rate.rateAsOf}` : ""}${rateState}`;
   document.querySelector("#rate-disclaimer").textContent = state.rate.disclaimer;
 }
 
@@ -455,16 +458,21 @@ function actionCell(actions) {
 }
 function title(value) { return value ? value[0].toUpperCase() + value.slice(1).replaceAll("_", " ") : ""; }
 
-function openBudget(budget = null, opener = null) {
+function openBudget(budget = null, opener = null, newJourney = false) {
   restoreFocus = opener;
-  document.querySelector("#budget-dialog-title").textContent = budget ? "Edit budget" : "Add budget";
+  elements.budgetForm.dataset.newJourney = String(newJourney);
+  const formError = document.querySelector("#budget-form-error");
+  formError.hidden = true;
+  formError.textContent = "";
+  document.querySelector("#budget-dialog-title").textContent = newJourney ? "New journey" : budget ? "Edit budget" : "Add budget";
+  elements.budgetForm.querySelector("button[type=submit]").textContent = newJourney ? "Create journey" : "Save budget";
   document.querySelector("#budget-id").value = budget?.id || "";
-  document.querySelector("#budget-journey").value = budget?.journeyLabel || state.selectedJourney;
-  document.querySelector("#budget-category").value = budget?.category || "food";
+  document.querySelector("#budget-journey").value = newJourney ? "" : budget?.journeyLabel || state.selectedJourney;
+  document.querySelector("#budget-category").value = budget?.category || (newJourney ? "accommodation" : "food");
   document.querySelector("#budget-amount").value = budget ? minorToMajor(budget.limitAmountMinor) : "";
-  document.querySelector("#budget-currency").value = budget?.baseCurrency || state.dashboard?.baseCurrency || "AUD";
-  document.querySelector("#budget-start").value = budget?.startDate || state.journeys.find((value) => value.journeyLabel === state.selectedJourney)?.startDate || "";
-  document.querySelector("#budget-end").value = budget?.endDate || state.journeys.find((value) => value.journeyLabel === state.selectedJourney)?.endDate || "";
+  document.querySelector("#budget-currency").value = newJourney ? "AUD" : budget?.baseCurrency || state.dashboard?.baseCurrency || "AUD";
+  document.querySelector("#budget-start").value = newJourney ? "" : budget?.startDate || state.journeys.find((value) => value.journeyLabel === state.selectedJourney)?.startDate || "";
+  document.querySelector("#budget-end").value = newJourney ? "" : budget?.endDate || state.journeys.find((value) => value.journeyLabel === state.selectedJourney)?.endDate || "";
   elements.budgetDialog.showModal();
   document.querySelector("#budget-journey").focus();
 }
@@ -493,11 +501,15 @@ function closeDialog(dialog) { dialog.close(); restoreFocus?.focus(); restoreFoc
 async function previewConversion() {
   const budget = state.budgets.find((value) => value.id === Number(document.querySelector("#expense-budget").value));
   if (!budget) return;
+  let amount;
+  try { amount = majorToMinor(document.querySelector("#expense-amount").value); }
+  catch { elements.conversionPreview.textContent = "Enter a valid amount to preview conversion."; return; }
+  elements.conversionPreview.textContent = "Fetching conversion...";
   try {
-    const amount = majorToMinor(document.querySelector("#expense-amount").value);
     const result = await api("/conversions/preview", { method: "POST", body: JSON.stringify({ originalAmountMinor: amount, fromCurrency: document.querySelector("#expense-currency").value, toCurrency: budget.baseCurrency }) });
-    elements.conversionPreview.textContent = `Preview: ${money(result.convertedAmountMinor, result.toCurrency)} at ${result.rate.toFixed(6)} · ${result.rateAsOf}`;
-  } catch { elements.conversionPreview.textContent = "Enter a valid amount to preview conversion."; }
+    const rateState = result.rateStatus === "cached_after_failure" ? " · Cached reference rate" : "";
+    elements.conversionPreview.textContent = `Preview: ${money(result.convertedAmountMinor, result.toCurrency)} at ${result.rate.toFixed(6)} · ${result.rateAsOf}${rateState}`;
+  } catch (error) { elements.conversionPreview.textContent = error.message; }
 }
 
 function confirmDelete(titleText, message, opener) {
@@ -515,16 +527,28 @@ elements.budgetForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!elements.budgetForm.reportValidity()) return;
   const id = document.querySelector("#budget-id").value;
-  const button = elements.budgetForm.querySelector("button[type=submit]"); button.disabled = true;
+  const button = elements.budgetForm.querySelector("button[type=submit]");
+  if (button.disabled) return;
+  button.disabled = true;
+  const newJourney = elements.budgetForm.dataset.newJourney === "true";
+  const formError = document.querySelector("#budget-form-error");
+  formError.hidden = true;
   try {
-    const payload = { journeyLabel: document.querySelector("#budget-journey").value, category: document.querySelector("#budget-category").value, limitAmountMinor: majorToMinor(document.querySelector("#budget-amount").value), baseCurrency: document.querySelector("#budget-currency").value, startDate: document.querySelector("#budget-start").value, endDate: document.querySelector("#budget-end").value };
+    const journeyLabel = document.querySelector("#budget-journey").value.trim();
+    if (!journeyLabel || journeyLabel.length > 80) throw new Error("Journey name must contain 1 to 80 characters.");
+    if (newJourney && state.journeys.some((journey) => journey.journeyLabel.toLowerCase() === journeyLabel.toLowerCase())) throw new Error("A journey with that name already exists. Choose a different name.");
+    const payload = { journeyLabel, category: document.querySelector("#budget-category").value, limitAmountMinor: majorToMinor(document.querySelector("#budget-amount").value), baseCurrency: document.querySelector("#budget-currency").value, startDate: document.querySelector("#budget-start").value, endDate: document.querySelector("#budget-end").value };
     invalidateBudgetCheck("Budget check cleared because a budget is being changed.");
-    await api(id ? `/budgets/${id}` : "/budgets", { method: id ? "PUT" : "POST", body: JSON.stringify(payload) });
+    const saved = await api(id ? `/budgets/${id}` : "/budgets", { method: id ? "PUT" : "POST", body: JSON.stringify(payload) });
     closeDialog(elements.budgetDialog);
-    state.selectedJourney = payload.journeyLabel.trim();
+    state.selectedJourney = saved.journeyLabel || payload.journeyLabel;
     await loadApplication(state.selectedJourney);
-    setStatus(id ? "Budget updated." : "Budget created.");
-  } catch (error) { setStatus(error.message, "error"); } finally { button.disabled = false; }
+    setStatus(newJourney ? "Journey created." : id ? "Budget updated." : "Budget created.");
+  } catch (error) {
+    formError.textContent = error.message;
+    formError.hidden = false;
+    setStatus(error.message, "error");
+  } finally { button.disabled = false; }
 });
 
 elements.expenseForm.addEventListener("submit", async (event) => {
@@ -583,12 +607,14 @@ function resetAdvice() { elements.adviceOutput.hidden = true; elements.adviceEmp
 elements.journey.addEventListener("change", () => { state.selectedJourney = elements.journey.value; loadJourney().catch(() => {}); });
 document.querySelector("#refresh").addEventListener("click", () => loadApplication().catch(() => {}));
 document.querySelector("#add-budget").addEventListener("click", (event) => openBudget(null, event.currentTarget));
+document.querySelector("#new-journey").addEventListener("click", (event) => openBudget(null, event.currentTarget, true));
 document.querySelector("#add-expense").addEventListener("click", (event) => openExpense(null, event.currentTarget));
 document.querySelector("#cancel-budget").addEventListener("click", () => closeDialog(elements.budgetDialog));
 document.querySelector("#cancel-expense").addEventListener("click", () => closeDialog(elements.expenseDialog));
 document.querySelector("#confirm-cancel").addEventListener("click", () => finishConfirm(false));
 document.querySelector("#confirm-accept").addEventListener("click", () => finishConfirm(true));
 elements.confirmDialog.addEventListener("cancel", (event) => { event.preventDefault(); finishConfirm(false); });
+elements.budgetDialog.addEventListener("cancel", (event) => { event.preventDefault(); closeDialog(elements.budgetDialog); });
 for (const id of ["expense-amount", "expense-currency", "expense-budget"]) document.querySelector(`#${id}`).addEventListener("change", previewConversion);
 window.addEventListener("load", () => loadApplication().catch(() => {}), { once: true });
 
