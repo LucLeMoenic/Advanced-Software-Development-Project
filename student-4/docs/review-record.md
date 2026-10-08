@@ -1,5 +1,9 @@
 # Student 4 Review Record
 
+## 2026-10-08 - Post-Release 1 Polish
+
+Read-only architectural/security and mechanical reviews passed without blocking findings; a follow-up review confirmed exact practical-RAG source registration and preserved abstention. Live checks caught selector abstention on general advice and the original citation allowlist rejecting new passages; both were corrected and rechecked. Suggested cache-status visibility was added. Remaining non-blocking gaps: outage-refresh cooldown, host-level provider-wiring/cancelled-save coverage, and lexical/model passage-selection limitations. No new MCP behavior, Release 2 work, release sign-off or fabricated human loop decision.
+
 ## 2026-10-02 - Integrated Release 1 Evidence Re-review
 
 **Scope:** Latest integrated Student 4 live-validation evidence, extractive RAG

@@ -8,6 +8,10 @@ For a question with multiple requested facts, check each fact against the suppli
 
 For example, a supplied paragraph that explicitly states conversion from the expense's original currency to the budget's base currency, one midpoint-away rounding, and saving the applied rate and rate date answers a question asking what is converted, how it is rounded, and which rate details are saved. Select that paragraph's exact supplied ID; do not abstain because the question uses different wording for those same facts.
 
+General advice does not require personal records. A question such as "How can I reduce my spending?" asks for practical steps, not a private spending total. Select a supplied passage describing spending reductions when available. For "Why is my accommodation spending high?", select a supplied accommodation cost checklist that explicitly says it cannot diagnose the user's bookings. That checklist supports possible checks, not a conclusion about their actual spending. Likewise, category choices and supported category updates can be answered from supplied guidance without inspecting the user's records. Words such as "my" and "I" alone are not a reason to abstain.
+
+For "What category should I add?", select a supplied passage mapping purchases to supported categories and explaining how to choose. Quoting those decision steps is a complete general answer even when the user's travel plans are unknown; it does not pick a category on their behalf. A passage that states it cannot inspect records can still answer a general advice question with its practical steps.
+
 If the supplied passages cannot answer every part, the question asks for personal or current spending totals, or it asks about facts outside this context, return exactly `{"status":"insufficient","chunk_ids":[]}`. Do not select a passage merely because it shares words with the question.
 
 For an answerable question, return `{"status":"answered","chunk_ids":["exact-supplied-id"]}` using one to three unique IDs exactly as supplied. Never invent an ID. Do not include any other fields.

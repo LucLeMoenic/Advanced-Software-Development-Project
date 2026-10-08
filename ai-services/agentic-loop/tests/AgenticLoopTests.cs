@@ -351,6 +351,24 @@ public sealed class AgenticLoopTests
             """, 1, "student-4"));
     }
 
+    [Theory]
+    [InlineData("travel-budgeting#1")]
+    [InlineData("travel-budgeting#2")]
+    [InlineData("travel-budgeting#3")]
+    [InlineData("travel-budgeting#4")]
+    public void Student4RagValidation_AcceptsPracticalGuidanceOnlyWithKnownSource(string chunkId)
+    {
+        var response = JsonSerializer.Serialize(new
+        {
+            answer = $"Review optional spending. [{chunkId}]",
+            citations = new[] { new { source = "Practical travel spending and category choices", chunkId, snippet = "Review optional spending.", score = 0.35 } },
+            confidence = "medium"
+        });
+        Assert.True(ServiceValidation.IsValid("rag", response, 1, "student-4"));
+        Assert.False(ServiceValidation.IsValid("rag", response.Replace("Practical travel spending and category choices", "Unknown source"), 1, "student-4"));
+        Assert.False(ServiceValidation.IsValid("rag", response.Replace(chunkId, "travel-budgeting#99"), 1, "student-4"));
+    }
+
     [Fact]
     public async Task Student4Validation_UsesBudgetDefaultsAndEnforcesJourneyLabelLength()
     {

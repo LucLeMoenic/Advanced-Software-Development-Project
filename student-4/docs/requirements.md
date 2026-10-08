@@ -87,3 +87,7 @@ R1-01 through R1-06 have implementation evidence; integrated live and CI evidenc
 is distinguished in the state column and runbook. Fresh loop records are not
 finalised: Liam's human decisions are absent. No group-wide completion, grade, or
 release sign-off is implied.
+
+## Post-Release 1 Polish - 2026-10-08
+
+Liam authorised live free rates, explicit custom journeys and practical RAG guidance without starting Release 2. This supersedes the historical configured/demo-rate restrictions: new conversions use Frankfurter daily ECB reference rates, not intraday quotes, and existing expense snapshots remain unchanged unless conversion inputs change. A new journey persists through its first category budget; no empty-journey table or cross-feature link is added. RAG now covers spending reductions, accommodation cost checks and supported category choices/updates, still without access to private totals. MCP improvements are suggestions only.

@@ -2,8 +2,8 @@
 
 Owner: Liam Zelmanowski
 
-The Release 0 feature records category budgets and expenses, performs
-deterministic demonstration-rate conversion, compares planned and actual
+The feature records custom journeys, category budgets and expenses, performs
+deterministic conversion using free Frankfurter daily ECB reference rates, compares planned and actual
 spending, and requests optional strictly validated advice from the shared
 Ollama runtime.
 

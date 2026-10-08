@@ -149,6 +149,8 @@ def test_student4_selection_transport_constrains_ids_and_renders_source(monkeypa
         assert body["format"]["properties"]["chunk_ids"]["items"]["enum"] == ["budget#1"]
         assert body["system"] == generation.SELECTION_PROMPT_PATH.read_text(encoding="utf-8")
         assert "Do not answer, summarize, paraphrase" in body["system"]
+        assert "General advice does not require personal records" in body["system"]
+        assert "personal or current spending totals" in body["system"]
         assert json.loads(body["prompt"]) == {
             "question": "What is the budget rule?",
             "context": [{"chunk_id": "budget#1", "source": "Budget", "text": chunk.text}],

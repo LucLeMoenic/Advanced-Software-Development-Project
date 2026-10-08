@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import confidence
+import generation
 import retrieval
 
 KNOWN = [
@@ -16,10 +17,22 @@ KNOWN = [
     ("How can I organize a trip budget and review spending by category?", "Practical budgeting workflow in the tracker"),
     ("Can budgeting guidance tell me the current remaining balance for my trip?", "Practical budgeting workflow in the tracker"),
 ]
+PRACTICAL = [
+    ("How can I reduce my spending?", "travel-budgeting#1", "Start with one change"),
+    ("How can I cut optional spending on my trip?", "travel-budgeting#1", "protect essentials"),
+    ("Why is my accommodation so high?", "travel-budgeting#2", "Check the number of nights"),
+    ("Why is my accomodation so high?", "travel-budgeting#2", "cannot see your bookings"),
+    ("How should I compare accommodation prices and cancellation costs?", "travel-budgeting#2", "check cancellation terms"),
+    ("What categories can I update?", "travel-budgeting#4", "category labels are fixed"),
+    ("What category should I add?", "travel-budgeting#3", "Use accommodation for a room"),
+    ("Can I add custom categories to this tracker?", "travel-budgeting#4", "not a new custom category name"),
+]
 UNSUPPORTED = [
     "Who won the cricket championship?",
     "What visa do I need to visit Mars?",
     "Can deleted transactions be restored from a backup?",
+    "What guaranteed gambling strategy doubles my money?",
+    "Which casino guarantees a profitable betting system?",
 ]
 MISLEADING_OVERLAP = [
     "How much should I budget for a weekend hotel in Bali?",
@@ -40,15 +53,39 @@ def test_corpus_provenance_is_present_but_not_retrieved_as_guidance(index):
     documents = sorted(feature_dir.glob("*.md"))
 
     assert {path.stem for path in documents} == {
-        "category-budgets", "expense-conversion", "budgeting-workflow"
+        "category-budgets", "expense-conversion", "budgeting-workflow", "travel-budgeting"
     }
     for path in documents:
         text = path.read_text(encoding="utf-8")
-        reviewed_date = "2026-10-02" if path.stem == "category-budgets" else "2026-10-01"
+        reviewed_date = {
+            "category-budgets": "2026-10-02", "budgeting-workflow": "2026-10-01",
+            "expense-conversion": "2026-10-08", "travel-budgeting": "2026-10-08",
+        }[path.stem]
         assert f"Reviewed: {reviewed_date}" in text
         assert "student-4/" in text
-    assert len(index.chunks) == 6
+    assert len(index.chunks) == 10
+    assert {chunk.chunk_id for chunk in index.chunks if not chunk.chunk_id.startswith("travel-budgeting#")} == {
+        "budgeting-workflow#1", "budgeting-workflow#2", "category-budgets#1",
+        "category-budgets#2", "expense-conversion#1", "expense-conversion#2",
+    }
     assert not any("Reviewed:" in chunk.text or "Source:" in chunk.text for chunk in index.chunks)
+
+
+def test_practical_corpus_records_public_source_provenance(index):
+    text = (retrieval.KNOWLEDGE_ROOT / "student-4" / "travel-budgeting.md").read_text(encoding="utf-8")
+
+    assert 'ASIC Moneysmart, "Track your spending"' in text
+    assert '"How to do a budget"' in text
+    assert "https://moneysmart.gov.au/budgeting/track-your-spending" in text
+    assert "https://moneysmart.gov.au/budgeting/how-to-do-a-budget" in text
+    assert "Australian Competition and Consumer Commission (ACCC)" in text
+    assert '"Price displays"' in text
+    assert "https://www.accc.gov.au/consumers/pricing/price-displays" in text
+    assert '"Travel delays and cancellations"' in text
+    assert "https://www.accc.gov.au/consumers/specific-products-and-activities/travel-delays-and-cancellations" in text
+    assert "Accessed: 2026-10-08" in text
+    assert "Original paraphrases" in text
+    assert not any("https://" in chunk.text for chunk in index.chunks)
 
 
 def test_status_guidance_covers_all_unrounded_boundaries(index):
@@ -62,15 +99,21 @@ def test_status_guidance_covers_all_unrounded_boundaries(index):
     assert "status decision uses the unrounded ratio" in status_chunk.text
 
 
-def test_conversion_guidance_covers_decimal_rounding_snapshots_and_demo_rate_limits(index):
-    conversion = next(chunk.text for chunk in index.chunks if "configured decimal rates" in chunk.text)
-    disclaimer = next(chunk.text for chunk in index.chunks if "fixed demonstration values" in chunk.text)
+def test_conversion_guidance_covers_reference_rates_rounding_and_saved_snapshots(index):
+    chunks = {chunk.chunk_id: chunk.text for chunk in index.chunks}
+    conversion = chunks["expense-conversion#1"]
+    disclaimer = chunks["expense-conversion#2"]
 
+    assert "decimal reference rates from Frankfurter's ECB provider" in conversion
     assert "rounds once to minor units with midpoint values away from zero" in conversion
     assert "applied rate and rate date as a historical snapshot" in conversion
-    assert "fixed demonstration values, not live or current market rates" in disclaimer
-    assert "demo-2026-08-v1" in disclaimer
-    assert "2026-08-01" in disclaimer
+    assert "Reading saved expenses does not refresh their conversions" in conversion
+    assert "Editing only a description, notes or purchase date keeps the saved snapshot" in conversion
+    assert "changing the amount, original currency or budget base currency requires a new conversion" in conversion
+    assert "not necessarily the purchase date" in conversion
+    assert "daily reference exchange rates, not live market rates or a promise of card-payment rates" in disclaimer
+    assert "including older fixed demonstration rates" in disclaimer
+    assert "cannot promise an exchange rate for tomorrow" in disclaimer
 
 
 def test_practical_guidance_is_limited_to_source_backed_tracker_workflow(index):
@@ -83,16 +126,70 @@ def test_practical_guidance_is_limited_to_source_backed_tracker_workflow(index):
     assert "has no access to saved expenses or current journey totals" in limitation
 
 
-@pytest.mark.parametrize("question,expected_source", KNOWN)
-def test_known_and_paraphrased_questions_retrieve_relevant_source(index, question, expected_source):
+@pytest.mark.parametrize("question,expected_chunk,useful_text", PRACTICAL)
+def test_practical_questions_retrieve_useful_exact_passages(index, question, expected_chunk, useful_text):
     ranked = index.top_k(question, 3)
     retained = [(chunk, score) for chunk, score in ranked if score >= confidence.MIN_RELEVANCE]
 
     assert retained
-    assert retained[0][0].source == expected_source
-    assert confidence.categorize(retained[0][1]) in {"low", "medium", "high"}
+    chunk, score = retained[0]
+    assert chunk.chunk_id == expected_chunk
+    assert useful_text in chunk.text
+    assert confidence.categorize(score) in {"low", "medium", "high"}
 
-    cited_chunk, cited_score = retained[0]
+    result = generation.render_selection({"status": "answered", "chunk_ids": [expected_chunk]}, retained)
+
+    assert result["answer"] == f"{chunk.text} [{expected_chunk}]"
+    assert result["citations"][0]["chunk_id"] == expected_chunk
+    assert result["citations"][0]["source"] == chunk.source
+    assert result["citations"][0]["snippet"] == chunk.text[:280]
+    assert result["confidence"] == confidence.categorize(score)
+
+
+def test_accommodation_guidance_checks_costs_without_diagnosing_private_spending(index):
+    passage = next(chunk.text for chunk in index.chunks if chunk.chunk_id == "travel-budgeting#2")
+
+    assert "same dates and guests using their complete prices" in passage
+    assert "booking fees, taxes and optional extras" in passage
+    assert "check cancellation terms and any loss of payments already made" in passage
+    assert "cannot see your bookings or establish why your own accommodation total is high" in passage
+
+
+def test_category_guidance_keeps_supported_labels_and_distinguishes_limits_from_savings(index):
+    passage = next(chunk.text for chunk in index.chunks if chunk.chunk_id == "travel-budgeting#4")
+
+    assert "accommodation, food, transport, activities, shopping and other" in passage
+    assert "not a new custom category name" in passage
+    assert "Raising a planned limit is not a spending reduction" in passage
+    assert "cannot inspect or update your saved budgets" in passage
+
+
+@pytest.mark.parametrize("question", [
+    "Are Frankfurter rates guaranteed rates for my card payment?",
+    "What guaranteed exchange rate will I get tomorrow?",
+])
+def test_guaranteed_rate_questions_get_a_limitation_not_a_promised_quote(index, question):
+    ranked = index.top_k(question, 3)
+    chunk, score = ranked[0]
+
+    assert score >= confidence.MIN_RELEVANCE
+    assert chunk.chunk_id == "expense-conversion#2"
+    result = generation.render_selection({"status": "answered", "chunk_ids": [chunk.chunk_id]}, ranked)
+    assert result["answer"] == f"{chunk.text} [{chunk.chunk_id}]"
+    assert "not live market rates or a promise of card-payment rates" in result["answer"]
+    assert "cannot promise an exchange rate for tomorrow" in result["answer"]
+
+
+@pytest.mark.parametrize("question,expected_source", KNOWN)
+def test_known_and_paraphrased_questions_retrieve_relevant_source(index, question, expected_source):
+    ranked = index.top_k(question, 3)
+    retained = [(chunk, score) for chunk, score in ranked if score >= confidence.MIN_RELEVANCE]
+    relevant = [(chunk, score) for chunk, score in retained if chunk.source == expected_source]
+
+    assert relevant
+    assert confidence.categorize(relevant[0][1]) in {"low", "medium", "high"}
+
+    cited_chunk, cited_score = relevant[0]
     citation = {
         "source": cited_chunk.source,
         "chunk_id": cited_chunk.chunk_id,
@@ -131,9 +228,9 @@ def test_injection_shaped_question_still_retrieves_only_source_backed_budget_rul
 
 def test_student4_index_does_not_include_other_feature_chunks(index):
     assert {chunk.chunk_id.split("#", 1)[0] for chunk in index.chunks} == {
-        "category-budgets", "expense-conversion", "budgeting-workflow"
+        "category-budgets", "expense-conversion", "budgeting-workflow", "travel-budgeting"
     }
     other_feature = retrieval.get_index("student-3")
     assert not any(chunk.chunk_id.split("#", 1)[0] in {
-        "category-budgets", "expense-conversion", "budgeting-workflow"
+        "category-budgets", "expense-conversion", "budgeting-workflow", "travel-budgeting"
     } for chunk in other_feature.chunks)

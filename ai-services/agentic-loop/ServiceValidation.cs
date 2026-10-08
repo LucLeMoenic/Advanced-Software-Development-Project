@@ -19,7 +19,11 @@ internal static class ServiceValidation
         ["expense-conversion#1"] = "Expense entry and conversion snapshots",
         ["expense-conversion#2"] = "Expense entry and conversion snapshots",
         ["budgeting-workflow#1"] = "Practical budgeting workflow in the tracker",
-        ["budgeting-workflow#2"] = "Practical budgeting workflow in the tracker"
+        ["budgeting-workflow#2"] = "Practical budgeting workflow in the tracker",
+        ["travel-budgeting#1"] = "Practical travel spending and category choices",
+        ["travel-budgeting#2"] = "Practical travel spending and category choices",
+        ["travel-budgeting#3"] = "Practical travel spending and category choices",
+        ["travel-budgeting#4"] = "Practical travel spending and category choices"
     };
     private const long MaxSafeInteger = 9_007_199_254_740_991;
     private const int Student5DestinationId = 1;

@@ -1,5 +1,9 @@
 # Review Record
 
+## 2026-10-08 - Student 4 Polish Review
+
+Architectural/security and mechanical reviews found no blocking issues; focused re-review accepted the practical-guidance prompt and exact four-ID citation additions. Shared RAG runtime extraction, other students' behavior, MCP tools and human-owned loop decisions are unchanged. Validation and residual passage-selection/test-coverage limitations are recorded in Student 4's compact prompt/review entries; no Student 1 acceptance claim is made.
+
 ## 2026-10-02 - Student 4 Shared RAG Allowlist Claim Adjudication
 
 **Scope:** The review claim that `budgeting-workflow#2` is absent from the
