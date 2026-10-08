@@ -1,6 +1,12 @@
 # Student 4 AI Prompt Log
 ## Current Entry
 
+### 2026-10-08: Local Post-Release 1 Polish
+
+- **Plan / Act:** on `BCP/Budget_Tracker_Polish`, removed coursework/internal UI wording, added explicit custom journey creation through a first category budget, and replaced runtime demo rates with free, no-key Frankfurter/ECB daily reference rates. Preserved saved snapshots and offline dashboard/CRUD; added practical spending/accommodation/category RAG passages, selector clarification and exact source registrations. No Release 2 or new MCP tool implementation.
+- **Observe / Adapt:** frontend 24, backend 187, database 12, shared RAG 138 and Student 4 loop contracts 17 tests passed; 28 full-suite live RAG cases remain skipped. Frontend/Docker builds and Compose validation passed. Live browser journey/expense creation, reload and cleanup passed; counts returned to 12/26. Live reference conversion and cited practical guidance passed; private totals/unsupported advice abstained. Responsive checks passed at 320/768/1280px. Live checks exposed and corrected general-advice abstention and the new-source allowlist mismatch; category-choice passage selection remains imperfect. Two independent reviews found no blocking issue, with a focused follow-up review of RAG validation.
+- **Boundary:** local only, no push; existing Compose port remaps and untracked environments/editor settings preserved. Historical release evidence and human loop decisions unchanged.
+
 ### 2026-10-02: Resolve Main Integration Conflicts
 
 - **Plan:** merge `origin/main` at `23d1391` into `BCP/R1_Budget_RAG` for PR #109,

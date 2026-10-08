@@ -2,6 +2,10 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-08: Student 4 Local Polish
+
+Student 4 added live Frankfurter reference-rate conversion, custom journey creation and practical grounded budgeting advice. Shared changes are limited to its selection prompt, knowledge, tests and exact loop citation catalogue; other features and MCP tools are unchanged. Verification: backend 187, frontend 24, database 12, RAG 138 (28 live cases skipped), Student 4 loop contracts 17 passed; targeted Docker/browser/live-model checks passed. General-advice abstention and new-source registration were corrected after live checks. Local commits only; existing port remaps preserved, no push or human sign-off inferred.
+
 ## 2026-10-02: Shared Integration Merge For Student 4
 
 **Plan -> Act:** reconcile main `23d1391` with the final Student 4 branch for PR

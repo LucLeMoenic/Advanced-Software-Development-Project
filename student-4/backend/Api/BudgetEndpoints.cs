@@ -7,8 +7,12 @@ public static class BudgetEndpoints
 {
     public static void MapBudgetEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/currencies", (IExchangeRateProvider rates) => Results.Ok(new { rateAsOf = rates.Convert(1, "AUD", "AUD").RateAsOf, rateVersion = rates.Convert(1, "AUD", "AUD").RateVersion, disclaimer = rates.Convert(1, "AUD", "AUD").Disclaimer, currencies = rates.Currencies.Select(value => new CurrencyResponse(value)) }));
-        app.MapPost("/api/conversions/preview", PreviewConversion);
+        app.MapGet("/api/currencies", (IExchangeRateProvider rates) =>
+        {
+            var metadata = rates.Metadata;
+            return Results.Ok(new { metadata.RateAsOf, metadata.RateVersion, metadata.Disclaimer, metadata.Status, metadata.FetchedAt, currencies = rates.Currencies.Select(value => new CurrencyResponse(value)) });
+        });
+        app.MapPost("/api/conversions/preview", PreviewConversionAsync);
         app.MapGet("/api/journeys", ListJourneysAsync);
         app.MapGet("/api/dashboard", GetDashboardAsync);
         app.MapGet("/api/budgets", ListBudgetsAsync);
@@ -24,13 +28,13 @@ public static class BudgetEndpoints
         app.MapPost("/api/insights", GetInsightsAsync);
     }
 
-    private static IResult PreviewConversion(ConversionPreviewRequest request, IExchangeRateProvider rates, HttpContext context)
+    private static async Task<IResult> PreviewConversionAsync(ConversionPreviewRequest request, IExchangeRateProvider rates, HttpContext context, CancellationToken cancellationToken)
     {
         var errors = new Dictionary<string, string[]>();
         if (request.OriginalAmountMinor <= 0) errors["originalAmountMinor"] = ["Original amount must be positive."];
         if (!rates.Supports(request.FromCurrency)) errors["fromCurrency"] = ["Source currency is not supported."];
         if (!rates.Supports(request.ToCurrency)) errors["toCurrency"] = ["Target currency is not supported."];
-        return errors.Count > 0 ? Error(context, 400, "validation_error", "One or more fields are invalid.", errors) : Results.Ok(rates.Convert(request.OriginalAmountMinor, request.FromCurrency!, request.ToCurrency!));
+        return errors.Count > 0 ? Error(context, 400, "validation_error", "One or more fields are invalid.", errors) : Results.Ok(await rates.ConvertAsync(request.OriginalAmountMinor, request.FromCurrency!, request.ToCurrency!, cancellationToken));
     }
 
     private static async Task<IResult> ListJourneysAsync(IDatabaseApiClient database, CancellationToken cancellationToken)
@@ -101,7 +105,7 @@ public static class BudgetEndpoints
         if (errors.Count > 0) return Error(context, 400, "validation_error", "One or more fields are invalid.", errors);
         var budget = await database.GetBudgetAsync(request.BudgetId, cancellationToken);
         if (request.SpentOn < budget.StartDate || request.SpentOn > budget.EndDate) return Error(context, 400, "validation_error", "One or more fields are invalid.", new Dictionary<string, string[]> { ["spentOn"] = ["Spent date must be within the budget period."] });
-        var conversion = rates.Convert(request.OriginalAmountMinor, request.OriginalCurrency!, budget.BaseCurrency);
+        var conversion = await rates.ConvertAsync(request.OriginalAmountMinor, request.OriginalCurrency!, budget.BaseCurrency, cancellationToken);
         var saved = await database.CreateExpenseAsync(ToData(request, conversion), cancellationToken);
         return Results.Json(Enrich(saved, budget), statusCode: 201);
     }
@@ -114,7 +118,14 @@ public static class BudgetEndpoints
         if (errors.Count > 0) return Error(context, 400, "validation_error", "One or more fields are invalid.", errors);
         var budget = await database.GetBudgetAsync(request.BudgetId, cancellationToken);
         if (request.SpentOn < budget.StartDate || request.SpentOn > budget.EndDate) return Error(context, 400, "validation_error", "One or more fields are invalid.", new Dictionary<string, string[]> { ["spentOn"] = ["Spent date must be within the budget period."] });
-        var conversion = rates.Convert(request.OriginalAmountMinor, request.OriginalCurrency!, budget.BaseCurrency);
+        var current = await database.GetExpenseAsync(id, cancellationToken);
+        var originalBudget = current.BudgetId == budget.Id ? budget : await database.GetBudgetAsync(current.BudgetId, cancellationToken);
+        if (current.OriginalAmountMinor == request.OriginalAmountMinor && current.OriginalCurrency == request.OriginalCurrency && originalBudget.BaseCurrency == budget.BaseCurrency)
+        {
+            var data = new ExpenseDataRequest(request.BudgetId, request.Description!, current.OriginalAmountMinor, current.OriginalCurrency, current.ConvertedAmountMinor, current.ConversionRateScaled, current.RateAsOf, request.SpentOn!.Value, request.Notes);
+            return Results.Ok(Enrich(await database.UpdateExpenseAsync(id, data, cancellationToken), budget));
+        }
+        var conversion = await rates.ConvertAsync(request.OriginalAmountMinor, request.OriginalCurrency!, budget.BaseCurrency, cancellationToken);
         return Results.Ok(Enrich(await database.UpdateExpenseAsync(id, ToData(request, conversion), cancellationToken), budget));
     }
 

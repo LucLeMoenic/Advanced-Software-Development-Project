@@ -219,6 +219,117 @@ public sealed class EndpointTests
     }
 
     [Fact]
+    public async Task CurrenciesHealthDashboardAndBudgetCrudDoNotFetchExchangeRates()
+    {
+        var database = FakeDatabase.WithJourney();
+        var rates = new FailingRates(new ExchangeRateUnavailableException());
+        using var factory = CreateFactory(database, new FakeAdvice(), rates: rates);
+        using var client = factory.CreateClient();
+
+        using var currencies = await client.GetAsync("/api/currencies");
+        var metadata = await currencies.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(HttpStatusCode.OK, currencies.StatusCode);
+        Assert.Equal(JsonValueKind.Null, metadata.GetProperty("rateAsOf").ValueKind);
+        Assert.Equal("Frankfurter / ECB", metadata.GetProperty("rateVersion").GetString());
+        Assert.Equal("not_fetched", metadata.GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/health")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/dashboard?journeyLabel=Journey")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/budgets")).StatusCode);
+        var request = new BudgetWriteRequest("Other", "food", 1000, "AUD", new(2026, 9, 1), new(2026, 9, 7));
+        using var created = await client.PostAsJsonAsync("/api/budgets", request);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var budget = await created.Content.ReadFromJsonAsync<BudgetResponse>();
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync($"/api/budgets/{budget!.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync($"/api/budgets/{budget.Id}", request)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/budgets/{budget.Id}")).StatusCode);
+        Assert.Equal(0, rates.CallCount);
+    }
+
+    [Theory]
+    [InlineData(false, 503, "exchange_rates_unavailable")]
+    [InlineData(true, 502, "exchange_rates_response_invalid")]
+    public async Task FxFailuresReturnStableErrorsAndNeverWriteExpenses(bool invalid, int status, string code)
+    {
+        var database = FakeDatabase.WithJourney(actual: 100);
+        var rates = new FailingRates(invalid ? new ExchangeRateResponseException() : new ExchangeRateUnavailableException());
+        using var factory = CreateFactory(database, new FakeAdvice(), rates: rates);
+        using var client = factory.CreateClient();
+        var request = new ExpenseWriteRequest(1, "Lunch", 101, "USD", new(2026, 9, 2), null);
+
+        using var preview = await client.PostAsJsonAsync("/api/conversions/preview", new ConversionPreviewRequest(101, "USD", "AUD"));
+        using var create = await client.PostAsJsonAsync("/api/expenses", request);
+        using var update = await client.PutAsJsonAsync("/api/expenses/1", request);
+
+        foreach (var response in new[] { preview, create, update })
+        {
+            Assert.Equal((HttpStatusCode)status, response.StatusCode);
+            Assert.Equal(code, (await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>())!.Error.Code);
+        }
+        Assert.Null(database.LastExpenseRequest);
+        Assert.Equal(3, rates.CallCount);
+    }
+
+    [Fact]
+    public async Task InvalidConversionAndExpenseInputsDoNotFetchRatesOrWrite()
+    {
+        var database = FakeDatabase.WithJourney();
+        var rates = new FailingRates(new ExchangeRateUnavailableException());
+        using var factory = CreateFactory(database, new FakeAdvice(), rates: rates);
+        using var client = factory.CreateClient();
+
+        using var preview = await client.PostAsJsonAsync("/api/conversions/preview", new ConversionPreviewRequest(0, "JPY", "AUD"));
+        using var invalid = await client.PostAsJsonAsync("/api/expenses", new ExpenseWriteRequest(1, "", 100, "USD", new(2026, 9, 2), null));
+        using var outside = await client.PostAsJsonAsync("/api/expenses", new ExpenseWriteRequest(1, "Lunch", 100, "USD", new(2026, 9, 8), null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, preview.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, outside.StatusCode);
+        Assert.Equal(0, rates.CallCount);
+        Assert.Null(database.LastExpenseRequest);
+    }
+
+    [Theory]
+    [InlineData("AUD", 100, 100, 100000000)]
+    [InlineData("USD", 101, 155, 153846154)]
+    public async Task DescriptionNotesAndDateUpdatePreserveExistingConversionWithoutFetching(string currency, long original, long converted, long scaled)
+    {
+        var database = FakeDatabase.WithJourney(actual: converted, originalAmountMinor: original, originalCurrency: currency, conversionRateScaled: scaled);
+        var rates = new FailingRates(new ExchangeRateUnavailableException());
+        using var factory = CreateFactory(database, new FakeAdvice(), rates: rates);
+        using var client = factory.CreateClient();
+
+        using var response = await client.PutAsJsonAsync("/api/expenses/1", new ExpenseWriteRequest(1, "Updated meal", original, currency.ToLowerInvariant(), new(2026, 9, 3), "Updated notes"));
+        var result = await response.Content.ReadFromJsonAsync<ExpenseResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(converted, result!.ConvertedAmountMinor);
+        Assert.Equal(scaled, result.ConversionRateScaled);
+        Assert.Equal(new DateOnly(2026, 8, 1), result.RateAsOf);
+        Assert.Equal("Updated notes", result.Notes);
+        Assert.Equal(new DateOnly(2026, 9, 3), result.SpentOn);
+        Assert.Equal(0, rates.CallCount);
+    }
+
+    [Theory]
+    [InlineData(1, 101, "AUD")]
+    [InlineData(1, 100, "USD")]
+    [InlineData(2, 100, "AUD")]
+    public async Task ChangingAmountSourceOrBaseCurrencyRequiresNewConversion(int budgetId, long amount, string currency)
+    {
+        var database = FakeDatabase.WithJourney(actual: 100);
+        database.AddBudget(new(2, "Other", "food", 1000, "USD", new(2026, 9, 1), new(2026, 9, 7), DateTime.UtcNow, DateTime.UtcNow));
+        var rates = new FailingRates(new ExchangeRateUnavailableException());
+        using var factory = CreateFactory(database, new FakeAdvice(), rates: rates);
+        using var client = factory.CreateClient();
+
+        using var response = await client.PutAsJsonAsync("/api/expenses/1", new ExpenseWriteRequest(budgetId, "Meal", amount, currency, new(2026, 9, 2), null));
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(1, rates.CallCount);
+        Assert.Null(database.LastExpenseRequest);
+    }
+
+    [Fact]
     public async Task DashboardAndAdviceUseDeterministicData()
     {
         var database = FakeDatabase.WithJourney(actual: 9000);
@@ -404,6 +515,26 @@ public sealed class EndpointTests
         Assert.Equal("category-budgets#1", body.Citations.Single().ChunkId);
         Assert.Equal(0.45, body.Citations.Single().Score);
         Assert.Equal(1, rag.CallCount);
+    }
+
+    [Theory]
+    [InlineData("travel-budgeting#1")]
+    [InlineData("travel-budgeting#2")]
+    [InlineData("travel-budgeting#3")]
+    [InlineData("travel-budgeting#4")]
+    public async Task BudgetGuidanceAcceptsPracticalTravelPassagesWithExactSourceTitle(string chunkId)
+    {
+        var payload = JsonNode.Parse(GuidanceAnswer())!.AsObject();
+        payload["answer"] = $"Review optional spending. [{chunkId}]";
+        payload["citations"]![0]!["source"] = "Practical travel spending and category choices";
+        payload["citations"]![0]!["chunk_id"] = chunkId;
+        using var client = CreateBudgetGuidanceClient(new FakeRag(payload.ToJsonString()));
+
+        using var response = await client.PostAsJsonAsync("/api/budget-guidance", new { question = "How can I reduce my spending?" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<BudgetGuidanceResponse>();
+        Assert.Equal(chunkId, result!.Citations.Single().ChunkId);
     }
 
     [Fact]
@@ -641,7 +772,7 @@ public sealed class EndpointTests
 
     private static HttpClient CreateClient(IDatabaseApiClient database, IAdviceService advice) => CreateFactory(database, advice).CreateClient();
 
-    private static WebApplicationFactory<Program> CreateFactory(IDatabaseApiClient database, IAdviceService advice, IDictionary<string, string?>? configuration = null)
+    private static WebApplicationFactory<Program> CreateFactory(IDatabaseApiClient database, IAdviceService advice, IDictionary<string, string?>? configuration = null, IExchangeRateProvider? rates = null)
     {
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
@@ -656,7 +787,7 @@ public sealed class EndpointTests
                 services.RemoveAll<IExchangeRateProvider>();
                 services.AddSingleton(database);
                 services.AddSingleton(advice);
-                services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvider(new ExchangeRateSettings("test", new(2026, 8, 1), "Demo", new Dictionary<string, decimal> { ["AUD"] = 1m, ["USD"] = 0.65m, ["EUR"] = 0.6m, ["GBP"] = 0.51m, ["NZD"] = 1.08m, ["CAD"] = 0.89m, ["SGD"] = 0.86m })));
+                services.AddSingleton<IExchangeRateProvider>(rates ?? new FixedExchangeRateProvider(new ExchangeRateSettings("test", new(2026, 8, 1), "Demo", new Dictionary<string, decimal> { ["AUD"] = 1m, ["USD"] = 0.65m, ["EUR"] = 0.6m, ["GBP"] = 0.51m, ["NZD"] = 1.08m, ["CAD"] = 0.89m, ["SGD"] = 0.86m })));
             });
         });
     }
@@ -667,6 +798,19 @@ public sealed class EndpointTests
         public Task<AdviceResponse> GetAdviceAsync(DashboardResponse dashboard, CancellationToken cancellationToken) { CallCount++; return Task.FromResult(new AdviceResponse("Advice.", [new("food", "Track food.")], "ai")); }
     }
 
+    private sealed class FailingRates(Exception failure) : IExchangeRateProvider
+    {
+        public IReadOnlyList<string> Currencies { get; } = new[] { "AUD", "USD", "EUR", "GBP", "NZD", "CAD", "SGD" };
+        public ExchangeRateMetadata Metadata => new(null, "Frankfurter / ECB", "Daily reference rates; card fees may differ.", "not_fetched");
+        public int CallCount { get; private set; }
+        public bool Supports(string? currency) => currency is not null && Currencies.Contains(currency.Trim().ToUpperInvariant());
+        public Task<ConversionResponse> ConvertAsync(long amountMinor, string fromCurrency, string toCurrency, CancellationToken cancellationToken)
+        {
+            CallCount++;
+            return Task.FromException<ConversionResponse>(failure);
+        }
+    }
+
     private sealed record CapabilitiesResponse(bool AiEnabled, bool McpEnabled, bool RagEnabled);
 
     private sealed class FakeDatabase : IDatabaseApiClient
@@ -675,13 +819,14 @@ public sealed class EndpointTests
         private readonly List<ExpenseDataResponse> _expenses = [];
         public int CallCount { get; private set; }
         public ExpenseDataRequest? LastExpenseRequest { get; private set; }
-        public static FakeDatabase WithJourney(long actual = 0)
+        public static FakeDatabase WithJourney(long actual = 0, long? originalAmountMinor = null, string originalCurrency = "AUD", long conversionRateScaled = 100000000)
         {
             var value = new FakeDatabase();
             value._budgets.Add(new(1, "Journey", "food", 10000, "AUD", new(2026, 9, 1), new(2026, 9, 7), DateTime.UtcNow, DateTime.UtcNow));
-            if (actual > 0) value._expenses.Add(new(1, 1, "Meals", actual, "AUD", actual, 100000000, new(2026, 8, 1), new(2026, 9, 2), null, DateTime.UtcNow, DateTime.UtcNow));
+            if (actual > 0) value._expenses.Add(new(1, 1, "Meals", originalAmountMinor ?? actual, originalCurrency, actual, conversionRateScaled, new(2026, 8, 1), new(2026, 9, 2), null, DateTime.UtcNow, DateTime.UtcNow));
             return value;
         }
+        public void AddBudget(BudgetResponse budget) => _budgets.Add(budget);
         public static FakeDatabase WithInconsistentJourney()
         {
             var value = WithJourney();

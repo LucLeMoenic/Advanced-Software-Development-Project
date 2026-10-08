@@ -70,7 +70,7 @@ public sealed record ExpenseResponse(
     DateTime UpdatedAt);
 
 public sealed record ConversionPreviewRequest(long OriginalAmountMinor, string? FromCurrency, string? ToCurrency);
-public sealed record ConversionResponse(long OriginalAmountMinor, string FromCurrency, long ConvertedAmountMinor, string ToCurrency, decimal Rate, long RateScaled, DateOnly RateAsOf, string RateVersion, string Disclaimer);
+public sealed record ConversionResponse(long OriginalAmountMinor, string FromCurrency, long ConvertedAmountMinor, string ToCurrency, decimal Rate, long RateScaled, DateOnly RateAsOf, string RateVersion, string Disclaimer, string? RateStatus = null, DateTimeOffset? RateFetchedAt = null);
 public sealed record CurrencyResponse(string Code);
 public sealed record JourneyResponse(string JourneyLabel, string BaseCurrency, DateOnly StartDate, DateOnly EndDate);
 public sealed record CategoryDashboardResponse(string Category, long PlannedAmountMinor, long ActualAmountMinor, long RemainingAmountMinor, decimal PercentageUsed, string Status);

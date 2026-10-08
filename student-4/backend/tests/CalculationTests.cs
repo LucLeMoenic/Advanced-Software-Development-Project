@@ -12,9 +12,9 @@ public sealed class CalculationTests
         new Dictionary<string, decimal> { ["AUD"] = 1m, ["USD"] = 0.65m, ["EUR"] = 0.6m }));
 
     [Fact]
-    public void ConversionUsesDecimalRateAndRoundsOnlyFinalMinorUnit()
+    public async Task ConversionUsesDecimalRateAndRoundsOnlyFinalMinorUnit()
     {
-        var result = Rates.Convert(101, "USD", "AUD");
+        var result = await Rates.ConvertAsync(101, "USD", "AUD", CancellationToken.None);
 
         Assert.Equal(155, result.ConvertedAmountMinor);
         Assert.Equal(153846154, result.RateScaled);
