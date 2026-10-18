@@ -1,0 +1,47 @@
+# Deliberately insecure file (subprocess shell=True, eval, hardcoded AWS key + password). Hooks must FAIL. 2026-10-18T04:41:44Z
+# (The fake credential values quoted by ruff below are redacted so this evidence file itself passes detect-secrets.)
+ruff security rules (flake8-bandit)......................................Failed
+- hook id: ruff-check
+- exit code: 1
+S105 Possible hardcoded password assigned to: "password"
+ --> demo_insecure.py:4:12
+  |
+3 | AWS_ACCESS_KEY_ID = "<REDACTED-FAKE-AWS-KEY>"
+4 | password = "<REDACTED-FAKE-PASSWORD>"
+  |            ^^^^^^^^^^^^^^^^
+S602 `subprocess` call with `shell=True` identified, security issue
+ --> demo_insecure.py:8:5
+  |
+7 | def run(cmd):
+8 |     subprocess.call(cmd, shell=True)
+  |     ^^^^^^^^^^^^^^^
+9 |     return eval(cmd)
+  |
+S307 Use of possibly insecure function; consider using `ast.literal_eval`
+ --> demo_insecure.py:9:12
+  |
+7 | def run(cmd):
+8 |     subprocess.call(cmd, shell=True)
+9 |     return eval(cmd)
+  |            ^^^^^^^^^
+Found 3 errors.
+detect-secrets...........................................................Failed
+- hook id: detect-secrets
+- exit code: 1
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+ERROR: Potential secrets about to be committed to git repo!
+Secret Type: AWS Access Key
+Location:    demo_insecure.py:3
+Secret Type: Secret Keyword
+Location:    demo_insecure.py:4
+Possible mitigations:
+  - For information about putting your secrets in a safer place, please ask in
+    #security
+  - Mark false positives with an inline `pragma: allowlist secret` comment
+If a secret has already been committed, visit
+https://help.github.com/articles/removing-sensitive-data-from-a-repository
+pip-audit (all requirements.txt).........................................Passed
+pre-commit exit=1

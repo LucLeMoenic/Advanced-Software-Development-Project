@@ -1,0 +1,73 @@
+# pre-commit run --all-files --verbose, 2026-10-18T05:10:33Z, branch KSS/R2_Pre_Commit_Security
+ruff security rules (flake8-bandit)......................................Passed
+- hook id: ruff-check
+- duration: 0.12s
+All checks passed!
+detect-secrets...........................................................Passed
+- hook id: detect-secrets
+- duration: 114.99s
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/mcp-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'ai-services/rag-server/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/backend/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/database/requirements.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'student-3/docs/contributionlog.md', LF will be replaced by CRLF the next time Git touches it
+pip-audit (requirements files in this commit)............................Passed
+- hook id: pip-audit
+- duration: 149.2s
+== pip-audit ai-services/mcp-server/requirements.txt
+No known vulnerabilities found
+== pip-audit ai-services/rag-server/requirements.txt
+No known vulnerabilities found
+== pip-audit student-2/backend/requirements.txt
+   accepted exception (see pip-audit-accepted.json): PYSEC-2026-2151
+   accepted exception (see pip-audit-accepted.json): PYSEC-2026-2275
+No known vulnerabilities found, 4 ignored
+== pip-audit student-2/database/requirements.txt
+   accepted exception (see pip-audit-accepted.json): PYSEC-2026-2151
+No known vulnerabilities found, 2 ignored
+== pip-audit student-3/backend/requirements.txt
+No known vulnerabilities found
+== pip-audit student-3/database/requirements.txt
+No known vulnerabilities found
+== pip-audit student-5/backend/requirements.txt
+No known vulnerabilities found
+== pip-audit student-5/database/requirements.txt
+   accepted exception (see pip-audit-accepted.json): PYSEC-2026-1845
+No known vulnerabilities found, 2 ignored
+pip-audit OK for 8 requirements file(s)
+exit=0

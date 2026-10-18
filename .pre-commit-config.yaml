@@ -1,0 +1,31 @@
+# Release 2 local pre-commit security scans (Ruff security rules, detect-secrets,
+# pip-audit). Install once per clone:
+#   pip install pre-commit ruff pip-audit && pre-commit install
+# Run on demand:  pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.1
+    hooks:
+      - id: ruff-check
+        name: ruff security rules (flake8-bandit)
+        args: [--select, S]
+
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.5.0
+    hooks:
+      - id: detect-secrets
+        name: detect-secrets
+        args: [--baseline, .secrets.baseline]
+        exclude: (package-lock\.json|\.secrets\.baseline)$
+
+  - repo: local
+    hooks:
+      - id: pip-audit
+        name: pip-audit (requirements files in this commit)
+        # pip-audit builds a virtualenv per file (~1 min), so the hook audits only
+        # requirements files that are part of the commit. `pre-commit run
+        # --all-files` (and CI) audits every requirements file, in parallel.
+        entry: python scripts/security/pip_audit_all.py
+        language: system
+        require_serial: true  # one process; the script parallelises internally
+        files: (^|/)requirements[^/]*\.txt$
