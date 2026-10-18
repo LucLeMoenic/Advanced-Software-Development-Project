@@ -1,0 +1,27 @@
+# Student 3 pip-audit BEFORE remediation (requirements pinned at origin/main 73c96b8), 2026-10-18T04:36:44Z
+== student-3/backend/requirements.txt (as on main)
+Found 16 known vulnerabilities in 4 packages
+Name       Version ID              Fix Versions
+---------- ------- --------------- ------------
+flask      3.0.3   PYSEC-2026-2151 3.1.3
+flask      3.0.3   PYSEC-2026-2151 3.1.3
+flask-cors 4.0.1   PYSEC-2024-71   4.0.2
+flask-cors 4.0.1   PYSEC-2024-71   4.0.2
+flask-cors 4.0.1   PYSEC-2026-1385 6.0.0
+flask-cors 4.0.1   PYSEC-2026-1383 6.0.0
+flask-cors 4.0.1   PYSEC-2026-1384 6.0.0
+flask-cors 4.0.1   PYSEC-2026-1383 6.0.0
+flask-cors 4.0.1   PYSEC-2026-1384 6.0.0
+flask-cors 4.0.1   PYSEC-2026-1385 6.0.0
+requests   2.32.3  PYSEC-2026-1872 2.32.4
+requests   2.32.3  PYSEC-2026-2275 2.33.0
+requests   2.32.3  PYSEC-2026-1872 2.32.4
+requests   2.32.3  PYSEC-2026-2275 2.33.0
+pytest     8.3.3   PYSEC-2026-1845 9.0.3
+pytest     8.3.3   PYSEC-2026-1845 9.0.3
+== student-3/database/requirements.txt (as on main)
+Found 2 known vulnerabilities in 1 package
+Name  Version ID              Fix Versions
+----- ------- --------------- ------------
+flask 3.0.3   PYSEC-2026-2151 3.1.3
+flask 3.0.3   PYSEC-2026-2151 3.1.3

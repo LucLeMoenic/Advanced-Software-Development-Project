@@ -1,0 +1,17 @@
+# Shared tooling configuration. Only the security linting used by the
+# Release 2 pre-commit hooks lives here; it does not change runtime behaviour.
+[tool.ruff]
+extend-exclude = ["**/node_modules", "**/bin", "**/obj"]
+
+[tool.ruff.lint]
+# S = flake8-bandit security rules (the required Release 2 "Ruff security rules").
+select = ["S"]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest uses bare assert by design, and tests use fixed dummy tokens.
+"**/tests/**" = ["S101", "S105", "S106"]
+"**/conftest.py" = ["S101"]
+# Flask services bind 0.0.0.0 inside their containers so Docker/nginx can reach
+# them; host exposure is controlled by docker-compose.yml port mappings.
+"student-*/backend/app.py" = ["S104"]
+"student-*/database/app.py" = ["S104"]
