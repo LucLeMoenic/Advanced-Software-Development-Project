@@ -13,6 +13,7 @@ on:
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
+      - 'scripts/test/junit_summary.py'
   pull_request:
     paths:
       - 'student-3/**'
@@ -22,6 +23,8 @@ on:
       - '.github/workflows/student-3.yml'
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
+      - 'scripts/test/junit_summary.py'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -34,6 +37,24 @@ jobs:
 
       - name: Test Student 3 services
         run: pwsh -NoProfile -File scripts/test/student-3.ps1
+
+      # Release 2 post-commit CI/CD endpoint testing: two endpoint functions of
+      # the Student 3 backend/API, exercised end to end (real backend app ->
+      # real database app, no mocks) on every push touching Student 3.
+      - name: Post-commit endpoint tests (GET and POST /api/attractions)
+        working-directory: student-3
+        run: python -m pytest tests/test_endpoints_cicd.py -v --junitxml=endpoint-tests-junit.xml
+
+      - name: Publish endpoint test report
+        if: always()
+        run: python scripts/test/junit_summary.py student-3/endpoint-tests-junit.xml "Student 3 post-commit endpoint tests (GET and POST /api/attractions)"
+
+      - name: Upload endpoint test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-3-endpoint-test-results
+          path: student-3/endpoint-tests-junit.xml
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
@@ -49,6 +70,9 @@ jobs:
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
+
+      - name: Post-commit endpoint tests against running containers (GET and POST /api/attractions)
+        run: python student-3/tests/live_endpoint_check.py http://localhost:5203
 
       - name: Smoke test Student 3 integration
         run: |

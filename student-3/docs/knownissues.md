@@ -32,6 +32,11 @@ removed rather than carried forward stale.
 - No authentication — reviews, attraction edits, and MCP/RAG queries are not attributed to a user. Acceptable for a classroom demonstration; would need addressing before any real deployment.
 - Ownership of the shared MCP server (`ai-services/mcp-server/`), RAG server (`ai-services/rag-server/`), and the `validate-mcp`/`validate-rag` loop extension is informal — these were built collaboratively across students' "chunks" without a single named owner. Student 3's contributions to shared code (the `ServiceValidation.cs` student-3 extension, the extra-top-level-field fix to the MCP tool wrapper, the retrieval stopword fix) were each confirmed with the group lead before merging, per the project's own coordination rule, but the shared files themselves have no single point of contact if something regresses.
 
+## Release 2 Known Issues
+
+- **No server-side validation of `category` or `rating` (found by the Release 2 endpoint tests).** `POST /api/attractions` (and `PUT`) only require a non-blank `name` and `category`. A direct API call can store `category: "nightclub"` or `rating: 99`; only the frontend form restricts these. The endpoint tests assert the actual behaviour (see `evidence/release-2/endpoint-testing-report.md`). Possible follow-up: reject unknown categories and out-of-range ratings with `400 validation_error` in `student-3/database/app.py`.
+- **`flask-cors` 4.0.1 → 6.0.0** (pre-commit pip-audit remediation). Existing tests pass; browser CORS behaviour is to be re-checked in the Release 2 local regression.
+
 ## Rollover Checklist (close before submission)
 
 - [x] Release 1 Stage 1 — MCP tools + RAG knowledge base (PR #62).

@@ -1,0 +1,46 @@
+# Local run of the workflow's pytest + report steps, 2026-10-18T05:35:08Z, commit base 13dfc5c
+$ cd student-3 && python -m pytest tests/test_endpoints_cicd.py -v --junitxml=endpoint-tests-junit.xml
+tests\test_endpoints_cicd.py::test_get_attractions_returns_empty_list_for_empty_catalogue PASSED [  5%]
+tests\test_endpoints_cicd.py::test_get_attractions_returns_all_rows_in_id_order_with_full_shape PASSED [ 11%]
+tests\test_endpoints_cicd.py::test_get_attractions_category_filter_returns_only_that_category[sight-expected_names0] PASSED [ 17%]
+tests\test_endpoints_cicd.py::test_get_attractions_category_filter_returns_only_that_category[restaurant-expected_names1] PASSED [ 23%]
+tests\test_endpoints_cicd.py::test_get_attractions_category_filter_returns_only_that_category[activity-expected_names2] PASSED [ 29%]
+tests\test_endpoints_cicd.py::test_get_attractions_unknown_category_returns_empty_list_not_error PASSED [ 35%]
+tests\test_endpoints_cicd.py::test_get_attractions_returns_502_when_database_unreachable PASSED [ 41%]
+tests\test_endpoints_cicd.py::test_post_attraction_creates_row_and_returns_201_with_id PASSED [ 47%]
+tests\test_endpoints_cicd.py::test_post_attraction_is_persisted_and_visible_via_get_endpoints PASSED [ 52%]
+tests\test_endpoints_cicd.py::test_post_attraction_trims_whitespace_and_defaults_optional_fields_to_null PASSED [ 58%]
+tests\test_endpoints_cicd.py::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[empty-body] PASSED [ 64%]
+tests\test_endpoints_cicd.py::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[missing-name] PASSED [ 70%]
+tests\test_endpoints_cicd.py::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[missing-category] PASSED [ 76%]
+tests\test_endpoints_cicd.py::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[blank-name] PASSED [ 82%]
+tests\test_endpoints_cicd.py::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[blank-category] PASSED [ 88%]
+tests\test_endpoints_cicd.py::test_post_attraction_with_non_json_body_is_rejected_with_400 PASSED [ 94%]
+tests\test_endpoints_cicd.py::test_post_attraction_returns_502_when_database_unreachable PASSED [100%]
+============================= 17 passed in 5.89s ==============================
+
+$ python scripts/test/junit_summary.py student-3/endpoint-tests-junit.xml ...
+### Student 3 post-commit endpoint tests (GET and POST /api/attractions)
+
+| Test | Result |
+|---|---|
+| `test_endpoints_cicd::test_get_attractions_returns_empty_list_for_empty_catalogue` | pass |
+| `test_endpoints_cicd::test_get_attractions_returns_all_rows_in_id_order_with_full_shape` | pass |
+| `test_endpoints_cicd::test_get_attractions_category_filter_returns_only_that_category[sight-expected_names0]` | pass |
+| `test_endpoints_cicd::test_get_attractions_category_filter_returns_only_that_category[restaurant-expected_names1]` | pass |
+| `test_endpoints_cicd::test_get_attractions_category_filter_returns_only_that_category[activity-expected_names2]` | pass |
+| `test_endpoints_cicd::test_get_attractions_unknown_category_returns_empty_list_not_error` | pass |
+| `test_endpoints_cicd::test_get_attractions_returns_502_when_database_unreachable` | pass |
+| `test_endpoints_cicd::test_post_attraction_creates_row_and_returns_201_with_id` | pass |
+| `test_endpoints_cicd::test_post_attraction_is_persisted_and_visible_via_get_endpoints` | pass |
+| `test_endpoints_cicd::test_post_attraction_trims_whitespace_and_defaults_optional_fields_to_null` | pass |
+| `test_endpoints_cicd::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[empty-body]` | pass |
+| `test_endpoints_cicd::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[missing-name]` | pass |
+| `test_endpoints_cicd::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[missing-category]` | pass |
+| `test_endpoints_cicd::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[blank-name]` | pass |
+| `test_endpoints_cicd::test_post_attraction_rejects_missing_required_fields_with_400_and_stores_nothing[blank-category]` | pass |
+| `test_endpoints_cicd::test_post_attraction_with_non_json_body_is_rejected_with_400` | pass |
+| `test_endpoints_cicd::test_post_attraction_returns_502_when_database_unreachable` | pass |
+
+**17 of 17 passed**
+

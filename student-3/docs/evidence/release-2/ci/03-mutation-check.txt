@@ -1,0 +1,14 @@
+# Mutation check: each production bug below was introduced temporarily and
+# `pytest tests/test_endpoints_cicd.py` was run; the files were then restored
+# with `git checkout`. 2026-10-18.
+
+M1  student-3/database/app.py   category filter disabled (`if category:` -> `if False:`)
+    result: 4 failed, 13 passed   -> caught by the GET ?category= tests
+
+M2  student-3/database/app.py   POST no longer trims name (`.strip()` removed)
+    result: 2 failed, 15 passed   -> caught by the whitespace-trim and blank-name tests
+
+M3  student-3/backend/app.py    POST /api/attractions returns 200 instead of 201
+    result: 2 failed, 15 passed   -> caught by the create and persistence tests
+
+After restoring: `pytest tests` (whole Student 3 suite) -> 81 passed.
