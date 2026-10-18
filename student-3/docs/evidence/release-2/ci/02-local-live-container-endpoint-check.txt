@@ -1,0 +1,36 @@
+# Local run of the workflow's container steps, 2026-10-18T05:36:36Z
+$ docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
+ Image advanced-software-development-project-student3-database Built 
+ Image advanced-software-development-project-student3-db-init Built 
+ Image advanced-software-development-project-shared-frontend Built 
+ Image advanced-software-development-project-student3-frontend Built 
+$ docker compose run --rm --no-deps student3-db-init
+ Container advanced-software-development-project-student3-db-init-run-783d570c8c9b Created 
+Schema ensured.
+Attractions table already has 12 rows, skipping seed.
+$ docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
+ Container advanced-software-development-project-student3-database-1 Waiting 
+ Container advanced-software-development-project-student3-backend-1 Waiting 
+ Container advanced-software-development-project-student3-frontend-1 Waiting 
+ Container advanced-software-development-project-student3-backend-1 Healthy 
+ Container advanced-software-development-project-student3-database-1 Healthy 
+ Container advanced-software-development-project-student3-frontend-1 Healthy 
+$ python student-3/tests/live_endpoint_check.py http://localhost:5203
+PASS  POST /api/attractions valid -> 201  status=201
+PASS  POST returns id and echoes fields  
+PASS  GET /api/attractions -> 200 list  status=200
+PASS  GET list contains the created row  
+PASS  GET list includes seeded data (>=10 rows)  rows=13
+PASS  GET ?category=restaurant returns only restaurants  
+PASS  GET ?category=<unknown> -> 200 []  status=200
+PASS  POST missing name -> 400 validation_error  status=400
+PASS  POST empty body -> 400 validation_error  status=400
+PASS  Rejected POSTs stored nothing  before=13 after=13
+PASS  Cleanup DELETE -> 204  status=204
+
+11/11 checks passed
+live-check exit=0
+$ docker compose ps
+advanced-software-development-project-student3-backend-1    advanced-software-development-project-student3-backend                    "python app.py"          student3-backend    38 seconds ago   Up 24 seconds (healthy)   0.0.0.0:5203->8080/tcp, [::]:5203->8080/tcp
+advanced-software-development-project-student3-database-1   advanced-software-development-project-student3-database                   "python app.py"          student3-database   40 seconds ago   Up 34 seconds (healthy)   0.0.0.0:5303->8080/tcp, [::]:5303->8080/tcp
+advanced-software-development-project-student3-frontend-1   advanced-software-development-project-student3-frontend                   "/docker-entrypoint.…"   student3-frontend   36 seconds ago   Up 12 seconds (healthy)   0.0.0.0:5103->80/tcp, [::]:5103->80/tcp
