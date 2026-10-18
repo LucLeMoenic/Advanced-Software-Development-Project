@@ -31,7 +31,7 @@ A deliberately insecure file (`subprocess.call(shell=True)`, `eval`, hardcoded A
 | `02-pip-audit-after-remediation.txt` | Diff of pins, clean audit, pytest result |
 | `03-precommit-all-files-pass.txt` | Full `pre-commit run --all-files`, all three hooks pass |
 | `04-precommit-blocks-insecure-file.txt` | Hooks failing on the insecure file |
-| `05-git-commit-hooks-fire.txt` | **TODO:** capture of the real `git commit` firing the hooks |
+| `05-git-commit-hooks-fire.txt` | Real `git commit`: first attempt blocked by detect-secrets, second passes (commit `9ee1084`) |
 
 ## Limits
 

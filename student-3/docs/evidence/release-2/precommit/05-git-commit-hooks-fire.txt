@@ -1,0 +1,36 @@
+# Real `git commit` with pre-commit hooks installed (2026-10-18, branch KSS/R2_Pre_Commit_Security)
+
+## Attempt 1 - BLOCKED by detect-secrets
+The negative-test evidence file (04) still quoted the fake AWS key and password it had been testing, so the hook rejected the commit. The commit did not happen.
+
+ruff security rules (flake8-bandit)......................................Passed
+detect-secrets...........................................................Failed
+- hook id: detect-secrets
+- exit code: 1
+ERROR: Potential secrets about to be committed to git repo!
+Secret Type: AWS Access Key
+Location:    student-3\docs\evidence\release-2\precommit\04-precommit-blocks-insecure-file.txt:8
+Secret Type: Secret Keyword
+Location:    student-3\docs\evidence\release-2\precommit\04-precommit-blocks-insecure-file.txt:9
+pip-audit (requirements files in this commit)............................Passed
+exit=1
+
+## Attempt 2 - fake values redacted in file 04, commit succeeds
+$ git commit -m "feat: Implement local pre-commit security scans and update dependencies"
+ruff security rules (flake8-bandit)......................................Passed
+detect-secrets...........................................................Passed
+pip-audit (requirements files in this commit)............................Passed
+[KSS/R2_Pre_Commit_Security 9ee1084] feat: Implement local pre-commit security scans and update dependencies
+ 16 files changed, 944 insertions(+), 8 deletions(-)
+ create mode 100644 .pre-commit-config.yaml
+ create mode 100644 .secrets.baseline
+ create mode 100644 pyproject.toml
+ create mode 100644 scripts/security/README.md
+ create mode 100644 scripts/security/pip-audit-accepted.json
+ create mode 100644 scripts/security/pip_audit_all.py
+ create mode 100644 student-3/docs/evidence/release-2/precommit-security-report.md
+ create mode 100644 student-3/docs/evidence/release-2/precommit/01-pip-audit-before-remediation.txt
+ create mode 100644 student-3/docs/evidence/release-2/precommit/02-pip-audit-after-remediation.txt
+ create mode 100644 student-3/docs/evidence/release-2/precommit/03-precommit-all-files-pass.txt
+ create mode 100644 student-3/docs/evidence/release-2/precommit/04-precommit-blocks-insecure-file.txt
+exit=0
