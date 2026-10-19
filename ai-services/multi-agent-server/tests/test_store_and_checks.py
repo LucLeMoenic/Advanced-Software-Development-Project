@@ -4,7 +4,7 @@ import pytest
 
 import agents
 import checks
-from store import Store
+from store import Store, _digest
 
 
 def _plan(required):
@@ -44,6 +44,22 @@ def test_verify_detects_edited_entry(data_dir):
     store.audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     assert store.verify() == {"valid": False, "entries": 3, "broken_at": 2}
+
+
+def test_verify_detects_edited_entry_whose_own_hash_was_recomputed(data_dir):
+    # A forger who edits entry 2 and also recomputes its hash passes the per-entry digest
+    # check; only the next entry's prev_hash link exposes it.
+    store = Store()
+    for event in ("a", "b", "c"):
+        store.audit("wf-x", "system", event)
+    lines = store.audit_path.read_text(encoding="utf-8").splitlines()
+    entry = json.loads(lines[1])
+    entry["details"] = {"tampered": True}
+    entry["hash"] = _digest({k: v for k, v in entry.items() if k != "hash"})
+    lines[1] = json.dumps(entry, sort_keys=True)
+    store.audit_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    assert store.verify() == {"valid": False, "entries": 3, "broken_at": 3}
 
 
 def test_verify_detects_deleted_entry(data_dir):

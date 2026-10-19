@@ -36,6 +36,9 @@ removed rather than carried forward stale.
 
 - **No server-side validation of `category` or `rating` (found by the Release 2 endpoint tests).** `POST /api/attractions` (and `PUT`) only require a non-blank `name` and `category`. A direct API call can store `category: "nightclub"` or `rating: 99`; only the frontend form restricts these. The endpoint tests assert the actual behaviour (see `evidence/release-2/endpoint-testing-report.md`). Possible follow-up: reject unknown categories and out-of-range ratings with `400 validation_error` in `student-3/database/app.py`.
 - **`flask-cors` 4.0.1 → 6.0.0** (pre-commit pip-audit remediation). Existing tests pass; browser CORS behaviour is to be re-checked in the Release 2 local regression.
+- **Multi-Agent Server is not yet reachable from the Student 3 UI.** The server, CLI and tests exist (`ai-services/multi-agent-server/`), but the backend routes, the `MULTI_AGENT_ENABLED` flag and the frontend review panel are Chunk 4. Until then only the terminal and HTTP paths are evidenced.
+- **Multi-Agent quality is bounded by a 3B model.** The Planner is generic and the Reviewer mostly restates the deterministic checks. A workflow takes about 1-2 minutes on CPU and the server runs one at a time.
+- **A suspended host fails the running workflow.** A laptop sleeping mid-run makes the pending Ollama call time out (recorded as `dependency_timeout`, `wf-20261018T073712Z-56f37adc`). Keep the machine awake while running or demonstrating a workflow.
 
 ## Rollover Checklist (close before submission)
 
