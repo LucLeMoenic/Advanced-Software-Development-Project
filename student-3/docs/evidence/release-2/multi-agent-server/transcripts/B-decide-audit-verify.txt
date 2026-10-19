@@ -1,0 +1,47 @@
+$ python cli.py decide wf-20261019T011611Z-0ccf5c1c --decision correct --corrected-file B-corrected.json --decided-by dev-test-run --notes '...'
+Decision recorded: corrected
+
+$ python cli.py show wf-20261019T011611Z-0ccf5c1c
+  - warning  -    Plan-required evidence was not used: attraction-8, attraction-12.
+  * Use all required evidence in the plan
+  * Review the plan to ensure all evidence is utilized correctly
+  * Consider adding a note to the plan to address the missing evidence
+  * Verify that the plan meets all required evidence criteria
+
+HUMAN    correct by dev-test-run: Test run: tightened the wording and added the time-of-day advice; both items still cite their original evidence.
+
+
+$ python cli.py list
+wf-20261019T011611Z-0ccf5c1c  corrected              student-3  Recommend two things to do on a sunny morning from the catal
+wf-20261018T073712Z-56f37adc  failed                 student-3  Recommend two things to do on a sunny morning from the catal
+wf-20261018T073546Z-5b4ec451  partially_accepted     student-3  Suggest a relaxed food-focused afternoon using only the rest
+
+$ python cli.py audit
+#1   2026-10-18T07:35:46.253Z  wf-20261018T073546Z-5b4ec451  system    workflow_created  f2a4927bcc65
+#2   2026-10-18T07:35:46.396Z  wf-20261018T073546Z-5b4ec451  planner   stage_started  4a01c60eecff
+#3   2026-10-18T07:36:13.680Z  wf-20261018T073546Z-5b4ec451  planner   stage_completed  8e3d94741db0
+#4   2026-10-18T07:36:13.697Z  wf-20261018T073546Z-5b4ec451  worker    stage_started  d78e2ef7cebe
+#5   2026-10-18T07:36:34.573Z  wf-20261018T073546Z-5b4ec451  worker    stage_completed  22bfe09f6bb4
+#6   2026-10-18T07:36:34.589Z  wf-20261018T073546Z-5b4ec451  system    automatic_checks  9f1ed0c4ea3d
+#7   2026-10-18T07:36:34.625Z  wf-20261018T073546Z-5b4ec451  reviewer  stage_started  9a2880507fb5
+#8   2026-10-18T07:36:45.918Z  wf-20261018T073546Z-5b4ec451  reviewer  stage_completed  ed9748bfca76
+#9   2026-10-18T07:36:46.248Z  wf-20261018T073546Z-5b4ec451  system    awaiting_human_review  c5102a489cf7
+#10  2026-10-18T07:37:00.419Z  wf-20261018T073546Z-5b4ec451  human     decision_partial  f415a5b75f14
+#11  2026-10-18T07:37:12.351Z  wf-20261018T073712Z-56f37adc  system    workflow_created  625246f11f8d
+#12  2026-10-18T07:37:12.373Z  wf-20261018T073712Z-56f37adc  planner   stage_started  6a3157e36ede
+#13  2026-10-18T07:37:44.686Z  wf-20261018T073712Z-56f37adc  planner   stage_completed  1a8b781b9d2a
+#14  2026-10-18T07:37:44.742Z  wf-20261018T073712Z-56f37adc  worker    stage_started  8d92e10c9db0
+#15  2026-10-18T08:38:45.466Z  wf-20261018T073712Z-56f37adc  system    workflow_failed  6d21e5e79d61
+#16  2026-10-19T01:16:11.123Z  wf-20261019T011611Z-0ccf5c1c  system    workflow_created  cadc90291546
+#17  2026-10-19T01:16:11.136Z  wf-20261019T011611Z-0ccf5c1c  planner   stage_started  99787bd675bd
+#18  2026-10-19T01:17:01.342Z  wf-20261019T011611Z-0ccf5c1c  planner   stage_completed  b5a20843a889
+#19  2026-10-19T01:17:01.378Z  wf-20261019T011611Z-0ccf5c1c  worker    stage_started  8490b5b2297a
+#20  2026-10-19T01:17:40.923Z  wf-20261019T011611Z-0ccf5c1c  worker    stage_completed  fddfc6a43a6d
+#21  2026-10-19T01:17:40.962Z  wf-20261019T011611Z-0ccf5c1c  system    automatic_checks  ac955df97c66
+#22  2026-10-19T01:17:44.310Z  wf-20261019T011611Z-0ccf5c1c  reviewer  stage_started  be3fac32c534
+#23  2026-10-19T01:18:29.847Z  wf-20261019T011611Z-0ccf5c1c  reviewer  stage_completed  28af98c81201
+#24  2026-10-19T01:18:30.240Z  wf-20261019T011611Z-0ccf5c1c  system    awaiting_human_review  e665e27a8827
+#25  2026-10-19T01:18:42.291Z  wf-20261019T011611Z-0ccf5c1c  human     decision_correct  75eae3e15c08
+
+$ python cli.py verify
+{"valid": true, "entries": 25, "broken_at": null}

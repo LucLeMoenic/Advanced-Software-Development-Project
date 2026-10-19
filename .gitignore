@@ -431,3 +431,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Multi-Agent Server runtime data (evidence copies are committed under docs/ instead)
+ai-services/multi-agent-server/data/

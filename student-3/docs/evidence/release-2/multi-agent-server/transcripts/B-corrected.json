@@ -1,0 +1,5 @@
+{"summary": "Walk the coast first, then head to the zoo while it is cool.",
+ "items": [
+  {"id": "i1", "subject": "Bondi to Coogee Coastal Walk", "detail": "A 6km clifftop walking track past Sydney's most famous beaches; best done early on a sunny morning.", "evidence_ids": ["attraction-2"]},
+  {"id": "i2", "subject": "Taronga Zoo Sydney", "detail": "A harbourside zoo with ferry access and views back to the city skyline.", "evidence_ids": ["attraction-4"]}
+ ]}
