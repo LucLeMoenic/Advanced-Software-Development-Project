@@ -34,11 +34,13 @@ python -m uvicorn server:app --host 127.0.0.1 --port 5600
 
 - **The caller supplies the evidence.** The server never reads application data. Every claim the Worker
   makes must cite supplied evidence ids, so the evidence trail is explicit and auditable.
-- **One model, three prompts.** Prompts are versioned under `../agentic-loop/prompts/multi-agent-*-v1.txt`.
+- **One model, three prompts.** Prompts are versioned under `../agentic-loop/prompts/` (`multi-agent-planner-v1`, `multi-agent-worker-v2`,
+  `multi-agent-reviewer-v1`).
   A second resident model has caused out-of-memory crashes on the development host.
 - **Constrained output.** Each agent returns JSON validated by Pydantic. The JSON schema sent to Ollama
-  restricts every evidence id to the supplied ids (and Reviewer `item_id` to real Worker items).
-  Invalid output is retried once, then the stage fails.
+  restricts every evidence id to the supplied ids, Worker `subject` to the exact evidence titles, and Reviewer
+  `item_id` to real Worker items. Invalid output is retried once, then the stage fails. (The `subject`
+  restriction exists because a 3B model once wrote descriptions where names belonged.)
 - **The Reviewer cannot be talked into a pass.** Deterministic checks (`checks.py`) run beside the model:
   an item whose subject does not match the evidence entry it cites is a *blocking* finding, and any
   blocking finding forces the verdict to `fail` whatever the model says.
@@ -92,7 +94,7 @@ pip install -r requirements.txt
 python -m pytest
 ```
 
-62 tests run offline against a scripted fake model: pipeline and audit sequence, evidence-id schema
+66 tests run offline against a scripted fake model: pipeline and audit sequence, evidence-id schema
 constraints, retries, the deterministic checks and verdict policy, Reviewer degradation, every human
 decision rule, the hash chain (including tamper and deletion detection), and the HTTP API.
 Live evidence against a real model is in `student-3/docs/evidence/release-2/multi-agent-server/`.
@@ -103,4 +105,5 @@ Live evidence against a real model is in `student-3/docs/evidence/release-2/mult
 - The Reviewer model is weaker than the automatic checks; it mostly restates them. The human decision
   and the deterministic checks are the real controls.
 - Single-process and file-backed: not for concurrent multi-user production use.
-- The Student 3 backend routes and UI panel (`MULTI_AGENT_ENABLED`, default `false`) are a later chunk.
+- The Student 3 backend routes and UI panel (`MULTI_AGENT_ENABLED`, default `false`) call this server; see
+  `student-3/docs/evidence/release-2/multi-agent-integration-report.md`.

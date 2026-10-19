@@ -16,7 +16,7 @@ import llm
 PROMPT_DIR = Path(__file__).resolve().parents[1] / "agentic-loop" / "prompts"
 PROMPTS = {
     "planner": "multi-agent-planner-v1.txt",
-    "worker": "multi-agent-worker-v1.txt",
+    "worker": "multi-agent-worker-v2.txt",
     "reviewer": "multi-agent-reviewer-v1.txt",
 }
 ATTEMPTS = 2  # one retry when the model returns output that fails validation
@@ -77,6 +77,20 @@ def _restrict_item_ids(node, item_ids):
         finding["item_id"] = {"anyOf": [{"type": "string", "enum": item_ids}, {"type": "null"}]}
 
 
+def _restrict_subjects(schema, titles):
+    """Constrain WorkItem.subject to the exact evidence titles.
+
+    Found in the first live UI run: a 3B model copied each entry's description into `subject`
+    instead of its name. Structured decoding makes that impossible; checks.py still verifies that
+    the subject belongs to the entry the item actually cites.
+    """
+    subject = schema.get("$defs", {}).get("WorkItem", {}).get("properties", {}).get("subject")
+    if subject is not None:
+        subject.pop("minLength", None)
+        subject.pop("maxLength", None)
+        subject["enum"] = list(dict.fromkeys(titles))
+
+
 def _restrict_ids(node, ids):
     """Constrain every evidence-id array in a JSON schema to the supplied ids."""
     if isinstance(node, dict):
@@ -92,9 +106,11 @@ def _restrict_ids(node, ids):
             _restrict_ids(value, ids)
 
 
-async def _run(role, model_cls, payload, evidence_ids, extra_check=None, item_ids=None):
+async def _run(role, model_cls, payload, evidence_ids, extra_check=None, item_ids=None, subjects=None):
     schema = model_cls.model_json_schema()
     _restrict_ids(schema, evidence_ids)
+    if subjects is not None:
+        _restrict_subjects(schema, subjects)
     if item_ids is not None:
         _restrict_item_ids(schema, item_ids)
     last, last_raw = None, None
@@ -137,7 +153,8 @@ async def work(task, the_plan, evidence):
             raise ValueError("unknown evidence id in work")
 
     payload = {"task": task, "plan": the_plan.model_dump(), "evidence": _evidence_payload(evidence)}
-    return await _run("worker", WorkerOutput, payload, ids, check)
+    titles = [e["title"] for e in evidence]
+    return await _run("worker", WorkerOutput, payload, ids, check, subjects=titles)
 
 
 async def review(task, the_plan, the_work, evidence, automatic_findings):

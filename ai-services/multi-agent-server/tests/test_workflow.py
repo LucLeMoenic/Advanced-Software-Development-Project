@@ -61,6 +61,32 @@ def test_schema_sent_to_model_restricts_evidence_ids_to_supplied_ids(data_dir, f
     assert item_ids == {"type": "string", "enum": ["a1", "a2", "a3"]}
 
 
+def test_schema_sent_to_model_restricts_subject_to_the_exact_evidence_titles(data_dir, fake_llm, evidence):
+    _run(Store(), evidence)
+
+    subject = fake_llm.calls[1][2]["$defs"]["WorkItem"]["properties"]["subject"]
+    assert subject["enum"] == ["Opera House", "Corner Cafe", "Harbour Kayak"]
+    assert "minLength" not in subject and "maxLength" not in subject
+
+
+def test_duplicate_evidence_titles_appear_once_in_the_subject_enum(data_dir, fake_llm, evidence):
+    evidence[2]["title"] = "Opera House"
+    _run(Store(), evidence)
+
+    assert fake_llm.calls[1][2]["$defs"]["WorkItem"]["properties"]["subject"]["enum"] == [
+        "Opera House", "Corner Cafe"]
+
+
+def test_worker_uses_the_v2_prompt_which_names_the_subject_rule(data_dir, fake_llm, evidence):
+    record = _run(Store(), evidence)
+
+    assert [h["prompt"] for h in record["history"]] == [
+        "multi-agent-planner-v1.txt", "multi-agent-worker-v2.txt", "multi-agent-reviewer-v1.txt"]
+    import agents
+    prompt = (agents.PROMPT_DIR / "multi-agent-worker-v2.txt").read_text(encoding="utf-8")
+    assert "never a description" in prompt and "Worked example" in prompt
+
+
 def test_hallucinated_subject_forces_fail_even_if_reviewer_model_says_pass(data_dir, fake_llm, evidence):
     fake_llm.worker = lambda p: {"summary": "s", "items": [
         {"id": "i1", "subject": "Imaginary Skybar", "detail": "Rooftop views.", "evidence_ids": ["a1"]}]}
@@ -155,6 +181,14 @@ def test_model_finding_that_restates_an_automatic_finding_is_not_duplicated(data
     messages = [f["message"] for f in record["review"]["findings"]]
     assert messages.count(unused) == 1
     assert "Rating not verified." in messages
+
+
+def test_identical_model_findings_are_shown_once(data_dir, fake_llm, evidence):
+    repeated = {"severity": "info", "item_id": None, "message": "No mention of cuisine in the evidence."}
+    fake_llm.reviewer = lambda p: {"verdict": "pass", "recommendations": [], "findings": [repeated] * 4}
+    record = _run(Store(), evidence)
+
+    assert [f["message"] for f in record["review"]["model_findings"]] == [repeated["message"]]
 
 
 def test_reviewer_failure_degrades_to_automatic_checks_and_never_passes(data_dir, fake_llm, evidence):

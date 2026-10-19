@@ -1,0 +1,359 @@
+{
+  "id": "wf-20261019T020834Z-cac9cdd6",
+  "feature": "student-3",
+  "task": "A relaxed food-focused afternoon",
+  "submitted_by": "student-3-ui",
+  "status": "partially_accepted",
+  "created_at": "2026-10-19T02:08:34.634Z",
+  "updated_at": "2026-10-19T02:11:26.968Z",
+  "evidence": [
+    {
+      "id": "attraction-6",
+      "title": "Mr. Wong",
+      "text": "Mr. Wong is a restaurant. Upscale Cantonese dining in a converted Sydney CBD warehouse. Rating: 4.6. Review: Best duck I've had outside of Hong Kong. Review: Good food"
+    },
+    {
+      "id": "attraction-9",
+      "title": "Chin Chin Melbourne",
+      "text": "Chin Chin Melbourne is a restaurant. Loud, popular modern Thai/Asian restaurant on Flinders Lane. Rating: 4.4. Review: Loud and fun, book ahead on weekends."
+    },
+    {
+      "id": "attraction-3",
+      "title": "Chat Thai Sydney CBD",
+      "text": "Chat Thai Sydney CBD is a restaurant. Busy, no-frills Thai restaurant popular with locals and students. Rating: 4.3. Review: Cheap, fast, and genuinely good pad see ew."
+    },
+    {
+      "id": "attraction-11",
+      "title": "Queen Victoria Market",
+      "text": "Queen Victoria Market is a restaurant. Historic open-air market with food stalls, produce, and deli halls. Rating: 4.3. Review: Great for breakfast, arrive before 9am for parking."
+    }
+  ],
+  "plan": {
+    "objective": "Plan a relaxed food-focused afternoon in Sydney",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "Research and shortlist suitable restaurants"
+      },
+      {
+        "id": "s2",
+        "description": "Check reviews and ratings for selected restaurants"
+      },
+      {
+        "id": "s3",
+        "description": "Book tables at preferred restaurants"
+      },
+      {
+        "id": "s4",
+        "description": "Plan transportation and parking options"
+      }
+    ],
+    "required_evidence_ids": [
+      "attraction-6",
+      "attraction-9",
+      "attraction-3",
+      "attraction-11"
+    ],
+    "success_criteria": [
+      "All selected restaurants have a rating of 4.3 or higher",
+      "All reviews for selected restaurants are positive",
+      "All restaurants have a clear and concise description of their menu or cuisine",
+      "All restaurants have a clear and concise description of their opening hours"
+    ]
+  },
+  "work": {
+    "summary": "A relaxed food-focused afternoon in Sydney",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Chat Thai Sydney CBD",
+        "detail": "A busy, no-frills Thai restaurant popular with locals and students.",
+        "evidence_ids": [
+          "attraction-3"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Queen Victoria Market",
+        "detail": "A historic open-air market with food stalls, produce, and deli halls.",
+        "evidence_ids": [
+          "attraction-11"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Mr. Wong",
+        "detail": "Upscale Cantonese dining in a converted Sydney CBD warehouse.",
+        "evidence_ids": [
+          "attraction-6"
+        ]
+      },
+      {
+        "id": "i4",
+        "subject": "Chin Chin Melbourne",
+        "detail": "A loud, popular modern Thai/Asian restaurant on Flinders Lane.",
+        "evidence_ids": [
+          "attraction-9"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "pass",
+    "model_verdict": "pass",
+    "degraded": false,
+    "automatic_findings": [],
+    "model_findings": [
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i3",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i4",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      }
+    ],
+    "findings": [
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i3",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      },
+      {
+        "severity": "info",
+        "item_id": "i4",
+        "message": "No mention of the restaurant's cuisine in the evidence."
+      }
+    ],
+    "recommendations": [
+      "Verify that the restaurants' cuisine is accurately described in the evidence.",
+      "Check that the evidence includes a description of the restaurants' opening hours.",
+      "Confirm that the evidence includes a review of the restaurants' menu or cuisine.",
+      "Review the evidence to ensure it accurately reflects the restaurants' ratings and reviews."
+    ]
+  },
+  "human_decision": {
+    "decision": "partial",
+    "notes": "Dev test run: dropped Chin Chin Melbourne because the catalogue describes it as loud, which does not suit a relaxed afternoon.",
+    "decided_by": "student-3-ui",
+    "decided_at": "2026-10-19T02:11:26.968Z",
+    "accepted_item_ids": [
+      "i1",
+      "i2",
+      "i3"
+    ],
+    "rejected_item_ids": [
+      "i4"
+    ]
+  },
+  "final_output": {
+    "summary": "A relaxed food-focused afternoon in Sydney",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Chat Thai Sydney CBD",
+        "detail": "A busy, no-frills Thai restaurant popular with locals and students.",
+        "evidence_ids": [
+          "attraction-3"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Queen Victoria Market",
+        "detail": "A historic open-air market with food stalls, produce, and deli halls.",
+        "evidence_ids": [
+          "attraction-11"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Mr. Wong",
+        "detail": "Upscale Cantonese dining in a converted Sydney CBD warehouse.",
+        "evidence_ids": [
+          "attraction-6"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:08:34.657Z",
+      "finished_at": "2026-10-19T02:08:56.349Z",
+      "duration_ms": 21691,
+      "ok": true,
+      "output": {
+        "objective": "Plan a relaxed food-focused afternoon in Sydney",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "Research and shortlist suitable restaurants"
+          },
+          {
+            "id": "s2",
+            "description": "Check reviews and ratings for selected restaurants"
+          },
+          {
+            "id": "s3",
+            "description": "Book tables at preferred restaurants"
+          },
+          {
+            "id": "s4",
+            "description": "Plan transportation and parking options"
+          }
+        ],
+        "required_evidence_ids": [
+          "attraction-6",
+          "attraction-9",
+          "attraction-3",
+          "attraction-11"
+        ],
+        "success_criteria": [
+          "All selected restaurants have a rating of 4.3 or higher",
+          "All reviews for selected restaurants are positive",
+          "All restaurants have a clear and concise description of their menu or cuisine",
+          "All restaurants have a clear and concise description of their opening hours"
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v2.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:08:56.396Z",
+      "finished_at": "2026-10-19T02:09:44.244Z",
+      "duration_ms": 47849,
+      "ok": true,
+      "output": {
+        "summary": "A relaxed food-focused afternoon in Sydney",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Chat Thai Sydney CBD",
+            "detail": "A busy, no-frills Thai restaurant popular with locals and students.",
+            "evidence_ids": [
+              "attraction-3"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Queen Victoria Market",
+            "detail": "A historic open-air market with food stalls, produce, and deli halls.",
+            "evidence_ids": [
+              "attraction-11"
+            ]
+          },
+          {
+            "id": "i3",
+            "subject": "Mr. Wong",
+            "detail": "Upscale Cantonese dining in a converted Sydney CBD warehouse.",
+            "evidence_ids": [
+              "attraction-6"
+            ]
+          },
+          {
+            "id": "i4",
+            "subject": "Chin Chin Melbourne",
+            "detail": "A loud, popular modern Thai/Asian restaurant on Flinders Lane.",
+            "evidence_ids": [
+              "attraction-9"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:09:44.308Z",
+      "finished_at": "2026-10-19T02:10:37.882Z",
+      "duration_ms": 53573,
+      "ok": true,
+      "output": {
+        "verdict": "pass",
+        "model_verdict": "pass",
+        "degraded": false,
+        "automatic_findings": [],
+        "model_findings": [
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i3",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i4",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          }
+        ],
+        "findings": [
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i3",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          },
+          {
+            "severity": "info",
+            "item_id": "i4",
+            "message": "No mention of the restaurant's cuisine in the evidence."
+          }
+        ],
+        "recommendations": [
+          "Verify that the restaurants' cuisine is accurately described in the evidence.",
+          "Check that the evidence includes a description of the restaurants' opening hours.",
+          "Confirm that the evidence includes a review of the restaurants' menu or cuisine.",
+          "Review the evidence to ensure it accurately reflects the restaurants' ratings and reviews."
+        ]
+      }
+    }
+  ],
+  "error": null
+}

@@ -1,0 +1,300 @@
+{
+  "id": "wf-20261019T021218Z-057c2796",
+  "feature": "student-3",
+  "task": "Two things to do on a sunny morning",
+  "submitted_by": "student-3-ui",
+  "status": "corrected",
+  "created_at": "2026-10-19T02:12:18.857Z",
+  "updated_at": "2026-10-19T02:16:33.516Z",
+  "evidence": [
+    {
+      "id": "attraction-2",
+      "title": "Bondi to Coogee Coastal Walk",
+      "text": "Bondi to Coogee Coastal Walk is a activity. 6km clifftop walking track past Sydney's most famous beaches. Rating: 4.8. Review: Best free thing to do in Sydney, go early to avoid heat."
+    },
+    {
+      "id": "attraction-12",
+      "title": "Great Ocean Road Day Trip",
+      "text": "Great Ocean Road Day Trip is a activity. Full-day coastal drive from Melbourne past the Twelve Apostles. Rating: 4.8. Review: Long day but the Twelve Apostles views are unforgettable."
+    },
+    {
+      "id": "attraction-8",
+      "title": "Melbourne Street Art Laneway Tour",
+      "text": "Melbourne Street Art Laneway Tour is a activity. Guided walk through Hosier Lane and nearby graffiti-covered laneways. Rating: 4.6. Review: Guide had amazing stories about the artists."
+    },
+    {
+      "id": "attraction-4",
+      "title": "Taronga Zoo Sydney",
+      "text": "Taronga Zoo Sydney is a activity. Harbourside zoo with ferry access and views back to the city skyline. Rating: 4.5. Review: Kids loved it, ferry ride there is half the fun. Review: A bit pricey but well maintained enclosures."
+    }
+  ],
+  "plan": {
+    "objective": "Plan a sunny morning activity for a human",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "Identify suitable outdoor activities"
+      },
+      {
+        "id": "s2",
+        "description": "Research and select a specific activity from the identified options"
+      },
+      {
+        "id": "s3",
+        "description": "Check the rating and reviews of the selected activity"
+      },
+      {
+        "id": "s4",
+        "description": "Verify the availability of the selected activity on a sunny morning"
+      }
+    ],
+    "required_evidence_ids": [
+      "attraction-2",
+      "attraction-12",
+      "attraction-8",
+      "attraction-4"
+    ],
+    "success_criteria": [
+      "The selected activity has a rating of 4.5 or higher",
+      "The selected activity has a review that mentions a positive aspect",
+      "The selected activity is an outdoor activity",
+      "The selected activity can be done on a sunny morning"
+    ]
+  },
+  "work": {
+    "summary": "Two suitable outdoor activities for a sunny morning",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Taronga Zoo Sydney",
+        "detail": "A harbourside zoo with ferry access and views back to the city skyline.",
+        "evidence_ids": [
+          "attraction-4"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Bondi to Coogee Coastal Walk",
+        "detail": "A 6km clifftop walking track past Sydney's most famous beaches.",
+        "evidence_ids": [
+          "attraction-2"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "concerns",
+    "model_verdict": "concerns",
+    "degraded": false,
+    "automatic_findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-12, attraction-8."
+      }
+    ],
+    "model_findings": [
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "The evidence for Taronga Zoo Sydney does not mention a ferry ride."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "The evidence for Bondi to Coogee Coastal Walk does not mention a positive aspect in the review."
+      }
+    ],
+    "findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-12, attraction-8."
+      },
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "The evidence for Taronga Zoo Sydney does not mention a ferry ride."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "The evidence for Bondi to Coogee Coastal Walk does not mention a positive aspect in the review."
+      }
+    ],
+    "recommendations": [
+      "Verify that the selected activity has a rating of 4.5 or higher and a review that mentions a positive aspect.",
+      "Check that the selected activity can be done on a sunny morning.",
+      "Ensure that the evidence for Taronga Zoo Sydney and Bondi to Coogee Coastal Walk accurately reflects their descriptions.",
+      "Consider using plan-required evidence for attraction-12 and attraction-8."
+    ]
+  },
+  "human_decision": {
+    "decision": "correct",
+    "notes": "Dev test run: reworded the zoo entry using only facts from the catalogue (ferry access, skyline views) and added early-morning timing advice.",
+    "decided_by": "student-3-ui",
+    "decided_at": "2026-10-19T02:16:33.516Z",
+    "correction_findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-12, attraction-8."
+      }
+    ]
+  },
+  "final_output": {
+    "summary": "Two suitable outdoor activities for a sunny morning",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Taronga Zoo Sydney",
+        "detail": "A harbourside zoo reached by ferry, with views back to the city skyline; best visited early while it is cool.",
+        "evidence_ids": [
+          "attraction-4"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Bondi to Coogee Coastal Walk",
+        "detail": "A 6km clifftop walking track past Sydney's most famous beaches.",
+        "evidence_ids": [
+          "attraction-2"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:12:18.901Z",
+      "finished_at": "2026-10-19T02:12:55.558Z",
+      "duration_ms": 36655,
+      "ok": true,
+      "output": {
+        "objective": "Plan a sunny morning activity for a human",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "Identify suitable outdoor activities"
+          },
+          {
+            "id": "s2",
+            "description": "Research and select a specific activity from the identified options"
+          },
+          {
+            "id": "s3",
+            "description": "Check the rating and reviews of the selected activity"
+          },
+          {
+            "id": "s4",
+            "description": "Verify the availability of the selected activity on a sunny morning"
+          }
+        ],
+        "required_evidence_ids": [
+          "attraction-2",
+          "attraction-12",
+          "attraction-8",
+          "attraction-4"
+        ],
+        "success_criteria": [
+          "The selected activity has a rating of 4.5 or higher",
+          "The selected activity has a review that mentions a positive aspect",
+          "The selected activity is an outdoor activity",
+          "The selected activity can be done on a sunny morning"
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v2.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:12:55.639Z",
+      "finished_at": "2026-10-19T02:13:43.580Z",
+      "duration_ms": 47940,
+      "ok": true,
+      "output": {
+        "summary": "Two suitable outdoor activities for a sunny morning",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Taronga Zoo Sydney",
+            "detail": "A harbourside zoo with ferry access and views back to the city skyline.",
+            "evidence_ids": [
+              "attraction-4"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Bondi to Coogee Coastal Walk",
+            "detail": "A 6km clifftop walking track past Sydney's most famous beaches.",
+            "evidence_ids": [
+              "attraction-2"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T02:13:43.686Z",
+      "finished_at": "2026-10-19T02:15:55.501Z",
+      "duration_ms": 131815,
+      "ok": true,
+      "output": {
+        "verdict": "concerns",
+        "model_verdict": "concerns",
+        "degraded": false,
+        "automatic_findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-12, attraction-8."
+          }
+        ],
+        "model_findings": [
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "The evidence for Taronga Zoo Sydney does not mention a ferry ride."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "The evidence for Bondi to Coogee Coastal Walk does not mention a positive aspect in the review."
+          }
+        ],
+        "findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-12, attraction-8."
+          },
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "The evidence for Taronga Zoo Sydney does not mention a ferry ride."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "The evidence for Bondi to Coogee Coastal Walk does not mention a positive aspect in the review."
+          }
+        ],
+        "recommendations": [
+          "Verify that the selected activity has a rating of 4.5 or higher and a review that mentions a positive aspect.",
+          "Check that the selected activity can be done on a sunny morning.",
+          "Ensure that the evidence for Taronga Zoo Sydney and Bondi to Coogee Coastal Walk accurately reflects their descriptions.",
+          "Consider using plan-required evidence for attraction-12 and attraction-8."
+        ]
+      }
+    }
+  ],
+  "error": null
+}

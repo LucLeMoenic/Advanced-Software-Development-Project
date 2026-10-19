@@ -1,10 +1,13 @@
 import logging
+import re
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
+import agent_evidence
 import database_client as db
 import mcp_client
+import multi_agent_client
 import rag_client
 from recommend import get_recommendation
 
@@ -177,6 +180,98 @@ def rag_ask():
     except (rag_client.RagUnavailableError, rag_client.RagResponseError) as exc:
         return jsonify({"error": "rag_unavailable", "message": str(exc)}), 502
     return jsonify(result)
+
+
+# --- Release 2: shared Multi-Agent Server (Planner -> Worker -> Reviewer -> human) ---------------
+# Disabled unless MULTI_AGENT_ENABLED=true. This backend, not the browser, chooses the evidence the
+# agents may use (the catalogue), and relays the human reviewer's decision.
+
+AGENT_WORKFLOW_ID = re.compile(r"^wf-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}$")
+AGENT_CATEGORIES = {"sight", "restaurant", "activity"}
+AGENT_DECISION_FIELDS = {"decision", "notes", "corrected_output", "accepted_item_ids"}
+
+
+def _agent_error(exc):
+    """Map a multi_agent_client exception to a JSON error response."""
+    if isinstance(exc, multi_agent_client.MultiAgentDisabledError):
+        return jsonify({"error": "multi_agent_disabled", "message": "Multi-Agent is disabled."}), 503
+    if isinstance(exc, multi_agent_client.MultiAgentUnavailableError):
+        return jsonify({"error": "multi_agent_unavailable",
+                        "message": "The Multi-Agent Server is not reachable."}), 502
+    # The server answered with its own error: keep its code and any status the UI can act on.
+    status = exc.status if exc.status in {400, 404, 409, 503} else 502
+    return jsonify({"error": exc.code, "message": str(exc)}), status
+
+
+@app.get("/api/agents/status")
+def agents_status():
+    try:
+        return jsonify(multi_agent_client.health())
+    except (multi_agent_client.MultiAgentDisabledError, multi_agent_client.MultiAgentUnavailableError,
+            multi_agent_client.MultiAgentResponseError) as exc:
+        return _agent_error(exc)
+
+
+@app.post("/api/agents/workflows")
+def start_agent_workflow():
+    payload = request.get_json(silent=True) or request.form.to_dict() or {}
+    task = (payload.get("task") or "").strip()
+    category = payload.get("category") or None
+    if not 3 <= len(task) <= 500:
+        return jsonify({"error": "validation_error", "message": "task must be 3 to 500 characters."}), 400
+    if category is not None and category not in AGENT_CATEGORIES:
+        return jsonify({"error": "validation_error",
+                        "message": f"category must be one of {sorted(AGENT_CATEGORIES)}."}), 400
+
+    try:
+        multi_agent_client.require_enabled()  # fail fast, before any database work
+        attractions = db.list_attractions(category=category)
+        reviews = db.list_reviews()
+    except multi_agent_client.MultiAgentDisabledError as exc:
+        return _agent_error(exc)
+    except (db.DatabaseUnavailableError, db.DatabaseResponseError) as exc:
+        return jsonify({"error": "database_unavailable", "message": str(exc)}), 502
+
+    evidence = agent_evidence.build_evidence(attractions, reviews)
+    if not evidence:
+        return jsonify({"error": "no_evidence",
+                        "message": "There are no attractions to plan from for that category."}), 400
+
+    try:
+        started = multi_agent_client.start_workflow(task, evidence)
+    except (multi_agent_client.MultiAgentDisabledError, multi_agent_client.MultiAgentUnavailableError,
+            multi_agent_client.MultiAgentResponseError) as exc:
+        return _agent_error(exc)
+    return jsonify({**started, "evidence_count": len(evidence)}), 202
+
+
+@app.get("/api/agents/workflows/<workflow_id>")
+def get_agent_workflow(workflow_id):
+    if not AGENT_WORKFLOW_ID.match(workflow_id):
+        return jsonify({"error": "not_found", "message": "Workflow not found."}), 404
+    try:
+        return jsonify(multi_agent_client.get_workflow(workflow_id))
+    except (multi_agent_client.MultiAgentDisabledError, multi_agent_client.MultiAgentUnavailableError,
+            multi_agent_client.MultiAgentResponseError) as exc:
+        return _agent_error(exc)
+
+
+@app.post("/api/agents/workflows/<workflow_id>/decision")
+def decide_agent_workflow(workflow_id):
+    if not AGENT_WORKFLOW_ID.match(workflow_id):
+        return jsonify({"error": "not_found", "message": "Workflow not found."}), 404
+    payload = request.get_json(silent=True) or {}
+    if payload.get("decision") not in {"approve", "correct", "partial", "reject"}:
+        return jsonify({"error": "validation_error",
+                        "message": "decision must be approve, correct, partial or reject."}), 400
+    # Only relay known fields; the reviewer identity is fixed by this backend, not chosen by the browser.
+    decision = {k: v for k, v in payload.items() if k in AGENT_DECISION_FIELDS}
+    decision["decided_by"] = "student-3-ui"
+    try:
+        return jsonify(multi_agent_client.decide(workflow_id, decision))
+    except (multi_agent_client.MultiAgentDisabledError, multi_agent_client.MultiAgentUnavailableError,
+            multi_agent_client.MultiAgentResponseError) as exc:
+        return _agent_error(exc)
 
 
 if __name__ == "__main__":

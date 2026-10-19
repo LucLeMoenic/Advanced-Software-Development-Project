@@ -176,6 +176,8 @@ services:
       RAG_SERVER_URL: http://host.docker.internal:5500
       MCP_ENABLED: ${MCP_ENABLED:-true}
       RAG_ENABLED: ${RAG_ENABLED:-true}
+      MULTI_AGENT_SERVER_URL: ${MULTI_AGENT_SERVER_URL:-http://host.docker.internal:5600}
+      MULTI_AGENT_ENABLED: ${MULTI_AGENT_ENABLED:-false}
       OLLAMA_MODEL: ${STUDENT3_MODEL:-qwen2.5:3b}
     ports:
       - "5203:8080"

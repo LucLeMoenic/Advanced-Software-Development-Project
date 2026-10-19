@@ -85,6 +85,7 @@ jobs:
         env:
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
 
       - name: Post-commit endpoint tests against running containers (GET and POST /api/attractions)
@@ -123,6 +124,24 @@ jobs:
           assert status == '503', status
           assert json.loads('\n'.join(body_lines)) == {'error': 'rag_disabled', 'message': 'RAG is disabled.'}
           "
+
+      # Release 2: the Multi-Agent routes fail closed when disabled (the default, and the cloud baseline).
+      - name: Assert Multi-Agent routes are disabled by default
+        run: |
+          for spec in "GET /api/agents/status" "POST /api/agents/workflows" \
+                      "GET /api/agents/workflows/wf-20261019T011611Z-0ccf5c1c" \
+                      "POST /api/agents/workflows/wf-20261019T011611Z-0ccf5c1c/decision"; do
+            method=${spec%% *}; path=${spec#* }
+            curl --silent --write-out '\n%{http_code}' -X "$method" "http://localhost:5203$path" \
+              -H 'Content-Type: application/json' -d '{"task":"Plan a day","decision":"approve"}' \
+              | python -c "
+          import json, sys
+          *body_lines, status = sys.stdin.read().splitlines()
+          assert status == '503', status
+          assert json.loads('\n'.join(body_lines)) == {'error': 'multi_agent_disabled', 'message': 'Multi-Agent is disabled.'}
+          "
+            echo "disabled as expected: $spec"
+          done
 
       - name: Stop Student 3 services
         if: always()

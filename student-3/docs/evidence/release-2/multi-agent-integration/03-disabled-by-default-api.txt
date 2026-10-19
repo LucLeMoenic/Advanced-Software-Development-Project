@@ -1,0 +1,20 @@
+# Student 3 backend with MULTI_AGENT_ENABLED=false (the default and the cloud baseline), captured 2026-10-19.
+# The Multi-Agent Server was NOT running, to show the flag alone decides the answer and no network call is made.
+
+$ curl -s -w '\nHTTP %{http_code}\n' http://localhost:5203/api/agents/status
+{"error":"multi_agent_disabled","message":"Multi-Agent is disabled."}
+
+HTTP 503
+
+$ curl -s -w '\nHTTP %{http_code}\n' -X POST http://localhost:5203/api/agents/workflows -H 'Content-Type: application/json' -d '{"task":"Plan a day"}'
+{"error":"multi_agent_disabled","message":"Multi-Agent is disabled."}
+
+HTTP 503
+
+# Same backend with MULTI_AGENT_ENABLED=true but the server stopped (first call of the session):
+$ curl -s http://localhost:5203/api/agents/status
+{"error":"multi_agent_unavailable","message":"The Multi-Agent Server is not reachable."}   (HTTP 502)
+
+# Same backend with MULTI_AGENT_ENABLED=true and the server running:
+$ curl -s http://localhost:5203/api/agents/status
+{"busy":false,"status":"ok"}

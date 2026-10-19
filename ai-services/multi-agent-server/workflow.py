@@ -78,8 +78,12 @@ async def run(store, workflow_id):
         try:
             reviewed, entry = await _stage(
                 store, record, "reviewer", "reviewing", lambda: agents.review(task, plan, work, evidence, automatic))
-            already = {a["message"] for a in automatic}  # the model often restates an automatic finding
-            model_findings = [f.model_dump() for f in reviewed.findings if f.message not in already]
+            seen = {a["message"] for a in automatic}  # the model often restates an automatic finding
+            model_findings = []
+            for finding in reviewed.findings:  # ...and sometimes repeats itself
+                if finding.message not in seen:
+                    seen.add(finding.message)
+                    model_findings.append(finding.model_dump())
             model_verdict, recommendations, degraded = reviewed.verdict, reviewed.recommendations, False
             record["history"].append({**entry, "ok": True, "output": None})
         except llm.AgentError as exc:
