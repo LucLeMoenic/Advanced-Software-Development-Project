@@ -1,0 +1,29 @@
+$ python cli.py run --feature student-3 --task "Recommend two things to do on a sunny morning from the catalogue" --student3-backend http://localhost:5203 --category activity
+Created wf-20261019T011611Z-0ccf5c1c with 4 evidence entries
+[12:16:11] wf-20261019T011611Z-0ccf5c1c: planning
+[12:17:03] wf-20261019T011611Z-0ccf5c1c: working
+[12:17:44] wf-20261019T011611Z-0ccf5c1c: reviewing
+[12:18:30] wf-20261019T011611Z-0ccf5c1c: awaiting_human_review
+
+=== Workflow wf-20261019T011611Z-0ccf5c1c  (student-3)  status: awaiting_human_review ===
+Task: Recommend two things to do on a sunny morning from the catalogue
+
+PLANNER  objective: Recommend two things to do on a sunny morning
+  s1. List all activities from the catalogue
+  s2. Filter activities by rating
+  s3. Select top two activities
+  s4. Provide a brief description of the selected activities
+  requires evidence: attraction-2, attraction-4, attraction-8, attraction-12
+
+WORKER   Two things to do on a sunny morning are the Bondi to Coogee Coastal Walk and Taronga Zoo Sydney.
+  [i1] Bondi to Coogee Coastal Walk: The Bondi to Coogee Coastal Walk is a 6km clifftop walking track past Sydney's most famous beaches.  (evidence: attraction-2)
+  [i2] Taronga Zoo Sydney: Taronga Zoo Sydney is a harbourside zoo with ferry access and views back to the city skyline.  (evidence: attraction-4)
+
+REVIEWER verdict: CONCERNS (model said concerns)
+  - warning  -    Plan-required evidence was not used: attraction-8, attraction-12.
+  * Use all required evidence in the plan
+  * Review the plan to ensure all evidence is utilized correctly
+  * Consider adding a note to the plan to address the missing evidence
+  * Verify that the plan meets all required evidence criteria
+
+Next: python cli.py review wf-20261019T011611Z-0ccf5c1c

@@ -1,0 +1,20 @@
+$ python cli.py run --feature student-3 --task "Recommend two things to do on a sunny morning from the catalogue" --student3-backend http://localhost:5203 --category activity
+Created wf-20261018T073712Z-56f37adc with 4 evidence entries
+[18:37:14] wf-20261018T073712Z-56f37adc: planning
+[18:37:45] wf-20261018T073712Z-56f37adc: working
+[19:38:46] wf-20261018T073712Z-56f37adc: failed
+
+=== Workflow wf-20261018T073712Z-56f37adc  (student-3)  status: failed ===
+Task: Recommend two things to do on a sunny morning from the catalogue
+
+PLANNER  objective: Recommend two things to do on a sunny morning
+  s1. List all activities from the catalogue
+  s2. Filter activities by rating
+  s3. Select top two activities
+  s4. Provide a brief description of the selected activities
+  requires evidence: attraction-2, attraction-4, attraction-8, attraction-12
+
+FAILED at working: dependency_timeout - The local model timed out.
+
+
+[exited with code 0]

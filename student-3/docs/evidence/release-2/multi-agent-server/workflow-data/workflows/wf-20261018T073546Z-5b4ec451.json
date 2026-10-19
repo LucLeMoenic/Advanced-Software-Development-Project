@@ -1,0 +1,274 @@
+{
+  "id": "wf-20261018T073546Z-5b4ec451",
+  "feature": "student-3",
+  "task": "Suggest a relaxed food-focused afternoon using only the restaurants in the catalogue",
+  "submitted_by": "terminal",
+  "status": "partially_accepted",
+  "created_at": "2026-10-18T07:35:46.164Z",
+  "updated_at": "2026-10-18T07:37:00.375Z",
+  "evidence": [
+    {
+      "id": "attraction-3",
+      "title": "Chat Thai Sydney CBD",
+      "text": "Chat Thai Sydney CBD is a restaurant. Busy, no-frills Thai restaurant popular with locals and students. Rating: 4.3."
+    },
+    {
+      "id": "attraction-6",
+      "title": "Mr. Wong",
+      "text": "Mr. Wong is a restaurant. Upscale Cantonese dining in a converted Sydney CBD warehouse. Rating: 4.6."
+    },
+    {
+      "id": "attraction-9",
+      "title": "Chin Chin Melbourne",
+      "text": "Chin Chin Melbourne is a restaurant. Loud, popular modern Thai/Asian restaurant on Flinders Lane. Rating: 4.4."
+    },
+    {
+      "id": "attraction-11",
+      "title": "Queen Victoria Market",
+      "text": "Queen Victoria Market is a restaurant. Historic open-air market with food stalls, produce, and deli halls. Rating: 4.3."
+    }
+  ],
+  "plan": {
+    "objective": "Plan a relaxed food-focused afternoon using the provided restaurants.",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "Research restaurants in the catalogue to find suitable options."
+      },
+      {
+        "id": "s2",
+        "description": "Filter restaurants based on ratings and reviews."
+      },
+      {
+        "id": "s3",
+        "description": "Choose a restaurant that fits the criteria."
+      },
+      {
+        "id": "s4",
+        "description": "Check availability and make a reservation if necessary."
+      }
+    ],
+    "required_evidence_ids": [
+      "attraction-3",
+      "attraction-6",
+      "attraction-9",
+      "attraction-11"
+    ],
+    "success_criteria": [
+      "The chosen restaurant has a rating of 4.3 or higher.",
+      "The chosen restaurant is open for lunch.",
+      "The chosen restaurant has a menu that focuses on Thai or Asian cuisine.",
+      "The chosen restaurant has a rating of 4.4 or higher."
+    ]
+  },
+  "work": {
+    "summary": "A relaxed food-focused afternoon can be enjoyed at Chat Thai Sydney CBD, Mr. Wong, or Chin Chin Melbourne.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Chat Thai Sydney CBD",
+        "detail": "Chat Thai Sydney CBD is a busy, no-frills Thai restaurant popular with locals and students.",
+        "evidence_ids": [
+          "attraction-3"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Mr. Wong",
+        "detail": "Mr. Wong is an upscale Cantonese dining experience in a converted Sydney CBD warehouse.",
+        "evidence_ids": [
+          "attraction-6"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Chin Chin Melbourne",
+        "detail": "Chin Chin Melbourne is a loud, popular modern Thai/Asian restaurant on Flinders Lane.",
+        "evidence_ids": [
+          "attraction-9"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "concerns",
+    "model_verdict": "concerns",
+    "degraded": false,
+    "automatic_findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-11."
+      }
+    ],
+    "model_findings": [],
+    "findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-11."
+      }
+    ],
+    "recommendations": [
+      "Use all required evidence in the plan.",
+      "Review the plan to ensure all evidence is utilized.",
+      "Consider adding a note to the plan to address the missing evidence.",
+      "Verify that the plan meets all required evidence criteria."
+    ]
+  },
+  "human_decision": {
+    "decision": "partial",
+    "notes": "Test run: kept the two Sydney entries; dropped Chin Chin Melbourne, which the evidence calls loud and so conflicts with a relaxed afternoon.",
+    "decided_by": "dev-test-run",
+    "decided_at": "2026-10-18T07:37:00.375Z",
+    "accepted_item_ids": [
+      "i1",
+      "i2"
+    ],
+    "rejected_item_ids": [
+      "i3"
+    ]
+  },
+  "final_output": {
+    "summary": "A relaxed food-focused afternoon can be enjoyed at Chat Thai Sydney CBD, Mr. Wong, or Chin Chin Melbourne.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Chat Thai Sydney CBD",
+        "detail": "Chat Thai Sydney CBD is a busy, no-frills Thai restaurant popular with locals and students.",
+        "evidence_ids": [
+          "attraction-3"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Mr. Wong",
+        "detail": "Mr. Wong is an upscale Cantonese dining experience in a converted Sydney CBD warehouse.",
+        "evidence_ids": [
+          "attraction-6"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-18T07:35:46.461Z",
+      "finished_at": "2026-10-18T07:36:13.658Z",
+      "duration_ms": 27198,
+      "ok": true,
+      "output": {
+        "objective": "Plan a relaxed food-focused afternoon using the provided restaurants.",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "Research restaurants in the catalogue to find suitable options."
+          },
+          {
+            "id": "s2",
+            "description": "Filter restaurants based on ratings and reviews."
+          },
+          {
+            "id": "s3",
+            "description": "Choose a restaurant that fits the criteria."
+          },
+          {
+            "id": "s4",
+            "description": "Check availability and make a reservation if necessary."
+          }
+        ],
+        "required_evidence_ids": [
+          "attraction-3",
+          "attraction-6",
+          "attraction-9",
+          "attraction-11"
+        ],
+        "success_criteria": [
+          "The chosen restaurant has a rating of 4.3 or higher.",
+          "The chosen restaurant is open for lunch.",
+          "The chosen restaurant has a menu that focuses on Thai or Asian cuisine.",
+          "The chosen restaurant has a rating of 4.4 or higher."
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-18T07:36:13.698Z",
+      "finished_at": "2026-10-18T07:36:34.555Z",
+      "duration_ms": 20856,
+      "ok": true,
+      "output": {
+        "summary": "A relaxed food-focused afternoon can be enjoyed at Chat Thai Sydney CBD, Mr. Wong, or Chin Chin Melbourne.",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Chat Thai Sydney CBD",
+            "detail": "Chat Thai Sydney CBD is a busy, no-frills Thai restaurant popular with locals and students.",
+            "evidence_ids": [
+              "attraction-3"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Mr. Wong",
+            "detail": "Mr. Wong is an upscale Cantonese dining experience in a converted Sydney CBD warehouse.",
+            "evidence_ids": [
+              "attraction-6"
+            ]
+          },
+          {
+            "id": "i3",
+            "subject": "Chin Chin Melbourne",
+            "detail": "Chin Chin Melbourne is a loud, popular modern Thai/Asian restaurant on Flinders Lane.",
+            "evidence_ids": [
+              "attraction-9"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-18T07:36:34.626Z",
+      "finished_at": "2026-10-18T07:36:45.899Z",
+      "duration_ms": 11272,
+      "ok": true,
+      "output": {
+        "verdict": "concerns",
+        "model_verdict": "concerns",
+        "degraded": false,
+        "automatic_findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-11."
+          }
+        ],
+        "model_findings": [],
+        "findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-11."
+          }
+        ],
+        "recommendations": [
+          "Use all required evidence in the plan.",
+          "Review the plan to ensure all evidence is utilized.",
+          "Consider adding a note to the plan to address the missing evidence.",
+          "Verify that the plan meets all required evidence criteria."
+        ]
+      }
+    }
+  ],
+  "error": null
+}

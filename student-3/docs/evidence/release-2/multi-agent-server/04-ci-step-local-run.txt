@@ -1,0 +1,13 @@
+# Local run of the new 'Test Multi-Agent Server' workflow steps, 2026-10-19T01:39:10Z
+$ cd ai-services/multi-agent-server && python -m pytest -v --junitxml=multi-agent-junit.xml
+tests\test_workflow.py::test_failure_records_why_validation_failed_and_the_rejected_output PASSED [ 70%]
+tests\test_workflow.py::test_failed_workflow_cannot_be_decided PASSED    [100%]
+============================= 62 passed in 7.59s ==============================
+
+$ python scripts/test/junit_summary.py ai-services/multi-agent-server/multi-agent-junit.xml "Multi-Agent Server tests"
+| `test_workflow::test_correct_rejects_missing_malformed_or_ungrounded_correction[correction2]` | pass |
+| `test_workflow::test_second_decision_is_refused` | pass |
+| `test_workflow::test_failed_workflow_cannot_be_decided` | pass |
+
+**62 of 62 passed**
+

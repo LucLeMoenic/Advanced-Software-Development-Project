@@ -1,0 +1,258 @@
+{
+  "id": "wf-20261019T011611Z-0ccf5c1c",
+  "feature": "student-3",
+  "task": "Recommend two things to do on a sunny morning from the catalogue",
+  "submitted_by": "terminal",
+  "status": "corrected",
+  "created_at": "2026-10-19T01:16:11.096Z",
+  "updated_at": "2026-10-19T01:18:42.272Z",
+  "evidence": [
+    {
+      "id": "attraction-2",
+      "title": "Bondi to Coogee Coastal Walk",
+      "text": "Bondi to Coogee Coastal Walk is a activity. 6km clifftop walking track past Sydney's most famous beaches. Rating: 4.8."
+    },
+    {
+      "id": "attraction-4",
+      "title": "Taronga Zoo Sydney",
+      "text": "Taronga Zoo Sydney is a activity. Harbourside zoo with ferry access and views back to the city skyline. Rating: 4.5."
+    },
+    {
+      "id": "attraction-8",
+      "title": "Melbourne Street Art Laneway Tour",
+      "text": "Melbourne Street Art Laneway Tour is a activity. Guided walk through Hosier Lane and nearby graffiti-covered laneways. Rating: 4.6."
+    },
+    {
+      "id": "attraction-12",
+      "title": "Great Ocean Road Day Trip",
+      "text": "Great Ocean Road Day Trip is a activity. Full-day coastal drive from Melbourne past the Twelve Apostles. Rating: 4.8."
+    }
+  ],
+  "plan": {
+    "objective": "Recommend two things to do on a sunny morning",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "List all activities from the catalogue"
+      },
+      {
+        "id": "s2",
+        "description": "Filter activities by rating"
+      },
+      {
+        "id": "s3",
+        "description": "Select top two activities"
+      },
+      {
+        "id": "s4",
+        "description": "Provide a brief description of the selected activities"
+      }
+    ],
+    "required_evidence_ids": [
+      "attraction-2",
+      "attraction-4",
+      "attraction-8",
+      "attraction-12"
+    ],
+    "success_criteria": [
+      "Both recommended activities have a rating of 4.5 or higher",
+      "Both recommended activities are from the catalogue",
+      "At least one recommended activity is a walking track or has a coastal view",
+      "At least one recommended activity has a rating of 4.6 or higher"
+    ]
+  },
+  "work": {
+    "summary": "Two things to do on a sunny morning are the Bondi to Coogee Coastal Walk and Taronga Zoo Sydney.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Bondi to Coogee Coastal Walk",
+        "detail": "The Bondi to Coogee Coastal Walk is a 6km clifftop walking track past Sydney's most famous beaches.",
+        "evidence_ids": [
+          "attraction-2"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Taronga Zoo Sydney",
+        "detail": "Taronga Zoo Sydney is a harbourside zoo with ferry access and views back to the city skyline.",
+        "evidence_ids": [
+          "attraction-4"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "concerns",
+    "model_verdict": "concerns",
+    "degraded": false,
+    "automatic_findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-8, attraction-12."
+      }
+    ],
+    "model_findings": [],
+    "findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-8, attraction-12."
+      }
+    ],
+    "recommendations": [
+      "Use all required evidence in the plan",
+      "Review the plan to ensure all evidence is utilized correctly",
+      "Consider adding a note to the plan to address the missing evidence",
+      "Verify that the plan meets all required evidence criteria"
+    ]
+  },
+  "human_decision": {
+    "decision": "correct",
+    "notes": "Test run: tightened the wording and added the time-of-day advice; both items still cite their original evidence.",
+    "decided_by": "dev-test-run",
+    "decided_at": "2026-10-19T01:18:42.272Z",
+    "correction_findings": [
+      {
+        "severity": "warning",
+        "item_id": null,
+        "message": "Plan-required evidence was not used: attraction-8, attraction-12."
+      }
+    ]
+  },
+  "final_output": {
+    "summary": "Walk the coast first, then head to the zoo while it is cool.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Bondi to Coogee Coastal Walk",
+        "detail": "A 6km clifftop walking track past Sydney's most famous beaches; best done early on a sunny morning.",
+        "evidence_ids": [
+          "attraction-2"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Taronga Zoo Sydney",
+        "detail": "A harbourside zoo with ferry access and views back to the city skyline.",
+        "evidence_ids": [
+          "attraction-4"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T01:16:11.137Z",
+      "finished_at": "2026-10-19T01:17:01.274Z",
+      "duration_ms": 50137,
+      "ok": true,
+      "output": {
+        "objective": "Recommend two things to do on a sunny morning",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "List all activities from the catalogue"
+          },
+          {
+            "id": "s2",
+            "description": "Filter activities by rating"
+          },
+          {
+            "id": "s3",
+            "description": "Select top two activities"
+          },
+          {
+            "id": "s4",
+            "description": "Provide a brief description of the selected activities"
+          }
+        ],
+        "required_evidence_ids": [
+          "attraction-2",
+          "attraction-4",
+          "attraction-8",
+          "attraction-12"
+        ],
+        "success_criteria": [
+          "Both recommended activities have a rating of 4.5 or higher",
+          "Both recommended activities are from the catalogue",
+          "At least one recommended activity is a walking track or has a coastal view",
+          "At least one recommended activity has a rating of 4.6 or higher"
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T01:17:01.379Z",
+      "finished_at": "2026-10-19T01:17:40.845Z",
+      "duration_ms": 39465,
+      "ok": true,
+      "output": {
+        "summary": "Two things to do on a sunny morning are the Bondi to Coogee Coastal Walk and Taronga Zoo Sydney.",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Bondi to Coogee Coastal Walk",
+            "detail": "The Bondi to Coogee Coastal Walk is a 6km clifftop walking track past Sydney's most famous beaches.",
+            "evidence_ids": [
+              "attraction-2"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Taronga Zoo Sydney",
+            "detail": "Taronga Zoo Sydney is a harbourside zoo with ferry access and views back to the city skyline.",
+            "evidence_ids": [
+              "attraction-4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-19T01:17:44.311Z",
+      "finished_at": "2026-10-19T01:18:29.067Z",
+      "duration_ms": 44745,
+      "ok": true,
+      "output": {
+        "verdict": "concerns",
+        "model_verdict": "concerns",
+        "degraded": false,
+        "automatic_findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-8, attraction-12."
+          }
+        ],
+        "model_findings": [],
+        "findings": [
+          {
+            "severity": "warning",
+            "item_id": null,
+            "message": "Plan-required evidence was not used: attraction-8, attraction-12."
+          }
+        ],
+        "recommendations": [
+          "Use all required evidence in the plan",
+          "Review the plan to ensure all evidence is utilized correctly",
+          "Consider adding a note to the plan to address the missing evidence",
+          "Verify that the plan meets all required evidence criteria"
+        ]
+      }
+    }
+  ],
+  "error": null
+}

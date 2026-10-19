@@ -1,0 +1,132 @@
+{
+  "id": "wf-20261018T073712Z-56f37adc",
+  "feature": "student-3",
+  "task": "Recommend two things to do on a sunny morning from the catalogue",
+  "submitted_by": "terminal",
+  "status": "failed",
+  "created_at": "2026-10-18T07:37:12.296Z",
+  "updated_at": "2026-10-18T08:38:43.771Z",
+  "evidence": [
+    {
+      "id": "attraction-2",
+      "title": "Bondi to Coogee Coastal Walk",
+      "text": "Bondi to Coogee Coastal Walk is a activity. 6km clifftop walking track past Sydney's most famous beaches. Rating: 4.8."
+    },
+    {
+      "id": "attraction-4",
+      "title": "Taronga Zoo Sydney",
+      "text": "Taronga Zoo Sydney is a activity. Harbourside zoo with ferry access and views back to the city skyline. Rating: 4.5."
+    },
+    {
+      "id": "attraction-8",
+      "title": "Melbourne Street Art Laneway Tour",
+      "text": "Melbourne Street Art Laneway Tour is a activity. Guided walk through Hosier Lane and nearby graffiti-covered laneways. Rating: 4.6."
+    },
+    {
+      "id": "attraction-12",
+      "title": "Great Ocean Road Day Trip",
+      "text": "Great Ocean Road Day Trip is a activity. Full-day coastal drive from Melbourne past the Twelve Apostles. Rating: 4.8."
+    }
+  ],
+  "plan": {
+    "objective": "Recommend two things to do on a sunny morning",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "List all activities from the catalogue"
+      },
+      {
+        "id": "s2",
+        "description": "Filter activities by rating"
+      },
+      {
+        "id": "s3",
+        "description": "Select top two activities"
+      },
+      {
+        "id": "s4",
+        "description": "Provide a brief description of the selected activities"
+      }
+    ],
+    "required_evidence_ids": [
+      "attraction-2",
+      "attraction-4",
+      "attraction-8",
+      "attraction-12"
+    ],
+    "success_criteria": [
+      "Both recommended activities have a rating of 4.5 or higher",
+      "Both recommended activities are from the catalogue",
+      "At least one recommended activity is a walking track or has a coastal view",
+      "At least one recommended activity has a rating of 4.6 or higher"
+    ]
+  },
+  "work": null,
+  "review": null,
+  "human_decision": null,
+  "final_output": null,
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-18T07:37:12.374Z",
+      "finished_at": "2026-10-18T07:37:44.637Z",
+      "duration_ms": 32264,
+      "ok": true,
+      "output": {
+        "objective": "Recommend two things to do on a sunny morning",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "List all activities from the catalogue"
+          },
+          {
+            "id": "s2",
+            "description": "Filter activities by rating"
+          },
+          {
+            "id": "s3",
+            "description": "Select top two activities"
+          },
+          {
+            "id": "s4",
+            "description": "Provide a brief description of the selected activities"
+          }
+        ],
+        "required_evidence_ids": [
+          "attraction-2",
+          "attraction-4",
+          "attraction-8",
+          "attraction-12"
+        ],
+        "success_criteria": [
+          "Both recommended activities have a rating of 4.5 or higher",
+          "Both recommended activities are from the catalogue",
+          "At least one recommended activity is a walking track or has a coastal view",
+          "At least one recommended activity has a rating of 4.6 or higher"
+        ]
+      }
+    },
+    {
+      "stage": "working",
+      "ok": false,
+      "error": {
+        "code": "dependency_timeout",
+        "message": "The local model timed out.",
+        "stage": "working",
+        "detail": null,
+        "raw_output": null
+      },
+      "at": "2026-10-18T08:38:43.769Z"
+    }
+  ],
+  "error": {
+    "code": "dependency_timeout",
+    "message": "The local model timed out.",
+    "stage": "working",
+    "detail": null,
+    "raw_output": null
+  }
+}

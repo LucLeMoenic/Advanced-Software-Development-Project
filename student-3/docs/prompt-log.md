@@ -31,3 +31,23 @@ The `_is_response_usable()` heuristic (non-empty, minimum length, and — when c
 `AgenticLoopApplication`'s context-file allowlist (`IsAllowedContextPath`) does not include `.js` — only `.html`, `.cs`, `.md`, `.py`, etc. A `--context` pointing at a plain `.js` file fails fast with `Context file type is not allowed`. Any agentic-loop task that touches frontend JavaScript logic living in an external file (like this project's own `app.js`) needs that logic moved into an inline `<script>` block in an `.html` file first — which is presumably why `student-5`'s equivalent feature is entirely inline rather than in a separate JS file.
 
 On an 8GB host, this loop is also right at the edge of what's runnable: `qwen2.5-coder:7b` (the `IMPLEMENTER_MODEL` default) could not load even after raising Docker Desktop's WSL2 memory ceiling from ~3.7GB to ~5.8GB (a 7B model at this tool's fixed 16384-token context needs more than an 8GB host can spare alongside Windows itself). The 3B/3B pair (`qwen2.5:3b` implementer, `llama3.2:3b` reviewer) is the practical ceiling on hardware like this, and even that needed every other student's containers stopped first to leave enough headroom for the reviewer model's load.
+
+
+## Release 2: Multi-Agent Server prompts
+
+Shared runtime prompts (kept under `ai-services/agentic-loop/prompts/`, not copied here):
+`multi-agent-planner-v1.txt`, `multi-agent-worker-v1.txt`, `multi-agent-reviewer-v1.txt`.
+
+- **One model, three prompts.** All three agents use `llama3.2:3b` through the native Ollama runtime. A second
+  resident model caused out-of-memory crashes earlier in the project, so the agents differ by prompt and
+  schema, not by model.
+- **Prompts demand evidence ids and forbid invention.** The Worker must copy the evidence title word for word
+  into `subject`; that is what lets `checks.py` verify a recommendation deterministically instead of
+  trusting the model.
+- **Observed model behaviour (llama3.2:3b, temperature 0).** The Planner is generic and sometimes plans
+  steps no tool can do ("make a reservation"). The Worker stayed grounded in both live runs. The Reviewer
+  mostly restates the automatic findings and once produced output that failed validation, which is why the
+  server records the rejected output and falls back to an explicit degraded review.
+- **Prompt changes since first draft:** none yet. The first live Reviewer failure was fixed in code
+  (schema-constrained `item_id`, sanitising, degraded fallback), not by rewording the prompt, so the prompt
+  is still v1.

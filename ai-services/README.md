@@ -21,4 +21,10 @@ per the Release 1 brief. Backends reach them at `MCP_SERVER_URL` /
 `RAG_SERVER_URL` (`http://host.docker.internal:5400` / `:5500` from a
 container).
 
-Release 2 multi-agent services must not be implemented here before their release requirements apply.
+Release 2 shared infrastructure:
+
+- `multi-agent-server/`: one shared Multi-Agent Server, run natively on the host on `:5600`. It
+  coordinates Planner, Worker and Reviewer agents over caller-supplied evidence and then waits for a
+  human decision (approve, correct, partial, reject), with workflow history and a hash-chained audit
+  log. Callable from the terminal (`cli.py`) and over HTTP. See `multi-agent-server/README.md`.
+  It is not a Docker Compose service.
