@@ -12,6 +12,17 @@ on:
       - "ai-services/agentic-loop/prompts/rag-grounding-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-review-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-edit-v1.txt"
+      - "ai-services/multi-agent-server/**"
+      - "ai-services/agentic-loop/**"
+      - ".pre-commit-config.yaml"
+      - "pyproject.toml"
+      - "scripts/security/**"
+      - "scripts/deploy/start-multi-agent.ps1"
+      - "scripts/deploy/prepare_cloud.py"
+      - "scripts/deploy/assert-cloud-ci.ps1"
+      - "scripts/test/cloud-ci.ps1"
+      - "scripts/test/test_cloud_config.py"
+      - ".env.example"
       - "scripts/deploy/start-release1.ps1"
       - "scripts/test/release1-launcher.ps1"
       - "shared/vue-frontend/**"
@@ -26,12 +37,24 @@ on:
       - "ai-services/agentic-loop/prompts/rag-grounding-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-review-v1.txt"
       - "ai-services/agentic-loop/prompts/itinerary-edit-v1.txt"
+      - "ai-services/multi-agent-server/**"
+      - "ai-services/agentic-loop/**"
+      - ".pre-commit-config.yaml"
+      - "pyproject.toml"
+      - "scripts/security/**"
+      - "scripts/deploy/start-multi-agent.ps1"
+      - "scripts/deploy/prepare_cloud.py"
+      - "scripts/deploy/assert-cloud-ci.ps1"
+      - "scripts/test/cloud-ci.ps1"
+      - "scripts/test/test_cloud_config.py"
+      - ".env.example"
       - "scripts/deploy/start-release1.ps1"
       - "scripts/test/release1-launcher.ps1"
       - "shared/vue-frontend/**"
       - ".github/workflows/student-2.yml"
       - "docker-compose.yml"
       - "scripts/test/student-2.ps1"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -46,9 +69,38 @@ jobs:
           node-version: "22"
           cache: npm
           cache-dependency-path: student-2/frontend/package-lock.json
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
 
       - name: Test Student 2 services
         run: pwsh -NoProfile -File scripts/test/student-2.ps1
+
+      - name: Release 2 create and update endpoint evidence
+        working-directory: student-2/backend
+        run: python -m pytest tests/test_release2_endpoints.py -v --junitxml=../../test-results/student2-endpoints.xml
+
+      - name: Shared Multi-Agent regression tests
+        working-directory: ai-services/multi-agent-server
+        run: |
+          python -m pip install -r requirements.txt
+          python -m pytest tests -q --junitxml=../../test-results/multi-agent.xml
+
+      - name: Shared agentic-loop review modes
+        run: dotnet test ai-services/agentic-loop/tests --logger "trx;LogFileName=loop.trx" --results-directory test-results
+
+      - name: Cloud baseline configuration tests
+        run: python -m pytest scripts/test/test_cloud_config.py -q --junitxml=test-results/cloud-config.xml
+
+      - name: Same-revision cloud CI gate tests
+        run: pwsh -NoProfile -File scripts/test/cloud-ci.ps1
+
+      - name: Retain test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-2-tests-${{ github.sha }}
+          path: test-results/
 
       - name: Test native launcher configuration
         run: pwsh -NoProfile -File scripts/test/release1-launcher.ps1
@@ -64,6 +116,7 @@ jobs:
           AI_ENABLED: "false"
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student2-database student2-backend student2-frontend
 
       - name: Smoke test Student 2 integration
@@ -72,13 +125,14 @@ jobs:
           curl --fail --silent http://localhost:5202/health
           curl --fail --silent http://localhost:5302/health
           curl --fail --silent http://localhost:5202/api/trips | python -c "import json,sys; trips=json.load(sys.stdin); assert len(trips) >= 10"
-          curl --fail --silent http://localhost:5202/api/capabilities | python -c "import json,sys; assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False}"
+          curl --fail --silent http://localhost:5202/api/capabilities | python -c "import json,sys; assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False, 'multiAgentEnabled': False}"
 
       - name: Verify disabled modes, CRUD and restart persistence
         env:
           AI_ENABLED: "false"
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
         run: pwsh -NoProfile -File scripts/test/student-2.ps1 -Smoke
 
       - name: Stop Student 2 services
