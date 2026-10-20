@@ -1,5 +1,32 @@
 # Student 2 Review Record
 
+## 2026-10-20 - Release 2 Implementation Validation
+
+21 October ownership correction supersedes the retention decision below:
+Student 1/3/5 guards and their new tests were removed at user direction.
+Cloud acceptance remains dependent on each owner implementing AI-off support.
+
+Reviewed the brief against PR #112 and the working tree: the server already
+existed; Student 2 UI integration, two endpoint-test artifacts, report review
+modes and shared cloud baseline are required additions. The initial custom
+report-manifest protocol was unnecessary and was removed on 21 October.
+Modes reuse existing context safety/hashing and genuine human finalisation;
+95 loop tests pass. They review evidence, not certify its truth.
+
+Retained trust-boundary validation, all four decision paths, stale-snapshot
+protection and explicit errors. Retained the small cross-student AI-off guards
+because otherwise the cloud baseline does not disable AI.
+
+The first native run failed subject/evidence checks; a schema constraint fixed
+the observed case. Its raw capture is archived outside the patch, with the
+failure retained in the [runbook](release-2-runbook.md). The unchanged successful
+capture has no human decision and does not prove the container/browser path.
+Ten remaining scanner entries are independently checked audit hashes.
+
+Local feature/guard results and outstanding network, human, CI, cloud and
+report/showcase acceptance gates are recorded in the runbook. No remote success,
+paid resource, firewall change or human approval is inferred.
+
 ## 2026-10-01 - Final Chunk Integration Check
 
 Resolved the shared loop merge by preserving Student 3 routes, request bodies and

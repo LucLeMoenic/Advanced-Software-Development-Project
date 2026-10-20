@@ -1,0 +1,446 @@
+{
+  "execution": "Native backend test client -> container database API + native Multi-Agent HTTP server",
+  "humanDecision": "Pending; no human decision was automated.",
+  "savedTripUnchanged": true,
+  "record": {
+    "created_at": "2026-10-20T09:34:20.877Z",
+    "error": null,
+    "evidence": [
+      {
+        "id": "trip-10",
+        "text": "{\"tripId\": 10, \"snapshot\": \"7bd2636b439961aedf11641af31501570934546d9318de158b8c55c63d378b6a\", \"destination\": \"Copenhagen\", \"startDate\": \"2026-12-25\", \"endDate\": \"2026-12-26\", \"totalBudget\": 2200.0, \"stopCount\": 2, \"omittedStops\": 0, \"notice\": \"Saved plans, not verified prices, availability or travel feasibility. Notes limited to 400 characters.\"}",
+        "title": "Trip overview"
+      },
+      {
+        "id": "interests-10",
+        "text": "cycling, modern design, bakeries",
+        "title": "Saved interests"
+      },
+      {
+        "id": "stop-19",
+        "text": "Day 1. Activity: Cycle the harbour route. Notes: Use a marked cycle lane and pause at the waterfront public spaces.",
+        "title": "Day 1: Cycle the harbour route"
+      },
+      {
+        "id": "stop-20",
+        "text": "Day 2. Activity: Explore Norrebro and the Designmuseum. Notes: Allow time for neighbourhood shops and a bakery stop.",
+        "title": "Day 2: Explore Norrebro and the Designmuseum"
+      }
+    ],
+    "feature": "student-2",
+    "final_output": null,
+    "history": [
+      {
+        "agent": "planner",
+        "duration_ms": 20907,
+        "finished_at": "2026-10-20T09:34:41.860Z",
+        "model": "llama3.2:3b",
+        "ok": true,
+        "output": {
+          "objective": "Review the balance of saved days without inventing activities, costs or availability.",
+          "required_evidence_ids": [
+            "trip-10",
+            "interests-10",
+            "stop-19",
+            "stop-20"
+          ],
+          "steps": [
+            {
+              "description": "Extract destination and dates from the trip overview evidence.",
+              "id": "s1"
+            },
+            {
+              "description": "List saved interests and activities from the interests and stop evidence.",
+              "id": "s2"
+            },
+            {
+              "description": "Count the number of days in the trip.",
+              "id": "s3"
+            },
+            {
+              "description": "Calculate the total number of saved days.",
+              "id": "s4"
+            }
+          ],
+          "success_criteria": [
+            "The total number of saved days matches the number of days in the trip.",
+            "The saved interests and activities are correctly listed.",
+            "The notes for each stop are within the 400 character limit.",
+            "The trip overview includes the correct destination and dates."
+          ]
+        },
+        "prompt": "multi-agent-planner-v1.txt",
+        "stage": "planner",
+        "started_at": "2026-10-20T09:34:20.953Z"
+      },
+      {
+        "agent": "worker",
+        "duration_ms": 10767,
+        "finished_at": "2026-10-20T09:34:52.664Z",
+        "model": "llama3.2:3b",
+        "ok": true,
+        "output": {
+          "items": [
+            {
+              "detail": "Use a marked cycle lane and pause at the waterfront public spaces.",
+              "evidence_ids": [
+                "stop-19"
+              ],
+              "id": "i1",
+              "subject": "Day 1: Cycle the harbour route"
+            },
+            {
+              "detail": "Allow time for neighbourhood shops and a bakery stop.",
+              "evidence_ids": [
+                "stop-20"
+              ],
+              "id": "i2",
+              "subject": "Day 2: Explore Norrebro and the Designmuseum"
+            },
+            {
+              "detail": "Saved plans, not verified prices, availability or travel feasibility. Notes limited to 400 characters.",
+              "evidence_ids": [
+                "trip-10"
+              ],
+              "id": "i3",
+              "subject": "Trip overview"
+            },
+            {
+              "detail": "cycling, modern design, bakeries",
+              "evidence_ids": [
+                "interests-10"
+              ],
+              "id": "i4",
+              "subject": "Saved interests"
+            }
+          ],
+          "summary": "The trip overview includes the correct destination and dates."
+        },
+        "prompt": "multi-agent-worker-v1.txt",
+        "stage": "worker",
+        "started_at": "2026-10-20T09:34:41.897Z"
+      },
+      {
+        "agent": "reviewer",
+        "duration_ms": 7494,
+        "finished_at": "2026-10-20T09:35:00.219Z",
+        "model": "llama3.2:3b",
+        "ok": true,
+        "output": {
+          "automatic_findings": [],
+          "degraded": false,
+          "findings": [
+            {
+              "item_id": "i3",
+              "message": "Notes for each stop are within the 400 character limit.",
+              "severity": "info"
+            },
+            {
+              "item_id": "i4",
+              "message": "Saved interests are correctly listed.",
+              "severity": "info"
+            }
+          ],
+          "model_findings": [
+            {
+              "item_id": "i3",
+              "message": "Notes for each stop are within the 400 character limit.",
+              "severity": "info"
+            },
+            {
+              "item_id": "i4",
+              "message": "Saved interests are correctly listed.",
+              "severity": "info"
+            }
+          ],
+          "model_verdict": "pass",
+          "recommendations": [
+            "Verify that the notes for each stop are within the 400 character limit.",
+            "Verify that the saved interests are correctly listed.",
+            "Check that the trip overview includes the correct destination and dates.",
+            "Review the total number of saved days to ensure it matches the number of days in the trip."
+          ],
+          "verdict": "pass"
+        },
+        "prompt": "multi-agent-reviewer-v1.txt",
+        "stage": "reviewer",
+        "started_at": "2026-10-20T09:34:52.724Z"
+      }
+    ],
+    "human_decision": null,
+    "id": "wf-20261020T093420Z-c87b0bd4",
+    "plan": {
+      "objective": "Review the balance of saved days without inventing activities, costs or availability.",
+      "required_evidence_ids": [
+        "trip-10",
+        "interests-10",
+        "stop-19",
+        "stop-20"
+      ],
+      "steps": [
+        {
+          "description": "Extract destination and dates from the trip overview evidence.",
+          "id": "s1"
+        },
+        {
+          "description": "List saved interests and activities from the interests and stop evidence.",
+          "id": "s2"
+        },
+        {
+          "description": "Count the number of days in the trip.",
+          "id": "s3"
+        },
+        {
+          "description": "Calculate the total number of saved days.",
+          "id": "s4"
+        }
+      ],
+      "success_criteria": [
+        "The total number of saved days matches the number of days in the trip.",
+        "The saved interests and activities are correctly listed.",
+        "The notes for each stop are within the 400 character limit.",
+        "The trip overview includes the correct destination and dates."
+      ]
+    },
+    "review": {
+      "automatic_findings": [],
+      "degraded": false,
+      "findings": [
+        {
+          "item_id": "i3",
+          "message": "Notes for each stop are within the 400 character limit.",
+          "severity": "info"
+        },
+        {
+          "item_id": "i4",
+          "message": "Saved interests are correctly listed.",
+          "severity": "info"
+        }
+      ],
+      "model_findings": [
+        {
+          "item_id": "i3",
+          "message": "Notes for each stop are within the 400 character limit.",
+          "severity": "info"
+        },
+        {
+          "item_id": "i4",
+          "message": "Saved interests are correctly listed.",
+          "severity": "info"
+        }
+      ],
+      "model_verdict": "pass",
+      "recommendations": [
+        "Verify that the notes for each stop are within the 400 character limit.",
+        "Verify that the saved interests are correctly listed.",
+        "Check that the trip overview includes the correct destination and dates.",
+        "Review the total number of saved days to ensure it matches the number of days in the trip."
+      ],
+      "verdict": "pass"
+    },
+    "stale": false,
+    "status": "awaiting_human_review",
+    "submitted_by": "student-2-frontend",
+    "task": "Review the balance of saved days without inventing activities, costs or availability. Cite supplied evidence titles.",
+    "updated_at": "2026-10-20T09:35:00.244Z",
+    "work": {
+      "items": [
+        {
+          "detail": "Use a marked cycle lane and pause at the waterfront public spaces.",
+          "evidence_ids": [
+            "stop-19"
+          ],
+          "id": "i1",
+          "subject": "Day 1: Cycle the harbour route"
+        },
+        {
+          "detail": "Allow time for neighbourhood shops and a bakery stop.",
+          "evidence_ids": [
+            "stop-20"
+          ],
+          "id": "i2",
+          "subject": "Day 2: Explore Norrebro and the Designmuseum"
+        },
+        {
+          "detail": "Saved plans, not verified prices, availability or travel feasibility. Notes limited to 400 characters.",
+          "evidence_ids": [
+            "trip-10"
+          ],
+          "id": "i3",
+          "subject": "Trip overview"
+        },
+        {
+          "detail": "cycling, modern design, bakeries",
+          "evidence_ids": [
+            "interests-10"
+          ],
+          "id": "i4",
+          "subject": "Saved interests"
+        }
+      ],
+      "summary": "The trip overview includes the correct destination and dates."
+    }
+  },
+  "audit": [
+    {
+      "actor": "system",
+      "details": {
+        "evidence_ids": [
+          "trip-10",
+          "interests-10",
+          "stop-19",
+          "stop-20"
+        ],
+        "feature": "student-2",
+        "submitted_by": "student-2-frontend"
+      },
+      "event": "workflow_created",
+      "hash": "1a1fc6d04b74e96496a8b1a7802888ec012fa7fdd360e7eea2ed2e2955279a85",
+      "prev_hash": "1dc2401ddd2bb859ae24013334e4fdf04defcfbbd4f3b65cc1edbf25501ac210",
+      "seq": 10,
+      "ts": "2026-10-20T09:34:20.923Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "planner",
+      "details": {
+        "model": "llama3.2:3b",
+        "prompt": "multi-agent-planner-v1.txt"
+      },
+      "event": "stage_started",
+      "hash": "5db58cb7c5308e91192158a21ca7b56f30b7a0dbe3604c7c7935cc5322c657ba",
+      "prev_hash": "1a1fc6d04b74e96496a8b1a7802888ec012fa7fdd360e7eea2ed2e2955279a85",
+      "seq": 11,
+      "ts": "2026-10-20T09:34:20.951Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "planner",
+      "details": {
+        "required_evidence_ids": [
+          "trip-10",
+          "interests-10",
+          "stop-19",
+          "stop-20"
+        ],
+        "steps": 4
+      },
+      "event": "stage_completed",
+      "hash": "b59b4ac697b16dd3fb1d67df911f37e63047578d6762c1f7919bf95dd28855f1",
+      "prev_hash": "5db58cb7c5308e91192158a21ca7b56f30b7a0dbe3604c7c7935cc5322c657ba",
+      "seq": 12,
+      "ts": "2026-10-20T09:34:41.877Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "worker",
+      "details": {
+        "model": "llama3.2:3b",
+        "prompt": "multi-agent-worker-v1.txt"
+      },
+      "event": "stage_started",
+      "hash": "435dde6efdab57bd71092a4d82c4a205ac0b1eb31a5752e54574dcd92b4eb113",
+      "prev_hash": "b59b4ac697b16dd3fb1d67df911f37e63047578d6762c1f7919bf95dd28855f1",
+      "seq": 13,
+      "ts": "2026-10-20T09:34:41.896Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "worker",
+      "details": {
+        "items": [
+          {
+            "evidence_ids": [
+              "stop-19"
+            ],
+            "id": "i1",
+            "subject": "Day 1: Cycle the harbour route"
+          },
+          {
+            "evidence_ids": [
+              "stop-20"
+            ],
+            "id": "i2",
+            "subject": "Day 2: Explore Norrebro and the Designmuseum"
+          },
+          {
+            "evidence_ids": [
+              "trip-10"
+            ],
+            "id": "i3",
+            "subject": "Trip overview"
+          },
+          {
+            "evidence_ids": [
+              "interests-10"
+            ],
+            "id": "i4",
+            "subject": "Saved interests"
+          }
+        ]
+      },
+      "event": "stage_completed",
+      "hash": "581ffb85134a548f4f421c2cab309e4bdca3b0a516aa5ad53f34deb106eb4bb4",
+      "prev_hash": "435dde6efdab57bd71092a4d82c4a205ac0b1eb31a5752e54574dcd92b4eb113",
+      "seq": 14,
+      "ts": "2026-10-20T09:34:52.685Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "system",
+      "details": {
+        "findings": []
+      },
+      "event": "automatic_checks",
+      "hash": "913b0f7c1155424186b28b1ceaa0cce4efdd52129d6b3e0e476fb62856011b53",
+      "prev_hash": "581ffb85134a548f4f421c2cab309e4bdca3b0a516aa5ad53f34deb106eb4bb4",
+      "seq": 15,
+      "ts": "2026-10-20T09:34:52.702Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "reviewer",
+      "details": {
+        "model": "llama3.2:3b",
+        "prompt": "multi-agent-reviewer-v1.txt"
+      },
+      "event": "stage_started",
+      "hash": "35fa7c52afd5934ab3dbdb3e275a69e9a8b1e83366043e5507fbd2eeea2f6072",
+      "prev_hash": "913b0f7c1155424186b28b1ceaa0cce4efdd52129d6b3e0e476fb62856011b53",
+      "seq": 16,
+      "ts": "2026-10-20T09:34:52.723Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "reviewer",
+      "details": {
+        "blocking": 0,
+        "model_verdict": "pass",
+        "verdict": "pass"
+      },
+      "event": "stage_completed",
+      "hash": "39b5b7884064c466bf90ab69b173bc9a91c6de0b9a07de470224a7d8e0471d4e",
+      "prev_hash": "35fa7c52afd5934ab3dbdb3e275a69e9a8b1e83366043e5507fbd2eeea2f6072",
+      "seq": 17,
+      "ts": "2026-10-20T09:35:00.243Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    },
+    {
+      "actor": "system",
+      "details": {
+        "verdict": "pass"
+      },
+      "event": "awaiting_human_review",
+      "hash": "ee03be5d4483ca2b3f110bd0acfa3020721933ad66e1d8505f1f51b99f142660",
+      "prev_hash": "39b5b7884064c466bf90ab69b173bc9a91c6de0b9a07de470224a7d8e0471d4e",
+      "seq": 18,
+      "ts": "2026-10-20T09:35:00.271Z",
+      "workflow_id": "wf-20261020T093420Z-c87b0bd4"
+    }
+  ],
+  "auditVerification": {
+    "valid": true,
+    "entries": 18,
+    "broken_at": null
+  }
+}

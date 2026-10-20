@@ -2,6 +2,45 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-20 - Release 2 Implementation
+
+21 October ownership correction: user directed other students to implement
+their own cloud AI-off support. Removed only our Student 1/3/5 application
+guards and added tests; recorded those requirements as pending owner work.
+Removed duplicate Student 2 contribution entries from Student 1's logs.
+All other student folders now match HEAD, with no new files; verified with git.
+The contribution remains on `LLM/Student_2_Release_2`. The earlier
+implementation/test descriptions below are historical.
+
+**Request:** implement Student 2 Release 2, then redo it closely to the brief
+using the simplest working solution.
+
+**Plan/Act:** reused PR #112's native server for Student 2 review routes/UI;
+added two explicit endpoint tests, three shared report-review modes and a
+CI-gated cloud bundle. Kept small Student 1/3/5 AI-off fixes required by the
+group cloud baseline. No new agent system, trip table or autonomous editing.
+
+**Simplification (21 October):** removed the bespoke JSON report-manifest
+framework. Review modes now use existing bounded/hashed `--context` input and
+human finalisation, not a new acceptance protocol. Condensed the plan/runbook;
+archived the original failed model capture outside the patch and removed its
+scanner entries. The failure remains disclosed; the
+[successful rerun](evidence/release-2/native-quality-rerun.json) remains unchanged.
+Cloud scripts support an approved Azure or AWS Linux VM, without choosing an account.
+
+**Observe/Adapt:** simplified shared loop 95/95 tests and editor diagnostics pass.
+Historical feature/guard results and native-only model limits are recorded once
+in the [runbook](release-2-runbook.md). The original loop suite had 97 cases;
+replacing nine manifest-specific cases with seven context-mode cases yields 95.
+No human decision, remote CI, cloud deployment, commit or push is claimed.
+
+Final 21 October checks: backend 238 passed/11 live skips, frontend 40 passed and
+production build, shared server 64 passed, cloud config 6 passed, cloud CI gate
+positive/negative tests passed, Ruff security and detect-secrets passed.
+Restored the stopped Podman engine; all 16 app services are healthy and the
+shared itinerary URL returns 200. Existing disabled integration flags remain
+unchanged. No source change required rebuilding the already-current app images.
+
 The 28 September overview follow-up also built both Student 2 container images
 successfully with `docker compose build student2-backend student2-frontend`.
 Running containers and the native MCP process were not replaced; integrated
