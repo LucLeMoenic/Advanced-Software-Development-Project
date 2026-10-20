@@ -1,16 +1,77 @@
 name: Cloud Deployment
 
 on:
-  workflow_run:
-    workflows: ["Student 1 CI", "Student 2 CI", "Student 3 CI", "Student 4 CI", "Student 5 CI"]
-    types:
-      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cloud-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    env:
+      CLOUD_HOST: ${{ vars.CLOUD_HOST }}
+      CLOUD_USER: ${{ vars.CLOUD_USER }}
+      CLOUD_DOMAIN: ${{ vars.CLOUD_DOMAIN }}
     steps:
-      - name: Deploy placeholder
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Require all CI for the deployed revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
+      - name: Prepare and validate cloud configuration
         run: |
-          echo "Cloud deployment steps go here"
+          python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --output cloud-bundle
+          docker compose -f cloud-bundle/compose.json config --quiet
+      - name: Build immutable application images
+        run: |
+          docker compose -f cloud-bundle/compose-build.json build
+          docker pull caddy:2.10.2-alpine
+          mapfile -t images < cloud-bundle/images.txt
+          docker image save --output cloud-bundle/images.tar "${images[@]}"
+          cd cloud-bundle
+          sha256sum compose.json Caddyfile revision.txt smoke_cloud.py accommodation.db deploy-vm.sh images.tar > SHA256SUMS
+      - name: Configure pinned SSH access
+        env:
+          SSH_KEY: ${{ secrets.CLOUD_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.CLOUD_KNOWN_HOSTS }}
+        run: |
+          [[ "$CLOUD_HOST" =~ ^[a-zA-Z0-9.-]+$ ]] && [[ "$CLOUD_USER" =~ ^[a-z_][a-z0-9_-]*$ ]]
+          test -n "$SSH_KEY" && test -n "$KNOWN_HOSTS"
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+      - name: Deploy to the approved Azure or AWS Linux VM
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "mkdir -p asd-upload/$GITHUB_SHA"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,accommodation.db,deploy-vm.sh,images.tar,SHA256SUMS} "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash asd-upload/$GITHUB_SHA/deploy-vm.sh $GITHUB_SHA"
+      - name: Verify public gateway and Student 2 CRUD
+        run: |
+          set -o pipefail
+          python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt
+      - name: Retain deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-deployment-${{ github.sha }}
+          path: |
+            cloud-bundle/compose.json
+            cloud-bundle/revision.txt
+            cloud-bundle/SHA256SUMS
+            cloud-bundle/cloud-smoke.txt
+      - name: Remove runner credentials
+        if: always()
+        run: |
+          rm -f ~/.ssh/id_ed25519 ~/.ssh/known_hosts

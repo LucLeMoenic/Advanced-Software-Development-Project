@@ -95,6 +95,9 @@ def _restrict_ids(node, ids):
 async def _run(role, model_cls, payload, evidence_ids, extra_check=None, item_ids=None):
     schema = model_cls.model_json_schema()
     _restrict_ids(schema, evidence_ids)
+    if role == "worker":
+        schema["$defs"]["WorkItem"]["properties"]["subject"]["enum"] = list(dict.fromkeys(
+            entry["title"] for entry in payload["evidence"]))
     if item_ids is not None:
         _restrict_item_ids(schema, item_ids)
     last, last_raw = None, None

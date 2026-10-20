@@ -26,6 +26,12 @@ for setup, strict mode flags, and current live-integration limitations.
 
 ## Services
 
+Release 2 adds a disabled-by-default **Plan review** tab backed by the shared
+native Multi-Agent Server. Planner/Worker/Reviewer recommendations require an
+explicit human decision and never modify saved trips. See the
+[Release 2 runbook](docs/release-2-runbook.md) for configuration, tests, cloud
+deployment prerequisites and the remaining live/integration acceptance gates.
+
 Open the feature through the unified application at `http://localhost:5100/itinerary/`. The shared home page at `http://localhost:5100` is the supported user entry point.
 
 | Service | Host port | Health |

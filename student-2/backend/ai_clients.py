@@ -12,6 +12,11 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 ERRORS = {
+    "invalid_workflow": (400, "Check the review request, decision, selected items and evidence references."),
+    "workflow_not_found": (404, "This workflow does not belong to the selected trip."),
+    "workflow_conflict": (409, "This workflow is not awaiting a human decision. Refresh its status."),
+    "stale_workflow": (409, "The saved itinerary changed. Start a new plan review."),
+    "workflow_busy": (503, "Another workflow is running. Try again when it finishes."),
     "invalid_edit": (400, "The edit or preview is invalid or expired. Request a new preview."),
     "edit_no_change": (400, "Those stops are already in that order."),
     "undo_unavailable": (400, "There is no unchanged confirmed itinerary edit to undo. Manual edits cannot be undone here."),

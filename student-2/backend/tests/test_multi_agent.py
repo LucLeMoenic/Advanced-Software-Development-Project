@@ -1,0 +1,244 @@
+import copy
+import json
+
+import httpx
+import pytest
+
+from app import DependencyError, create_app
+from multi_agent import MultiAgentClient, evidence_for, validate_record
+from ai_clients import IntegrationError
+
+ID = "wf-20261020T080000Z-0123abcd"
+BASE = "/api/trips/12/multi-agent-workflows"
+
+
+def trip():
+    return {"id": 12, "user": "Excluded identity", "destination": "Osaka", "startDate": "2026-11-01",
+            "endDate": "2026-11-02", "budget": 900, "interests": "Quiet walks",
+            "stops": [{"id": 4, "tripId": 12, "day": 1, "activity": "Park walk", "notes": "Saved plan", "sortOrder": 0}]}
+
+
+def ready():
+    work = {"summary": "A flexible plan.", "items": [
+        {"id": "i1", "subject": "Trip overview", "detail": "Day 2 has no saved stops.", "evidence_ids": ["trip-12"]},
+        {"id": "i2", "subject": "Day 1: Park walk", "detail": "Keep the walk flexible.", "evidence_ids": ["stop-4"]}]}
+    return {"id": ID, "feature": "student-2", "task": "Review my saved plan", "submitted_by": "student-2-frontend",
+            "status": "awaiting_human_review", "created_at": "2026-10-20T08:00:00Z", "updated_at": "2026-10-20T08:01:00Z",
+            "evidence": evidence_for(trip(), 12), "plan": {
+                "objective": "Review saved days", "steps": [{"id": "s1", "description": "Inspect saved days"}],
+                "required_evidence_ids": ["trip-12"], "success_criteria": ["Cite saved evidence"]},
+            "work": work, "review": {"verdict": "pass", "model_verdict": "pass", "degraded": False,
+                "automatic_findings": [], "model_findings": [], "findings": [], "recommendations": []},
+            "human_decision": None, "final_output": None, "history": [], "error": None}
+
+
+class Database:
+    def __init__(self):
+        self.body = trip()
+        self.calls = []
+        self.status = 200
+
+    def request(self, method, path, payload=None):
+        self.calls.append((method, path, payload))
+        return copy.deepcopy(self.body), self.status
+
+
+class Server:
+    def __init__(self):
+        self.record = ready()
+        self.calls = []
+
+    def request(self, method, path, payload=None, expected=200):
+        self.calls.append((method, path, payload))
+        if path == "/workflows":
+            self.record["evidence"] = payload["evidence"]
+            return {"id": ID, "status": "queued"}
+        if method == "POST":
+            decision = payload["decision"]
+            self.record["status"] = {"approve": "approved", "correct": "corrected",
+                                     "partial": "partially_accepted", "reject": "rejected"}[decision]
+            self.record["human_decision"] = payload
+            self.record["final_output"] = copy.deepcopy(self.record["work"])
+            if decision == "reject":
+                self.record["final_output"] = None
+            elif decision == "correct":
+                self.record["final_output"] = payload["corrected_output"]
+            elif decision == "partial":
+                self.record["final_output"]["items"] = [
+                    i for i in self.record["work"]["items"] if i["id"] in payload["accepted_item_ids"]]
+        return copy.deepcopy(self.record)
+
+
+@pytest.fixture
+def setup():
+    database, server = Database(), Server()
+    client = create_app(database_client=database, multi_agent_client=server, settings={
+        "MULTI_AGENT_ENABLED": True, "AI_ENABLED": False, "MCP_ENABLED": False, "RAG_ENABLED": False,
+    }).test_client()
+    return client, database, server
+
+
+def test_disabled_is_default_and_makes_no_dependency_calls(monkeypatch):
+    monkeypatch.delenv("MULTI_AGENT_ENABLED", raising=False)
+    db, server = Database(), Server()
+    client = create_app(database_client=db, multi_agent_client=server).test_client()
+    assert client.get("/api/capabilities").json["multiAgentEnabled"] is False
+    for method, path in [("post", BASE), ("get", f"{BASE}/{ID}"), ("post", f"{BASE}/{ID}/decision")]:
+        assert getattr(client, method)(path).json["error"]["code"] == "mode_disabled"
+    assert not db.calls and not server.calls
+
+
+def test_create_builds_bounded_identity_free_evidence(setup):
+    client, db, server = setup
+    response = client.post(BASE, json={"task": " Review saved days "})
+    assert response.status_code == 202 and response.json == {"id": ID, "status": "queued"}
+    payload = server.calls[0][2]
+    assert payload["feature"] == "student-2" and payload["task"] == "Review saved days"
+    assert "Excluded identity" not in json.dumps(payload)
+    assert all(call[0] == "GET" for call in db.calls)
+
+
+@pytest.mark.parametrize("payload", [None, [], {}, {"task": "  "}, {"task": "x" * 501},
+                                          {"task": "Review", "feature": "student-3"}, {"task": 123}])
+def test_invalid_start_never_calls_dependencies(setup, payload):
+    client, db, server = setup
+    assert client.post(BASE, json=payload).status_code == 400
+    assert not db.calls and not server.calls
+
+
+def test_evidence_limits_and_fingerprint_cover_omitted_stops():
+    value = trip()
+    value["stops"] = [{**value["stops"][0], "id": i + 1, "notes": "x" * 1000, "activity": "a" * 160} for i in range(40)]
+    evidence = evidence_for(value, 12)
+    assert len(evidence) == 30
+    assert json.loads(evidence[0]["text"])["omittedStops"] == 12
+    assert all(len(e["text"]) <= 800 and len(e["title"]) <= 120 for e in evidence)
+    assert "truncated" in evidence[2]["text"]
+    value["stops"][-1]["notes"] = "Changed omitted stop"
+    assert evidence_for(value, 12)[0] != evidence[0]
+
+
+@pytest.mark.parametrize("change", [{"budget": float("nan")}, {"endDate": "2025-01-01"}, {"id": True},
+                                  {"stops": [{"id": 1}]}])
+def test_invalid_database_snapshot_is_explicit_502(setup, change):
+    client, db, server = setup
+    db.body.update(change)
+    assert client.post(BASE, json={"task": "Review plan"}).status_code == 502
+    assert not server.calls
+
+
+def test_poll_reopens_without_backend_memory_and_reports_staleness(setup):
+    client, db, _ = setup
+    assert client.get(f"{BASE}/{ID}").json["stale"] is False
+    db.body["stops"][0]["notes"] = "Changed"
+    assert client.get(f"{BASE}/{ID}").json["stale"] is True
+    db.status = 404
+    assert client.get(f"{BASE}/{ID}").json["stale"] is True
+
+
+@pytest.mark.parametrize("feature,trip_id", [("student-3", 12), ("student-2", 99)])
+def test_foreign_workflow_is_not_exposed(setup, feature, trip_id):
+    client, _, server = setup
+    server.record["feature"] = feature
+    assert client.get(f"/api/trips/{trip_id}/multi-agent-workflows/{ID}").status_code == 404
+
+
+@pytest.mark.parametrize("decision,extra,status", [
+    ("approve", {}, "approved"), ("partial", {"accepted_item_ids": ["i1"]}, "partially_accepted"),
+    ("reject", {"notes": "Unsupported claim"}, "rejected"),
+    ("correct", {"corrected_output": ready()["work"]}, "corrected"),
+])
+def test_all_human_decisions_do_not_write_saved_trips(setup, decision, extra, status):
+    client, db, _ = setup
+    before = copy.deepcopy(db.body)
+    response = client.post(f"{BASE}/{ID}/decision", json={"decision": decision, **extra})
+    assert response.status_code == 200 and response.json["status"] == status
+    assert db.body == before and all(call[0] == "GET" for call in db.calls)
+    assert client.post(f"{BASE}/{ID}/decision", json={"decision": decision, **extra}).status_code == 409
+
+
+@pytest.mark.parametrize("payload", [
+    {"decision": "reject"}, {"decision": "partial", "accepted_item_ids": []},
+    {"decision": "partial", "accepted_item_ids": ["i9"]},
+    {"decision": "partial", "accepted_item_ids": ["i1", "i1"]},
+    {"decision": "correct"}, {"decision": "approve", "accepted_item_ids": ["i1"]},
+    {"decision": "approve", "decided_by": "forged"},
+    {"decision": "correct", "corrected_output": {"summary": "x", "items": [
+        {"id": "i1", "subject": "x", "detail": "x", "evidence_ids": ["unknown"]}]}},
+])
+def test_invalid_decisions_never_forward_a_write(setup, payload):
+    client, _, server = setup
+    assert client.post(f"{BASE}/{ID}/decision", json=payload).status_code == 400
+    assert all(call[0] == "GET" for call in server.calls)
+
+
+def test_changed_trip_blocks_decision(setup):
+    client, db, server = setup
+    db.body["budget"] = 800
+    assert client.post(f"{BASE}/{ID}/decision", json={"decision": "approve"}).status_code == 409
+    assert all(call[0] == "GET" for call in server.calls)
+
+
+def test_database_outage_is_not_a_success(setup):
+    client, db, server = setup
+    def fail(*args):
+        raise DependencyError("Unavailable")
+    db.request = fail
+    assert client.post(BASE, json={"task": "Review my trip"}).status_code == 503
+    assert not server.calls
+
+
+@pytest.mark.parametrize("mutation", [
+    {"id": "wf-20261020T080000Z-deadbeef"}, {"work": None}, {"status": "invented"},
+    {"final_output": ready()["work"]}, {"review": {**ready()["review"], "degraded": True}},
+])
+def test_invalid_upstream_record_is_502(mutation):
+    with pytest.raises(IntegrationError) as exc:
+        validate_record({**ready(), **mutation}, ID, 12)
+    assert exc.value.status == 502
+
+
+@pytest.mark.parametrize("status,code,expected", [
+    (503, "busy", "workflow_busy"), (503, "offline", "dependency_unavailable"),
+    (404, "not_found", "workflow_not_found"), (409, "not_awaiting_review", "workflow_conflict"),
+    (400, "invalid_selection", "invalid_workflow"), (302, "", "invalid_dependency_response"),
+])
+def test_client_maps_http_errors_without_retry(monkeypatch, status, code, expected):
+    calls = []
+    def handler(request):
+        calls.append(request)
+        return httpx.Response(status, json={"error": {"code": code}})
+    original = httpx.stream
+    def stream(method, url, **kwargs):
+        client = httpx.Client(transport=httpx.MockTransport(handler))
+        return client.stream(method, url, **kwargs)
+    monkeypatch.setattr(httpx, "stream", stream)
+    with pytest.raises(IntegrationError) as exc:
+        MultiAgentClient("http://native.invalid").request("POST", "/workflows", {})
+    assert exc.value.code == expected and len(calls) == 1
+    monkeypatch.setattr(httpx, "stream", original)
+
+
+@pytest.mark.parametrize("exception,code", [
+    (httpx.ReadTimeout("timeout"), "dependency_timeout"),
+    (httpx.ConnectError("offline"), "dependency_unavailable"),
+])
+def test_client_network_failures_are_explicit(monkeypatch, exception, code):
+    def fail(*args, **kwargs):
+        raise exception
+    monkeypatch.setattr(httpx, "stream", fail)
+    with pytest.raises(IntegrationError) as exc:
+        MultiAgentClient("http://native.invalid").request("GET", f"/workflows/{ID}")
+    assert exc.value.code == code
+
+
+@pytest.mark.parametrize("body", [{"error": "invalid"}, {"error": None}, {"error": {"code": 3}}, []])
+def test_client_rejects_malformed_error_envelopes(monkeypatch, body):
+    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(503, json=body)))
+    monkeypatch.setattr(httpx, "stream", client.stream)
+    try:
+        with pytest.raises(IntegrationError) as exc:
+            MultiAgentClient("http://native.invalid").request("GET", f"/workflows/{ID}")
+        assert exc.value.status == 502
+    finally:
+        client.close()

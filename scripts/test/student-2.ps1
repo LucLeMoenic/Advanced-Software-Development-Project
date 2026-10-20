@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [switch]$Smoke,
-    [string]$ApiBaseUrl = "http://localhost:5102/itinerary-api"
+    [string]$ApiBaseUrl = "http://localhost:5102/itinerary-api",
+    [string[]]$ComposeFiles = @("docker-compose.yml")
 )
 
 Set-StrictMode -Version Latest
@@ -15,6 +16,8 @@ function Invoke-Checked {
 }
 
 if ($Smoke) {
+    $composeArguments = @("compose")
+    foreach ($file in $ComposeFiles) { $composeArguments += @("-f", $file) }
     function Invoke-SmokeRequest {
         param([string]$Method, [string]$Path, [object]$Body = $null, [int]$ExpectedStatus = 200)
         $request = @{
@@ -39,14 +42,16 @@ if ($Smoke) {
     }
 
     $modes = Invoke-SmokeRequest GET "/capabilities"
-    Assert-Smoke ($modes.aiEnabled -eq $false -and $modes.mcpEnabled -eq $false -and $modes.ragEnabled -eq $false) `
-        "Smoke checks require AI_ENABLED=false, MCP_ENABLED=false and RAG_ENABLED=false; no trips were changed."
+    Assert-Smoke ($modes.aiEnabled -eq $false -and $modes.mcpEnabled -eq $false -and $modes.ragEnabled -eq $false -and $modes.multiAgentEnabled -eq $false) `
+        "Smoke checks require AI_ENABLED, MCP_ENABLED, RAG_ENABLED and MULTI_AGENT_ENABLED=false; no trips were changed."
     $baseline = @(Invoke-SmokeRequest GET "/trips")
     Assert-Smoke ($baseline.Count -ge 10) "Expected at least ten saved trips."
     foreach ($path in @("/trips/$($baseline[0].id)/mcp-summary", "/trips/$($baseline[0].id)/review", "/trips/$($baseline[0].id)/edit-preview", "/trips/$($baseline[0].id)/edit-operation-preview", "/trips/$($baseline[0].id)/edit-confirm", "/itinerary-advice")) {
         $disabled = Invoke-SmokeRequest POST $path @{} 503
         Assert-Smoke ($disabled.error.code -eq "mode_disabled") "$path did not report mode_disabled."
     }
+    $disabled = Invoke-SmokeRequest POST "/trips/$($baseline[0].id)/multi-agent-workflows" @{ task = "Review saved days" } 503
+    Assert-Smoke ($disabled.error.code -eq "mode_disabled") "Multi-Agent did not report mode_disabled."
 
     $tripId = $null
     $fixtureUser = "R1 smoke $([guid]::NewGuid().ToString('N'))"
@@ -77,8 +82,8 @@ if ($Smoke) {
         Assert-Smoke ($regeneratedTrip.generationMode -eq "fallback" -and $regeneratedTrip.stops.Count -eq 4) "Whole-trip regeneration failed."
 
         $beforeRestart = Invoke-SmokeRequest GET "/trips/$tripId"
-        Invoke-Checked "docker" @("compose", "restart", "student2-database") "Database restart failed."
-        Invoke-Checked "docker" @("compose", "up", "--detach", "--no-deps", "--wait", "student2-database") "Database did not become healthy."
+        Invoke-Checked "docker" ($composeArguments + @("restart", "student2-database")) "Database restart failed."
+        Invoke-Checked "docker" ($composeArguments + @("up", "--detach", "--no-deps", "--wait", "student2-database")) "Database did not become healthy."
         $afterRestart = Invoke-SmokeRequest GET "/trips/$tripId"
         Assert-Smoke (($beforeRestart | ConvertTo-Json -Depth 10 -Compress) -eq ($afterRestart | ConvertTo-Json -Depth 10 -Compress)) `
             "Saved itinerary changed after database restart."

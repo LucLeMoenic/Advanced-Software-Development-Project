@@ -13,6 +13,7 @@ def isolated_modes(monkeypatch):
     monkeypatch.setenv("AI_ENABLED", "true")
     monkeypatch.setenv("MCP_ENABLED", "false")
     monkeypatch.setenv("RAG_ENABLED", "false")
+    monkeypatch.setenv("MULTI_AGENT_ENABLED", "false")
 
 
 def test_summary_rejects_zero_duration_before_decimal_allocation():
@@ -884,7 +885,7 @@ def test_disabled_ai_never_calls_generator(path, payload):
     assert response.status_code in (200, 201)
     assert response.get_json()["generationMode"] == "fallback"
     assert client.get("/api/capabilities").get_json() == {
-        "aiEnabled": False, "mcpEnabled": False, "ragEnabled": False,
+        "aiEnabled": False, "mcpEnabled": False, "ragEnabled": False, "multiAgentEnabled": False,
     }
 
 

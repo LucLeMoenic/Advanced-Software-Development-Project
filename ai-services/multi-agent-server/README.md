@@ -104,3 +104,10 @@ Live evidence against a real model is in `student-3/docs/evidence/release-2/mult
   and the deterministic checks are the real controls.
 - Single-process and file-backed: not for concurrent multi-user production use.
 - The Student 3 backend routes and UI panel (`MULTI_AGENT_ENABLED`, default `false`) are a later chunk.
+
+Student 2 now integrates via backend create/poll/decision routes and the Plan
+review tab; see its [Release 2 runbook](../../student-2/docs/release-2-runbook.md).
+The server must run with one worker. Startup marks interrupted running workflows
+failed with an audit entry; terminal and awaiting-human records remain intact.
+Decision handlers run on the single event loop so concurrent human requests
+cannot both overwrite the same awaiting-review record.

@@ -10,6 +10,28 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 
 ## Functional Requirements
 
+### Release 2 extension
+
+- Add a review-only Plan review tab using one shared native Multi-Agent Server.
+  The browser calls only the backend; only the database API opens SQLite.
+- Submit server-derived, identity-free, bounded saved-trip evidence. Validate
+  all returned role outputs, feature/trip association and evidence references.
+- Require explicit approve/correct/partial/reject decisions; never apply them
+  as trip/stop edits. Stale saved snapshots block new decisions.
+- Keep immutable workflow evidence/history and audit records in the shared
+  server store; interrupted runs fail explicitly after native-server restart.
+- Default `MULTI_AGENT_ENABLED` to false and expose `multiAgentEnabled` in the
+  existing capability response. All four AI flags must be false in cloud.
+- Retain Release 0/1 CRUD, generation/fallback, confirmed MCP editing and RAG.
+- CI must identify create-trip and update-trip backend endpoint results.
+  The shared development loop must support all three Release 2 report reviews.
+- Cloud source/configuration and local tests do not establish release acceptance:
+  live integrated execution, genuine human review, successful remote CI/cloud
+  deployment and report/showcase evidence remain required.
+
+Exact routes, limits, commands and current evidence are in the
+[Release 2 runbook](release-2-runbook.md).
+
 | ID | Requirement | Acceptance criteria |
 |---|---|---|
 | IT-FR-01 | Create a trip from traveller, destination, dates, budget, and interests. | Backend validates all fields and returns a persisted day-by-day itinerary. |

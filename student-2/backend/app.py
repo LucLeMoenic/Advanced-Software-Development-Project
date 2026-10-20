@@ -9,6 +9,7 @@ from flask import Flask, g, jsonify, request
 
 from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_overview, validate_summary
 from itinerary_review import ItineraryEditor, ItineraryReviewer, ReviewModel
+from multi_agent import MultiAgentClient, create_blueprint
 
 
 class DependencyError(Exception):
@@ -182,7 +183,7 @@ def validate_stop(payload, trip_id=None):
     return fields, cleaned
 
 
-def create_app(database_client=None, generator=None, *, settings=None, mcp_client=None, rag_client=None, review_model=None):
+def create_app(database_client=None, generator=None, *, settings=None, mcp_client=None, rag_client=None, review_model=None, multi_agent_client=None):
     app = Flask(__name__)
     settings = settings or {}
 
@@ -198,6 +199,7 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         "aiEnabled": enabled("AI_ENABLED", "true"),
         "mcpEnabled": enabled("MCP_ENABLED", "false"),
         "ragEnabled": enabled("RAG_ENABLED", "false"),
+        "multiAgentEnabled": enabled("MULTI_AGENT_ENABLED", "false"),
     }
     mcp_client = mcp_client or McpClient(os.getenv("MCP_SERVER_URL", "http://host.docker.internal:5400/mcp"))
     rag_client = rag_client or RagClient(os.getenv("RAG_SERVER_URL", "http://host.docker.internal:5500"))
@@ -219,6 +221,13 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
 
     def dependency_error(exception):
         return jsonify({"error": {"code": "dependency_unavailable", "message": str(exception), "fields": {}}}), 503
+
+    app.register_error_handler(DependencyError, dependency_error)
+    app.register_blueprint(create_blueprint(
+        database,
+        multi_agent_client or MultiAgentClient(os.getenv("MULTI_AGENT_SERVER_URL", "http://host.docker.internal:5600")),
+        modes["multiAgentEnabled"],
+    ))
 
     def validate_stop_day(stop):
         trip, status = database.request("GET", f"/api/data/trips/{stop['tripId']}")
