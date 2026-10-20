@@ -1,6 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { Check, ClipboardCheck, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, LoaderCircle, PanelRightClose, PanelRightOpen, Sun, Undo2, X } from "@lucide/vue";
+import PlanReview from "./PlanReview.vue";
 
 const trips = ref([]);
 const currentTrip = ref(null);
@@ -115,6 +116,11 @@ function formatWeatherValue(value, unit) {
 function selectAssistantTab(tab) {
   assistantTab.value = tab;
   nextTick(() => document.querySelector(`#${tab}-tab`)?.focus());
+}
+
+function cycleAssistantTab(direction) {
+  const tabs = ["edit", "advice", "plan"];
+  selectAssistantTab(tabs[(tabs.indexOf(assistantTab.value) + direction + tabs.length) % tabs.length]);
 }
 
 function dayDate(day) {
@@ -608,11 +614,12 @@ onUnmounted(() => {
           <p class="muted">{{ currentTrip ? currentTrip.destination : "No trip selected" }}</p>
         </header>
         <div id="assistant-tabs" class="assistant-tabs" role="tablist" aria-label="Trip assistant" :hidden="assistantCollapsed"
-          @keydown.right.prevent="selectAssistantTab(assistantTab === 'edit' ? 'advice' : 'edit')"
-          @keydown.left.prevent="selectAssistantTab(assistantTab === 'edit' ? 'advice' : 'edit')"
-          @keydown.home.prevent="selectAssistantTab('edit')" @keydown.end.prevent="selectAssistantTab('advice')">
+          @keydown.right.prevent="cycleAssistantTab(1)"
+          @keydown.left.prevent="cycleAssistantTab(-1)"
+          @keydown.home.prevent="selectAssistantTab('edit')" @keydown.end.prevent="selectAssistantTab('plan')">
           <button id="edit-tab" role="tab" aria-controls="edit-panel" :aria-selected="assistantTab === 'edit'" :tabindex="assistantTab === 'edit' ? 0 : -1" @click="assistantTab = 'edit'">Edit</button>
           <button id="advice-tab" role="tab" aria-controls="advice-panel" :aria-selected="assistantTab === 'advice'" :tabindex="assistantTab === 'advice' ? 0 : -1" @click="assistantTab = 'advice'">Advice</button>
+          <button id="plan-tab" role="tab" aria-controls="plan-panel" :aria-selected="assistantTab === 'plan'" :tabindex="assistantTab === 'plan' ? 0 : -1" @click="assistantTab = 'plan'">Plan review</button>
         </div>
         </div>
         <div id="assistant-content" class="assistant-content" :hidden="assistantCollapsed">
@@ -695,6 +702,9 @@ onUnmounted(() => {
               <p class="muted weather-attribution">Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Locations: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>.</p>
             </section>
           </div>
+        </section>
+        <section id="plan-panel" class="integration-section" role="tabpanel" aria-labelledby="plan-tab" :hidden="assistantTab !== 'plan'" tabindex="0">
+          <PlanReview :trip="currentTrip" :enabled="integrations.capabilities.multiAgentEnabled === true" :active="assistantTab === 'plan' && !assistantCollapsed" />
         </section>
         </div>
       </aside>

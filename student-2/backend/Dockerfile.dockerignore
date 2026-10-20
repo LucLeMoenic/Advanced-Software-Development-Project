@@ -5,6 +5,7 @@
 !student-2/backend/app.py
 !student-2/backend/ai_clients.py
 !student-2/backend/itinerary_review.py
+!student-2/backend/multi_agent.py
 !student-2/backend/prompts/
 !student-2/backend/prompts/**
 !ai-services/
