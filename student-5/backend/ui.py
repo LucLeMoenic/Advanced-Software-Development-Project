@@ -26,6 +26,7 @@ Two policies worth stating, because they differ from the JSON API next door:
 from typing import Any, Optional
 
 from flask import Blueprint, render_template, request
+from werkzeug.datastructures import MultiDict
 
 from advisory import (
     DestinationNotFound,
@@ -36,8 +37,16 @@ from advisory import (
 from db_client import DatabaseUnavailable
 from integrations import InvalidRequest, clean_question, invoke_tool, rag
 from mcp_client import McpDisabled, McpToolError, McpUnavailable
+from multi_agent_client import (
+    DECIDED_STATUSES,
+    RUNNING_STATUSES,
+    MultiAgentDisabled,
+    MultiAgentRefused,
+    MultiAgentUnavailable,
+)
 from ollama_client import OllamaDisabled, OllamaUnavailable
 from rag_client import RagDisabled, RagTimeout, RagUnavailable
+from readiness import decide_review, load_review, start_review
 
 ui_bp = Blueprint("ui", __name__, url_prefix="/ui")
 
@@ -129,6 +138,21 @@ def fragment_rag_unavailable(exc):
     if isinstance(exc, RagTimeout):
         return notice("The knowledge base took too long to answer. Please try again.")
     return notice("The knowledge base is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(MultiAgentDisabled)
+def fragment_multi_agent_disabled(_exc):
+    return notice("Trip readiness reviews are switched off for this deployment (Multi-Agent is disabled).")
+
+
+@ui_bp.errorhandler(MultiAgentUnavailable)
+def fragment_multi_agent_unavailable(_exc):
+    return notice("The shared Multi-Agent Server is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(MultiAgentRefused)
+def fragment_multi_agent_refused(exc):
+    return notice(REVIEW_MESSAGES.get(exc.code, exc.message))
 
 
 @ui_bp.errorhandler(InvalidRequest)
@@ -334,3 +358,153 @@ def rag_fragment():
     question = clean_question(request.form.get("question"))
     answer = rag().ask(question)
     return render_template("rag_answer.html", question=question, **answer)
+
+
+# ---------------------------------------------------------------------------
+# Release 2: trip readiness review on the shared Multi-Agent Server
+#
+# Same operations as the JSON routes in readiness.py. A review takes minutes,
+# so the create fragment is a status block that polls itself every 2 s. Each
+# poll names the status it is showing (?seen=); while that has not changed the
+# reply is a bodiless 204, which htmx does not swap, so the block stays put and
+# the panel's live region is not re-announced every 2 s. A new stage replaces
+# the block (outerHTML), and the finished view carries no trigger, which is
+# what stops the polling.
+# ---------------------------------------------------------------------------
+
+REVIEW_MESSAGES = {
+    "multi_agent_busy": "Another review is already running on the shared server. Try again when it finishes.",
+    "review_not_found": "That readiness review could not be found for this destination.",
+    "review_not_awaiting_decision": "This review is not awaiting a decision any more. Reload the review to see its outcome.",
+}
+
+STATUS_LABELS = {
+    "queued": "Queued",
+    "planning": "Planner is drafting the plan",
+    "working": "Worker is writing the checklist",
+    "reviewing": "Reviewer is checking the checklist",
+}
+
+
+def render_review(record, destination_id: int, message: Optional[str] = None, form=None) -> str:
+    """The running, awaiting-decision, decided or failed view of one review.
+
+    ``form`` is the submitted decision form when it is being shown again with
+    the server's reason, so what the traveller typed is kept.
+    """
+    if record["status"] in RUNNING_STATUSES:
+        return render_template(
+            "readiness_status.html", record=record, destination_id=destination_id,
+            label=STATUS_LABELS[record["status"]],
+        )
+    return render_template(
+        "readiness_review.html", record=record, destination_id=destination_id,
+        evidence={item["id"]: item["title"] for item in record["evidence"]},
+        decided=record["status"] in DECIDED_STATUSES, message=message,
+        form=form if form is not None else MultiDict(),
+    )
+
+
+def form_text(field: str, default: str = "") -> str:
+    """A trimmed textarea value with browser CRLF line ends folded to LF.
+
+    Browsers count a line break as one character against maxlength but submit
+    it as two, so without this a full 400-character edit with line breaks
+    would overrun the server's limit.
+    """
+    return request.form.get(field, default).replace("\r\n", "\n").strip()
+
+
+def corrected_output(record) -> dict:
+    """The Worker output with the traveller's edited summary and item details.
+
+    Subjects and evidence ids are kept from the original, so a correction can
+    change what an item says but not which record it is about; the server
+    re-runs its checks on the result either way.
+    """
+    work = record["work"]
+    items = []
+    for item in work["items"]:
+        detail = form_text("detail-" + item["id"], item["detail"])
+        if not detail:
+            raise InvalidRequest(
+                "invalid_correction",
+                "Every corrected item needs text. Use partial acceptance to drop an item.")
+        items.append({**item, "detail": detail})
+    summary = form_text("summary", work["summary"]) or work["summary"]
+    return {"summary": summary, "items": items}
+
+
+@ui_bp.post("/readiness-reviews")
+def readiness_create_fragment():
+    """Start a review for the selected destination; returns the polling block."""
+    destination_id = parse_destination_id(request.form.get("destination_id"))
+    if destination_id is None:
+        return notice("Choose a destination before starting a readiness review.")
+    try:
+        created = start_review(destination_id, "student-5-frontend")
+    except DestinationNotFound as exc:
+        return notice(database_error(exc.response, "That destination could not be found."))
+    return render_template(
+        "readiness_status.html", record=created, destination_id=destination_id,
+        label=STATUS_LABELS.get(created["status"], "Queued"),
+    )
+
+
+@ui_bp.get("/readiness-reviews/<workflow_id>")
+def readiness_poll_fragment(workflow_id: str):
+    """One poll: still running, or the finished review with its decision form."""
+    destination_id = requested_destination_id()
+    if destination_id is None:
+        return notice("Choose a destination to see its readiness review.")
+    seen = request.args.get("seen")
+    try:
+        record = load_review(workflow_id, destination_id)
+    except MultiAgentUnavailable:
+        # The review is still running on the server, so a missed poll must not
+        # end the polling: the notice handler's reply carries no trigger and
+        # would strand the review. Keep the block, say why, and poll again.
+        status = seen if seen in RUNNING_STATUSES else "queued"
+        return render_template(
+            "readiness_status.html", record={"id": workflow_id, "status": status},
+            destination_id=destination_id, label=STATUS_LABELS[status], retrying=True,
+        )
+    if record["status"] in RUNNING_STATUSES and record["status"] == seen:
+        return "", 204
+    return render_review(record, destination_id)
+
+
+@ui_bp.post("/readiness-reviews/<workflow_id>/decision")
+def readiness_decision_fragment(workflow_id: str):
+    """Record the human decision, then show the decided review.
+
+    A decision the server refuses (reject without notes, partial with nothing
+    ticked) re-renders the same review with the server's reason above the
+    form, so nothing the traveller typed is lost behind a bare notice.
+    """
+    destination_id = parse_destination_id(request.form.get("destination_id"))
+    if destination_id is None:
+        return notice("Choose a destination before recording a decision.")
+    record = load_review(workflow_id, destination_id)
+
+    decision = request.form.get("decision")
+    decided_by = form_value("decided_by")
+    payload = {"decision": decision, "notes": form_text("notes")}
+    try:
+        if decision not in ("approve", "correct", "partial", "reject"):
+            raise InvalidRequest("invalid_request", "Choose approve, correct, partial or reject.")
+        if decided_by is None:
+            raise InvalidRequest("invalid_request", "Enter your name in Decided by.")
+        payload["decided_by"] = decided_by
+        if decision == "partial":
+            payload["accepted_item_ids"] = request.form.getlist("accepted_item_ids")
+        elif decision == "correct":
+            payload["corrected_output"] = corrected_output(record)
+        decided = decide_review(workflow_id, destination_id, payload)
+    except InvalidRequest as exc:
+        return render_review(record, destination_id, exc.message, request.form)
+    except MultiAgentRefused as exc:
+        if exc.status != 400:
+            raise
+        return render_review(record, destination_id, exc.message, request.form)
+    return render_review(decided, destination_id)

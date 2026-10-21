@@ -1,0 +1,23 @@
+{#
+  A readiness review that is still running. The block polls itself: every 2 s
+  htmx asks for the same review, passing the status shown here as ?seen=. An
+  unchanged status comes back as a bodiless 204 and nothing is swapped; a new
+  stage, or the finished review, replaces this block (outerHTML). The finished
+  view has no hx-trigger, so its arrival is the last poll. After a missed
+  check the block reports seen=retry, so the next good poll always replaces it
+  and clears the warning.
+
+  hx-target and hx-swap are spelled out because both are inherited, and this
+  block must never pick up a surrounding element's.
+#}
+<div class="readiness-status"
+     hx-get="/ui/readiness-reviews/{{ record.id }}?destination_id={{ destination_id }}&amp;seen={{ "retry" if retrying else record.status }}"
+     hx-trigger="every 2s"
+     hx-target="this"
+     hx-swap="outerHTML">
+  <p class="readiness-stage"><span class="readiness-pulse" aria-hidden="true"></span>{{ label }}&hellip;</p>
+  {% if retrying %}
+  <p class="rag-caution">The shared Multi-Agent Server did not answer the last check. Still trying every 2 seconds.</p>
+  {% endif %}
+  <p class="panel-hint">Planner, Worker and Reviewer run one after another on a local model, so a review usually takes one to three minutes. Workflow <code class="mcp-tool-name">{{ record.id }}</code></p>
+</div>
