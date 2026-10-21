@@ -50,7 +50,7 @@ if ($Smoke) {
         $disabled = Invoke-SmokeRequest POST $path @{} 503
         Assert-Smoke ($disabled.error.code -eq "mode_disabled") "$path did not report mode_disabled."
     }
-    $disabled = Invoke-SmokeRequest POST "/trips/$($baseline[0].id)/multi-agent-workflows" @{ task = "Review saved days" } 503
+    $disabled = Invoke-SmokeRequest GET "/trips/$($baseline[0].id)/multi-agent-workflows/wf-20261020T080000Z-0123abcd" $null 503
     Assert-Smoke ($disabled.error.code -eq "mode_disabled") "Multi-Agent did not report mode_disabled."
 
     $tripId = $null

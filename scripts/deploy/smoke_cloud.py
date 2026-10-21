@@ -51,8 +51,9 @@ def run(base):
         stop_path = f"/itinerary-api/stops/{stop['id']}"
         call(stop_path, "PUT", {"day": 2, "activity": "Updated cloud smoke stop", "notes": "Synthetic fixture"})
         call(stop_path, "DELETE", expected=204)
-        for endpoint in ("/edit-preview", "/multi-agent-workflows"):
+        for endpoint in ("/edit-preview", "/edit-operation-preview", "/edit-confirm"):
             call(path + endpoint, "POST", {}, 503)
+        call(path + "/multi-agent-workflows/wf-20261020T080000Z-0123abcd", expected=503)
         call("/itinerary-api/itinerary-advice", "POST", {"question": "Budget?"}, 503)
     finally:
         call(path, "DELETE", expected=204)

@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { Check, ClipboardCheck, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, LoaderCircle, PanelRightClose, PanelRightOpen, Sun, Undo2, X } from "@lucide/vue";
-import PlanReview from "./PlanReview.vue";
+import EditReview from "./EditReview.vue";
 
 const trips = ref([]);
 const currentTrip = ref(null);
@@ -23,6 +23,11 @@ const stopDraft = reactive({ id: "", day: 1, activity: "", notes: "" });
 const feedback = reactive({ kind: "", title: "", message: "", confirmLabel: "OK", cancelLabel: "" });
 const integrations = reactive({ capabilities: {}, summaryVersion: 0, adviceVersion: 0, summaryBusy: false, adviceBusy: false });
 const review = ref(null);
+const assessmentAccepted = ref(false);
+const previewExpired = ref(false);
+let previewTimer;
+const canConfirm = computed(() => !previewExpired.value && (!integrations.capabilities.multiAgentEnabled
+  || (review.value?.workflowId && assessmentAccepted.value)));
 const assistantTab = ref("edit");
 const assistantCollapsed = ref(false);
 const savedChanges = reactive({ stopIds: [], days: [], dates: false });
@@ -119,7 +124,7 @@ function selectAssistantTab(tab) {
 }
 
 function cycleAssistantTab(direction) {
-  const tabs = ["edit", "advice", "plan"];
+  const tabs = ["edit", "advice"];
   selectAssistantTab(tabs[(tabs.indexOf(assistantTab.value) + direction + tabs.length) % tabs.length]);
 }
 
@@ -207,6 +212,9 @@ async function api(path, options = {}) {
 }
 
 function cancelPreview() {
+  clearTimeout(previewTimer);
+  assessmentAccepted.value = false;
+  previewExpired.value = false;
   reviewController?.abort();
   integrations.summaryVersion++;
   integrations.summaryBusy = false;
@@ -253,21 +261,29 @@ async function requestEditPreview(endpoint, payload) {
   const tripId = currentTrip.value.id;
   const version = ++integrations.summaryVersion;
   integrations.summaryBusy = true;
+  clearTimeout(previewTimer);
+  assessmentAccepted.value = false;
+  previewExpired.value = false;
   review.value = null;
   summaryStatus.value = "Preparing edit preview...";
   reviewController = new AbortController();
   const controller = reviewController;
-  const timeout = setTimeout(() => controller.abort("timeout"), 35000);
+  const requestedAt = Date.now();
+  const timeout = setTimeout(() => controller.abort("timeout"), 50000);
   try {
     const result = await api(`/trips/${tripId}/${endpoint}`, { method: "POST", body: JSON.stringify(payload), signal: controller.signal });
     if (version !== integrations.summaryVersion || currentTrip.value?.id !== tripId) return;
     review.value = result.preview;
-    summaryStatus.value = result.clarification || "Preview ready. No changes saved. Expires in 10 minutes.";
+    if (result.preview) previewTimer = setTimeout(() => { previewExpired.value = true; }, Math.max(0, result.preview.expiresIn * 1000 - (Date.now() - requestedAt)));
+    summaryStatus.value = result.clarification || (result.preview?.workflowId
+      ? "Preview ready. Awaiting agent assessment and your decision. No changes saved. Expires in 10 minutes."
+      : "Preview ready. No changes saved. Expires in 10 minutes.");
     integrations.summaryBusy = false;
     await nextTick();
     if (version === integrations.summaryVersion && !assistantCollapsed.value && assistantTab.value === "edit") overviewResult.value?.focus();
   } catch (error) {
-    if (version === integrations.summaryVersion) summaryStatus.value = controller.signal.reason === "timeout" ? "The edit preview timed out." : error.message;
+    if (version === integrations.summaryVersion) summaryStatus.value = (controller.signal.reason === "timeout" ? "The edit preview timed out." : error.message)
+      + (integrations.capabilities.multiAgentEnabled ? " No changes saved. A workflow may have started; inspect the native CLI list before retrying." : "");
   } finally {
     clearTimeout(timeout);
     if (version === integrations.summaryVersion) integrations.summaryBusy = false;
@@ -281,7 +297,7 @@ function previewUndo() {
 }
 
 async function confirmEdit() {
-  if (editSaving.value || !review.value || !currentTrip.value || !reviewEnabled.value) return;
+  if (editSaving.value || !review.value || !currentTrip.value || !reviewEnabled.value || !canConfirm.value) return;
   const tripId = currentTrip.value.id;
   const token = review.value.token;
   const changes = review.value.changes;
@@ -290,7 +306,8 @@ async function confirmEdit() {
   editSaving.value = true;
   summaryStatus.value = "Saving confirmed changes...";
   try {
-    await api(`/trips/${tripId}/edit-confirm`, { method: "POST", body: JSON.stringify({ token }), signal: AbortSignal.timeout(10000) });
+    const body = { token, ...(integrations.capabilities.multiAgentEnabled ? { workflowId: review.value.workflowId } : {}) };
+    await api(`/trips/${tripId}/edit-confirm`, { method: "POST", body: JSON.stringify(body), signal: AbortSignal.timeout(20000) });
     if (currentTrip.value?.id !== tripId || version !== integrations.summaryVersion) return;
     invalidateSummary();
     const refreshVersion = integrations.summaryVersion;
@@ -492,6 +509,7 @@ onMounted(() => {
   document.addEventListener("click", closeActionMenus);
 });
 onUnmounted(() => {
+  clearTimeout(previewTimer);
   clearSavedHighlights();
   document.removeEventListener("click", closeActionMenus);
   reviewController?.abort();
@@ -616,10 +634,9 @@ onUnmounted(() => {
         <div id="assistant-tabs" class="assistant-tabs" role="tablist" aria-label="Trip assistant" :hidden="assistantCollapsed"
           @keydown.right.prevent="cycleAssistantTab(1)"
           @keydown.left.prevent="cycleAssistantTab(-1)"
-          @keydown.home.prevent="selectAssistantTab('edit')" @keydown.end.prevent="selectAssistantTab('plan')">
+          @keydown.home.prevent="selectAssistantTab('edit')" @keydown.end.prevent="selectAssistantTab('advice')">
           <button id="edit-tab" role="tab" aria-controls="edit-panel" :aria-selected="assistantTab === 'edit'" :tabindex="assistantTab === 'edit' ? 0 : -1" @click="assistantTab = 'edit'">Edit</button>
           <button id="advice-tab" role="tab" aria-controls="advice-panel" :aria-selected="assistantTab === 'advice'" :tabindex="assistantTab === 'advice' ? 0 : -1" @click="assistantTab = 'advice'">Advice</button>
-          <button id="plan-tab" role="tab" aria-controls="plan-panel" :aria-selected="assistantTab === 'plan'" :tabindex="assistantTab === 'plan' ? 0 : -1" @click="assistantTab = 'plan'">Plan review</button>
         </div>
         </div>
         <div id="assistant-content" class="assistant-content" :hidden="assistantCollapsed">
@@ -661,8 +678,13 @@ onUnmounted(() => {
                     <p v-if="change.notes">{{ change.notes }}</p>
                   </template>
                 </article>
+                <EditReview v-if="integrations.capabilities.multiAgentEnabled && review.workflowId"
+                  :key="review.workflowId" :trip="currentTrip" :workflow-id="review.workflowId"
+                  :enabled="!editSaving" :expired="previewExpired"
+                  :active="assistantTab === 'edit' && !assistantCollapsed" @accepted="assessmentAccepted = $event" />
+                <p v-if="previewExpired" role="alert">Preview expired. Request a new preview before saving.</p>
                 <div class="edit-actions preview-actions">
-                  <button id="confirm-edit" class="primary-button overview-refresh" type="button" :disabled="editSaving" @click="confirmEdit"><Check :size="16" aria-hidden="true" />{{ editSaving ? "Saving..." : `Confirm ${review.changes.length} ${review.changes.length === 1 ? 'change' : 'changes'}` }}</button>
+                  <button id="confirm-edit" class="primary-button overview-refresh" type="button" :disabled="editSaving || !canConfirm" @click="confirmEdit"><Check :size="16" aria-hidden="true" />{{ editSaving ? "Saving..." : `Confirm ${review.changes.length} ${review.changes.length === 1 ? 'change' : 'changes'}` }}</button>
                   <button id="cancel-edit" class="text-button overview-refresh" type="button" :disabled="editSaving" @click="cancelPreview"><X :size="16" aria-hidden="true" />Cancel</button>
                 </div>
               </template>
@@ -702,9 +724,6 @@ onUnmounted(() => {
               <p class="muted weather-attribution">Weather: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> (<a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC BY 4.0</a>). Locations: <a href="https://www.geonames.org/" target="_blank" rel="noopener noreferrer">GeoNames</a>.</p>
             </section>
           </div>
-        </section>
-        <section id="plan-panel" class="integration-section" role="tabpanel" aria-labelledby="plan-tab" :hidden="assistantTab !== 'plan'" tabindex="0">
-          <PlanReview :trip="currentTrip" :enabled="integrations.capabilities.multiAgentEnabled === true" :active="assistantTab === 'plan' && !assistantCollapsed" />
         </section>
         </div>
       </aside>

@@ -16,6 +16,8 @@ on:
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
       - 'scripts/test/junit_summary.py'
+      - 'scripts/ci/retry-transient.sh'
+      - 'scripts/test/test_retry_transient.py'
   pull_request:
     paths:
       - 'student-3/**'
@@ -28,6 +30,8 @@ on:
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
       - 'scripts/test/junit_summary.py'
+      - 'scripts/ci/retry-transient.sh'
+      - 'scripts/test/test_retry_transient.py'
   workflow_dispatch:
 
 jobs:
@@ -50,7 +54,7 @@ jobs:
         run: python -m pytest tests/test_endpoints_cicd.py -v --junitxml=endpoint-tests-junit.xml
 
       - name: Publish endpoint test report
-        if: always()
+        if: ${{ always() && hashFiles('student-3/endpoint-tests-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py student-3/endpoint-tests-junit.xml "Student 3 post-commit endpoint tests (GET and POST /api/attractions)"
 
       - name: Upload endpoint test results
@@ -69,14 +73,18 @@ jobs:
           python -m pytest -v --junitxml=multi-agent-junit.xml
 
       - name: Publish Multi-Agent Server test report
-        if: always()
+        if: ${{ always() && hashFiles('ai-services/multi-agent-server/multi-agent-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py ai-services/multi-agent-server/multi-agent-junit.xml "Multi-Agent Server tests"
+
+      # The image builds below go through scripts/ci/retry-transient.sh (retries registry/network blips only).
+      - name: Test the CI retry wrapper
+        run: python -m pytest scripts/test/test_retry_transient.py -q
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
       - name: Build integrated Student 3 containers
-        run: docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
 
       - name: Initialise and seed Student 3 database
         run: docker compose run --rm --no-deps student3-db-init

@@ -9,7 +9,7 @@ from flask import Flask, g, jsonify, request
 
 from ai_clients import IntegrationError, McpClient, RagClient, validate_advice, validate_overview, validate_summary
 from itinerary_review import ItineraryEditor, ItineraryReviewer, ReviewModel
-from multi_agent import MultiAgentClient, create_blueprint
+from multi_agent import EditReview, MultiAgentClient, create_blueprint
 
 
 class DependencyError(Exception):
@@ -223,11 +223,11 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         return jsonify({"error": {"code": "dependency_unavailable", "message": str(exception), "fields": {}}}), 503
 
     app.register_error_handler(DependencyError, dependency_error)
-    app.register_blueprint(create_blueprint(
+    edit_review = EditReview(
         database,
         multi_agent_client or MultiAgentClient(os.getenv("MULTI_AGENT_SERVER_URL", "http://host.docker.internal:5600")),
-        modes["multiAgentEnabled"],
-    ))
+    )
+    app.register_blueprint(create_blueprint(edit_review, modes["multiAgentEnabled"]))
 
     def validate_stop_day(stop):
         trip, status = database.request("GET", f"/api/data/trips/{stop['tripId']}")
@@ -288,6 +288,14 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
             return invalid_integration_input()
         return jsonify(reviewer.review(trip_id, question.strip()))
 
+    def reviewed_preview(trip_id, *, question=None, operation=None):
+        evidence = edit_review.trip_evidence(trip_id) if modes["multiAgentEnabled"] else None
+        result = editor.preview(trip_id, question) if question is not None else editor.preview_operation(trip_id, operation)
+        if evidence is not None and result["preview"] is not None:
+            result["preview"]["workflowId"] = edit_review.start(
+                trip_id, result["preview"], question if question is not None else json.dumps(operation), evidence)
+        return jsonify(result)
+
     @app.post("/api/trips/<int:trip_id>/edit-preview")
     def edit_preview(trip_id):
         if not modes["mcpEnabled"] or not modes["aiEnabled"]:
@@ -298,7 +306,7 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         question = payload["question"]
         if not isinstance(question, str) or not 1 <= len(question.strip()) <= 1000:
             return invalid_integration_input()
-        return jsonify(editor.preview(trip_id, question.strip()))
+        return reviewed_preview(trip_id, question=question.strip())
 
     @app.post("/api/trips/<int:trip_id>/edit-operation-preview")
     def edit_operation_preview(trip_id):
@@ -307,17 +315,20 @@ def create_app(database_client=None, generator=None, *, settings=None, mcp_clien
         payload = request.get_json(silent=True)
         if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"operation"}:
             return invalid_integration_input()
-        return jsonify(editor.preview_operation(trip_id, payload["operation"]))
+        return reviewed_preview(trip_id, operation=payload["operation"])
 
     @app.post("/api/trips/<int:trip_id>/edit-confirm")
     def edit_confirm(trip_id):
         if not modes["mcpEnabled"] or not modes["aiEnabled"]:
             raise IntegrationError("mode_disabled")
         payload = request.get_json(silent=True)
-        if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != {"token"}:
+        fields = {"token", "workflowId"} if modes["multiAgentEnabled"] else {"token"}
+        if (request.content_length is not None and request.content_length > 8192) or trip_id < 1 or not isinstance(payload, dict) or set(payload) != fields:
             return invalid_integration_input()
         if not isinstance(payload["token"], str) or not 1 <= len(payload["token"]) <= 4096:
             return invalid_integration_input()
+        if modes["multiAgentEnabled"]:
+            edit_review.require_accepted(trip_id, payload["workflowId"], payload["token"])
         return jsonify(editor.apply(trip_id, payload["token"]))
 
     @app.post("/api/trips/<int:trip_id>/mcp-overview")

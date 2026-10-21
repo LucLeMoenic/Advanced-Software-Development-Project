@@ -26,9 +26,10 @@ for setup, strict mode flags, and current live-integration limitations.
 
 ## Services
 
-Release 2 adds a disabled-by-default **Plan review** tab backed by the shared
-native Multi-Agent Server. Planner/Worker/Reviewer recommendations require an
-explicit human decision and never modify saved trips. See the
+Release 2 adds disabled-by-default **edit assessment** backed by the shared
+native Multi-Agent Server, inline with the existing MCP preview.
+Planner/Worker/Reviewer assess the exact proposed edit. Human assessment decisions
+do not save changes; a separate confirmation applies only the bound preview. See the
 [Release 2 runbook](docs/release-2-runbook.md) for configuration, tests, cloud
 deployment prerequisites and the remaining live/integration acceptance gates.
 

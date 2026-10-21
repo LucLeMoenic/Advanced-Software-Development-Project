@@ -54,6 +54,53 @@ afterEach(() => {
 });
 
 describe("Itinerary Planner", () => {
+  test.each(["approve", "reject"])("multi-agent %s gates the exact edit without applying assessment text", async (decision) => {
+    const id = "wf-20261020T080000Z-0123abcd";
+    const trip = { id: 12, destination: "Tokyo", user: "Alex", startDate: "2026-11-01", endDate: "2026-11-02",
+      budget: 900, stops: [{ id: 1, day: 1, activity: "Park walk", notes: "Saved plan", sortOrder: 0 }] };
+    const work = { summary: "Assess this move", items: [{ id: "i1", subject: "Proposed change", detail: "Moves the walk to day 2.", evidence_ids: ["edit-1"] }] };
+    const record = { id, status: "awaiting_human_review", stale: false, work,
+      plan: { objective: "Assess edit", steps: [], success_criteria: [] },
+      review: { verdict: "pass", findings: [], recommendations: [] }, evidence: [], history: [] };
+    const fetchMock = vi.fn((url, options) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true, multiAgentEnabled: true });
+      if (url.endsWith("/edit-preview")) return jsonResponse({ ...reviewResponse(), preview: { ...reviewResponse().preview, workflowId: id } });
+      if (url.endsWith("/decision")) return jsonResponse({ ...record, status: decision === "approve" ? "approved" : "rejected",
+        human_decision: JSON.parse(options.body), final_output: decision === "approve" ? work : null });
+      if (url.endsWith(`/multi-agent-workflows/${id}`)) return jsonResponse(record);
+      if (url.endsWith("/edit-confirm")) return jsonResponse({ applied: true });
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain("Worker assessment"));
+    expect(document.querySelector("#plan-tab")).toBeNull();
+    expect(document.querySelector("#confirm-edit").disabled).toBe(true);
+    document.querySelector("#confirm-edit").click();
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"))).toHaveLength(0);
+    if (decision === "reject") setValue("#plan-notes", "Do not move it.");
+    await nextTick();
+    [...document.querySelectorAll("button")].find((button) => button.textContent === (decision === "approve" ? "Approve assessment" : "Reject assessment")).click();
+    await vi.waitFor(() => expect(document.body.textContent).toContain(`Recorded decision: ${decision}`));
+    expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"))).toHaveLength(0);
+    expect(document.querySelector("#confirm-edit").disabled).toBe(decision === "reject");
+    if (decision === "approve") {
+      document.querySelector("#confirm-edit").click();
+      await vi.waitFor(() => expect(fetchMock.mock.calls.filter(([url]) => url.endsWith("/edit-confirm"))).toHaveLength(1));
+      const call = fetchMock.mock.calls.find(([url]) => url.endsWith("/edit-confirm"));
+      expect(JSON.parse(call[1].body)).toEqual({ token: "signed-preview", workflowId: id });
+      await vi.waitFor(() => expect(document.querySelector("#confirm-edit")).toBeNull());
+    } else {
+      document.querySelector("#cancel-edit").click();
+      await nextTick();
+      expect(document.querySelector("#confirm-edit")).toBeNull();
+    }
+  });
+
   test("minimises the assistant without losing its selected tab, draft or late result", async () => {
     let resolveAdvice;
     const fetchMock = vi.fn((url) => {
@@ -118,6 +165,12 @@ describe("Itinerary Planner", () => {
     await nextTick();
     expect(document.activeElement.id).toBe("edit-tab");
     expect(document.querySelector("#edit-panel").hidden).toBe(false);
+    document.querySelector("#edit-tab").dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+    await nextTick();
+    expect(document.activeElement.id).toBe("advice-tab");
+    document.querySelector("#advice-tab").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    await nextTick();
+    expect(document.activeElement.id).toBe("edit-tab");
   });
 
   test("cancels late advice safely, retries and renders citation markers as plain text", async () => {
