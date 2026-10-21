@@ -11,11 +11,13 @@ var liteApiUrl = builder.Configuration["Services:LiteApiUrl"]
 var liteApiKey = builder.Configuration["LITEAPI_KEY"] ?? string.Empty;
 var applicationModel = builder.Configuration["APPLICATION_MODEL"]
     ?? "llama3.2:3b";
-var assistantModes = AssistantModes.FromConfiguration(builder.Configuration);
+var aiModes = AiModes.FromConfiguration(builder.Configuration);
 var mcpServerUrl = builder.Configuration["MCP_SERVER_URL"]
     ?? "http://localhost:5400/mcp";
 var ragServerUrl = builder.Configuration["RAG_SERVER_URL"]
     ?? "http://localhost:5500";
+var multiAgentServerUrl = builder.Configuration["MULTI_AGENT_SERVER_URL"]
+    ?? "http://localhost:5600";
 var lookupPrompt = File.ReadAllText(Path.Combine(
     builder.Environment.ContentRootPath,
     "Prompts",
@@ -26,7 +28,7 @@ var rankingPrompt = File.ReadAllText(Path.Combine(
     "accommodation-ranking-v1.txt"));
 
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton(assistantModes);
+builder.Services.AddSingleton(aiModes);
 builder.Services.AddSingleton(new OllamaRankingSettings(applicationModel, rankingPrompt));
 builder.Services.AddSingleton(new LiteApiSettings(liteApiKey));
 builder.Services.AddSingleton(new LookupExtractorSettings(applicationModel, lookupPrompt));
@@ -61,6 +63,13 @@ builder.Services
         client.BaseAddress = new Uri(liteApiUrl);
         client.Timeout = TimeSpan.FromSeconds(10);
     });
+// Workflows run asynchronously on the server, so every call returns quickly (202 on start).
+builder.Services
+    .AddHttpClient<IMultiAgentClient, MultiAgentClient>(client =>
+    {
+        client.BaseAddress = new Uri(multiAgentServerUrl);
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
 
 var app = builder.Build();
 
@@ -76,9 +85,20 @@ app.MapGet("/", () => Results.Ok(new
     },
     modes = new
     {
-        lookup = assistantModes.LookupEnabled,
-        guide = assistantModes.GuideEnabled
+        ranking = aiModes.RankingEnabled,
+        lookup = aiModes.LookupEnabled,
+        guide = aiModes.GuideEnabled,
+        multiAgent = aiModes.MultiAgentEnabled
     }
+}));
+
+// The frontend reads this through its /api/ proxy to show only the enabled AI options.
+app.MapGet("/api/capabilities", () => Results.Ok(new
+{
+    aiRanking = aiModes.RankingEnabled,
+    lookup = aiModes.LookupEnabled,
+    guide = aiModes.GuideEnabled,
+    multiAgent = aiModes.MultiAgentEnabled
 }));
 
 app.MapGet("/health", () => Results.Ok(new
@@ -89,6 +109,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 app.MapSearchEndpoints();
 app.MapAssistantEndpoints();
+app.MapAgentReviewEndpoints();
 
 app.Run();
 

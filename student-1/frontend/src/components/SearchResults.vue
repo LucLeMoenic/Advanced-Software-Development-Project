@@ -67,7 +67,7 @@ defineExpose({ focusHeading })
     </div>
 
     <div v-if="search.notice" class="notice notice-warning" role="status">
-      <strong>Reliable fallback used.</strong>
+      <strong>{{ search.rankingMode === 'fallback' ? 'Reliable fallback used.' : 'Limited search.' }}</strong>
       <span>{{ search.notice }}</span>
     </div>
 

@@ -32,6 +32,21 @@ def test_health(client):
     assert client.get("/health").json() == {"status": "ok", "busy": False}
 
 
+def test_restart_marks_interrupted_workflows_failed(data_dir, evidence):
+    import workflow
+    from store import Store
+    store = Store()
+    record = workflow.create_record("student-2", "Review saved days", evidence, "test")
+    record["status"] = "working"
+    store.save(record)
+    with TestClient(server.app) as client:
+        recovered = client.get(f"/workflows/{record['id']}").json()
+        assert recovered["status"] == "failed"
+        assert recovered["error"]["code"] == "workflow_interrupted"
+        assert client.get("/audit/verify").json()["valid"]
+    assert Store().load(record["id"])["status"] == "failed"
+
+
 def test_full_http_lifecycle_create_poll_decide_audit(client, evidence):
     created = client.post("/workflows", json=_body(evidence))
     assert created.status_code == 202

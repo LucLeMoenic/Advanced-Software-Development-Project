@@ -829,3 +829,87 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 | Accepted | GPU mode must remain optional because other team machines and CI may not expose NVIDIA devices. | CPU remains the default; the main Compose file and CI behavior are unchanged. |
 
 **Verdict:** accepted. `scripts/start-app.ps1 -Gpu` enables Ollama GPU acceleration explicitly, while `scripts/start-app.ps1` remains portable CPU mode.
+
+## 2026-10-21 - Release 2 Chunk 1 AI-Off Guards Review
+
+**Scope:** `AiModes`, `POST /api/searches` flag and provider-key handling, `GET /api/capabilities`, Student 1 Compose flag, Vue search form and results notice, and their tests. Self-review by Claude Code before commit.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The cloud bundle sets `AI_ENABLED=false`, but the backend never read it. An AI search in the cloud only avoided Ollama because the URL was unreachable, and the traveller saw "AI ranking was unavailable" instead of "disabled". | `AI_ENABLED` is parsed with the existing strict flag rules; a disabled AI search returns 503 `mode_disabled` before any database, LiteAPI or Ollama call. |
+| Blocking | With `LITEAPI_KEY` cleared, any uncached destination returned 503 `accommodation_provider_unavailable`, so the cloud CRUD path failed for new destinations. | The import is skipped when no key is configured; the empty search is still saved and returns a notice. The client keeps its own `configuration` failure for direct use. |
+| Required | The frontend had no way to know which AI modes were on: `GET /` is not proxied through `/api/`. | Added `GET /api/capabilities`; the AI option is hidden until it confirms `aiRanking`. A failed capabilities request is shown as an error rather than ignored. |
+| Required | The results notice was always headed "Reliable fallback used.", which would mislabel the new cached-only notice. | The heading now depends on `rankingMode`. |
+| Accepted | The code default for `AI_ENABLED` is false while Compose defaults it to `true`. | Matches the "disabled by default" rule for code and keeps local Compose behaviour unchanged; tests set the flag explicitly. |
+| Accepted | The cached-only notice is not persisted, so a reopened search does not show it. | Same as the existing fallback notice; no schema change for a display hint. |
+
+**Validation:** backend 169/169, frontend 28/28 and production build, Compose configuration valid.
+
+**Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 2 CI Endpoint Tests Review
+
+**Scope:** `student-1/tests/test_endpoints_cicd.py` and the new endpoint-test steps in `student-1.yml`. Self-review by Claude Code before commit.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The tests write to the bind-mounted SQLite file. Leftover rows would change the tracked database on every local run. | Each created search is deleted in a fixture teardown; a second run left the saved-search count unchanged. |
+| Required | Fixed calendar dates would start failing once they passed the backend's "today or later" rule. | Dates are computed relative to today. |
+| Required | A failing container start or test gave no backend output to diagnose. | Container logs are printed on failure, and the services are always stopped. |
+| Accepted | The tests depend on the tracked catalogue having active Tokyo stays. | Tokyo is one of the ten committed demonstration destinations; the test asserts at least five results so a data change fails loudly. |
+
+**Validation:** 6/6 against natively run services on a scratch copy of the committed database; JUnit summary 6 of 6.
+
+**Verdict:** accepted. The CI run on push is the remaining check.
+
+## 2026-10-21 - Release 2 Chunk 3 Multi-Agent Backend Review
+
+**Scope:** `MultiAgentClient`, `AgentReviewEndpoints`, `AgentReviewContracts`, the `MULTI_AGENT_ENABLED` flag, Compose wiring and tests. Self-review by Claude Code, then a live run against the shared server.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The shared server holds every student's workflows, and `GET /workflows/{id}` returns any of them. A Student 1 route that forwarded ids directly would let the traveller read or decide another feature's workflow. | The client returns not found for any record whose `feature` is not `student-1`, and fetches the record before posting a decision. Covered by two tests. |
+| Blocking | A workflow id taken from the URL could carry path segments into the server URL. | Ids must match the server's `wf-<timestamp>-<hex>` pattern before any call; a malformed id returns 404 without calling the server. |
+| Required | Traveller preferences are free text sent to three model prompts. | They are labelled as traveller-written data, not instructions; the task text is fixed in code; the server constrains Worker subjects and evidence ids to the supplied entries. |
+| Required | The server accepts at most 30 evidence entries and 120-character titles; larger snapshots would fail the whole start request. | At most 29 stays (highest ranked first) plus the criteria; names are shortened to 120 characters. Tested. |
+| Required | Server decision errors (`notes_required`, `invalid_selection`, `invalid_correction`, `not_awaiting_review`) are rules the traveller must see. | 400 and 409 errors keep their code and message; other failures map to fixed public messages (503 busy/unavailable, 502 unusable response). |
+| Accepted | Listing reads every workflow summary and filters by exact task text. | The store is file-backed and small; this avoids a schema change to the shared server. |
+| Accepted | Stage history, raw model output and error details are not returned to the browser. | They stay in the server record and audit log for the terminal CLI. |
+
+**Validation:** backend 206/206. Live run: Tokyo search 11 reached human review in 52 s (verdict `pass`); partial decision recorded; repeat decision gave 409; audit chain valid.
+
+**Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 4 Multi-Agent Frontend Review
+
+**Scope:** `AgentReviewPanel.vue`, review types and calls in `api.ts`, `App.vue` wiring, panel styles and tests. Self-review by Claude Code, then a browser check against the live services.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | A check-back request still in flight when the traveller opens another search could schedule another timer after the panel closed, polling forever. | The panel is keyed by search id; unmounting clears the timer and blocks new ones. Tested with fake timers. |
+| Required | Model output (subjects, details, findings) is untrusted text. | Rendered only through text interpolation; no `v-html`. |
+| Required | The server rejects a rejection without notes and a partial decision without items; the traveller should learn this before a round trip. | Checked in the form with the same rules; server errors are still shown if they occur. |
+| Required | Browser check: radio buttons were stacked above their labels, and the history row kept "Planner is making a plan" after the review moved on. | Inline label layout for the decision fieldsets; the history row now updates on every check. |
+| Accepted | A degraded review (Reviewer model unavailable) can still be decided. | Matches the server's design; the panel says only the automatic checks ran. |
+| Accepted | The live 3B Worker claimed two stays were over budget when their saved prices were inside it, and the Reviewer still passed. | This is why the human decision exists; "keep some" and "correct" let the traveller drop or fix such items. |
+
+**Validation:** frontend 39/39 and production build. Browser: live review started from the UI, decided with "keep some" and a note; no horizontal scroll at 375 px.
+
+**Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 5 Dependency Scans and Cloud Check Review
+
+**Scope:** the `Security` area of `scripts/test/student-1.ps1`, the `package-lock.json` audit fix, `check_student1` in `scripts/deploy/smoke_cloud.py`, its offline tests and the `student-1.yml` steps. Self-review by Claude Code plus the shared pre-commit hooks over every file changed in chunks 1 to 5.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | `npm audit` reported 4 high advisories in the frontend dependency tree (brace-expansion, source-map-js, undici, vite/launch-editor). | `npm audit fix` updated only the lockfile, within existing `package.json` ranges and from the public registry; 0 advisories remain and the tests and build pass. |
+| Blocking | detect-secrets flagged the chunk 1 test value `liteApiKey = "test-key"`, which would block any commit touching that file. | Marked `pragma: allowlist secret` on the chunk 1 branch and merged forward; the hooks now pass. |
+| Required | `dotnet list package --vulnerable` exits 0 even when it lists vulnerable packages, so an exit-code check alone would always pass. | The script fails on the command's "has the following vulnerable packages" text as well as on a non-zero exit. |
+| Required | The cloud smoke check only covered Student 2, so the Student 1 cloud baseline had no automatic proof. | `check_student1` checks the AI-off capabilities, search create/rename/readback, and the disabled AI and review routes, and deletes its search in a `finally`. Four offline tests cover the pass path, an enabled mode, cleanup after a failure and a wrong ranking mode. |
+| Accepted | The scans query public advisory databases, so they need network access in CI. | Same as the shared pip-audit hook. |
+| Accepted | `smoke_cloud.py` belongs to Student 2. | One added function and call; flagged for Student 2's review in the PR. |
+
+**Validation:** shared hooks pass on all changed files; scans clean; cloud smoke tests 4/4 and cloud config 6/6; live `check_student1` against the local backend passed; full `student-1.ps1 -Area All` exit 0.
+
+**Verdict:** accepted.

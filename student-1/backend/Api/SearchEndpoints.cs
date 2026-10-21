@@ -25,6 +25,8 @@ public static class SearchEndpoints
         IDatabaseApiClient database,
         ILiteApiClient liteApi,
         IOllamaRankingClient ollama,
+        AiModes aiModes,
+        LiteApiSettings liteApiSettings,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -46,8 +48,26 @@ public static class SearchEndpoints
         }
 
         var search = validation.Value!;
+        if (search.UseAi && !aiModes.RankingEnabled)
+        {
+            logger.LogInformation(
+                "Search {CorrelationId} stage {Stage} outcome {Outcome} completed in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}",
+                context.TraceIdentifier,
+                "flags",
+                "mode_disabled",
+                stopwatch.ElapsedMilliseconds,
+                0,
+                "ai");
+            return Error(
+                context,
+                StatusCodes.Status503ServiceUnavailable,
+                "mode_disabled",
+                "AI ranking is disabled.");
+        }
+
         var stage = "candidate_retrieval";
         var candidateCount = 0;
+        string? notice = null;
 
         try
         {
@@ -61,7 +81,12 @@ public static class SearchEndpoints
             candidateCount = candidates.Count;
             var importedProviderData = false;
 
-            if (candidates.Count == 0)
+            if (candidates.Count == 0 && !liteApiSettings.IsConfigured)
+            {
+                // Deployments without a provider key (such as the cloud baseline) search the cached catalogue only.
+                notice = "Live accommodation import is unavailable in this deployment, so only saved accommodation was searched.";
+            }
+            else if (candidates.Count == 0)
             {
                 stage = "liteapi_import";
                 var imports = await liteApi.SearchAsync(
@@ -86,7 +111,6 @@ public static class SearchEndpoints
             }
 
             var rankingMode = "programmatic";
-            string? notice = null;
             IReadOnlyList<SearchResult> results = [];
 
             if (candidates.Count > 0)
@@ -321,7 +345,7 @@ public static class SearchEndpoints
         }
     }
 
-    private static async Task<ReadResult<T>> ReadAsync<T>(HttpContext context)
+    internal static async Task<ReadResult<T>> ReadAsync<T>(HttpContext context)
         where T : class
     {
         if (!context.Request.HasJsonContentType())
@@ -373,7 +397,7 @@ public static class SearchEndpoints
             : destination[..80];
     }
 
-    private static IResult ValidationError(
+    internal static IResult ValidationError(
         HttpContext context,
         IReadOnlyDictionary<string, string> fields)
     {
@@ -394,7 +418,7 @@ public static class SearchEndpoints
             "Search was not found.");
     }
 
-    private static IResult DependencyResponseError(HttpContext context)
+    internal static IResult DependencyResponseError(HttpContext context)
     {
         return Error(
             context,
@@ -403,7 +427,7 @@ public static class SearchEndpoints
             "The database service returned an unusable response.");
     }
 
-    private static IResult DependencyUnavailable(HttpContext context)
+    internal static IResult DependencyUnavailable(HttpContext context)
     {
         return Error(
             context,
@@ -447,6 +471,6 @@ public static class SearchEndpoints
             statusCode: statusCode);
     }
 
-    private sealed record ReadResult<T>(T? Value, IResult? Error)
+    internal sealed record ReadResult<T>(T? Value, IResult? Error)
         where T : class;
 }

@@ -11,6 +11,7 @@ select = ["S"]
 # pytest uses bare assert by design, and tests use fixed dummy tokens.
 "**/tests/**" = ["S101", "S105", "S106"]
 "**/conftest.py" = ["S101"]
+"scripts/test/test_*.py" = ["S101"]
 # Flask services bind 0.0.0.0 inside their containers so Docker/nginx can reach
 # them; host exposure is controlled by docker-compose.yml port mappings.
 "student-*/backend/app.py" = ["S104"]

@@ -17,7 +17,7 @@ public static class AssistantEndpoints
 
     private static async Task<IResult> AskAsync(
         HttpContext context,
-        AssistantModes modes,
+        AiModes modes,
         ILookupArgumentExtractor extractor,
         IMcpToolClient mcp,
         IRagClient rag,

@@ -13,6 +13,9 @@ on:
       - ".env.example"
       - "scripts/test/verify-agentic-models.ps1"
       - "scripts/test/student-1.ps1"
+      - "scripts/test/junit_summary.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/test/test_cloud_smoke_student1.py"
       - ".github/workflows/student-1.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -34,6 +37,9 @@ on:
       - ".env.example"
       - "scripts/test/verify-agentic-models.ps1"
       - "scripts/test/student-1.ps1"
+      - "scripts/test/junit_summary.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/test/test_cloud_smoke_student1.py"
       - ".github/workflows/student-1.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -69,10 +75,48 @@ jobs:
           python-version: "3.11"
       - name: Test Student 1 feature
         run: pwsh -NoProfile -File scripts/test/student-1.ps1 -Area Feature
+      # The shared pre-commit hooks scan Python only; these cover the C# and Vue dependencies.
+      - name: Scan Student 1 .NET and npm dependencies
+        run: pwsh -NoProfile -File scripts/test/student-1.ps1 -Area Security
+      - name: Test Student 1 cloud smoke check
+        run: python -m pytest scripts/test/test_cloud_smoke_student1.py -v
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build integrated Student 1 containers
         run: docker compose build shared-frontend student1-frontend student1-backend student1-database
+
+      # Release 2 post-commit endpoint tests: POST and PATCH /api/searches against the
+      # running backend and database containers, with AI and LiteAPI off as in the cloud.
+      - name: Start Student 1 backend and database
+        env:
+          AI_ENABLED: "false"
+          LITEAPI_KEY: ""
+        run: docker compose up --detach --no-deps --wait student1-database student1-backend
+
+      - name: Post-commit endpoint tests (POST and PATCH /api/searches)
+        env:
+          STUDENT1_BACKEND_URL: http://localhost:5201
+        # pytest is already installed from the MCP requirements by the feature test step.
+        run: python -m pytest student-1/tests/test_endpoints_cicd.py -v --junitxml=student-1/endpoint-tests-junit.xml
+
+      - name: Publish endpoint test report
+        if: always()
+        run: python scripts/test/junit_summary.py student-1/endpoint-tests-junit.xml "Student 1 post-commit endpoint tests (POST and PATCH /api/searches)"
+
+      - name: Upload endpoint test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-1-endpoint-test-results
+          path: student-1/endpoint-tests-junit.xml
+
+      - name: Show Student 1 container logs on failure
+        if: failure()
+        run: docker compose logs --no-color student1-database student1-backend
+
+      - name: Stop Student 1 services
+        if: always()
+        run: docker compose down
 
   agentic-loop:
     runs-on: ubuntu-latest

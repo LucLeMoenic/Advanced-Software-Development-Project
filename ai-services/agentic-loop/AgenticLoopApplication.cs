@@ -36,6 +36,9 @@ public static partial class AgenticLoopApplication
                 "run" => await RunLoopAsync(ParsedArguments.Parse(args[1..])),
                 "validate-mcp" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "mcp"),
                 "validate-rag" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "rag"),
+                "review-multi-agent" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "multi-agent"),
+                "review-testing" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "testing"),
+                "review-cloud" => await RunLoopAsync(ParsedArguments.Parse(args[1..]), "cloud"),
                 "finalise" => await FinaliseAsync(ParsedArguments.Parse(args[1..])),
                 _ => throw new LoopException($"Unknown command: {args[0]}")
             };
@@ -152,6 +155,7 @@ public static partial class AgenticLoopApplication
     private static async Task<int> RunLoopAsync(ParsedArguments arguments, string? validationMode = null)
     {
         var task = arguments.RequiredSingle("task");
+        var reportMode = validationMode is "multi-agent" or "testing" or "cloud";
         var contextPaths = arguments.RequiredMany("context");
         var workspace = ResolveWorkspace(arguments.SingleOrDefault("workspace"), Directory.GetCurrentDirectory());
         var recordDirectory = Path.GetFullPath(
@@ -173,11 +177,22 @@ public static partial class AgenticLoopApplication
         var timeoutSeconds = arguments.OptionalPositiveInt("timeout-seconds", 600);
 
         ValidateRunInput(task, contextPaths, implementerModel, reviewerModel);
-        var context = await LoadContextAsync(workspace, contextPaths);
+        var context = reportMode
+            ? await LoadReviewContextAsync(workspace, contextPaths, validationMode!)
+            : await LoadContextAsync(workspace, contextPaths);
         var implementerPrompt = await ReadRequiredTextAsync(implementerPromptPath, "Implementer prompt");
         var reviewerPrompt = await ReadRequiredTextAsync(reviewerPromptPath, "Reviewer prompt");
+        if (reportMode)
+        {
+            task += $"\n\nReview the supplied evidence using review-{validationMode}-v1.txt. "
+                + "Propose report findings and corrective actions, not source edits. "
+                + "Missing or failed evidence must remain explicit; only a human can make the release decision.";
+            preTestCommand = $"review-{validationMode}";
+            preTestResult = "Reviewing supplied context files, not executing tests or deployment. "
+                + "Validate their provenance and results before human finalisation.";
+        }
 
-        if (validationMode is not null)
+        if (validationMode is not null && !reportMode)
         {
             using var handler = new HttpClientHandler { AllowAutoRedirect = false };
             using var validationClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(60) };
@@ -215,6 +230,17 @@ public static partial class AgenticLoopApplication
         var recordPath = await WriteRecordAsync(recordDirectory, record);
         Console.WriteLine($"Agentic-loop record awaiting human finalisation: {recordPath}");
         return 0;
+    }
+
+    internal static Task<LoadedContext> LoadReviewContextAsync(
+        string workspace, IReadOnlyList<string> paths, string mode)
+    {
+        if (mode is not ("multi-agent" or "testing" or "cloud"))
+            throw new LoopException($"Unknown report review mode: {mode}");
+        if (paths.Count == 0)
+            throw new LoopException("Supply report and evidence files with --context.");
+        var promptPath = $"ai-services/agentic-loop/prompts/review-{mode}-v1.txt";
+        return LoadContextAsync(workspace, paths.Append(promptPath).Distinct().ToArray());
     }
 
     internal static ValidationOptions ParseValidationOptions(ParsedArguments arguments, string mode)
@@ -319,7 +345,6 @@ public static partial class AgenticLoopApplication
         {
             throw new LoopException("Record has already been finalised.");
         }
-
         var finalised = record with
         {
             HumanDecision = decision,
@@ -910,7 +935,7 @@ public static partial class AgenticLoopApplication
 
     private static void WriteUsage()
     {
-        Console.Error.WriteLine("Usage: AgenticLoop <serve|healthcheck|run|validate-mcp|validate-rag|finalise> [options]");
+        Console.Error.WriteLine("Usage: AgenticLoop <serve|healthcheck|run|validate-mcp|validate-rag|review-multi-agent|review-testing|review-cloud|finalise> [options]");
     }
 
     [GeneratedRegex(

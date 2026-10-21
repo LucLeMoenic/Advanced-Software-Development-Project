@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import {
   ApiRequestError,
+  capabilitiesApi,
   searchesApi,
   type SearchRequest,
   type SearchResponse,
 } from './api'
+import AgentReviewPanel from './components/AgentReviewPanel.vue'
 import AssistantPanel from './components/AssistantPanel.vue'
 import SearchForm from './components/SearchForm.vue'
 import SearchHistory from './components/SearchHistory.vue'
@@ -20,6 +22,19 @@ const errorSummary = ref<HTMLElement | null>(null)
 const searchForm = ref<InstanceType<typeof SearchForm> | null>(null)
 const searchHistory = ref<InstanceType<typeof SearchHistory> | null>(null)
 const searchResults = ref<InstanceType<typeof SearchResults> | null>(null)
+// AI options stay hidden until the backend confirms they are enabled.
+const aiRankingEnabled = ref(false)
+const multiAgentEnabled = ref(false)
+
+onMounted(async () => {
+  try {
+    const capabilities = await capabilitiesApi.get()
+    aiRankingEnabled.value = capabilities.aiRanking
+    multiAgentEnabled.value = capabilities.multiAgent
+  } catch (error) {
+    showError(getErrorMessage(error), 'AI options could not be loaded.')
+  }
+})
 
 async function submitSearch(search: SearchRequest) {
   if (submitting.value) {
@@ -150,6 +165,7 @@ async function focusError() {
       ref="searchForm"
       :submitting="submitting"
       :server-errors="serverErrors"
+      :ai-ranking-enabled="aiRankingEnabled"
       @submit="submitSearch"
       @invalid="statusMessage = 'Check the highlighted search fields.'"
     />
@@ -178,5 +194,13 @@ async function focusError() {
         @status="statusMessage = $event"
       />
     </div>
+
+    <!-- Keyed by search so opening another search starts a fresh panel and stops any polling. -->
+    <AgentReviewPanel
+      v-if="multiAgentEnabled && currentSearch && currentSearch.results.length > 0"
+      :key="currentSearch.id"
+      :search="currentSearch"
+      @status="statusMessage = $event"
+    />
   </main>
 </template>

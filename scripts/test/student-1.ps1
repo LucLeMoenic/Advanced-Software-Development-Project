@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [ValidateSet("Feature", "AgenticLoop", "All")]
+    [ValidateSet("Feature", "AgenticLoop", "Security", "All")]
     [string]$Area = "All"
 )
 
@@ -32,6 +32,19 @@ if ($Area -in @("Feature", "All")) {
     # Offline only: retrieval and dataset-candidate checks; live model evaluation is skipped unless RAG_LIVE_EVAL=1.
     Push-Location "$repositoryRoot/ai-services/rag-server"
     try { Invoke-Checked $python @("-m", "pytest", "tests/test_student1_retrieval.py", "tests/test_retrieval.py") "Student 1 RAG retrieval tests failed." } finally { Pop-Location }
+}
+
+# Release 2 dependency scans for the C# and Vue services, which the shared Python pre-commit hooks
+# (Ruff, detect-secrets, pip-audit) do not cover. Both query public advisory databases.
+if ($Area -in @("Security", "All")) {
+    foreach ($project in @("student-1/backend/Backend.csproj", "student-1/database/Database.csproj")) {
+        # `dotnet list package --vulnerable` exits 0 even when it finds vulnerable packages.
+        $report = & dotnet list "$repositoryRoot/$project" package --vulnerable --include-transitive 2>&1 | Out-String
+        Write-Output $report
+        if ($LASTEXITCODE -ne 0) { throw "Vulnerability scan of $project could not run." }
+        if ($report -match "has the following vulnerable packages") { throw "Vulnerable NuGet packages found in $project." }
+    }
+    Invoke-Checked $npm @("audit", "--prefix", "$repositoryRoot/student-1/frontend", "--audit-level=high") "High or critical npm advisories found in the Student 1 frontend."
 }
 
 if ($Area -in @("AgenticLoop", "All")) {

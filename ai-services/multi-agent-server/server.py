@@ -10,6 +10,7 @@ Run directly: ``uvicorn server:app --host 127.0.0.1 --port 5600``
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 from typing import Literal
 
 from fastapi import FastAPI
@@ -20,7 +21,22 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 import workflow
 from store import WORKFLOW_ID, Store
 
-app = FastAPI(title="asd-shared-multi-agent-server")
+@asynccontextmanager
+async def lifespan(app):
+    store = Store()
+    for summary in store.list():
+        if summary["status"] in ("queued", "planning", "working", "reviewing"):
+            record = store.load(summary["id"])
+            record["error"] = {"code": "workflow_interrupted", "stage": record["status"],
+                               "message": "The server restarted during this workflow. Start a new workflow."}
+            record["status"] = "failed"
+            record["history"].append({"stage": "system", "ok": False, "error": record["error"]})
+            store.save(record)
+            store.audit(record["id"], "system", "workflow_interrupted", record["error"])
+    yield
+
+
+app = FastAPI(title="asd-shared-multi-agent-server", lifespan=lifespan)
 
 _active = {"id": None}  # one workflow at a time: a single local model serves all three agents
 _tasks = set()
@@ -109,7 +125,7 @@ def get_workflow(workflow_id: str):
 
 
 @app.post("/workflows/{workflow_id}/decision")
-def decide_workflow(workflow_id: str, request: DecisionRequest):
+async def decide_workflow(workflow_id: str, request: DecisionRequest):
     store = Store()
     record = _load(workflow_id)
     if record is None:

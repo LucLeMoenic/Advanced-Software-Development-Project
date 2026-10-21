@@ -1,6 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App.vue'
+import { capabilitiesApi } from './api'
+
+// Capabilities are mocked separately so the fetch call order in each test stays about searches.
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./api')>()),
+  capabilitiesApi: { get: vi.fn() },
+}))
 
 const savedSearch = {
   id: 1,
@@ -46,6 +53,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date(2026, 8, 1, 12))
   vi.stubGlobal('fetch', vi.fn())
   vi.stubGlobal('confirm', vi.fn(() => true))
+  vi.mocked(capabilitiesApi.get).mockResolvedValue({ aiRanking: true, lookup: true, guide: true, multiAgent: false })
 })
 
 afterEach(() => {
@@ -139,6 +147,73 @@ describe('App', () => {
       useAi: false,
     })
     expect(wrapper.text()).toContain('Budget match')
+    expect(wrapper.text()).not.toContain('Reliable fallback used.')
+  })
+
+  it('hides AI ranking and explains why when the deployment disables it', async () => {
+    vi.mocked(capabilitiesApi.get).mockResolvedValue({ aiRanking: false, lookup: false, guide: false, multiAgent: false })
+    mockFetch(jsonResponse([]))
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('#use-ai').exists()).toBe(false)
+    expect((wrapper.get('#standard-ranking').element as HTMLInputElement).checked).toBe(true)
+    expect(wrapper.text()).toContain('AI-assisted ranking is turned off in this deployment.')
+  })
+
+  it('offers an agent review for an opened search only when the deployment enables it', async () => {
+    vi.mocked(capabilitiesApi.get).mockResolvedValue({ aiRanking: true, lookup: true, guide: true, multiAgent: true })
+    mockFetch(jsonResponse([summary]), jsonResponse(savedSearch), jsonResponse([]))
+    const wrapper = mount(App)
+    await flushPromises()
+    expect(wrapper.find('#review-heading').exists()).toBe(false)
+
+    await wrapper.get('.history-actions .button-secondary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('#review-heading').text()).toBe('Check this shortlist with AI agents')
+    expect(fetch).toHaveBeenNthCalledWith(3, '/api/searches/1/reviews', undefined)
+  })
+
+  it('does not offer an agent review when the deployment disables it', async () => {
+    mockFetch(jsonResponse([summary]), jsonResponse(savedSearch))
+    const wrapper = mount(App)
+    await flushPromises()
+
+    await wrapper.get('.history-actions .button-secondary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Harbour Stay')
+    expect(wrapper.find('#review-heading').exists()).toBe(false)
+  })
+
+  it('reports when AI options cannot be loaded and keeps AI ranking hidden', async () => {
+    vi.mocked(capabilitiesApi.get).mockRejectedValue(new Error('The accommodation service is unavailable.'))
+    mockFetch(jsonResponse([]))
+    const wrapper = mount(App)
+    await flushPromises()
+
+    expect(wrapper.find('#use-ai').exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('The accommodation service is unavailable.')
+  })
+
+  it('labels a cached-only search notice without calling it a fallback', async () => {
+    const cachedOnly = {
+      ...savedSearch,
+      results: [],
+      rankingMode: 'programmatic',
+      notice: 'Live accommodation import is unavailable in this deployment, so only saved accommodation was searched.',
+    }
+    mockFetch(jsonResponse([]), jsonResponse(cachedOnly))
+    const wrapper = mount(App)
+    await flushPromises()
+    await fillValidForm(wrapper)
+
+    await wrapper.get('form').trigger('submit')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Limited search.')
+    expect(wrapper.text()).toContain('Live accommodation import is unavailable in this deployment')
     expect(wrapper.text()).not.toContain('Reliable fallback used.')
   })
 

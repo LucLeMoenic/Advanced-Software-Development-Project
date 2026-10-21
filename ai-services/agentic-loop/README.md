@@ -57,6 +57,24 @@ Only finalised records are suitable for report evidence.
 
 The `run` command records supplied test commands/results. The human runs tests and controls all source changes.
 
+## Release 2 Report Reviews
+
+`review-multi-agent`, `review-testing` and `review-cloud` reuse `--context` for
+ordinary report and evidence files. No separate JSON manifest is required.
+Each adds its versioned review criteria to the same bounded, hashed context,
+then runs the existing two-model loop and human `finalise` command.
+
+```powershell
+dotnet run --project ai-services/agentic-loop -- review-testing `
+  --task "Review Student 2 security scans and endpoint test evidence." `
+  --context "path/to/testing-report.md" --context "path/to/test-results.txt"
+```
+
+Supply actual results and revision/CI references. These modes review evidence;
+they do not execute tests, deploy software or certify a release. Missing files,
+unsafe paths and oversized/secret-containing context are rejected as before.
+Failed or missing checks must be resolved before a human accepts the report.
+
 ## Release 1 Validation Modes
 
 Start native MCP/RAG and the feature containers first. Student 2 MCP validation requests a model-selected edit preview without confirming it. RAG validation includes the selected trip and optional weather context. Replace the example trip ID with an existing saved trip ID. Other features must add their own contract fixtures to the same shared modes, not duplicate the loop.
