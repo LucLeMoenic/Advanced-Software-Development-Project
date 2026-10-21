@@ -57,7 +57,7 @@ jobs:
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "mkdir -p asd-upload/$GITHUB_SHA"
           scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,accommodation.db,deploy-vm.sh,images.tar,SHA256SUMS} "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash asd-upload/$GITHUB_SHA/deploy-vm.sh $GITHUB_SHA"
-      - name: Verify public gateway and Student 2 CRUD
+      - name: Verify public gateway and Student 1 and 2 CRUD
         run: |
           set -o pipefail
           python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt

@@ -1,8 +1,9 @@
-"""Verify the public gateway and Student 2 CRUD without native AI dependencies."""
+"""Verify the public gateway and Student 1 and Student 2 CRUD without native AI dependencies."""
 
 import argparse
 import json
 import uuid
+from datetime import date, timedelta
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
@@ -57,7 +58,38 @@ def run(base):
         call(path, "DELETE", expected=204)
     call(path, expected=404)
     print("PASS: six gateway pages; four AI modes disabled; deterministic create; trip/stop CRUD.")
+    check_student1(call)
+    print("PASS: Student 1 AI modes disabled; cached-catalogue search create, rename and delete.")
     print("Persistence across redeploy, other features' CRUD and rollback require separate evidence.")
+
+
+def check_student1(call):
+    """Student 1 through the gateway: every AI mode off, and saved-search CRUD on the cached catalogue."""
+    api = "/accommodation/api"
+    modes = call(f"{api}/capabilities")
+    if modes != {"aiRanking": False, "lookup": False, "guide": False, "multiAgent": False}:
+        raise RuntimeError("The cloud baseline must disable every Student 1 AI capability.")
+    if len(call(f"{api}/searches")) < 10:
+        raise RuntimeError("At least ten demonstration accommodation searches are required.")
+    check_in = date.today() + timedelta(days=30)
+    criteria = {"destination": "Tokyo", "checkIn": check_in.isoformat(),
+                "checkOut": (check_in + timedelta(days=2)).isoformat(), "guests": 1,
+                "minimumPrice": 0, "maximumPrice": 100000, "preferences": "", "useAi": False}
+    search = call(f"{api}/searches", "POST", criteria, 201)
+    path = f"{api}/searches/{search['id']}"
+    try:
+        if search.get("rankingMode") != "programmatic" or not search.get("results"):
+            raise RuntimeError("Disabled AI must still rank the cached Tokyo catalogue.")
+        title = f"R2 smoke {uuid.uuid4().hex[:8]}"
+        call(path, "PATCH", {"title": title})
+        saved = call(path)
+        if saved["title"] != title or saved["results"] != search["results"]:
+            raise RuntimeError("Rename/readback did not preserve the saved search.")
+        call(f"{api}/searches", "POST", {**criteria, "useAi": True}, 503)
+        call(f"{path}/reviews", "POST", {}, 503)
+    finally:
+        call(path, "DELETE", expected=204)
+    call(path, expected=404)
 
 
 if __name__ == "__main__":

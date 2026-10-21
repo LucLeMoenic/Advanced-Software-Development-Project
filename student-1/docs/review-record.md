@@ -896,3 +896,20 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** frontend 39/39 and production build. Browser: live review started from the UI, decided with "keep some" and a note; no horizontal scroll at 375 px.
 
 **Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 5 Dependency Scans and Cloud Check Review
+
+**Scope:** the `Security` area of `scripts/test/student-1.ps1`, the `package-lock.json` audit fix, `check_student1` in `scripts/deploy/smoke_cloud.py`, its offline tests and the `student-1.yml` steps. Self-review by Claude Code plus the shared pre-commit hooks over every file changed in chunks 1 to 5.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | `npm audit` reported 4 high advisories in the frontend dependency tree (brace-expansion, source-map-js, undici, vite/launch-editor). | `npm audit fix` updated only the lockfile, within existing `package.json` ranges and from the public registry; 0 advisories remain and the tests and build pass. |
+| Blocking | detect-secrets flagged the chunk 1 test value `liteApiKey = "test-key"`, which would block any commit touching that file. | Marked `pragma: allowlist secret` on the chunk 1 branch and merged forward; the hooks now pass. |
+| Required | `dotnet list package --vulnerable` exits 0 even when it lists vulnerable packages, so an exit-code check alone would always pass. | The script fails on the command's "has the following vulnerable packages" text as well as on a non-zero exit. |
+| Required | The cloud smoke check only covered Student 2, so the Student 1 cloud baseline had no automatic proof. | `check_student1` checks the AI-off capabilities, search create/rename/readback, and the disabled AI and review routes, and deletes its search in a `finally`. Four offline tests cover the pass path, an enabled mode, cleanup after a failure and a wrong ranking mode. |
+| Accepted | The scans query public advisory databases, so they need network access in CI. | Same as the shared pip-audit hook. |
+| Accepted | `smoke_cloud.py` belongs to Student 2. | One added function and call; flagged for Student 2's review in the PR. |
+
+**Validation:** shared hooks pass on all changed files; scans clean; cloud smoke tests 4/4 and cloud config 6/6; live `check_student1` against the local backend passed; full `student-1.ps1 -Area All` exit 0.
+
+**Verdict:** accepted.

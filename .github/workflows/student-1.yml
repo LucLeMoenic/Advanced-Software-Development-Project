@@ -14,6 +14,8 @@ on:
       - "scripts/test/verify-agentic-models.ps1"
       - "scripts/test/student-1.ps1"
       - "scripts/test/junit_summary.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/test/test_cloud_smoke_student1.py"
       - ".github/workflows/student-1.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -36,6 +38,8 @@ on:
       - "scripts/test/verify-agentic-models.ps1"
       - "scripts/test/student-1.ps1"
       - "scripts/test/junit_summary.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/test/test_cloud_smoke_student1.py"
       - ".github/workflows/student-1.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -71,6 +75,11 @@ jobs:
           python-version: "3.11"
       - name: Test Student 1 feature
         run: pwsh -NoProfile -File scripts/test/student-1.ps1 -Area Feature
+      # The shared pre-commit hooks scan Python only; these cover the C# and Vue dependencies.
+      - name: Scan Student 1 .NET and npm dependencies
+        run: pwsh -NoProfile -File scripts/test/student-1.ps1 -Area Security
+      - name: Test Student 1 cloud smoke check
+        run: python -m pytest scripts/test/test_cloud_smoke_student1.py -v
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build integrated Student 1 containers
