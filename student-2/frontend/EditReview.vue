@@ -1,9 +1,11 @@
 <script setup>
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 
-const props = defineProps({ trip: { type: Object, default: null }, enabled: Boolean, active: Boolean });
-const task = ref("Review the balance of my saved days and identify gaps without inventing attractions or prices.");
-const workflowId = ref("");
+const props = defineProps({
+  trip: { type: Object, default: null }, enabled: Boolean, active: Boolean,
+  workflowId: { type: String, required: true }, expired: Boolean,
+});
+const emit = defineEmits(["accepted"]);
 const record = ref(null);
 const busy = ref(false);
 const message = ref("");
@@ -12,7 +14,7 @@ const notes = ref("");
 const correction = ref(null);
 const output = ref(null);
 const running = computed(() => record.value && ["queued", "planning", "working", "reviewing"].includes(record.value.status));
-const canDecide = computed(() => props.enabled && record.value?.status === "awaiting_human_review" && !record.value.stale && !busy.value);
+const canDecide = computed(() => props.enabled && !props.expired && record.value?.status === "awaiting_human_review" && !record.value.stale && !busy.value);
 let timer;
 let controller;
 let version = 0;
@@ -25,19 +27,23 @@ function stopRequests() {
   busy.value = false;
 }
 
-watch(() => props.trip?.id, () => {
+watch(() => [props.trip?.id, props.workflowId, props.enabled], () => {
   stopRequests();
+  emit("accepted", false);
   record.value = null;
-  workflowId.value = "";
   correction.value = null;
   selected.value = [];
   notes.value = "";
   message.value = "";
-});
+  deadline = Date.now() + 20 * 60 * 1000;
+  if (props.enabled && props.trip && props.workflowId) poll();
+}, { immediate: true });
 watch(() => JSON.stringify(props.trip), (value, old) => {
-  if (record.value && old !== value) record.value.stale = true;
+  if (record.value && old !== value) {
+    record.value.stale = true;
+    emit("accepted", false);
+  }
 });
-watch(() => props.enabled, (enabled) => { if (!enabled) stopRequests(); });
 onUnmounted(stopRequests);
 
 async function request(path, method = "GET", body) {
@@ -50,7 +56,7 @@ async function request(path, method = "GET", body) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error?.message || "The plan review request failed.");
+    if (!response.ok) throw new Error(data.error?.message || "The edit assessment request failed.");
     return data;
   } finally {
     clearTimeout(timeout);
@@ -59,16 +65,16 @@ async function request(path, method = "GET", body) {
 
 function failure(error, mutation = false) {
   const detail = error.name === "AbortError" ? "The request timed out." : error.message;
-  const recovery = mutation && !workflowId.value
-    ? "The outcome may be uncertain and no workflow ID was returned. Inspect the native CLI workflow list before starting again."
-    : mutation
+  const recovery = mutation
       ? "The outcome may be uncertain. Check workflow status before submitting again; requests are not automatically retried."
       : "Use Check status to reconnect.";
   message.value = `${detail} ${recovery}`;
 }
 
 function receive(data) {
+  if (data.id !== props.workflowId) throw new Error("The service returned a different workflow.");
   record.value = data;
+  emit("accepted", !data.stale && ["approved", "corrected", "partially_accepted"].includes(data.status));
   if (data.status === "awaiting_human_review") {
     selected.value = [];
     correction.value = JSON.parse(JSON.stringify(data.work));
@@ -84,35 +90,14 @@ function receive(data) {
   }
 }
 
-async function start() {
-  if (busy.value || running.value || !props.enabled || !props.trip || task.value.trim().length < 3) return;
-  stopRequests();
-  const token = version;
-  busy.value = true;
-  message.value = "";
-  workflowId.value = "";
-  record.value = null;
-  try {
-    const created = await request("", "POST", { task: task.value.trim() });
-    if (token !== version) return;
-    workflowId.value = created.id;
-    record.value = created;
-    deadline = Date.now() + 20 * 60 * 1000;
-  } catch (error) {
-    if (token === version) failure(error, true);
-  } finally {
-    if (token === version) busy.value = false;
-  }
-  if (token === version && running.value) await poll();
-}
-
 async function poll() {
-  if (busy.value || !props.enabled || !props.trip || !workflowId.value.trim()) return;
+  if (busy.value || !props.enabled || !props.trip || !props.workflowId) return;
   clearTimeout(timer);
+  emit("accepted", false);
   const token = version;
   busy.value = true;
   try {
-    const data = await request(`/${encodeURIComponent(workflowId.value.trim())}`);
+    const data = await request(`/${encodeURIComponent(props.workflowId)}`);
     if (token === version) receive(data);
   } catch (error) {
     if (token === version) failure(error);
@@ -140,6 +125,7 @@ async function decide(decision) {
     return;
   }
   const token = version;
+  emit("accepted", false);
   busy.value = true;
   message.value = "";
   const body = { decision, notes: notes.value };
@@ -162,22 +148,14 @@ async function decide(decision) {
 
 <template>
   <div class="plan-review">
-    <div class="integration-heading"><h3>Review my plan</h3><span class="mode-badge">Multi-agent</span></div>
-    <p>Review decisions do not change your saved itinerary. Use Edit or manual controls to change stops.</p>
-    <p v-if="!enabled" role="status">Plan review is disabled. Core itinerary editing remains available.</p>
-    <p v-else-if="!trip" role="status">Select a saved trip to review.</p>
-    <form @submit.prevent="start">
-      <label for="plan-task">Review request</label>
-      <textarea id="plan-task" v-model="task" minlength="3" maxlength="500" rows="3" required :disabled="!enabled || !trip || busy || !!running"></textarea>
-      <button id="start-plan-review" class="secondary-button" :disabled="!enabled || !trip || busy || !!running || task.trim().length < 3">Start plan review</button>
-    </form>
-    <form @submit.prevent="reconnect">
-      <label for="workflow-id">Workflow ID (keep this to reopen a review)</label>
-      <input id="workflow-id" v-model="workflowId" maxlength="40" pattern="wf-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{8}" :disabled="busy || !!running" required>
-      <button id="check-plan-status" class="text-button" :disabled="!enabled || !trip || busy || !workflowId.trim()">Check status</button>
-    </form>
+    <div class="integration-heading"><h3>Assess this edit</h3><span class="mode-badge">Multi-agent</span></div>
+    <p>Assessment decisions do not change your saved itinerary. After accepting the assessment, separately confirm the exact changes above.</p>
+    <p>Correction and partial acceptance apply to assessment text, not parts of the edit. To change the edit, cancel and request a new preview and assessment.</p>
+    <p v-if="expired" role="alert">This preview expired. Request a new preview and assessment before deciding or saving.</p>
+    <p>Workflow ID: <code id="workflow-id">{{ workflowId }}</code> (keep for terminal history)</p>
+    <button id="check-plan-status" class="text-button" :disabled="!enabled || !trip || busy" @click="reconnect">Check status</button>
     <p role="status" aria-live="polite">{{ message }}</p>
-    <div v-if="record" ref="output" tabindex="-1" aria-label="Plan review result">
+    <div v-if="record" ref="output" tabindex="-1" aria-label="Edit assessment result">
       <p role="status"><strong>Status:</strong> {{ record.status.replaceAll("_", " ") }}</p>
       <p v-if="record.stale" role="alert">This review is historical: the saved itinerary changed or was deleted. Start a new review before deciding.</p>
       <section v-if="record.plan" aria-label="Planner">
@@ -186,7 +164,7 @@ async function decide(decision) {
         <ul><li v-for="criterion in record.plan.success_criteria" :key="criterion">{{ criterion }}</li></ul>
       </section>
       <section v-if="record.work" aria-label="Worker">
-        <h4>Worker recommendations</h4><p>{{ record.work.summary }}</p>
+        <h4>Worker assessment</h4><p>{{ record.work.summary }}</p>
         <article v-for="item in record.work.items" :key="item.id" class="review-finding">
           <label><input v-model="selected" type="checkbox" :value="item.id" :disabled="!canDecide"> {{ item.subject }}</label>
           <p>{{ item.detail }}</p><small>Evidence: {{ item.evidence_ids.join(", ") }}</small>
@@ -206,11 +184,11 @@ async function decide(decision) {
         <label for="plan-notes">Decision notes (required for rejection)</label>
         <textarea id="plan-notes" v-model="notes" maxlength="1000" :disabled="!canDecide"></textarea>
         <div class="edit-actions">
-          <button class="primary-button" :disabled="!canDecide" @click="decide('approve')">Approve recommendations</button>
+          <button class="primary-button" :disabled="!canDecide" @click="decide('approve')">Approve assessment</button>
           <button class="secondary-button" :disabled="!canDecide" @click="decide('partial')">Accept selected</button>
-          <button class="text-button" :disabled="!canDecide" @click="decide('reject')">Reject recommendations</button>
+          <button class="text-button" :disabled="!canDecide" @click="decide('reject')">Reject assessment</button>
         </div>
-        <details v-if="correction"><summary>Correct recommendations</summary>
+        <details v-if="correction"><summary>Correct assessment</summary>
           <form @submit.prevent="decide('correct')">
             <label for="corrected-summary">Corrected summary</label>
             <textarea id="corrected-summary" v-model="correction.summary" minlength="1" maxlength="400" required :disabled="!canDecide"></textarea>
@@ -223,7 +201,7 @@ async function decide(decision) {
                 <option v-for="entry in record.evidence" :key="entry.id" :value="entry.id">{{ entry.title }}</option>
               </select>
             </fieldset>
-            <button class="secondary-button" :disabled="!canDecide">Save corrected recommendations</button>
+            <button class="secondary-button" :disabled="!canDecide">Save corrected assessment</button>
           </form>
         </details>
       </div>
