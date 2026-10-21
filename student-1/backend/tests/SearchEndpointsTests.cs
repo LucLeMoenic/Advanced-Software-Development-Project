@@ -475,7 +475,7 @@ public sealed class SearchEndpointsTests
         FakeOllamaRankingClient ollama,
         FakeLiteApiClient? liteApi = null,
         bool aiRankingEnabled = true,
-        string liteApiKey = "test-key")
+        string liteApiKey = "test-key") // pragma: allowlist secret
     {
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
