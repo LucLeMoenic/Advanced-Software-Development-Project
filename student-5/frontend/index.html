@@ -295,6 +295,42 @@
     </div>
   </details>
 
+  <!-- Release 2: trip readiness review on the shared Multi-Agent Server,
+       reached only through this service's backend (/ui/readiness-reviews),
+       never directly from the browser. Starting a review swaps in a status
+       block that polls itself every 2 s; the finished review brings its own
+       decision form, which replaces the review with the recorded outcome.
+       Uses the assist-section styling, so it collapses, sizes and prints like
+       the MCP/RAG section. Reviews the planner's destination (rule 1 above). -->
+  <details class="assist-section readiness-section" id="readiness-section">
+    <summary>
+      <span>
+        <span class="step-label">Multi-agent review</span>
+        <span class="composer-title">Trip readiness review</span>
+        <span class="composer-summary">Planner, Worker and Reviewer agents turn the chosen destination's stored records into a pre-departure checklist. You then approve, correct, partly accept or reject it.</span>
+      </span>
+      <span class="composer-toggle" aria-hidden="true"></span>
+    </summary>
+    <div class="readiness-body">
+      <form class="readiness-form"
+            hx-post="/ui/readiness-reviews"
+            hx-include="#destination-select"
+            hx-target="#readiness-panel"
+            hx-swap="innerHTML"
+            hx-indicator="#readiness-loading"
+            hx-disabled-elt="find button">
+        <p class="panel-hint">Uses only the stored entry requirement, weather notes and transit options of the destination chosen in Trip details.</p>
+        <button class="primary-button" type="submit">Start readiness review</button>
+      </form>
+      <!-- Shared by the start form and the decision form inside the review
+           fragment, which points at this id rather than shipping its own. -->
+      <p class="assist-loading htmx-indicator" id="readiness-loading" role="status">Contacting the shared Multi-Agent Server&hellip;</p>
+      <div class="assist-panel" id="readiness-panel" aria-live="polite">
+        <p class="panel-hint">The plan, checklist, Reviewer findings and your decision form will appear here.</p>
+      </div>
+    </div>
+  </details>
+
   <!-- Admin-style CRUD, collapsed by default so it does not compete with the
        traveller-facing panels. -->
   <details class="manage-section" id="manage-section">

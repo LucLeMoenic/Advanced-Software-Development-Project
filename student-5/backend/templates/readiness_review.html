@@ -1,0 +1,175 @@
+{#
+  One finished readiness review, in pipeline order: the Planner plan, the
+  Worker checklist, the Reviewer's verdict and findings, then either the human
+  decision form or the decision already recorded.
+
+  Every evidence id is shown as the title of the stored record it names, so a
+  reader can see which row each checklist item is based on. Note the
+  subscript in work["items"]: Jinja resolves work.items to the dict's items()
+  method, not to the key.
+
+  While the review awaits a decision, the form opens before the checklist so
+  each item can carry its partial-acceptance checkbox and, folded away, its
+  correction box. The form replaces this whole block with the server's reply.
+#}
+{% set plan, work, review, decision = record.plan, record.work, record.review, record.human_decision %}
+{% set awaiting = work and record.status == "awaiting_human_review" %}
+<section class="readiness-review">
+  <p class="mcp-provenance">Coordinated by the shared Multi-Agent Server &middot; <code class="mcp-tool-name">{{ record.id }}</code>
+    {%- if record.history and record.history[0].model %} &middot; model {{ record.history[0].model }}{% endif %}</p>
+  <p class="readiness-outcome">
+    <span class="confidence-badge readiness-state">{{ record.status | replace("_", " ") }}</span>
+    {% if review %}
+    <span class="confidence-badge verdict-{{ review.verdict }}">Reviewer: {{ review.verdict }}</span>
+    {% endif %}
+  </p>
+
+  {% if record.status == "failed" %}
+  <p class="fragment-message">The review stopped at the {{ record.error.stage if record.error and record.error.stage else "unknown" }} stage: {{ record.error.message if record.error else "no reason was recorded." }} Start a new review to try again.</p>
+  {% endif %}
+
+  {% if plan %}
+  <h3 class="readiness-heading">Planner &middot; plan</h3>
+  <p class="readiness-objective">{{ plan.objective }}</p>
+  <ol class="readiness-steps">
+    {% for step in plan.steps %}
+    <li class="readiness-step">{{ step.description }}</li>
+    {% endfor %}
+  </ol>
+  <p class="readiness-meta">Evidence required:
+    {% for evidence_id in plan.required_evidence_ids %}<span class="readiness-cite">{{ evidence.get(evidence_id, evidence_id) }}</span>{% endfor %}</p>
+  <ul class="readiness-criteria">
+    {% for criterion in plan.success_criteria %}
+    <li class="readiness-criterion">{{ criterion }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if awaiting %}
+  <form class="readiness-decision"
+        hx-post="/ui/readiness-reviews/{{ record.id }}/decision"
+        hx-target="closest .readiness-review"
+        hx-swap="outerHTML"
+        hx-indicator="#readiness-loading"
+        hx-disabled-elt="find button">
+    <input type="hidden" name="destination_id" value="{{ destination_id }}">
+  {% endif %}
+
+  {% if work %}
+  <h3 class="readiness-heading">Worker &middot; checklist</h3>
+  <p class="readiness-summary">{{ work.summary }}</p>
+  {% if awaiting %}
+  <details class="readiness-edit">
+    <summary>Correct the summary</summary>
+    <textarea class="readiness-textarea" name="summary" maxlength="400" aria-label="Corrected summary">{{ form.get("summary", work.summary) }}</textarea>
+  </details>
+  {% endif %}
+  <ol class="readiness-items">
+    {% for item in work["items"] %}
+    <li class="readiness-item">
+      {% if awaiting %}
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="{{ item.id }}"
+               {%- if not form or item.id in form.getlist("accepted_item_ids") %} checked{% endif %}>
+        <span class="readiness-subject">{{ item.subject }}</span>
+      </label>
+      {% else %}
+      <span class="readiness-subject">{{ item.subject }}</span>
+      {% endif %}
+      <code class="citation-id">{{ item.id }}</code>
+      <p class="readiness-detail">{{ item.detail }}</p>
+      <p class="readiness-meta">Based on: {% for evidence_id in item.evidence_ids %}<span class="readiness-cite">{{ evidence.get(evidence_id, evidence_id) }}</span>{% endfor %}</p>
+      {% if awaiting %}
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-{{ item.id }}" maxlength="400" aria-label="Corrected text for {{ item.subject }}">{{ form.get("detail-" ~ item.id, item.detail) }}</textarea>
+      </details>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+
+  {% if review %}
+  <h3 class="readiness-heading">Reviewer &middot; risks and recommendations</h3>
+  {% if review.degraded %}
+  <p class="rag-caution">The Reviewer agent did not produce a review, so only the automatic checks ran. Check every item against its record yourself.</p>
+  {% endif %}
+  {% if review.findings %}
+  <ul class="readiness-findings">
+    {% for finding in review.findings %}
+    <li class="readiness-finding finding-{{ finding.severity }}">
+      <span class="finding-severity">{{ finding.severity }}</span>
+      {% if finding.item_id %}<code class="citation-id">{{ finding.item_id }}</code>{% endif %}
+      {{ finding.message }}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="fragment-empty">The Reviewer raised no findings.</p>
+  {% endif %}
+  {% if review.recommendations %}
+  <ul class="readiness-recommendations">
+    {% for recommendation in review.recommendations %}
+    <li class="readiness-recommendation">{{ recommendation }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+  {% endif %}
+
+  {% if awaiting %}
+    <h3 class="readiness-heading">Human review &middot; your decision</h3>
+    {% if message %}
+    <p class="fragment-message">{{ message }}</p>
+    {% endif %}
+    <fieldset class="readiness-choices">
+      <legend class="readiness-legend">Decision</legend>
+      {% for value, label, hint in [
+        ("approve", "Approve", "Accept the checklist as written."),
+        ("correct", "Correct", "Accept it with the text you changed under each item."),
+        ("partial", "Partially accept", "Keep only the ticked items."),
+        ("reject", "Reject", "Discard the checklist. Notes are required."),
+      ] %}
+      <label class="readiness-choice">
+        <input type="radio" name="decision" value="{{ value }}" required
+               {%- if form.get("decision") == value %} checked{% endif %}>
+        <span class="readiness-choice-label">{{ label }}</span>
+        <span class="readiness-choice-hint">{{ hint }}</span>
+      </label>
+      {% endfor %}
+    </fieldset>
+    <div class="readiness-fields">
+      <label class="field-group">
+        <span class="readiness-field-label">Decided by</span>
+        <input name="decided_by" type="text" required maxlength="60"
+               autocomplete="name" value="{{ form.get('decided_by', '') }}">
+      </label>
+      <label class="field-group readiness-notes">
+        <span class="readiness-field-label">Notes (required to reject)</span>
+        <textarea class="readiness-textarea" name="notes" maxlength="1000">{{ form.get("notes", "") }}</textarea>
+      </label>
+    </div>
+    <button class="primary-button" type="submit">Record decision</button>
+  </form>
+  {% endif %}
+
+  {% if decided and decision %}
+  <h3 class="readiness-heading">Human review &middot; decision recorded</h3>
+  <p class="readiness-decided">{{ record.status | replace("_", " ") | capitalize }} by {{ decision.decided_by }}{% if decision.decided_at %} at {{ decision.decided_at }}{% endif %}.</p>
+  {% if decision.notes %}
+  <blockquote class="citation-snippet">{{ decision.notes }}</blockquote>
+  {% endif %}
+  {% if record.final_output %}
+  <p class="readiness-meta">Accepted checklist:</p>
+  <ol class="readiness-items">
+    {% for item in record.final_output["items"] %}
+    <li class="readiness-item"><span class="readiness-subject">{{ item.subject }}</span>
+      <p class="readiness-detail">{{ item.detail }}</p></li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  <p class="panel-hint">Stored on the shared Multi-Agent Server's audit log. No travel record was changed.</p>
+  {% endif %}
+
+  <p class="visa-disclaimer">Generated by a local model from stored sample data. Confirm entry requirements with Smartraveller and the destination government before booking.</p>
+</section>

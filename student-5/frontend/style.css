@@ -1041,6 +1041,205 @@ td.fragment-empty {
 }
 
 /* --------------------------------------------------------------------------
+   Trip readiness review (Release 2 Multi-Agent panel)
+   Shares the assist-section chrome; one column, because the review reads
+   top to bottom in pipeline order (plan, checklist, review, decision).
+   -------------------------------------------------------------------------- */
+
+.readiness-body {
+  padding: 20px 24px 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.readiness-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.readiness-form .primary-button[disabled],
+.readiness-decision .primary-button[disabled] {
+  cursor: progress;
+  opacity: 0.55;
+}
+
+/* backend fragment: readiness_status.html */
+.readiness-stage {
+  display: flex;
+  margin: 0 0 6px;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+/* A slow, steady pulse: this block may sit here for minutes, and it must read
+   as working rather than stuck. Decorative only (aria-hidden). */
+.readiness-pulse {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: readiness-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes readiness-pulse {
+  50% { opacity: 0.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .readiness-pulse { animation: none; }
+}
+
+/* backend fragment: readiness_review.html */
+.readiness-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  gap: 8px;
+}
+
+.readiness-state { color: var(--color-primary-dark); }
+.verdict-pass { color: var(--color-success); }
+.verdict-concerns { color: var(--color-warning); }
+.verdict-fail { color: var(--color-danger); }
+
+.readiness-heading {
+  margin: 18px 0 8px;
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.readiness-objective,
+.readiness-summary {
+  margin: 0 0 8px;
+  line-height: 1.55;
+}
+
+.readiness-steps,
+.readiness-items,
+.readiness-criteria,
+.readiness-findings,
+.readiness-recommendations {
+  margin: 0 0 8px;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.readiness-item {
+  margin-bottom: 12px;
+}
+
+.readiness-keep {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.readiness-subject {
+  font-weight: 600;
+}
+
+.readiness-detail {
+  margin: 4px 0;
+}
+
+.readiness-meta {
+  margin: 0 0 6px;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.readiness-cite {
+  display: inline-block;
+  margin: 2px 6px 2px 0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-soft);
+}
+
+.finding-severity {
+  margin-right: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.finding-blocking .finding-severity { color: var(--color-danger); }
+.finding-warning .finding-severity { color: var(--color-warning); }
+.finding-info .finding-severity { color: var(--color-muted); }
+
+.readiness-edit > summary {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.readiness-textarea {
+  width: 100%;
+  min-height: 4.5rem;
+  margin-top: 6px;
+  font: inherit;
+  font-size: 0.86rem;
+}
+
+.readiness-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  gap: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+}
+
+.readiness-legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.readiness-choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+}
+
+.readiness-choice-label {
+  font-weight: 600;
+}
+
+.readiness-choice-hint {
+  grid-column: 2;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.readiness-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.readiness-field-label {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.readiness-decided {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
    Advisory
    -------------------------------------------------------------------------- */
 
@@ -1370,6 +1569,15 @@ td.fragment-empty {
 
   .assist-form .assist-question {
     grid-column: auto;
+  }
+
+  .readiness-body {
+    padding: 16px;
+  }
+
+  .readiness-choices,
+  .readiness-fields {
+    grid-template-columns: 1fr;
   }
 }
 

@@ -45,10 +45,12 @@ def client(database_url, ollama_url, model_tag):
             "OLLAMA_URL": ollama_url,
             "APPLICATION_MODEL": model_tag,
             # Explicit, so a developer shell with MCP_ENABLED=true (or
-            # AI_ENABLED=false) exported cannot change what these tests see.
+            # AI_ENABLED=false, or MULTI_AGENT_ENABLED=true) exported cannot
+            # change what these tests see.
             "AI_ENABLED": True,
             "MCP_ENABLED": False,
             "RAG_ENABLED": False,
+            "MULTI_AGENT_ENABLED": False,
         }
     )
     app.config["TESTING"] = True
@@ -67,6 +69,7 @@ def ai_off_client(database_url, ollama_url, model_tag):
             "AI_ENABLED": False,
             "MCP_ENABLED": False,
             "RAG_ENABLED": False,
+            "MULTI_AGENT_ENABLED": False,
         }
     )
     app.config["TESTING"] = True

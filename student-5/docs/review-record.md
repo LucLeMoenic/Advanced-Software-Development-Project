@@ -257,3 +257,40 @@ and return the database 503 body instead). It noted that the untracked
 I accepted the review. Validation after it: database 26, backend 130, MCP
 logistics 34 and RAG student-5 retrieval 17 tests passed; live checks are in
 `prompt-log.md` (Release 2, Chunk 1).
+
+## Release 2 - Chunk 2 review: Multi-Agent integration (TL-FR-16, TL-FR-17, TL-NFR-10)
+
+Before committing, the working-tree diff (backend client, readiness blueprint, UI
+fragments and templates, frontend panel and CSS, compose, Dockerfile, conftest and
+tests) was given to an independent AI code-review agent with read-only access. It
+was asked to check the diff against the shared server's contract (`server.py`,
+`workflow.py`, `checks.py`, `agents.py`) and against Student 2's integration. The
+areas were:
+
+- disabled behaviour and the no-network guarantee;
+- evidence bounds and title distinctness;
+- the workflow/destination binding and the URL safety of ids;
+- error mapping and Jinja autoescaping;
+- htmx 1.9.12 polling and attribute inheritance;
+- the gateway routes and Python 3.11 compatibility.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| One failed poll (timeout, reset, 5xx) swapped a trigger-less notice over the polling block, so the page lost a review that was still running and could not reach its decision form. | Important | Fixed: a `MultiAgentUnavailable` poll re-renders the status block with a warning and `seen=retry`, so polling continues and the next good poll clears the warning. Test added. |
+| A server `400` on `POST /workflows` was relayed to the caller as their own `400`, though the evidence is built by this backend. | Minor | Fixed: `start()` maps it to `502 multi_agent_unavailable`. Test case added. |
+| With Multi-Agent off, a malformed poll or decision returns `400` before `503`. | Nit | No change: same order as `integrations.py` and the Chunk 1 AI-off guard (a malformed body still returns `400`), and no network call is made either way. |
+| Textarea `maxlength` counts a line break as one character, but browsers submit CRLF, so a full-length edit could exceed the server's 400-character limit. | Nit | Fixed: `form_text()` folds CRLF to LF for the summary, item text and notes. Test updated. |
+
+The reviewer confirmed that:
+
+- the disabled check runs before the database read and before any request;
+- titles, texts, item counts and task length all fit the server's limits;
+- `distinct_titles()` cannot leave overlapping titles;
+- `destination-1` and `destination-10` cannot be confused;
+- workflow ids are regex-checked before they reach a URL;
+- templates have autoescape on, no `|safe` and no ids;
+- the polling block cannot inherit another element's target.
+
+I accepted the review. Validation after the fixes: database 26, backend 186, MCP
+logistics 34 and RAG student-5 retrieval 17 tests passed, and pre-commit passed.
+Live checks are in `prompt-log.md` (Release 2, Chunk 2).

@@ -4,12 +4,13 @@ This service is the middle tier of the stack. It owns no data of its own: the
 frontend talks to it, and it talks to the database microservice over HTTP
 (never to the SQLite file) and to Ollama for generated advice.
 
-Four feature areas, four blueprints, deliberately kept apart because they do
+Five feature areas, five blueprints, deliberately kept apart because they do
 not share failure semantics:
 
 * ``api``      -- JSON passthrough over the database's CRUD API (this module).
 * ``advisory`` -- the Frontend -> Backend/API -> Ollama -> LLM workflow.
 * ``integrations`` -- Release 1 MCP tool and RAG knowledge-base routes.
+* ``readiness`` -- Release 2 trip readiness review on the Multi-Agent Server.
 * ``ui``       -- server-rendered HTML fragments for the HTMX frontend.
 """
 
@@ -22,6 +23,7 @@ from advisory import advisory_bp
 from db_client import DatabaseClient, DatabaseResponse, DatabaseUnavailable
 from integrations import integrations_bp
 from mcp_client import DEFAULT_MCP_SERVER_URL, McpClient
+from multi_agent_client import DEFAULT_MULTI_AGENT_SERVER_URL, MultiAgentClient
 from ollama_client import (
     DEFAULT_APPLICATION_MODEL,
     DEFAULT_OLLAMA_URL,
@@ -30,6 +32,7 @@ from ollama_client import (
     OllamaUnavailable,
 )
 from rag_client import DEFAULT_RAG_SERVER_URL, RagClient
+from readiness import readiness_bp
 from ui import ui_bp
 
 DEFAULT_DATABASE_API_URL = "http://student5-database:8080"
@@ -223,6 +226,12 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.config["MCP_ENABLED"] = env_flag("MCP_ENABLED")
     app.config["RAG_SERVER_URL"] = os.environ.get("RAG_SERVER_URL", DEFAULT_RAG_SERVER_URL)
     app.config["RAG_ENABLED"] = env_flag("RAG_ENABLED")
+    # Release 2: the shared Multi-Agent Server is native and local, so it is
+    # off unless the deployment opts in, exactly like MCP and RAG.
+    app.config["MULTI_AGENT_SERVER_URL"] = os.environ.get(
+        "MULTI_AGENT_SERVER_URL", DEFAULT_MULTI_AGENT_SERVER_URL
+    )
+    app.config["MULTI_AGENT_ENABLED"] = env_flag("MULTI_AGENT_ENABLED")
     if config:
         app.config.update(config)
 
@@ -234,6 +243,9 @@ def create_app(config: Optional[dict] = None) -> Flask:
     )
     app.config["MCP_CLIENT"] = McpClient(app.config["MCP_SERVER_URL"], app.config["MCP_ENABLED"])
     app.config["RAG_CLIENT"] = RagClient(app.config["RAG_SERVER_URL"], app.config["RAG_ENABLED"])
+    app.config["MULTI_AGENT_CLIENT"] = MultiAgentClient(
+        app.config["MULTI_AGENT_SERVER_URL"], app.config["MULTI_AGENT_ENABLED"]
+    )
 
     @app.errorhandler(DatabaseUnavailable)
     def handle_database_unavailable(_exc):
@@ -265,6 +277,7 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.register_blueprint(api)
     app.register_blueprint(advisory_bp)
     app.register_blueprint(integrations_bp)
+    app.register_blueprint(readiness_bp)
     app.register_blueprint(ui_bp)
 
     return app
