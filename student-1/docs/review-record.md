@@ -879,3 +879,20 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** backend 206/206. Live run: Tokyo search 11 reached human review in 52 s (verdict `pass`); partial decision recorded; repeat decision gave 409; audit chain valid.
 
 **Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 4 Multi-Agent Frontend Review
+
+**Scope:** `AgentReviewPanel.vue`, review types and calls in `api.ts`, `App.vue` wiring, panel styles and tests. Self-review by Claude Code, then a browser check against the live services.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | A check-back request still in flight when the traveller opens another search could schedule another timer after the panel closed, polling forever. | The panel is keyed by search id; unmounting clears the timer and blocks new ones. Tested with fake timers. |
+| Required | Model output (subjects, details, findings) is untrusted text. | Rendered only through text interpolation; no `v-html`. |
+| Required | The server rejects a rejection without notes and a partial decision without items; the traveller should learn this before a round trip. | Checked in the form with the same rules; server errors are still shown if they occur. |
+| Required | Browser check: radio buttons were stacked above their labels, and the history row kept "Planner is making a plan" after the review moved on. | Inline label layout for the decision fieldsets; the history row now updates on every check. |
+| Accepted | A degraded review (Reviewer model unavailable) can still be decided. | Matches the server's design; the panel says only the automatic checks ran. |
+| Accepted | The live 3B Worker claimed two stays were over budget when their saved prices were inside it, and the Reviewer still passed. | This is why the human decision exists; "keep some" and "correct" let the traveller drop or fix such items. |
+
+**Validation:** frontend 39/39 and production build. Browser: live review started from the UI, decided with "keep some" and a note; no horizontal scroll at 375 px.
+
+**Verdict:** accepted.
