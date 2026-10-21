@@ -197,7 +197,7 @@ flowchart LR
     Gate --> Bundle[prepare_cloud.py: immutable AI-disabled bundle]
     Bundle --> Build[docker build + image checksums]
     Build --> Deploy[ssh + deploy-vm.sh to the Azure/AWS Linux VM]
-    Deploy --> Smoke[smoke_cloud.py over public HTTPS:<br/>Students 1, 2, 3 CRUD, AI off]
+    Deploy --> Smoke[smoke_cloud.py over public HTTPS:<br/>Students 1 to 5 CRUD, AI off]
 ```
 
 Student 3's contribution to this flow: the `AI_ENABLED` switch, `GET /api/capabilities`, `check_student3` in the smoke test, and the

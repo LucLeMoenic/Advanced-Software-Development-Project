@@ -1,0 +1,68 @@
+# Mutation check for rollback-vm.sh, backup-data.sh and restore-data.sh (run inside a Linux container).
+# Each guard was removed on its own, the suite run, and the script restored from an in-memory copy (verified identical).
+# 2026-10-21T09:58Z
+
+baseline (no mutation): 23 passed in 1.70s
+
+R1 rollback proceeds when previous == current (a same-revision redeploy)
+    result: 1 failed, 22 passed in 1.51s
+    caught by: test_rollback_refuses_when_previous_is_the_same_revision
+
+R2 rollback accepts a previous path outside the releases directory
+    result: 4 failed, 19 passed in 1.63s
+    caught by: test_rollback_refuses_a_previous_path_outside_the_releases_directory[/etc], test_rollback_refuses_a_previous_path_outside_the_releases_directory[/tmp/elsewhere/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa] (+2 more)
+
+R3 rollback repoints current BEFORE the previous release starts
+    result: 1 failed, 22 passed in 1.55s
+    caught by: test_a_failed_start_leaves_current_unchanged_and_says_so
+
+R4 rollback does not check the previous revision matches its directory
+    result: 1 failed, 22 passed in 1.50s
+    caught by: test_rollback_refuses_when_the_previous_revision_does_not_match_its_directory
+
+R5 rollback does not check the previous release has its files
+    result: 1 failed, 22 passed in 1.67s
+    caught by: test_rollback_refuses_when_the_previous_release_is_incomplete
+
+B1 backup uses a plain file copy instead of SQLite's backup API
+    result: 9 failed, 14 passed in 1.38s
+    caught by: test_backup_copies_every_database_consistently_with_checksums, test_backup_is_safe_while_a_writer_holds_the_database_open (+7 more)
+
+B2 backup never prunes old backups
+    result: 1 failed, 22 passed in 1.39s
+    caught by: test_backup_keeps_only_the_newest_timestamped_backups_and_spares_other_folders
+
+B3 backup writes no checksums
+    result: 2 failed, 21 passed in 1.85s
+    caught by: test_backup_copies_every_database_consistently_with_checksums, test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
+
+B4 backup leaves an empty backup directory when there are no databases
+    result: 1 failed, 22 passed in 1.45s
+    caught by: test_backup_with_no_databases_fails_and_leaves_no_empty_backup
+
+S1 restore does not require --yes
+    result: 1 failed, 22 passed in 1.49s
+    caught by: test_restore_without_yes_changes_nothing
+
+S2 restore does not verify the backup checksums
+    result: 1 failed, 22 passed in 1.47s
+    caught by: test_restore_refuses_a_tampered_backup_and_changes_nothing
+
+S3 restore takes no safety snapshot of the current data
+    result: 1 failed, 22 passed in 1.42s
+    caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
+
+S4 restore leaves stale -wal/-shm files
+    result: 1 failed, 22 passed in 1.54s
+    caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
+
+S5 restore does not stop the services before replacing data
+    result: 1 failed, 22 passed in 1.44s
+    caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
+
+S6 restore accepts a backup outside the backups directory
+    result: 1 failed, 22 passed in 1.46s
+    caught by: test_restore_refuses_a_backup_outside_the_backups_directory
+
+after restoring: 23 passed in 1.41s
+mutations not caught: 0

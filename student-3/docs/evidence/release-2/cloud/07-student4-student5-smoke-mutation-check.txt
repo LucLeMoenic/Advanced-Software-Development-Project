@@ -1,0 +1,56 @@
+# Mutation check for the Student 4 and Student 5 smoke checks: each bug was introduced on its own,
+# the scripts test suite run, and the file restored from an in-memory copy (verified identical).
+# 2026-10-21T09:53Z
+
+baseline (no mutation): 54 passed in 3.33s
+
+M1  S4: the capabilities assertion is removed
+    result: 3 failed, 51 passed in 3.77s
+    caught by: test_student4_check_fails_when_any_ai_capability_is_enabled[aiEnabled], test_student4_check_fails_when_any_ai_capability_is_enabled[mcpEnabled] (+1 more)
+
+M2  S4: deterministic-advice assertion removed
+    result: 1 failed, 53 passed in 3.25s
+    caught by: test_student4_check_fails_when_disabled_ai_does_not_return_fallback_advice
+
+M3  S4: the expense is no longer cleaned up
+    result: 3 failed, 51 passed in 3.96s
+    caught by: test_student4_check_passes_for_baseline_and_removes_both_rows, test_student4_check_removes_both_rows_when_the_conversion_is_wrong (+1 more)
+
+M4  S4: the budget is no longer cleaned up
+    result: 4 failed, 50 passed in 2.97s
+    caught by: test_student4_check_passes_for_baseline_and_removes_both_rows, test_student4_check_removes_both_rows_when_the_budget_update_is_not_saved (+2 more)
+
+M5  S4: budget update/readback assertion removed
+    result: 1 failed, 53 passed in 2.97s
+    caught by: test_student4_check_removes_both_rows_when_the_budget_update_is_not_saved
+
+M6  S4: expense recompute assertion removed
+    result: 1 failed, 53 passed in 2.94s
+    caught by: test_student4_check_removes_both_rows_when_the_expense_update_is_not_recomputed
+
+M7  S4: guidance/check no longer required to be disabled
+    result: 2 failed, 52 passed in 2.98s
+    caught by: test_student4_check_fails_when_an_ai_route_answers_instead_of_503[leaky0], test_student4_check_fails_when_an_ai_route_answers_instead_of_503[leaky1]
+
+M8  S5: destination readback assertion removed
+    result: 1 failed, 53 passed in 3.32s
+    caught by: test_student5_check_fails_when_a_destination_cannot_be_read_back
+
+M9  S5: advisory no longer required to be disabled
+    result: 2 failed, 52 passed in 3.38s
+    caught by: test_student5_check_passes_for_baseline_and_changes_no_data, test_student5_check_fails_when_any_single_ai_route_answers_instead_of_503[advisory]
+
+M10  S5: MCP no longer required to be disabled
+    result: 1 failed, 53 passed in 3.16s
+    caught by: test_student5_check_fails_when_any_single_ai_route_answers_instead_of_503[mcp]
+
+M11  S5: RAG no longer required to be disabled
+    result: 2 failed, 52 passed in 3.38s
+    caught by: test_student5_check_passes_for_baseline_and_changes_no_data, test_student5_check_fails_when_any_single_ai_route_answers_instead_of_503[rag]
+
+M12  S5: empty reference data no longer detected
+    result: 2 failed, 52 passed in 3.43s
+    caught by: test_student5_check_fails_when_reference_data_is_empty[option0-weather-notes], test_student5_check_fails_when_reference_data_is_empty[option1-transit-options]
+
+after restoring: 54 passed in 3.66s
+mutations not caught: 0
