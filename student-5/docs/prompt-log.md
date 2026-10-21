@@ -230,3 +230,80 @@ the existing fixtures before running, then fixed.
 | Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
 | Live container, `AI_ENABLED=false` | `POST /api/advisory` returns `503 {"error":"ai_disabled",...}` in 0.006 s; `/logistics/ui/advisory` through the shared gateway renders the notice; `GET /api/destinations` returns 200 |
 | Live container, `AI_ENABLED=true` (restored) | Real grounded advisory from `llama3.2:3b`, HTTP 200 in 2.65 s |
+
+### Chunk 2 - Multi-Agent integration (TL-FR-16, TL-FR-17, TL-NFR-10), 22 October 2026
+
+**Why:** Release 2 marks the Planner -> Worker -> Reviewer -> Human Review workflow
+through the frontend, and Student 5 had no route to the shared Multi-Agent Server
+(`ai-services/multi-agent-server/`).
+
+**Prompt (summary):** "Chunk 2 of my plan": integrate Student 5 with the shared
+server, modelled on Student 2's Flask integration but without another agent system.
+An opt-in client (`MULTI_AGENT_ENABLED`, default `false`); bounded evidence for one
+destination with distinctive titles so the server's subject checks pass; create,
+poll and decision routes that check the workflow is Student 5's and belongs to the
+requested destination; an HTMX "Trip readiness review" panel that polls every 2 s
+and ends in a four-way decision form; compose flags; mocked tests; one live review
+through `http://localhost:5100/logistics/`, leaving the decision to me.
+
+**AI-written change:**
+
+- `multi_agent_client.py`: `MultiAgentDisabled`, `MultiAgentUnavailable` and
+  `MultiAgentRefused` (status + code, for busy / not found / already decided /
+  server decision rules). Workflow ids are checked against the server's own regex
+  before any URL is built; every record is shape-checked before it is rendered;
+  10 s bound per call.
+- `readiness.py`: evidence built through the existing `load_context()` - one item
+  for the entry requirement, one per weather note and transit option (max 6 each),
+  "none recorded" items for empty lists, texts clipped to 400 characters, and the
+  count of rows supplied stated first. `distinct_titles()` suffixes any title that
+  contains or is contained in another, because the server's `checks.py` matches
+  subjects by substring. The first evidence id, `destination-<id>`, binds the
+  workflow to its destination. JSON routes: `POST
+  /api/destinations/<id>/readiness-reviews`, `GET /api/readiness-reviews/<wid>`,
+  `POST /api/readiness-reviews/<wid>/decision`. The server's decision rules are
+  relayed rather than repeated, as with the database's validation.
+- `ui.py` + `readiness_status.html` / `readiness_review.html`: a self-polling status
+  block that answers `204` while the status is unchanged, so the panel's live region
+  is not re-announced every 2 s; then the plan, the checklist (with the record each
+  item cites), the Reviewer findings and the decision form (approve / correct per
+  item / partial by checkbox / reject, plus `decided_by`). A refused decision
+  re-renders with the reason and the typed values kept.
+- `app.py`, `Dockerfile`, `docker-compose.yml` (`student5-backend` only),
+  `frontend/index.html` and `style.css`, `requirements.md` (TL-FR-16, TL-FR-17,
+  TL-NFR-10).
+- Tests: `tests/test_readiness.py` (56), plus `MULTI_AGENT_ENABLED: False` pinned in
+  the two existing conftest fixtures.
+
+The code is split into `multi_agent_client.py` + `readiness.py` rather than the
+plan's single `multi_agent.py`, to match Student 5's existing `*_client.py` +
+blueprint split (`rag_client.py` / `integrations.py`).
+
+**Corrections during the session:**
+
+- The first template put the Reviewer before the Worker so the checklist could sit
+  inside the form. It now follows pipeline order, with the form opened before the
+  checklist.
+- Ids in the fragment broke the "templates carry classes only" rule in `ui.py`;
+  inputs are now wrapped in their labels and the loading indicator lives in
+  `index.html`.
+- Three of the first test assertions were wrong (a nested `**extra`, Flask decoding
+  `%2F` before routing, and a heading-order check that matched the verdict badge).
+- After the independent review: a missed poll now keeps polling instead of
+  stranding a running review; a `400` on create is now a `502` (it means our
+  evidence was refused, not the caller's request); textarea CRLF is folded to LF
+  before the server's length limits apply.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Backend pytest (repo `.venv`, Python 3.13) | `186 passed` (130 before + 56 in `test_readiness.py`) |
+| Full Student 5 suites | database 26, backend 186, MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Independent AI code review | 1 important, 1 minor, 2 nits; 3 fixed, 1 kept by design - see `review-record.md` (Release 2 - Chunk 2) |
+| Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
+| Native Multi-Agent Server | `scripts/deploy/start-multi-agent.ps1` (single worker, `127.0.0.1:5600`), reachable from the container via `host.docker.internal` |
+| Live review through `:5100/ui/` (Japan) | `wf-20261021T230750Z-6cded4a6`: queued -> planning -> working -> reviewing -> awaiting_human_review in 28 s (Planner 14.5 s, Worker 5.2 s, Reviewer 7.5 s, `llama3.2:3b`). 5 evidence items, 5 checklist items each citing its own record; verdict `concerns` (one model warning), no blocking finding; unchanged polls returned `204` |
+| Binding check, live | Poll and decision for destination 2 return `404 review_not_found`; nothing posted |
+| `GET /audit/verify` | `{"valid": true, "entries": 9, "broken_at": null}` |
+| Human decision | Not yet recorded - left for me to make in the browser |
