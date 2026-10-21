@@ -861,3 +861,21 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** 6/6 against natively run services on a scratch copy of the committed database; JUnit summary 6 of 6.
 
 **Verdict:** accepted. The CI run on push is the remaining check.
+
+## 2026-10-21 - Release 2 Chunk 3 Multi-Agent Backend Review
+
+**Scope:** `MultiAgentClient`, `AgentReviewEndpoints`, `AgentReviewContracts`, the `MULTI_AGENT_ENABLED` flag, Compose wiring and tests. Self-review by Claude Code, then a live run against the shared server.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The shared server holds every student's workflows, and `GET /workflows/{id}` returns any of them. A Student 1 route that forwarded ids directly would let the traveller read or decide another feature's workflow. | The client returns not found for any record whose `feature` is not `student-1`, and fetches the record before posting a decision. Covered by two tests. |
+| Blocking | A workflow id taken from the URL could carry path segments into the server URL. | Ids must match the server's `wf-<timestamp>-<hex>` pattern before any call; a malformed id returns 404 without calling the server. |
+| Required | Traveller preferences are free text sent to three model prompts. | They are labelled as traveller-written data, not instructions; the task text is fixed in code; the server constrains Worker subjects and evidence ids to the supplied entries. |
+| Required | The server accepts at most 30 evidence entries and 120-character titles; larger snapshots would fail the whole start request. | At most 29 stays (highest ranked first) plus the criteria; names are shortened to 120 characters. Tested. |
+| Required | Server decision errors (`notes_required`, `invalid_selection`, `invalid_correction`, `not_awaiting_review`) are rules the traveller must see. | 400 and 409 errors keep their code and message; other failures map to fixed public messages (503 busy/unavailable, 502 unusable response). |
+| Accepted | Listing reads every workflow summary and filters by exact task text. | The store is file-backed and small; this avoids a schema change to the shared server. |
+| Accepted | Stage history, raw model output and error details are not returned to the browser. | They stay in the server record and audit log for the terminal CLI. |
+
+**Validation:** backend 206/206. Live run: Tokyo search 11 reached human review in 52 s (verdict `pass`); partial decision recorded; repeat decision gave 409; audit chain valid.
+
+**Verdict:** accepted.

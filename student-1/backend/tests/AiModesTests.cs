@@ -17,6 +17,7 @@ public sealed class AiModesTests
         Assert.False(modes.RankingEnabled);
         Assert.False(modes.LookupEnabled);
         Assert.False(modes.GuideEnabled);
+        Assert.False(modes.MultiAgentEnabled);
     }
 
     [Fact]
@@ -30,7 +31,7 @@ public sealed class AiModesTests
 
         var body = await client.GetFromJsonAsync<Capabilities>("/api/capabilities");
 
-        Assert.Equal(new Capabilities(AiRanking: true, Lookup: false, Guide: true), body);
+        Assert.Equal(new Capabilities(AiRanking: true, Lookup: false, Guide: true, MultiAgent: false), body);
     }
 
     [Fact]
@@ -55,6 +56,7 @@ public sealed class AiModesTests
     [InlineData("MCP_ENABLED", "True")]
     [InlineData("MCP_ENABLED", "yes")]
     [InlineData("RAG_ENABLED", "1")]
+    [InlineData("MULTI_AGENT_ENABLED", "on")]
     [InlineData("RAG_ENABLED", "")]
     public void InvalidFlagStopsStartup(string name, string value)
     {
@@ -79,7 +81,7 @@ public sealed class AiModesTests
 
     private sealed record ServiceInformation(ModeInformation Modes);
 
-    private sealed record ModeInformation(bool Ranking, bool Lookup, bool Guide);
+    private sealed record ModeInformation(bool Ranking, bool Lookup, bool Guide, bool MultiAgent);
 
-    private sealed record Capabilities(bool AiRanking, bool Lookup, bool Guide);
+    private sealed record Capabilities(bool AiRanking, bool Lookup, bool Guide, bool MultiAgent);
 }

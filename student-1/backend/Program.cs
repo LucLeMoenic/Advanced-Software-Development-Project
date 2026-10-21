@@ -16,6 +16,8 @@ var mcpServerUrl = builder.Configuration["MCP_SERVER_URL"]
     ?? "http://localhost:5400/mcp";
 var ragServerUrl = builder.Configuration["RAG_SERVER_URL"]
     ?? "http://localhost:5500";
+var multiAgentServerUrl = builder.Configuration["MULTI_AGENT_SERVER_URL"]
+    ?? "http://localhost:5600";
 var lookupPrompt = File.ReadAllText(Path.Combine(
     builder.Environment.ContentRootPath,
     "Prompts",
@@ -61,6 +63,13 @@ builder.Services
         client.BaseAddress = new Uri(liteApiUrl);
         client.Timeout = TimeSpan.FromSeconds(10);
     });
+// Workflows run asynchronously on the server, so every call returns quickly (202 on start).
+builder.Services
+    .AddHttpClient<IMultiAgentClient, MultiAgentClient>(client =>
+    {
+        client.BaseAddress = new Uri(multiAgentServerUrl);
+        client.Timeout = TimeSpan.FromSeconds(10);
+    });
 
 var app = builder.Build();
 
@@ -78,7 +87,8 @@ app.MapGet("/", () => Results.Ok(new
     {
         ranking = aiModes.RankingEnabled,
         lookup = aiModes.LookupEnabled,
-        guide = aiModes.GuideEnabled
+        guide = aiModes.GuideEnabled,
+        multiAgent = aiModes.MultiAgentEnabled
     }
 }));
 
@@ -87,7 +97,8 @@ app.MapGet("/api/capabilities", () => Results.Ok(new
 {
     aiRanking = aiModes.RankingEnabled,
     lookup = aiModes.LookupEnabled,
-    guide = aiModes.GuideEnabled
+    guide = aiModes.GuideEnabled,
+    multiAgent = aiModes.MultiAgentEnabled
 }));
 
 app.MapGet("/health", () => Results.Ok(new
@@ -98,6 +109,7 @@ app.MapGet("/health", () => Results.Ok(new
 
 app.MapSearchEndpoints();
 app.MapAssistantEndpoints();
+app.MapAgentReviewEndpoints();
 
 app.Run();
 
