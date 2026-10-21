@@ -173,6 +173,76 @@ public sealed class SearchEndpointsTests
         Assert.Equal(2, saved.Results.Count);
     }
 
+    [Fact]
+    public async Task AiSearchWhenAiRankingDisabledReturnsModeDisabledWithoutDependencyCalls()
+    {
+        var database = new FakeDatabaseApiClient { Candidates = [Candidate(1, 100m)] };
+        var ollama = new FakeOllamaRankingClient();
+        var liteApi = new FakeLiteApiClient();
+        using var factory = CreateFactory(database, ollama, liteApi, aiRankingEnabled: false);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
+        var error = await response.Content.ReadFromJsonAsync<ApiErrorEnvelope>();
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.NotNull(error);
+        Assert.Equal("mode_disabled", error.Error.Code);
+        Assert.Equal("AI ranking is disabled.", error.Error.Message);
+        Assert.Equal(0, database.CallCount);
+        Assert.Equal(0, ollama.CallCount);
+        Assert.Equal(0, liteApi.CallCount);
+    }
+
+    [Fact]
+    public async Task ProgrammaticSearchWhenAiRankingDisabledStillRanksAndPersists()
+    {
+        var database = new FakeDatabaseApiClient
+        {
+            Candidates = [Candidate(2, 110m), Candidate(1, 100m)]
+        };
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama, aiRankingEnabled: false);
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/api/searches",
+            ValidSearch() with { UseAi = false });
+        var saved = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        Assert.NotNull(saved);
+        Assert.Equal("programmatic", saved.RankingMode);
+        Assert.Equal([1, 2], saved.Results.Select(result => result.AccommodationId));
+        Assert.Equal("programmatic", database.LastPersistRequest?.RankingMode);
+        Assert.Equal(0, ollama.CallCount);
+    }
+
+    [Fact]
+    public async Task UncachedDestinationWithoutProviderKeySkipsImportAndReturnsNotice()
+    {
+        var database = new FakeDatabaseApiClient();
+        var liteApi = new FakeLiteApiClient { Imports = [Import("Provider Stay", 90m, 2)] };
+        var ollama = new FakeOllamaRankingClient();
+        using var factory = CreateFactory(database, ollama, liteApi, liteApiKey: "");
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/searches", ValidSearch());
+        var saved = await response.Content.ReadFromJsonAsync<SearchResponse>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(saved);
+        Assert.Empty(saved.Results);
+        Assert.False(saved.ImportedProviderData);
+        Assert.Equal(
+            "Live accommodation import is unavailable in this deployment, so only saved accommodation was searched.",
+            saved.Notice);
+        Assert.Equal(0, liteApi.CallCount);
+        Assert.Empty(database.ImportedAccommodations);
+        Assert.Equal(0, ollama.CallCount);
+        Assert.NotNull(database.LastPersistRequest);
+    }
+
     [Theory]
     [InlineData(ProviderFailure.Unavailable, HttpStatusCode.ServiceUnavailable, "accommodation_provider_unavailable")]
     [InlineData(ProviderFailure.InvalidResponse, HttpStatusCode.BadGateway, "accommodation_provider_response_error")]
@@ -403,11 +473,15 @@ public sealed class SearchEndpointsTests
     private static WebApplicationFactory<Program> CreateFactory(
         FakeDatabaseApiClient database,
         FakeOllamaRankingClient ollama,
-        FakeLiteApiClient? liteApi = null)
+        FakeLiteApiClient? liteApi = null,
+        bool aiRankingEnabled = true,
+        string liteApiKey = "test-key") // pragma: allowlist secret
     {
         return new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder =>
             {
+                builder.UseSetting("AI_ENABLED", aiRankingEnabled ? "true" : "false");
+                builder.UseSetting("LITEAPI_KEY", liteApiKey);
                 builder.ConfigureTestServices(services =>
                 {
                     services.RemoveAll<IDatabaseApiClient>();

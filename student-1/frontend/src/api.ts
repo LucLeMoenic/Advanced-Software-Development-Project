@@ -118,6 +118,18 @@ export const searchesApi = {
   },
 }
 
+export interface Capabilities {
+  aiRanking: boolean
+  lookup: boolean
+  guide: boolean
+}
+
+export const capabilitiesApi = {
+  get() {
+    return request<Capabilities>('/api/capabilities')
+  },
+}
+
 export type AssistantMode = 'lookup' | 'guide'
 
 export interface CatalogueStay {

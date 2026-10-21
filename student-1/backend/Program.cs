@@ -11,7 +11,7 @@ var liteApiUrl = builder.Configuration["Services:LiteApiUrl"]
 var liteApiKey = builder.Configuration["LITEAPI_KEY"] ?? string.Empty;
 var applicationModel = builder.Configuration["APPLICATION_MODEL"]
     ?? "llama3.2:3b";
-var assistantModes = AssistantModes.FromConfiguration(builder.Configuration);
+var aiModes = AiModes.FromConfiguration(builder.Configuration);
 var mcpServerUrl = builder.Configuration["MCP_SERVER_URL"]
     ?? "http://localhost:5400/mcp";
 var ragServerUrl = builder.Configuration["RAG_SERVER_URL"]
@@ -26,7 +26,7 @@ var rankingPrompt = File.ReadAllText(Path.Combine(
     "accommodation-ranking-v1.txt"));
 
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton(assistantModes);
+builder.Services.AddSingleton(aiModes);
 builder.Services.AddSingleton(new OllamaRankingSettings(applicationModel, rankingPrompt));
 builder.Services.AddSingleton(new LiteApiSettings(liteApiKey));
 builder.Services.AddSingleton(new LookupExtractorSettings(applicationModel, lookupPrompt));
@@ -76,9 +76,18 @@ app.MapGet("/", () => Results.Ok(new
     },
     modes = new
     {
-        lookup = assistantModes.LookupEnabled,
-        guide = assistantModes.GuideEnabled
+        ranking = aiModes.RankingEnabled,
+        lookup = aiModes.LookupEnabled,
+        guide = aiModes.GuideEnabled
     }
+}));
+
+// The frontend reads this through its /api/ proxy to show only the enabled AI options.
+app.MapGet("/api/capabilities", () => Results.Ok(new
+{
+    aiRanking = aiModes.RankingEnabled,
+    lookup = aiModes.LookupEnabled,
+    guide = aiModes.GuideEnabled
 }));
 
 app.MapGet("/health", () => Results.Ok(new

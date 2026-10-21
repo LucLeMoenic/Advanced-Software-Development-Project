@@ -829,3 +829,20 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 | Accepted | GPU mode must remain optional because other team machines and CI may not expose NVIDIA devices. | CPU remains the default; the main Compose file and CI behavior are unchanged. |
 
 **Verdict:** accepted. `scripts/start-app.ps1 -Gpu` enables Ollama GPU acceleration explicitly, while `scripts/start-app.ps1` remains portable CPU mode.
+
+## 2026-10-21 - Release 2 Chunk 1 AI-Off Guards Review
+
+**Scope:** `AiModes`, `POST /api/searches` flag and provider-key handling, `GET /api/capabilities`, Student 1 Compose flag, Vue search form and results notice, and their tests. Self-review by Claude Code before commit.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Blocking | The cloud bundle sets `AI_ENABLED=false`, but the backend never read it. An AI search in the cloud only avoided Ollama because the URL was unreachable, and the traveller saw "AI ranking was unavailable" instead of "disabled". | `AI_ENABLED` is parsed with the existing strict flag rules; a disabled AI search returns 503 `mode_disabled` before any database, LiteAPI or Ollama call. |
+| Blocking | With `LITEAPI_KEY` cleared, any uncached destination returned 503 `accommodation_provider_unavailable`, so the cloud CRUD path failed for new destinations. | The import is skipped when no key is configured; the empty search is still saved and returns a notice. The client keeps its own `configuration` failure for direct use. |
+| Required | The frontend had no way to know which AI modes were on: `GET /` is not proxied through `/api/`. | Added `GET /api/capabilities`; the AI option is hidden until it confirms `aiRanking`. A failed capabilities request is shown as an error rather than ignored. |
+| Required | The results notice was always headed "Reliable fallback used.", which would mislabel the new cached-only notice. | The heading now depends on `rankingMode`. |
+| Accepted | The code default for `AI_ENABLED` is false while Compose defaults it to `true`. | Matches the "disabled by default" rule for code and keeps local Compose behaviour unchanged; tests set the flag explicitly. |
+| Accepted | The cached-only notice is not persisted, so a reopened search does not show it. | Same as the existing fallback notice; no schema change for a display hint. |
+
+**Validation:** backend 169/169, frontend 28/28 and production build, Compose configuration valid.
+
+**Verdict:** accepted.

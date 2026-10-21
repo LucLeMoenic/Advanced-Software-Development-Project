@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import {
   ApiRequestError,
+  capabilitiesApi,
   searchesApi,
   type SearchRequest,
   type SearchResponse,
@@ -20,6 +21,16 @@ const errorSummary = ref<HTMLElement | null>(null)
 const searchForm = ref<InstanceType<typeof SearchForm> | null>(null)
 const searchHistory = ref<InstanceType<typeof SearchHistory> | null>(null)
 const searchResults = ref<InstanceType<typeof SearchResults> | null>(null)
+// AI options stay hidden until the backend confirms they are enabled.
+const aiRankingEnabled = ref(false)
+
+onMounted(async () => {
+  try {
+    aiRankingEnabled.value = (await capabilitiesApi.get()).aiRanking
+  } catch (error) {
+    showError(getErrorMessage(error), 'AI options could not be loaded.')
+  }
+})
 
 async function submitSearch(search: SearchRequest) {
   if (submitting.value) {
@@ -150,6 +161,7 @@ async function focusError() {
       ref="searchForm"
       :submitting="submitting"
       :server-errors="serverErrors"
+      :ai-ranking-enabled="aiRankingEnabled"
       @submit="submitSearch"
       @invalid="statusMessage = 'Check the highlighted search fields.'"
     />
