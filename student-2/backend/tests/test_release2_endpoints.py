@@ -1,6 +1,10 @@
 import importlib.util
+from io import BytesIO
 import threading
 from pathlib import Path
+from unittest.mock import Mock
+from urllib.parse import urlparse
+from urllib.response import addinfourl
 
 import pytest
 from werkzeug.serving import make_server
@@ -68,6 +72,29 @@ def test_update_endpoint_invalid_and_missing_records(client):
     assert client.put(url, json={**criteria(), "budget": -1}).status_code == 400
     assert client.get(url).json == before
     assert client.put("/api/trips/999999", json=criteria()).status_code == 404
+
+
+def test_cloud_smoke_uses_current_disabled_routes_and_cleans_up(client, monkeypatch):
+    path = Path(__file__).resolve().parents[3] / "scripts" / "deploy" / "smoke_cloud.py"
+    spec = importlib.util.spec_from_file_location("smoke_cloud", path)
+    smoke = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(smoke)
+    before = client.get("/api/trips").json
+
+    def gateway(request, timeout):
+        path = urlparse(request.full_url).path
+        if path.startswith("/itinerary-api/"):
+            response = client.open(path.replace("/itinerary-api/", "/api/", 1),
+                                   method=request.method, data=request.data, content_type="application/json")
+            return addinfourl(BytesIO(response.data), {}, request.full_url, response.status_code)
+        return addinfourl(BytesIO(b"<html>Gateway fixture</html>"), {}, request.full_url, 200)
+
+    monkeypatch.setattr(smoke, "urlopen", gateway)
+    student1_check = Mock()
+    monkeypatch.setattr(smoke, "check_student1", student1_check)
+    smoke.run("https://smoke.invalid")
+    student1_check.assert_called_once()
+    assert client.get("/api/trips").json == before
 
 
 @pytest.mark.parametrize("method,path", [("post", "/api/trips"), ("put", "/api/trips/1")])

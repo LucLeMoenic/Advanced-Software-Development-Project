@@ -49,7 +49,7 @@
   .assistant-collapsed .assistant-header { min-height: 70px; padding: 0; }
   .assistant-collapsed .assistant-header h2, .assistant-collapsed .assistant-header p { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
-.assistant-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--color-border); background: var(--color-subtle); }
+.assistant-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-bottom: 1px solid var(--color-border); background: var(--color-subtle); }
 .assistant-tabs button { min-height: 46px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--color-muted); font-weight: 600; }
 .assistant-tabs button[aria-selected="true"] { color: var(--color-primary-dark); border-bottom-color: var(--color-primary); background: var(--color-surface); }
  .advice-answer { white-space: pre-wrap; overflow-wrap: anywhere; }

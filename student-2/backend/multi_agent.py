@@ -106,10 +106,6 @@ class Record(Strict):
     error: dict | None
 
 
-class Start(Strict):
-    task: str = Field(min_length=3, max_length=500)
-
-
 class Decision(Strict):
     decision: Literal["approve", "correct", "partial", "reject"]
     notes: str = Field(default="", max_length=1000)
@@ -234,7 +230,71 @@ class MultiAgentClient:
             raise IntegrationError("dependency_unavailable") from None
 
 
-def create_blueprint(database, client, enabled):
+def snapshot(evidence):
+    return json.loads(evidence[0]["text"])["snapshot"]
+
+
+class EditReview:
+    def __init__(self, database, client):
+        self.database, self.client = database, client
+
+    def trip_evidence(self, trip_id):
+        body, status = self.database.request("GET", f"/api/data/trips/{trip_id}")
+        if status == 404:
+            raise IntegrationError("trip_not_found")
+        if status != 200:
+            raise IntegrationError("invalid_dependency_response")
+        return evidence_for(body, trip_id)
+
+    def get_record(self, trip_id, workflow_id):
+        if not isinstance(workflow_id, str) or not re.fullmatch(WORKFLOW_ID, workflow_id):
+            raise IntegrationError("workflow_not_found")
+        return validate_record(self.client.request("GET", f"/workflows/{workflow_id}"), workflow_id, trip_id)
+
+    def start(self, trip_id, preview, question, evidence):
+        if snapshot(evidence) != snapshot(self.trip_evidence(trip_id)):
+            raise IntegrationError("stale_preview")
+        candidate = []
+        for title, text in [
+            ("Requested edit", question),
+            *[(f"Proposed change {i + 1}", json.dumps(change, ensure_ascii=False))
+              for i, change in enumerate(preview["changes"])],
+        ]:
+            parts = [text[i:i + 800] for i in range(0, len(text), 800)]
+            for i, part in enumerate(parts):
+                candidate.append({"id": f"edit-{len(candidate) + 1}",
+                                  "title": f"{title} (part {i + 1}/{len(parts)})", "text": part})
+        if len(candidate) > 28:
+            raise IntegrationError("edit_review_too_large")
+        evidence = evidence[:30 - len(candidate)]
+        metadata = json.loads(evidence[0]["text"])
+        metadata["omittedStops"] = metadata["stopCount"] - (len(evidence) - 2)
+        metadata["previewHash"] = hashlib.sha256(preview["token"].encode()).hexdigest()
+        evidence[0] = {**evidence[0], "text": json.dumps(metadata, ensure_ascii=False)}
+        created = self.client.request("POST", "/workflows", {
+            "feature": "student-2",
+            "task": "Assess the exact proposed edit against the requested edit and saved itinerary. "
+                    "Identify supported changes, mismatches and evidence limits. Do not invent or execute edits.",
+            "evidence": [Evidence.model_validate(item).model_dump() for item in evidence + candidate],
+            "submitted_by": "student-2-frontend",
+        }, expected=202)
+        if (not isinstance(created, dict) or set(created) != {"id", "status"}
+                or not isinstance(created["id"], str) or not re.fullmatch(WORKFLOW_ID, created["id"])
+                or created["status"] != "queued"):
+            raise IntegrationError("invalid_dependency_response")
+        return created["id"]
+
+    def require_accepted(self, trip_id, workflow_id, token):
+        record = self.get_record(trip_id, workflow_id)
+        metadata = json.loads(record["evidence"][0]["text"])
+        if (metadata.get("previewHash") != hashlib.sha256(token.encode()).hexdigest()
+                or record["status"] not in ("approved", "corrected", "partially_accepted")):
+            raise IntegrationError("edit_review_required")
+        if snapshot(record["evidence"]) != snapshot(self.trip_evidence(trip_id)):
+            raise IntegrationError("stale_workflow")
+
+
+def create_blueprint(service, enabled):
     routes = Blueprint("multi_agent", __name__)
 
     @routes.before_request
@@ -244,43 +304,12 @@ def create_blueprint(database, client, enabled):
         if request.content_length is not None and request.content_length > 16384:
             raise IntegrationError("invalid_workflow")
 
-    def trip_evidence(trip_id):
-        body, status = database.request("GET", f"/api/data/trips/{trip_id}")
-        if status == 404:
-            raise IntegrationError("trip_not_found")
-        if status != 200:
-            raise IntegrationError("invalid_dependency_response")
-        return evidence_for(body, trip_id)
-
-    def get_record(trip_id, workflow_id):
-        if not re.fullmatch(WORKFLOW_ID, workflow_id):
-            raise IntegrationError("workflow_not_found")
-        return validate_record(client.request("GET", f"/workflows/{workflow_id}"), workflow_id, trip_id)
-
-    @routes.post("/api/trips/<int:trip_id>/multi-agent-workflows")
-    def start(trip_id):
-        try:
-            task = Start.model_validate(request.get_json(silent=True)).task.strip()
-            if len(task) < 3:
-                raise ValueError("Blank task")
-        except ValueError:
-            raise IntegrationError("invalid_workflow") from None
-        evidence = trip_evidence(trip_id)
-        created = client.request("POST", "/workflows", {
-            "feature": "student-2", "task": task, "evidence": evidence, "submitted_by": "student-2-frontend",
-        }, expected=202)
-        if (not isinstance(created, dict) or set(created) != {"id", "status"}
-                or not isinstance(created["id"], str) or not re.fullmatch(WORKFLOW_ID, created["id"])
-                or created["status"] != "queued"):
-            raise IntegrationError("invalid_dependency_response")
-        return jsonify(created), 202
-
     @routes.get("/api/trips/<int:trip_id>/multi-agent-workflows/<workflow_id>")
     def poll(trip_id, workflow_id):
-        record = get_record(trip_id, workflow_id)
+        record = service.get_record(trip_id, workflow_id)
         try:
-            current = trip_evidence(trip_id)
-            record["stale"] = record["evidence"][0] != current[0]
+            current = service.trip_evidence(trip_id)
+            record["stale"] = snapshot(record["evidence"]) != snapshot(current)
         except IntegrationError as exc:
             if exc.code != "trip_not_found":
                 raise
@@ -293,10 +322,10 @@ def create_blueprint(database, client, enabled):
             decision = Decision.model_validate(request.get_json(silent=True))
         except ValidationError:
             raise IntegrationError("invalid_workflow") from None
-        record = get_record(trip_id, workflow_id)
+        record = service.get_record(trip_id, workflow_id)
         if record["status"] != "awaiting_human_review":
             raise IntegrationError("workflow_conflict")
-        if record["evidence"][0] != trip_evidence(trip_id)[0]:
+        if snapshot(record["evidence"]) != snapshot(service.trip_evidence(trip_id)):
             raise IntegrationError("stale_workflow")
         item_ids = {item["id"] for item in record["work"]["items"]}
         if (decision.decision == "reject" and not decision.notes.strip()
@@ -310,8 +339,8 @@ def create_blueprint(database, client, enabled):
                 or decision.decision != "correct" and decision.corrected_output is not None
                 or decision.decision != "partial" and decision.accepted_item_ids is not None):
             raise IntegrationError("invalid_workflow")
-        result = client.request("POST", f"/workflows/{workflow_id}/decision",
-                                {**decision.model_dump(exclude_none=True), "decided_by": "human"})
+        result = service.client.request("POST", f"/workflows/{workflow_id}/decision",
+                                       {**decision.model_dump(exclude_none=True), "decided_by": "human"})
         validated = validate_record(result, workflow_id, trip_id)
         if validated["status"] != DECISIONS[decision.decision] or validated["evidence"] != record["evidence"]:
             raise IntegrationError("invalid_dependency_response")
