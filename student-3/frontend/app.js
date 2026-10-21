@@ -581,3 +581,471 @@ function renderRecommendation(event, form) {
     <p class="rec-text">${escapeHtml(data.recommendation).replace(/\n/g, '<br>')}</p>
   `;
 }
+
+/* ==========================================================================
+ * Release 2: "Plan a Day with Agents" - the shared Multi-Agent Server.
+ *
+ * Flow: this page -> /attractions-api/agents/* (Student 3 backend) -> Multi-Agent
+ * Server -> Planner -> Worker -> Reviewer -> human review (this page) -> response.
+ * The backend chooses the evidence (the catalogue); the workflow runs in the
+ * background, so this page polls instead of holding one long request open.
+ * ========================================================================== */
+
+/**
+ * escapeHtml (above) leaves quotes alone, which is fine between tags but not inside an HTML
+ * attribute value. Use this for anything interpolated into an attribute.
+ */
+function escapeAttr(value) {
+  return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const AGENT_API = '/attractions-api/agents';
+const AGENT_POLL_MS = 3000;
+const AGENT_SESSION_KEY = 'student3-agent-workflow';
+const AGENT_STAGES = [
+  { role: 'Planner', blurb: 'Drafts the plan and names the evidence it needs' },
+  { role: 'Worker', blurb: 'Carries out the plan using only catalogue facts' },
+  { role: 'Reviewer', blurb: 'Checks the work against the evidence' },
+  { role: 'You', blurb: 'Approve, correct, accept part of it, or reject' },
+];
+const AGENT_RUNNING_STAGE = { queued: 0, planning: 0, working: 1, reviewing: 2, awaiting_human_review: 3 };
+const AGENT_STAGE_BY_NAME = { planning: 0, working: 1, reviewing: 2 };
+const AGENT_DECIDED_LABEL = {
+  approved: 'Approved',
+  corrected: 'Corrected by you',
+  partially_accepted: 'Partially accepted',
+  rejected: 'Rejected',
+};
+
+let agentRecord = null;
+let agentPollTimer = null;
+let agentClockTimer = null;
+let agentStartedAt = 0;
+let agentPollFailures = 0;
+
+function agentStore(action, value) {
+  // sessionStorage can throw (private windows, blocked storage); the page works without it.
+  try {
+    if (action === 'set') sessionStorage.setItem(AGENT_SESSION_KEY, value);
+    else if (action === 'clear') sessionStorage.removeItem(AGENT_SESSION_KEY);
+    else return sessionStorage.getItem(AGENT_SESSION_KEY);
+  } catch (err) {
+    return null;
+  }
+  return null;
+}
+
+function setAgentStatus(message, kind) {
+  const status = document.getElementById('agent-status');
+  status.innerHTML = message ? `<p class="${kind}">${escapeHtml(message)}</p>` : '';
+}
+
+function setAgentFormEnabled(enabled) {
+  document.getElementById('agent-task').disabled = !enabled;
+  document.getElementById('agent-category').disabled = !enabled;
+  document.getElementById('agent-start').disabled = !enabled;
+}
+
+function agentFetch(path, options) {
+  return fetch(`${AGENT_API}${path}`, options)
+    .then((response) => response.json().then((data) => ({ status: response.status, data }))
+      .catch(() => ({ status: response.status, data: null })));
+}
+
+/** One of: done | active | waiting | failed | degraded | pending, per stage index. */
+function agentStageStates(record) {
+  const states = AGENT_STAGES.map(() => 'pending');
+  if (record.status === 'failed') {
+    const failedAt = AGENT_STAGE_BY_NAME[(record.error || {}).stage];
+    for (let i = 0; i < states.length; i += 1) {
+      if (failedAt === undefined) break;
+      if (i < failedAt) states[i] = 'done';
+      else if (i === failedAt) states[i] = 'failed';
+    }
+    return states;
+  }
+  if (AGENT_DECIDED_LABEL[record.status]) return states.map(() => 'done');
+  const current = AGENT_RUNNING_STAGE[record.status] ?? 0;
+  for (let i = 0; i < current; i += 1) states[i] = 'done';
+  states[current] = current === 3 ? 'waiting' : 'active';
+  if (record.review && record.review.degraded) states[2] = 'degraded';
+  return states;
+}
+
+function agentStageLabel(state, index) {
+  if (state === 'done') return 'Done';
+  if (state === 'waiting') return 'Waiting for you';
+  if (state === 'failed') return 'Failed';
+  if (state === 'degraded') return 'Automatic checks only';
+  if (state === 'active') {
+    const seconds = Math.max(0, Math.floor((Date.now() - agentStartedAt) / 1000));
+    return index === 3 ? 'Waiting for you' : `Working... ${seconds}s in total`;
+  }
+  return 'Pending';
+}
+
+function renderAgentStages(record) {
+  const list = document.getElementById('agent-stages');
+  const states = agentStageStates(record);
+  list.hidden = false;
+  list.innerHTML = AGENT_STAGES.map((stage, index) => `
+    <li class="agent-stage is-${states[index]}"${states[index] === 'active' ? ' aria-current="step"' : ''}>
+      <span class="agent-stage-role">${escapeHtml(stage.role)}</span>
+      <span class="agent-stage-blurb">${escapeHtml(stage.blurb)}</span>
+      <span class="agent-stage-state">${escapeHtml(agentStageLabel(states[index], index))}</span>
+    </li>
+  `).join('');
+}
+
+function evidenceChipsHtml(ids) {
+  return (ids || []).map((id) => `<span class="evidence-chip">${escapeHtml(id)}</span>`).join(' ');
+}
+
+function agentPlanHtml(plan) {
+  if (!plan) return '';
+  const steps = plan.steps.map((step) => `<li>${escapeHtml(step.description)}</li>`).join('');
+  const criteria = plan.success_criteria.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+  return `
+    <article class="agent-card">
+      <h3>Planner: the plan</h3>
+      <p>${escapeHtml(plan.objective)}</p>
+      <ol class="agent-steps">${steps}</ol>
+      <p class="agent-meta">Evidence it asked the Worker to use: ${evidenceChipsHtml(plan.required_evidence_ids)}</p>
+      <details><summary>Success criteria</summary><ul>${criteria}</ul></details>
+    </article>
+  `;
+}
+
+function agentWorkHtml(work) {
+  if (!work) return '';
+  const items = work.items.map((item) => `
+    <li class="agent-item">
+      <strong>${escapeHtml(item.subject)}</strong>
+      <span class="agent-item-id">${escapeHtml(item.id)}</span>
+      <p>${escapeHtml(item.detail)}</p>
+      <p class="agent-meta">Evidence: ${evidenceChipsHtml(item.evidence_ids)}</p>
+    </li>
+  `).join('');
+  return `
+    <article class="agent-card">
+      <h3>Worker: the suggestion</h3>
+      <p>${escapeHtml(work.summary)}</p>
+      <ul class="agent-items">${items}</ul>
+    </article>
+  `;
+}
+
+function agentReviewHtml(review) {
+  if (!review) return '';
+  const findings = review.findings.length
+    ? review.findings.map((finding) => `
+        <li class="finding finding-${escapeAttr(finding.severity)}">
+          <span class="finding-severity">${escapeHtml(finding.severity)}</span>
+          ${finding.item_id ? `<span class="agent-item-id">${escapeHtml(finding.item_id)}</span>` : ''}
+          ${escapeHtml(finding.message)}
+        </li>`).join('')
+    : '<li class="finding">No issues found.</li>';
+  const recommendations = review.recommendations.map((text) => `<li>${escapeHtml(text)}</li>`).join('');
+  const degraded = review.degraded
+    ? '<p class="agent-warning">The Reviewer agent did not produce a valid review, so only the automatic checks ran. Check every item against its evidence yourself.</p>'
+    : '';
+  return `
+    <article class="agent-card">
+      <h3>Reviewer: verdict
+        <span class="verdict-badge verdict-${escapeAttr(review.verdict)}">${escapeHtml(review.verdict)}</span>
+      </h3>
+      ${degraded}
+      <ul class="agent-findings">${findings}</ul>
+      ${recommendations ? `<p class="agent-meta">Recommendations</p><ul>${recommendations}</ul>` : ''}
+    </article>
+  `;
+}
+
+function agentReviewFormHtml(record) {
+  const partial = record.work.items.map((item) => `
+    <label class="agent-check">
+      <input type="checkbox" name="accept" value="${escapeAttr(item.id)}" checked>
+      ${escapeHtml(item.subject)} <span class="agent-item-id">${escapeHtml(item.id)}</span>
+    </label>`).join('');
+  const correct = record.work.items.map((item) => `
+    <label for="agent-fix-${escapeAttr(item.id)}">${escapeHtml(item.subject)}
+      <span class="agent-item-id">${escapeHtml(item.id)}</span></label>
+    <textarea id="agent-fix-${escapeAttr(item.id)}" data-item-id="${escapeAttr(item.id)}" rows="2" maxlength="400">${escapeHtml(item.detail)}</textarea>`).join('');
+  return `
+    <form id="agent-decision-form" class="agent-card" novalidate>
+      <h3>Your decision</h3>
+      <fieldset>
+        <legend class="visually-hidden">Decision</legend>
+        <label class="agent-check"><input type="radio" name="decision" value="approve" checked> Approve as is</label>
+        <label class="agent-check"><input type="radio" name="decision" value="correct"> Correct it</label>
+        <label class="agent-check"><input type="radio" name="decision" value="partial"> Accept only some items</label>
+        <label class="agent-check"><input type="radio" name="decision" value="reject"> Reject</label>
+      </fieldset>
+      <div data-for="partial" hidden><p class="agent-meta">Items to keep:</p>${partial}</div>
+      <div data-for="correct" hidden>
+        <label for="agent-fix-summary">Summary</label>
+        <textarea id="agent-fix-summary" rows="2" maxlength="400">${escapeHtml(record.work.summary)}</textarea>
+        ${correct}
+        <p class="agent-meta">Each item keeps its subject and evidence; edit the wording only.</p>
+      </div>
+      <label for="agent-notes">Notes <span id="agent-notes-hint" class="agent-meta">(required to reject)</span></label>
+      <textarea id="agent-notes" rows="2" maxlength="1000"></textarea>
+      <p id="agent-decision-error" class="error" role="alert"></p>
+      <button type="submit" id="agent-decide">Record decision</button>
+    </form>
+  `;
+}
+
+function agentFinalHtml(record) {
+  const decision = record.human_decision || {};
+  const items = record.final_output && record.final_output.items.length
+    ? `<ul class="agent-items">${record.final_output.items.map((item) => `
+        <li class="agent-item"><strong>${escapeHtml(item.subject)}</strong><p>${escapeHtml(item.detail)}</p></li>`).join('')}</ul>`
+    : '<p class="empty">Nothing was accepted from this run.</p>';
+  return `
+    <article class="agent-card agent-final">
+      <h3>Final outcome
+        <span class="verdict-badge decided-${escapeAttr(record.status)}">${escapeHtml(AGENT_DECIDED_LABEL[record.status])}</span>
+      </h3>
+      ${record.final_output ? `<p>${escapeHtml(record.final_output.summary)}</p>` : ''}
+      ${items}
+      ${decision.notes ? `<p class="agent-meta">Your notes: ${escapeHtml(decision.notes)}</p>` : ''}
+      <p class="agent-meta">Workflow ${escapeHtml(record.id)}</p>
+      <button type="button" id="agent-again">Plan another day</button>
+    </article>
+  `;
+}
+
+function renderAgentResult(record) {
+  const box = document.getElementById('agent-result');
+  if (record.status === 'failed') {
+    const error = record.error || {};
+    box.innerHTML = `
+      ${agentPlanHtml(record.plan)}${agentWorkHtml(record.work)}
+      <p class="error">The agents could not finish (${escapeHtml(error.code || 'unknown')}${error.stage ? ` while ${escapeHtml(error.stage)}` : ''}). ${escapeHtml(error.message || '')}</p>
+      <button type="button" id="agent-again">Try again</button>`;
+  } else if (record.status === 'awaiting_human_review') {
+    box.innerHTML = `${agentPlanHtml(record.plan)}${agentWorkHtml(record.work)}${agentReviewHtml(record.review)}${agentReviewFormHtml(record)}`;
+    wireAgentDecisionForm(record);
+  } else if (AGENT_DECIDED_LABEL[record.status]) {
+    box.innerHTML = `${agentPlanHtml(record.plan)}${agentWorkHtml(record.work)}${agentReviewHtml(record.review)}${agentFinalHtml(record)}`;
+  } else {
+    box.innerHTML = '';
+    return;
+  }
+  const again = document.getElementById('agent-again');
+  if (again) again.addEventListener('click', resetAgentPanel);
+}
+
+function stopAgentTimers() {
+  window.clearTimeout(agentPollTimer);
+  window.clearInterval(agentClockTimer);
+  agentPollTimer = null;
+  agentClockTimer = null;
+}
+
+function resetAgentPanel() {
+  stopAgentTimers();
+  agentRecord = null;
+  agentStore('clear');
+  document.getElementById('agent-stages').hidden = true;
+  document.getElementById('agent-result').innerHTML = '';
+  setAgentFormEnabled(true);
+  setAgentStatus('', '');
+}
+
+function agentIsFinished(record) {
+  return record.status === 'awaiting_human_review' || record.status === 'failed' || Boolean(AGENT_DECIDED_LABEL[record.status]);
+}
+
+function applyAgentRecord(record) {
+  const wasFinished = agentRecord && agentIsFinished(agentRecord) && agentRecord.status === record.status;
+  agentRecord = record;
+  renderAgentStages(record);
+  if (!agentIsFinished(record)) {
+    document.getElementById('agent-result').innerHTML = '';
+    return;
+  }
+  stopAgentTimers();
+  if (!wasFinished) renderAgentResult(record);
+  if (record.status === 'awaiting_human_review') {
+    setAgentStatus('The agents have finished. Review their work and record your decision.', 'success');
+  } else if (record.status === 'failed') {
+    setAgentStatus('The workflow failed.', 'error');
+  } else {
+    setAgentStatus('Decision recorded.', 'success');
+  }
+}
+
+function pollAgentWorkflow(id) {
+  agentFetch(`/workflows/${encodeURIComponent(id)}`).then(({ status, data }) => {
+    if (status === 200 && data) {
+      agentPollFailures = 0;
+      applyAgentRecord(data);
+      if (!agentIsFinished(data)) agentPollTimer = window.setTimeout(() => pollAgentWorkflow(id), AGENT_POLL_MS);
+      return;
+    }
+    if (status === 404) {
+      agentStore('clear');
+      setAgentStatus('That workflow no longer exists on the Multi-Agent Server.', 'error');
+      setAgentFormEnabled(true);
+      return;
+    }
+    agentPollFailures += 1;
+    if (agentPollFailures >= 3) {
+      setAgentStatus('Lost contact with the Multi-Agent Server. Your workflow is safe on the server; reload to resume.', 'error');
+      return;
+    }
+    agentPollTimer = window.setTimeout(() => pollAgentWorkflow(id), AGENT_POLL_MS);
+  }).catch(() => {
+    agentPollFailures += 1;
+    if (agentPollFailures < 3) agentPollTimer = window.setTimeout(() => pollAgentWorkflow(id), AGENT_POLL_MS);
+    else setAgentStatus('Lost contact with the Multi-Agent Server. Reload to resume.', 'error');
+  });
+}
+
+function beginAgentPolling(id, startedAt) {
+  stopAgentTimers();
+  agentStartedAt = startedAt;
+  agentPollFailures = 0;
+  agentClockTimer = window.setInterval(() => {
+    if (agentRecord && !agentIsFinished(agentRecord)) renderAgentStages(agentRecord);
+  }, 1000);
+  pollAgentWorkflow(id);
+}
+
+function agentStartError(status, data) {
+  const code = data && data.error;
+  if (status === 503 && code === 'busy') return 'Another workflow is running. Try again when it finishes.';
+  if (status === 503) return 'Multi-Agent is currently disabled.';
+  if (status === 502) return 'The Multi-Agent Server is offline.';
+  return (data && data.message) || 'Something went wrong, please try again.';
+}
+
+function handleAgentStart(event) {
+  event.preventDefault();
+  const task = document.getElementById('agent-task').value.trim();
+  const category = document.getElementById('agent-category').value;
+  if (task.length < 3) {
+    setAgentStatus('Describe what the plan is for (at least 3 characters).', 'error');
+    return;
+  }
+  setAgentFormEnabled(false);
+  document.getElementById('agent-result').innerHTML = '';
+  setAgentStatus('Starting the agents...', 'loading');
+
+  agentFetch('/workflows', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category ? { task, category } : { task }),
+  }).then(({ status, data }) => {
+    if (status !== 202 || !data || !data.id) {
+      setAgentStatus(agentStartError(status, data), 'error');
+      setAgentFormEnabled(true);
+      return;
+    }
+    agentStore('set', data.id);
+    setAgentStatus(`The agents are working from ${data.evidence_count} catalogue entries. This usually takes one to two minutes.`, 'loading');
+    applyAgentRecord({ id: data.id, status: data.status, review: null, error: null });
+    beginAgentPolling(data.id, Date.now());
+  }).catch(() => {
+    setAgentStatus('The Multi-Agent Server is offline.', 'error');
+    setAgentFormEnabled(true);
+  });
+}
+
+function wireAgentDecisionForm(record) {
+  const form = document.getElementById('agent-decision-form');
+  const sections = form.querySelectorAll('[data-for]');
+  const sync = () => {
+    const chosen = form.elements.decision.value;
+    sections.forEach((section) => { section.hidden = section.dataset.for !== chosen; });
+  };
+  form.addEventListener('change', sync);
+  sync();
+  form.addEventListener('submit', (event) => submitAgentDecision(event, record));
+}
+
+/** Build the request body for the chosen decision, or return {error} (mirrors the server's rules). */
+function collectAgentDecision(form, record) {
+  const decision = form.elements.decision.value;
+  const notes = document.getElementById('agent-notes').value.trim();
+  const body = { decision, notes };
+  if (decision === 'reject' && !notes) return { error: 'Please say why you are rejecting this.' };
+  if (decision === 'partial') {
+    body.accepted_item_ids = Array.from(form.querySelectorAll('input[name="accept"]:checked')).map((box) => box.value);
+    if (!body.accepted_item_ids.length) return { error: 'Choose at least one item to keep, or reject instead.' };
+  }
+  if (decision === 'correct') {
+    const summary = document.getElementById('agent-fix-summary').value.trim();
+    const items = record.work.items.map((item) => ({
+      id: item.id,
+      subject: item.subject,
+      evidence_ids: item.evidence_ids,
+      detail: document.getElementById(`agent-fix-${item.id}`).value.trim(),
+    }));
+    if (!summary || items.some((item) => !item.detail)) return { error: 'The summary and every item need some text.' };
+    body.corrected_output = { summary, items };
+  }
+  return { body };
+}
+
+function submitAgentDecision(event, record) {
+  event.preventDefault();
+  const form = event.target;
+  const errorBox = document.getElementById('agent-decision-error');
+  const { body, error } = collectAgentDecision(form, record);
+  if (error) {
+    errorBox.textContent = error;
+    return;
+  }
+  errorBox.textContent = '';
+  const button = document.getElementById('agent-decide');
+  button.disabled = true;
+
+  agentFetch(`/workflows/${encodeURIComponent(record.id)}/decision`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(({ status, data }) => {
+    if (status === 200 && data) {
+      applyAgentRecord(data);
+      renderAgentResult(data);
+      return;
+    }
+    button.disabled = false;
+    if (status === 409) errorBox.textContent = 'This workflow already has a decision. Reload to see it.';
+    else if (status === 502 || status === 503) errorBox.textContent = 'The Multi-Agent Server is not reachable. Try again.';
+    else errorBox.textContent = (data && data.message) || 'Something went wrong, please try again.';
+  }).catch(() => {
+    button.disabled = false;
+    errorBox.textContent = 'The Multi-Agent Server is not reachable. Try again.';
+  });
+}
+
+function initAgentsPanel() {
+  const form = document.getElementById('agent-form');
+  if (!form) return;
+  form.addEventListener('submit', handleAgentStart);
+
+  agentFetch('/status').then(({ status, data }) => {
+    if (status === 503) {
+      setAgentStatus('Multi-Agent is currently disabled.', 'error');
+      return;
+    }
+    if (status !== 200 || !data) {
+      setAgentStatus('The Multi-Agent Server is offline.', 'error');
+      return;
+    }
+    setAgentFormEnabled(true);
+    setAgentStatus(data.busy ? 'The agents are busy with another workflow.' : '', 'loading');
+    const saved = agentStore('get');
+    if (saved) {
+      setAgentFormEnabled(false);
+      setAgentStatus('Resuming your workflow...', 'loading');
+      beginAgentPolling(saved, Date.now());
+    }
+  }).catch(() => setAgentStatus('The Multi-Agent Server is offline.', 'error'));
+}
+
+document.addEventListener('DOMContentLoaded', initAgentsPanel);

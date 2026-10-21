@@ -1,0 +1,40 @@
+# Mutation check for the Student 3 Multi-Agent integration: each bug below was introduced on its own,
+# the whole Student 3 suite run, and the file restored from an in-memory copy (verified identical).
+# 2026-10-19T01:58Z
+
+baseline (no mutation): 130 passed in 3.54s
+
+M1  backend/multi_agent_client.py: Multi-Agent becomes enabled by default
+    result: 5 failed, 125 passed in 3.60s
+    caught by: test_client_is_disabled_by_default_and_makes_no_request, test_every_agent_route_returns_503_disabled_by_default[get-/api/agents/status-None], test_every_agent_route_returns_503_disabled_by_default[post-/api/agents/workflows-body1] (+2 more)
+
+M2  backend/app.py: the browser can choose the reviewer identity
+    result: 1 failed, 129 passed in 3.19s
+    caught by: test_decision_relays_only_known_fields_and_fixes_the_reviewer_identity
+
+M3  backend/app.py: extra fields from the browser are relayed to the server
+    result: 1 failed, 129 passed in 3.22s
+    caught by: test_decision_relays_only_known_fields_and_fixes_the_reviewer_identity
+
+M4  backend/app.py: workflow id is not validated before being forwarded (first route only)
+    result: 3 failed, 127 passed in 3.46s
+    caught by: test_malformed_workflow_ids_are_404_and_never_reach_the_server[not-an-id], test_malformed_workflow_ids_are_404_and_never_reach_the_server[wf-1], test_malformed_workflow_ids_are_404_and_never_reach_the_server[wf-20261019T011611Z-ZZZZZZZZ]
+
+M5  backend/app.py: the database is queried even when Multi-Agent is disabled
+    result: 1 failed, 129 passed in 3.73s
+    caught by: test_every_agent_route_returns_503_disabled_by_default[post-/api/agents/workflows-body1]
+
+M6  backend/app.py: unexpected server statuses leak straight through to the browser
+    result: 2 failed, 128 passed in 3.28s
+    caught by: test_server_decision_errors_keep_actionable_statuses_and_hide_the_rest[500-unknown-502], test_server_decision_errors_keep_actionable_statuses_and_hide_the_rest[418-unknown-502]
+
+M7  backend/agent_evidence.py: evidence is no longer ordered best-rated first
+    result: 1 failed, 129 passed in 3.29s
+    caught by: test_evidence_is_ordered_best_rated_first_with_unrated_last_and_ties_by_id
+
+M8  backend/agent_evidence.py: three review comments are included, not two
+    result: 1 failed, 129 passed in 3.42s
+    caught by: test_evidence_text_has_category_description_rating_and_two_review_comments
+
+after restoring every file: 130 passed in 2.98s
+mutations not caught: 0

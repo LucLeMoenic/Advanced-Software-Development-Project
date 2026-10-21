@@ -48,6 +48,8 @@ Shared runtime prompts (kept under `ai-services/agentic-loop/prompts/`, not copi
   steps no tool can do ("make a reservation"). The Worker stayed grounded in both live runs. The Reviewer
   mostly restates the automatic findings and once produced output that failed validation, which is why the
   server records the rejected output and falls back to an explicit degraded review.
-- **Prompt changes since first draft:** none yet. The first live Reviewer failure was fixed in code
-  (schema-constrained `item_id`, sanitising, degraded fallback), not by rewording the prompt, so the prompt
-  is still v1.
+- **Prompt changes since first draft:** the Reviewer failure was fixed in code (schema-constrained `item_id`,
+  sanitising, degraded fallback), not by rewording. The first live UI run then showed the Worker (v1) writing
+  entry descriptions into `subject`. Fix: the schema now restricts `subject` to the evidence titles, and
+  `multi-agent-worker-v2.txt` adds an explicit "title, never a description" rule with a worked example. v1 is kept
+  in the folder for history. Same task before/after: 4 blocking findings, then 0.

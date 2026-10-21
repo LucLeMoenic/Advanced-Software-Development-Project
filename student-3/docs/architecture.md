@@ -119,6 +119,55 @@ plausibly-relevant question pays the generation cost. The frontend renders
 `confidence: "insufficient"` as a visually distinct state (`.rag-insufficient`
 in `style.css`), never as a normal answer with an empty citation list.
 
+## Release 2: Multi-Agent Request Flow (`/api/agents/*`)
+
+The shared Multi-Agent Server runs natively on the host (port 5600), like MCP, RAG and Ollama; it is
+never a Compose service. The Student 3 backend is the only component that chooses the evidence, and the
+browser can only relay a human decision.
+
+```mermaid
+sequenceDiagram
+    actor Reviewer as Traveller (human reviewer)
+    participant Frontend
+    participant Backend as Backend (multi_agent_client.py)
+    participant DB as Student 3 database service
+    participant MAS as Shared Multi-Agent Server
+    participant Ollama
+
+    Reviewer->>Frontend: "Start the agents" (task, optional category)
+    Frontend->>Backend: POST /api/agents/workflows
+    alt MULTI_AGENT_ENABLED is not "true" (default, cloud baseline)
+        Backend-->>Frontend: 503 multi_agent_disabled (no database or network call)
+    else Enabled
+        Backend->>DB: attractions + reviews (the evidence)
+        Backend->>MAS: POST /workflows {feature, task, evidence}
+        MAS-->>Backend: 202 {id}
+        Backend-->>Frontend: 202 {id, evidence_count}
+        MAS->>Ollama: Planner: plan + required evidence ids
+        MAS->>Ollama: Worker: items, subject = exact evidence title, each citing evidence ids
+        MAS->>MAS: Automatic checks (subject must match the cited entry)
+        MAS->>Ollama: Reviewer: verdict + findings (blocking finding forces "fail")
+        loop every 3 seconds
+            Frontend->>Backend: GET /api/agents/workflows/{id}
+            Backend->>MAS: GET /workflows/{id}
+            MAS-->>Frontend: status, plan, work, review
+        end
+        MAS-->>Frontend: awaiting_human_review
+        Reviewer->>Frontend: approve / correct / accept some / reject (+ notes)
+        Frontend->>Backend: POST /api/agents/workflows/{id}/decision
+        Backend->>MAS: decision (decided_by fixed to "student-3-ui", unknown fields dropped)
+        MAS-->>Frontend: approved | corrected | partially_accepted | rejected + final_output
+    end
+```
+
+Every stage and the human decision is appended to the server's hash-chained audit log
+(`GET /audit/verify`). The workflow runs asynchronously because three model calls take minutes on a CPU,
+so the page polls instead of holding one long request open.
+
+Failure behaviour the frontend renders distinctly: disabled (503), server offline (502), server busy
+(503 `busy`), an already-decided workflow (409), and a workflow that `failed` at a named stage. If only the
+Reviewer model fails the workflow still reaches the human, marked "automatic checks only".
+
 ## Individual Service Architecture
 
 ```mermaid

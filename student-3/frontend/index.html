@@ -139,6 +139,39 @@
       <div id="rag-result" aria-live="polite"></div>
     </section>
 
+    <section id="agents" aria-labelledby="agents-heading">
+      <h2 id="agents-heading">Plan a Day with Agents (Multi-Agent)</h2>
+      <p>A Planner, a Worker and a Reviewer agent draft a plan using only the attractions in this catalogue. You make the final call.</p>
+
+      <div id="agent-status" class="service-status" aria-live="polite"></div>
+
+      <form id="agent-form">
+        <label for="agent-task">What is the plan for?</label>
+        <input
+          id="agent-task"
+          name="task"
+          type="text"
+          placeholder="e.g. A relaxed food-focused afternoon"
+          required
+          minlength="3"
+          maxlength="500"
+          disabled>
+
+        <label for="agent-category">Limit to</label>
+        <select id="agent-category" name="category" disabled>
+          <option value="">Everything</option>
+          <option value="sight">Sights</option>
+          <option value="restaurant">Restaurants</option>
+          <option value="activity">Activities</option>
+        </select>
+
+        <button type="submit" id="agent-start" disabled>Start the agents</button>
+      </form>
+
+      <ol id="agent-stages" class="agent-stages" aria-label="Workflow progress" hidden></ol>
+      <div id="agent-result" aria-live="polite"></div>
+    </section>
+
     <section id="manage" aria-labelledby="manage-heading">
       <h2 id="manage-heading">Add an Attraction</h2>
 

@@ -74,3 +74,11 @@ audit link check removed (M4), retry removed (M5), reject without notes allowed 
 - The Planner's output from a 3B model is generic (it plans steps like "make a reservation" that no tool
   can do). The deterministic checks and the human decision are the real controls.
 - The server holds one workflow at a time and stores files locally.
+
+## Update from Chunk 4 (found while testing through the UI)
+
+- The first live UI run showed the Worker writing each entry's description where its name belonged (all four
+  items blocked by the automatic check). The Worker schema now restricts `subject` to the exact evidence
+  titles, and the Worker prompt is `multi-agent-worker-v2.txt` (worked example; v1 kept for history).
+- Identical Reviewer findings are shown once.
+- The server suite is now 66 tests. The integration evidence is in `multi-agent-integration-report.md`.
