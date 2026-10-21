@@ -240,8 +240,11 @@ def generate_advisory(
     Shared by the JSON endpoint and the HTML fragment endpoint so both are
     guaranteed to be grounded in the same data and phrased the same way.
     """
-    context = load_context(destination_id)
     client = ai()
+    # Checked before the database read: with AI-Mode off there is nothing to
+    # ground, so the request should cost no network call at all.
+    client.ensure_enabled()
+    context = load_context(destination_id)
     text = client.generate(build_prompt(context, month, interests))
     return Advisory(text, client.model, context.destination)
 

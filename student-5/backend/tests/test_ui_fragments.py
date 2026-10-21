@@ -376,3 +376,12 @@ def test_advisory_fragment_renders_a_message_when_ollama_is_down(
     body = html_of(response)
     assert response.status_code == 200
     assert "travel adviser is unavailable" in body
+
+
+def test_advisory_fragment_explains_when_ai_mode_is_off(ai_off_client):
+    # No URL is registered, so a call to the database or Ollama would raise.
+    with responses.RequestsMock():
+        response = ai_off_client.post("/ui/advisory", data={"destination_id": "1"})
+
+    assert response.status_code == 200
+    assert "AI-Mode is disabled" in html_of(response)

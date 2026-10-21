@@ -44,8 +44,27 @@ def client(database_url, ollama_url, model_tag):
             "DATABASE_API_URL": database_url,
             "OLLAMA_URL": ollama_url,
             "APPLICATION_MODEL": model_tag,
-            # Explicit, so a developer shell with MCP_ENABLED=true exported
-            # cannot change what the default client tests see.
+            # Explicit, so a developer shell with MCP_ENABLED=true (or
+            # AI_ENABLED=false) exported cannot change what these tests see.
+            "AI_ENABLED": True,
+            "MCP_ENABLED": False,
+            "RAG_ENABLED": False,
+        }
+    )
+    app.config["TESTING"] = True
+    with app.test_client() as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def ai_off_client(database_url, ollama_url, model_tag):
+    """The cloud/CI baseline: AI-Mode switched off, everything else as usual."""
+    app = create_app(
+        {
+            "DATABASE_API_URL": database_url,
+            "OLLAMA_URL": ollama_url,
+            "APPLICATION_MODEL": model_tag,
+            "AI_ENABLED": False,
             "MCP_ENABLED": False,
             "RAG_ENABLED": False,
         }

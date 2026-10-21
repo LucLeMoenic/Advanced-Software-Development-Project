@@ -274,3 +274,52 @@ def test_ollama_reply_without_completion_text_returns_the_ai_503(
 
     assert response.status_code == 503
     assert response.get_json() == {"error": "ai service unavailable"}
+
+
+# ---------------------------------------------------------------------------
+# AI-Mode switched off -- the cloud and CI baseline (TL-FR-18)
+# ---------------------------------------------------------------------------
+
+AI_DISABLED = {"error": "ai_disabled", "message": "AI-Mode is disabled."}
+
+
+def test_ai_mode_is_on_unless_the_environment_switches_it_off(monkeypatch):
+    from app import create_app
+
+    monkeypatch.delenv("AI_ENABLED", raising=False)
+    assert create_app().config["OLLAMA_CLIENT"].enabled is True
+
+    for value in ("false", "FALSE", "no", "0", ""):
+        monkeypatch.setenv("AI_ENABLED", value)
+        assert create_app().config["OLLAMA_CLIENT"].enabled is False, value
+
+    monkeypatch.setenv("AI_ENABLED", " True ")
+    assert create_app().config["OLLAMA_CLIENT"].enabled is True
+
+
+def test_disabled_advisory_returns_503_without_any_network_call(ai_off_client):
+    # No URL is registered, so a call to the database or Ollama would raise.
+    with responses.RequestsMock():
+        response = ai_off_client.post(ADVISORY_PATH, json={"destination_id": 1})
+
+    assert response.status_code == 503
+    assert response.get_json() == AI_DISABLED
+
+
+def test_disabled_advisory_still_rejects_a_bad_request_first(ai_off_client):
+    """A malformed body is the caller's mistake whatever the deployment mode."""
+    response = ai_off_client.post(ADVISORY_PATH, json={"destination_id": "one"})
+
+    assert response.status_code == 400
+
+
+@responses.activate
+def test_crud_still_works_with_ai_mode_off(ai_off_client, database_url):
+    responses.add(
+        responses.GET, database_url + "/api/destinations", json=[{"id": 1}], status=200
+    )
+
+    response = ai_off_client.get("/api/destinations")
+
+    assert response.status_code == 200
+    assert response.get_json() == [{"id": 1}]

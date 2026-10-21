@@ -323,6 +323,7 @@ services:
       OLLAMA_URL: http://host.docker.internal:11434
       MCP_SERVER_URL: http://host.docker.internal:5400/mcp
       RAG_SERVER_URL: http://host.docker.internal:5500
+      AI_ENABLED: ${AI_ENABLED:-true}
       MCP_ENABLED: ${MCP_ENABLED:-false}
       RAG_ENABLED: ${RAG_ENABLED:-false}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}

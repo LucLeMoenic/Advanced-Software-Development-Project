@@ -13,6 +13,9 @@ refused, read timeout, HTTP error status, unparseable body -- collapses into
 ``503 {"error": "ai service unavailable"}``. That is a different message from
 the database's 503 on purpose: the two dependencies fail independently and the
 response body should say which one broke.
+
+Switching AI-Mode off (``AI_ENABLED=false``, as the cloud baseline does) is a
+separate outcome, ``OllamaDisabled``: nothing is broken, so no request is sent.
 """
 
 from typing import Any
@@ -37,6 +40,10 @@ class OllamaUnavailable(Exception):
     """Raised when Ollama could not be reached or would not complete a prompt."""
 
 
+class OllamaDisabled(Exception):
+    """AI-Mode is switched off for this deployment."""
+
+
 class OllamaClient:
     """Thin wrapper over Ollama's ``/api/generate`` endpoint."""
 
@@ -45,10 +52,17 @@ class OllamaClient:
         base_url: str,
         model: str,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
+        enabled: bool = True,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.model = model
         self.timeout = timeout
+        self.enabled = enabled
+
+    def ensure_enabled(self) -> None:
+        """Raise ``OllamaDisabled`` if AI-Mode is off, before any other work."""
+        if not self.enabled:
+            raise OllamaDisabled("AI-Mode is disabled.")
 
     def generate(self, prompt: str) -> str:
         """Send one non-streaming prompt and return the completion text.
@@ -60,9 +74,11 @@ class OllamaClient:
             The model's completion as plain text.
 
         Raises:
+            OllamaDisabled: AI-Mode is off; no request is sent.
             OllamaUnavailable: on any transport failure, non-200 status, or a
                 reply that does not carry completion text.
         """
+        self.ensure_enabled()
         url = self.base_url + GENERATE_PATH
         # stream=False so the whole completion arrives in one JSON object;
         # streaming would need the frontend to hold an open connection through

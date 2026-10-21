@@ -231,3 +231,29 @@ branches without changing behaviour for Students 1-4.
 Also checked during the session: the four 503 bodies in the CI smoke test
 against the running backend (`ci-smoke-local.txt`), and the 375px layout for
 horizontal overflow (0px, `assist-mobile-375.png`).
+
+## Release 2 - Chunk 1 review: AI-off guard (TL-FR-18)
+
+Before committing, the working-tree diff was given to an independent AI
+code-review agent. It was asked to look for any path where a disabled advisory
+still reaches Ollama or the database, `env_flag` default semantics and
+regressions for the opt-in `MCP_ENABLED`/`RAG_ENABLED`, error-handler precedence
+between the `/ui` blueprint and the app, response-shape consistency with
+`integrations.py`, Python 3.11 compatibility, whether the new tests would fail
+without the guard, and the `docker-compose.yml` change.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| None at the reporting threshold. | - | No change needed. |
+
+The reviewer confirmed that both `/api/advisory` and `/ui/advisory` pass through
+`generate_advisory()`, which checks the flag before `load_context()`; that
+`OllamaClient.generate` has no other caller; that `env_flag(name)` keeps MCP/RAG
+opt-in while `env_flag("AI_ENABLED", default=True)` is on when unset; and that
+the no-network tests would fail without the guard (the database call would raise
+and return the database 503 body instead). It noted that the untracked
+`.env.release0.bak` must not be committed.
+
+I accepted the review. Validation after it: database 26, backend 130, MCP
+logistics 34 and RAG student-5 retrieval 17 tests passed; live checks are in
+`prompt-log.md` (Release 2, Chunk 1).
