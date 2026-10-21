@@ -40,7 +40,7 @@ Terminal transcripts: `A-run.txt`, `A-review.txt` (interactive partial acceptanc
 | `ai-services/multi-agent-server/tests/` | 62 passed, offline, scripted fake model |
 | `03-mutation-check.txt` | Six deliberately injected bugs, each on its own; all six make the suite fail (see below) |
 | `04-ci-step-local-run.txt` | The new `Test Multi-Agent Server` steps of `student-3.yml` run locally: 62/62 |
-| GitHub Actions run | **TODO**: add the run URL and a screenshot of the job summary after the PR runs |
+| GitHub Actions run | Green on `main` for the merge of PR #112 (`473399d`): run 39187245823, step "Test Multi-Agent Server" = success. Links: `ci/04-github-actions-runs.md` |
 
 Mutations: blocking finding ignored (M1), subject check disabled (M2), second decision allowed (M3),
 audit link check removed (M4), retry removed (M5), reject without notes allowed (M6).

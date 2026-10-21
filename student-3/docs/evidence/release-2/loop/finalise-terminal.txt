@@ -1,0 +1,11 @@
+# finalise: both records, decision `changed` (2026-10-21)
+# Decision chosen by the human (Khushi) from the options Changed / Kept / Rejected. The notes were drafted from the
+# evidence and are stored verbatim in each record's humanNotes field.
+
+$ dotnet run --project ai-services/agentic-loop -- finalise --record docs/agentic-loop-records/20261021T082731Z-036d7933be304da5b39b842752adeb94.json --decision changed --notes <testing notes> --post-test-command <...> --post-test-result <...>
+Finalised agentic-loop record: ...\docs\agentic-loop-records\20261021T082731Z-036d7933be304da5b39b842752adeb94.json
+exit code 0
+
+$ dotnet run --project ai-services/agentic-loop -- finalise --record docs/agentic-loop-records/20261021T084545Z-c559fb77d71d447c9a3755a535f3590a.json --decision changed --notes <multi-agent notes> --post-test-command <...> --post-test-result <...>
+Finalised agentic-loop record: ...\docs\agentic-loop-records\20261021T084545Z-c559fb77d71d447c9a3755a535f3590a.json
+exit code 0

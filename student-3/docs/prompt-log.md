@@ -53,3 +53,13 @@ Shared runtime prompts (kept under `ai-services/agentic-loop/prompts/`, not copi
   entry descriptions into `subject`. Fix: the schema now restricts `subject` to the evidence titles, and
   `multi-agent-worker-v2.txt` adds an explicit "title, never a description" rule with a worked example. v1 is kept
   in the folder for history. Same task before/after: 4 blocking findings, then 0.
+
+
+## Release 2: loop report-review runs
+
+The shared review prompts (`review-testing-v1.txt`, `review-multi-agent-v1.txt`, `review-cloud-v1.txt`) belong to the
+group's loop and are not copied here. Observed behaviour with `qwen2.5:3b` (implementer) and `llama3.2:3b` (reviewer):
+both models returned a generic plan, "no proposed change", and an ACCEPT verdict on both real runs. Their suggestions only
+repeated limits already stated in the evidence, and one plan named files that do not exist. The human Adapt notes,
+not the model output, carry the findings. Each run takes about 9 minutes on this CPU host. `qwen2.5-coder:7b` (the
+default implementer) is not installed here, so `qwen2.5:3b` was used, as in Release 0.
