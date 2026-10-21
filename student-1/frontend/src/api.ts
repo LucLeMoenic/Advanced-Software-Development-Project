@@ -122,104 +122,11 @@ export interface Capabilities {
   aiRanking: boolean
   lookup: boolean
   guide: boolean
-  multiAgent: boolean
 }
 
 export const capabilitiesApi = {
   get() {
     return request<Capabilities>('/api/capabilities')
-  },
-}
-
-export type ReviewStatus =
-  | 'queued'
-  | 'planning'
-  | 'working'
-  | 'reviewing'
-  | 'awaiting_human_review'
-  | 'approved'
-  | 'corrected'
-  | 'partially_accepted'
-  | 'rejected'
-  | 'failed'
-
-export type ReviewDecisionChoice = 'approve' | 'correct' | 'partial' | 'reject'
-
-export interface ReviewSummary {
-  id: string
-  task: string
-  status: ReviewStatus
-  createdAt: string
-  updatedAt: string
-}
-
-export interface ReviewWorkItem {
-  id: string
-  subject: string
-  detail: string
-  evidenceIds: string[]
-}
-
-export interface ReviewWork {
-  summary: string
-  items: ReviewWorkItem[]
-}
-
-export interface ReviewRecord extends ReviewSummary {
-  evidence: Array<{ id: string; title: string; text: string }>
-  plan: {
-    objective: string
-    steps: Array<{ id: string; description: string }>
-    requiredEvidenceIds: string[]
-    successCriteria: string[]
-  } | null
-  work: ReviewWork | null
-  review: {
-    verdict: 'pass' | 'concerns' | 'fail'
-    modelVerdict: 'pass' | 'concerns' | 'fail'
-    degraded: boolean
-    findings: Array<{ severity: 'info' | 'warning' | 'blocking'; itemId: string | null; message: string }>
-    recommendations: string[]
-  } | null
-  humanDecision: {
-    decision: ReviewDecisionChoice
-    notes: string
-    decidedBy: string
-    decidedAt: string
-    acceptedItemIds: string[] | null
-  } | null
-  finalOutput: ReviewWork | null
-  error: { code: string; message: string; stage: string | null } | null
-}
-
-export interface ReviewDecision {
-  decision: ReviewDecisionChoice
-  notes: string
-  acceptedItemIds?: string[]
-  correctedOutput?: ReviewWork
-}
-
-export const reviewsApi = {
-  start(searchId: number) {
-    return request<{ id: string; status: ReviewStatus }>(`/api/searches/${searchId}/reviews`, {
-      method: 'POST',
-    })
-  },
-
-  list(searchId: number) {
-    return request<ReviewSummary[]>(`/api/searches/${searchId}/reviews`)
-  },
-
-  get(id: string) {
-    return request<ReviewRecord>(`/api/reviews/${encodeURIComponent(id)}`)
-  },
-
-  decide(id: string, decision: ReviewDecision) {
-    return request<ReviewRecord>(`/api/reviews/${encodeURIComponent(id)}/decision`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(decision),
-    })
   },
 }
 

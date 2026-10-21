@@ -7,7 +7,6 @@ import {
   type SearchRequest,
   type SearchResponse,
 } from './api'
-import AgentReviewPanel from './components/AgentReviewPanel.vue'
 import AssistantPanel from './components/AssistantPanel.vue'
 import SearchForm from './components/SearchForm.vue'
 import SearchHistory from './components/SearchHistory.vue'
@@ -24,13 +23,10 @@ const searchHistory = ref<InstanceType<typeof SearchHistory> | null>(null)
 const searchResults = ref<InstanceType<typeof SearchResults> | null>(null)
 // AI options stay hidden until the backend confirms they are enabled.
 const aiRankingEnabled = ref(false)
-const multiAgentEnabled = ref(false)
 
 onMounted(async () => {
   try {
-    const capabilities = await capabilitiesApi.get()
-    aiRankingEnabled.value = capabilities.aiRanking
-    multiAgentEnabled.value = capabilities.multiAgent
+    aiRankingEnabled.value = (await capabilitiesApi.get()).aiRanking
   } catch (error) {
     showError(getErrorMessage(error), 'AI options could not be loaded.')
   }
@@ -194,13 +190,5 @@ async function focusError() {
         @status="statusMessage = $event"
       />
     </div>
-
-    <!-- Keyed by search so opening another search starts a fresh panel and stops any polling. -->
-    <AgentReviewPanel
-      v-if="multiAgentEnabled && currentSearch && currentSearch.results.length > 0"
-      :key="currentSearch.id"
-      :search="currentSearch"
-      @status="statusMessage = $event"
-    />
   </main>
 </template>
