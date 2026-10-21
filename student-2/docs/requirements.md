@@ -12,12 +12,18 @@ For AI generation, the backend calls the team's shared Ollama runtime using one 
 
 ### Release 2 extension
 
-- Add a review-only Plan review tab using one shared native Multi-Agent Server.
+- Assess MCP edit previews inline using one shared native Multi-Agent Server.
   The browser calls only the backend; only the database API opens SQLite.
 - Submit server-derived, identity-free, bounded saved-trip evidence. Validate
   all returned role outputs, feature/trip association and evidence references.
-- Require explicit approve/correct/partial/reject decisions; never apply them
-  as trip/stop edits. Stale saved snapshots block new decisions.
+  Include the complete request and exact proposed changes; reject oversized
+  candidates explicitly instead of silently truncating them.
+- Require explicit approve/correct/partial/reject assessment decisions. Corrections
+  and partial acceptance concern assessment text, not executable changes. Require
+  a separate confirmation before applying the whole signed preview, bound to an
+  accepted workflow by token hash. Never execute the agents' prose.
+  Changing the edit requires a new preview/assessment. Stale saved snapshots block
+  new decisions and application; existing database expiry/revision checks remain.
 - Keep immutable workflow evidence/history and audit records in the shared
   server store; interrupted runs fail explicitly after native-server restart.
 - Default `MULTI_AGENT_ENABLED` to false and expose `multiAgentEnabled` in the
@@ -118,8 +124,9 @@ Exact routes, limits, commands and current evidence are in the
 	clarification. Runtime prompts live only under
 	`ai-services/agentic-loop/prompts/itinerary-edit-v1.txt` and
 	`ai-services/agentic-loop/prompts/itinerary-review-v1.txt`.
-- Preview displays current/proposed values without saving. Confirm sends only
-	the signed token to `POST /api/trips/{id}/edit-confirm`; cancellation discards
+- Preview displays current/proposed values without saving. Confirm sends
+	the signed token to `POST /api/trips/{id}/edit-confirm` (plus its bound workflow
+	ID when Multi-Agent is enabled); cancellation discards
 	the preview. The model-free Undo button requests a preview through
 	`edit-operation-preview` and still requires confirmation. No manual reorder
 	panel is exposed. Successful saves reload the trip and briefly highlight changes.

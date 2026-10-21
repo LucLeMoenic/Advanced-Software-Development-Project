@@ -18,15 +18,21 @@ Student 2 service, is assessed.
 
 ## Minimal feature
 
-Add **Plan review** alongside Edit and Advice. Send a saved itinerary to the
-existing server, show all three agent outputs, and record approve, correct,
-partial-acceptance or reject. This UI is an implementation choice, not prescribed
-by the brief. Decisions accept recommendations; they never edit the trip.
-Existing manual editing and signed MCP preview/confirmation remain unchanged.
+Integrate assessment into **Edit**, alongside the exact MCP before/after preview.
+The existing editor proposes an edit; the shared agents assess that candidate
+using saved-trip evidence. Show all three outputs and record approve, correct,
+partial-acceptance or reject. These decisions concern assessment text, not edit
+operations. Accepted assessments enable a separate explicit confirmation of the
+whole preview; changing the edit requires a new preview and assessment.
+This UI is an implementation choice, not prescribed by the brief. Manual editing,
+generation and RAG Advice remain unchanged; disabling Multi-Agent retains the
+Release 1 editor. Remove the standalone Plan review tab.
 
 The backend reads evidence through the database API, excludes traveller identity,
-bounds the payload, checks the returned feature/trip/record, and rejects decisions
-against changed snapshots. Reuse the shared workflow store; add no database table,
+bounds the payload without truncating the candidate, checks the returned
+feature/trip/record, and rejects decisions against changed snapshots. A token hash
+binds workflow acceptance to the exact signed preview; database expiry/revision
+checks remain authoritative. Reuse the shared workflow store; add no database table,
 agent runtime, autonomous editing or external travel provider.
 
 ## Delivery sequence

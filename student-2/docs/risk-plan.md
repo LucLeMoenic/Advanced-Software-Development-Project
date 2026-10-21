@@ -22,6 +22,22 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
 
+## Release 2 Inline Edit Assessment - 21 October 2026
+
+- Bind assessment acceptance to the exact signed preview token and full saved-trip
+  fingerprint. A corrected operation requires a new preview and assessment;
+  assessment text is never executable. Approval and database save are separate
+  outcomes; retain no-retry handling for uncertain saves.
+- The existing ten-minute preview lifetime includes agent processing. Expired
+  or stale previews must restart; do not silently renew a token under old approval.
+- Bound shared evidence to 30 entries of 800 characters without truncating the
+  request or proposed changes. Reject oversized candidates explicitly; disclose
+  saved-context omissions and retain manual CRUD.
+- Real native undo assessment completed with visible model concerns, but two
+  natural-language preview attempts hit the existing 20-second editor-model
+  deadline. Automated regressions pass; live natural-language acceptance remains
+  open. Do not treat the model's verdict as a deterministic correctness guarantee.
+
 ## Editor and Validation Follow-up - 1 October 2026
 
 - Model intent and source support remain separate from schema validity. Restrict

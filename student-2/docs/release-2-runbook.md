@@ -2,10 +2,12 @@
 
 ## Scope
 
-Student 2 reuses the native Multi-Agent Server from PR #112. **Plan review**
-sends a saved itinerary through Planner, Worker and Reviewer, then records an
-explicit human decision. It never edits trips or stops. Release 0/1 editing,
-generation/fallback and advice remain separate.
+Student 2 reuses the native Multi-Agent Server from PR #112. **Edit assessment**
+sends the existing editor's exact MCP preview and saved-trip evidence through
+Planner, Worker and Reviewer, then records an explicit assessment decision.
+Only a separate confirmation applies the bound preview. Generation/fallback,
+manual CRUD and RAG Advice remain unchanged. With Multi-Agent disabled, the
+Release 1 editor continues without agent assessment.
 
 See the [spec mapping](release-2-plan.md). Small shared-server changes handle
 interrupted runs, serialize decisions in one worker and constrain Worker subjects
@@ -20,16 +22,25 @@ Install the shared Multi-Agent requirements in a native Python environment, load
 ```powershell
 .\scripts\deploy\start-multi-agent.ps1 -Python <python-executable> -NativeHost 127.0.0.1
 $env:MULTI_AGENT_ENABLED = "true"
+$env:AI_ENABLED = "true"
+$env:MCP_ENABLED = "true"
 $env:MULTI_AGENT_SERVER_URL = "http://host.docker.internal:5600"
 docker compose up --build --detach
 ```
 
-Open `http://localhost:5100/itinerary/`, select a saved trip and choose Plan review.
+Open `http://localhost:5100/itinerary/`, select a saved trip and choose Edit.
+Request a change, inspect the exact preview and wait for its inline assessment.
+Approve, correct, accept selected assessment items or reject. These decisions
+concern assessment text, not executable edits: partial acceptance never applies
+only some changes. To change the proposed operation, cancel and request a new
+preview/assessment. After accepting the assessment, explicitly confirm the
+whole preview to save it. An accepted assessment is not proof that saving succeeded.
 The browser calls only the backend. For containers, native services must bind to
 an approved reachable private interface; set `LOCAL_AI_HOST` accordingly.
 Check native `/health` **from the backend container** before model testing.
 Do not expose the native server publicly or change firewall policy implicitly.
-Run one server worker. Keep the workflow ID to reopen saved history.
+Run one server worker. Keep the workflow ID to reopen saved history via the CLI
+or backend GET route. Cancelling the preview does not cancel native agent work.
 
 On this Podman host, the legacy Docker root-context build stalls. Use:
 
@@ -44,19 +55,55 @@ docker compose up -d --no-build --wait
 ## API and limits
 
 - `GET /api/capabilities` adds `multiAgentEnabled`, default false.
-- `POST /api/trips/{id}/multi-agent-workflows` accepts `{task}` and returns `202`.
+- `POST /api/trips/{id}/edit-preview` accepts `{question}` (1-1000 characters).
+  When enabled, it starts assessment and returns `preview.workflowId` with the
+  existing signed preview. Clarification responses do not start agents.
+  `edit-operation-preview` likewise assesses validated reorder/undo previews.
+  The standalone workflow-creation route is removed.
 - `GET /api/trips/{id}/multi-agent-workflows/{workflowId}` returns status/history.
 - `POST .../{workflowId}/decision` records approve/correct/partial/reject.
+- `POST /api/trips/{id}/edit-confirm` requires `{token, workflowId}` when enabled:
+  the workflow must be accepted, belong to this trip and contain the exact token
+  hash. Otherwise it keeps the Release 1 `{token}` contract. A workflow can stay
+  approved even if saving fails; the database response determines save success.
 - Evidence excludes traveller identity: trip overview, interests and up to 28
-  stops. Notes are capped at 400 characters, with visible truncation/omissions.
-  The snapshot fingerprint covers all stops. Task length is 3-500 characters.
+  stops, reduced to reserve space for the full request and proposed changes.
+  Candidate text is split into labelled parts of at most 800 characters, within
+  30 evidence entries. Oversized edits fail explicitly; request a smaller edit
+  or use manual CRUD. Saved context notes are capped at 400 characters, with
+  visible truncation/omissions. The snapshot fingerprint covers all stops.
+  The signed token is not sent to the model, only its SHA-256 hash.
 - Changed/deleted trips make reviews historical; new decisions are blocked.
   Feature/trip association is an integrity check, not account authentication.
+- Signed preview expiry remains ten minutes, including agent processing time.
+  Expired previews require a new preview/assessment; never reuse approval for
+  another token. Database revision/expiry and atomic application remain authoritative.
 - HTTP calls have a ten-second timeout and bounded response size. No POST retries.
   The UI polls for up to twenty minutes; stopping polling does not cancel work.
   After an uncertain decision, read status before trying again.
 - Reviewer degradation/failure stays visible. Human corrections retain automatic
   findings. Server restart marks interrupted runs failed; completed records persist.
+
+### Terminal parity
+
+Start an edit using the same backend route, then inspect/decide using the shared
+CLI (set `MULTI_AGENT_SERVER_URL` to the native loopback URL for CLI use):
+
+```powershell
+$preview = Invoke-RestMethod http://localhost:5202/api/trips/1/edit-preview `
+  -Method Post -ContentType application/json -Body '{"question":"Swap days 1 and 2"}'
+$id = $preview.preview.workflowId
+python ai-services\multi-agent-server\cli.py show $id
+python ai-services\multi-agent-server\cli.py review $id
+python ai-services\multi-agent-server\cli.py audit $id
+python ai-services\multi-agent-server\cli.py verify
+```
+
+Wait for `awaiting_human_review` before the interactive review. CLI decisions
+record assessment only; they do not save edits. Retain the preview token locally
+and explicitly confirm it through the backend if desired, while still valid.
+Use only synthetic trips for developer checks; do not claim automated decisions
+as genuine human showcase evidence.
 
 ## Tests and reviews
 
@@ -117,6 +164,18 @@ does not restore data. All-feature CRUD and redeploy persistence need live evide
 
 ## Evidence and remaining acceptance
 
+21 October inline-edit validation: backend suites total 257 passed/11 opt-in
+live skips, frontend 45 passed plus production build, Ruff and whitespace checks
+passed. An isolated native browser/CLI developer test completed all three real
+agent stages for an undo preview (`wf-20261021T031345Z-b9269ae2`), returned
+non-degraded Reviewer `concerns`, recorded a labelled automated-test approval,
+and saved only after separate browser confirmation. CLI audit verification
+reported 10 valid entries. The synthetic database was separate from user data.
+Natural-language edit generation timed out at the existing 20-second model
+deadline twice, including after preload; that live path remains an acceptance
+limitation, not a successful demonstration. The workflow store is retained in
+the development session, not committed as human acceptance evidence.
+
 Historical local results from 20 October: backend 238 passed/11 opt-in live skips,
 database 39, frontend 40 plus build, Multi-Agent 64, cloud config 6;
 Student 1 search tests 25, Student 3 targeted tests 9, Student 5 backend 127.
@@ -134,7 +193,10 @@ observed case. Its raw failed capture is archived in the session, not duplicated
 in this change. The retained capture's audit is workflow-filtered, not a standalone
 full audit chain. Ten baseline entries are checked audit hashes, not credentials.
 Neither run submitted a human decision or proves integrated browser acceptance.
-Reproduce with `scripts\test\student2_multi_agent_live.py`; use synthetic data only.
+That capture predates inline edit assessment. The updated
+`scripts\test\student2_multi_agent_live.py --trip-id <id> --question "<edit>" --output <path>`
+now checks edit assessment through native MCP/Ollama/Multi-Agent dependencies;
+use synthetic data only. It does not decide or save.
 
 **Pending:** container-to-native connectivity (LAN and WSL adapter probes timed
 out; loopback forwarding was refused), genuine terminal/UI human decisions,

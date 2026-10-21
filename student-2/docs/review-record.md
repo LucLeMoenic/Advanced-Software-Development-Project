@@ -1,5 +1,36 @@
 # Student 2 Review Record
 
+## 2026-10-21 - Proposed Multi-Agent Edit Integration Review
+
+Reviewed the proposed Edit -> shared Planner/Worker/Reviewer -> MCP preview ->
+human confirmation -> apply flow against Release 2 responsibilities, role
+definitions and criteria 1, 2, 8-10, plus current shared server/CLI and Student 2
+editor/database contracts. This is a design review, not implemented acceptance.
+
+- The rubric permits an integrated editing workflow but does not require it or
+  a separate review tab. Preserve generation, MCP/RAG functionality and manual
+  CRUD; demonstrate terminal/UI stages, explicit human decisions and audit history.
+- Current shared Worker output is cited prose, not typed edit operations.
+  Its prompt permits only supplied facts. The proposed Worker-generated edits
+  therefore require an explicitly scoped, backward-compatible shared contract
+  extension; do not parse arbitrary prose or add an unreviewed model translation.
+- Bind the reviewed proposal, trip snapshot, exact MCP before/after preview and
+  human decision. A changed/corrected proposal needs fresh validation/preview and
+  review as appropriate. Preview tokens expire after 600 seconds and stale trip
+  revisions reject application. Record workflow approval separately from whether
+  the database actually applied the edit; no automatic mutation retries.
+- Shared means one service/API/model runtime used independently by all features.
+  Each backend supplies its own bounded evidence and owns feature-specific
+  validation, UI and persistence. The current feature field labels records; it
+  does not dispatch student-specific agent logic, MCP calls or RAG retrieval.
+- Smaller compatible alternative: existing editor produces a candidate; the
+  shared agents assess that exact candidate supplied as evidence before human
+  confirmation. This differs from claiming the Worker generates executable edits.
+  Never automatically execute the shared server's prose recommendations.
+
+No application code or other students' files changed; no tests were run for this
+documentation-only review. Full live integration and marking evidence remain open.
+
 ## 2026-10-20 - Release 2 Implementation Validation
 
 21 October ownership correction supersedes the retention decision below:
