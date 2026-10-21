@@ -12,7 +12,10 @@ public interface ILiteApiClient
         CancellationToken cancellationToken);
 }
 
-public sealed record LiteApiSettings(string ApiKey);
+public sealed record LiteApiSettings(string ApiKey)
+{
+    public bool IsConfigured => !string.IsNullOrWhiteSpace(ApiKey);
+}
 
 public sealed class LiteApiClient(
     HttpClient client,
@@ -25,7 +28,7 @@ public sealed class LiteApiClient(
         ValidatedSearch search,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
+        if (!settings.IsConfigured)
         {
             throw new LiteApiUnavailableException("configuration");
         }

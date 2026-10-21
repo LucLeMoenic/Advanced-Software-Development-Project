@@ -16,6 +16,7 @@ interface SearchFormValues {
 const props = defineProps<{
   submitting: boolean
   serverErrors: Record<string, string>
+  aiRankingEnabled: boolean
 }>()
 
 const emit = defineEmits<{
@@ -280,7 +281,7 @@ defineExpose({ focusFirstInvalid, prefillDestination })
             </span>
           </label>
 
-          <label class="ranking-option" for="use-ai">
+          <label v-if="aiRankingEnabled" class="ranking-option" for="use-ai">
             <input
               id="use-ai"
               v-model="form.useAi"
@@ -294,6 +295,9 @@ defineExpose({ focusFirstInvalid, prefillDestination })
             </span>
           </label>
         </div>
+        <p v-if="!aiRankingEnabled" class="field-help">
+          AI-assisted ranking is turned off in this deployment.
+        </p>
 
         <div v-if="form.useAi" class="field preferences-field">
           <div class="label-row">

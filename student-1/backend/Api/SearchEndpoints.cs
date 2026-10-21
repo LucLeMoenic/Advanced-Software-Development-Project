@@ -25,6 +25,8 @@ public static class SearchEndpoints
         IDatabaseApiClient database,
         ILiteApiClient liteApi,
         IOllamaRankingClient ollama,
+        AiModes aiModes,
+        LiteApiSettings liteApiSettings,
         TimeProvider timeProvider,
         ILoggerFactory loggerFactory)
     {
@@ -46,8 +48,26 @@ public static class SearchEndpoints
         }
 
         var search = validation.Value!;
+        if (search.UseAi && !aiModes.RankingEnabled)
+        {
+            logger.LogInformation(
+                "Search {CorrelationId} stage {Stage} outcome {Outcome} completed in {DurationMs}ms with {CandidateCount} candidates using {RankingMode}",
+                context.TraceIdentifier,
+                "flags",
+                "mode_disabled",
+                stopwatch.ElapsedMilliseconds,
+                0,
+                "ai");
+            return Error(
+                context,
+                StatusCodes.Status503ServiceUnavailable,
+                "mode_disabled",
+                "AI ranking is disabled.");
+        }
+
         var stage = "candidate_retrieval";
         var candidateCount = 0;
+        string? notice = null;
 
         try
         {
@@ -61,7 +81,12 @@ public static class SearchEndpoints
             candidateCount = candidates.Count;
             var importedProviderData = false;
 
-            if (candidates.Count == 0)
+            if (candidates.Count == 0 && !liteApiSettings.IsConfigured)
+            {
+                // Deployments without a provider key (such as the cloud baseline) search the cached catalogue only.
+                notice = "Live accommodation import is unavailable in this deployment, so only saved accommodation was searched.";
+            }
+            else if (candidates.Count == 0)
             {
                 stage = "liteapi_import";
                 var imports = await liteApi.SearchAsync(
@@ -86,7 +111,6 @@ public static class SearchEndpoints
             }
 
             var rankingMode = "programmatic";
-            string? notice = null;
             IReadOnlyList<SearchResult> results = [];
 
             if (candidates.Count > 0)

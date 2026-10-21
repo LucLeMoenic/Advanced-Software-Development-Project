@@ -1,10 +1,11 @@
 namespace Accommodation.Backend.Api;
 
-public sealed record AssistantModes(bool LookupEnabled, bool GuideEnabled)
+public sealed record AiModes(bool RankingEnabled, bool LookupEnabled, bool GuideEnabled)
 {
-    public static AssistantModes FromConfiguration(IConfiguration configuration)
+    public static AiModes FromConfiguration(IConfiguration configuration)
     {
-        return new AssistantModes(
+        return new AiModes(
+            ReadFlag(configuration, "AI_ENABLED"),
             ReadFlag(configuration, "MCP_ENABLED"),
             ReadFlag(configuration, "RAG_ENABLED"));
     }
