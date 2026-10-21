@@ -1,0 +1,21 @@
+# Student 3 cloud-baseline smoke check against the real stack, 2026-10-21T09:05:17Z
+# Services: student3-{frontend,backend,database,db-init} + shared-frontend (gateway), started with the environment
+# prepare_cloud.py applies to every backend: AI_ENABLED/MCP_ENABLED/RAG_ENABLED/MULTI_AGENT_ENABLED=false, AI URLs=http://127.0.0.1:9.
+# The function under test is scripts/deploy/smoke_cloud.py check_student3, called over HTTP because there is no local TLS.
+
+check_student3 against http://localhost:5100
+  ok  GET    /attractions-api/capabilities                        -> 200 (expected 200)
+  ok  GET    /attractions-api/attractions                         -> 200 (expected 200)
+  ok  POST   /attractions-api/recommend                           -> 200 (expected 200)
+  ok  POST   /attractions-api/mcp/invoke                          -> 503 (expected 503)
+  ok  POST   /attractions-api/rag/ask                             -> 503 (expected 503)
+  ok  POST   /attractions-api/agents/workflows                    -> 503 (expected 503)
+  ok  POST   /attractions-api/attractions                         -> 201 (expected 201)
+  ok  PUT    /attractions-api/attractions/18                      -> 200 (expected 200)
+  ok  GET    /attractions-api/attractions/18                      -> 200 (expected 200)
+  ok  POST   /attractions-api/reviews                             -> 201 (expected 201)
+  ok  GET    /attractions-api/reviews?attraction_id=18            -> 200 (expected 200)
+  ok  DELETE /attractions-api/attractions/18                      -> 204 (expected 204)
+  ok  GET    /attractions-api/attractions/18                      -> 404 (expected 404)
+PASS: Student 3 AI capabilities all off; deterministic recommendation; attraction and review CRUD.
+exit=0

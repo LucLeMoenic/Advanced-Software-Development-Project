@@ -1,0 +1,27 @@
+# Local proof of the persistence mechanism (NOT a cloud run), 2026-10-21T09:06:09Z
+# Same wiring the cloud bundle uses: student3-database and student3-db-init share one bind-mounted /data/attractions.db.
+# Locally the bind source is ./student-3/database/storage; in the cloud bundle it is /opt/asd/data/student-3.
+
+== 1. start the stack with the cloud-baseline environment
+Container advanced-software-development-project-student3-db-init-1 Exited 
+Container advanced-software-development-project-student3-database-1 Healthy 
+Container advanced-software-development-project-student3-db-init-1 Exited 
+Container advanced-software-development-project-student3-database-1 Healthy 
+Container advanced-software-development-project-student3-backend-1 Healthy 
+== 2. create an attraction through the API
+created id=19 name=persist-check-1792573593
+== 3. tear the whole stack down (containers and network removed, data volume kept)
+Network advanced-software-development-project_default Removing 
+Network advanced-software-development-project_default Removed 
+== 4. bring it back up (fresh containers; db-init runs again and must not wipe or duplicate data)
+Container advanced-software-development-project-student3-db-init-1 Exited 
+Container advanced-software-development-project-student3-database-1 Healthy 
+Container advanced-software-development-project-student3-database-1 Healthy 
+Container advanced-software-development-project-student3-db-init-1 Exited 
+Container advanced-software-development-project-student3-backend-1 Healthy 
+== 5. the attraction must still be there, and the seed must not have been duplicated
+still present: 19 persist-check-1792573593
+total rows: 13 | duplicated names: 0
+== 6. clean up the test row
+DELETE -> 204
+Network advanced-software-development-project_default Removed 

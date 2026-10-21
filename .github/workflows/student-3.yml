@@ -86,6 +86,7 @@ jobs:
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
           MULTI_AGENT_ENABLED: "false"
+          AI_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
 
       - name: Post-commit endpoint tests against running containers (GET and POST /api/attractions)
@@ -142,6 +143,22 @@ jobs:
           "
             echo "disabled as expected: $spec"
           done
+
+      # Release 2 cloud baseline: AI-Mode, MCP, RAG and Multi-Agent all report off, and AI-Mode still answers
+      # deterministically from the catalogue without contacting a model.
+      - name: Assert every AI capability is off and AI-Mode falls back deterministically
+        run: |
+          curl --fail --silent http://localhost:5203/api/capabilities | python -c "
+          import json, sys
+          assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False, 'multiAgentEnabled': False}
+          "
+          curl --fail --silent -X POST http://localhost:5203/api/recommend \
+            -H 'Content-Type: application/json' -d '{"interest":"street art"}' | python -c "
+          import json, sys
+          body = json.load(sys.stdin)
+          assert body['source'] == 'fallback', body
+          assert body['attractions_considered'], body
+          "
 
       - name: Stop Student 3 services
         if: always()
