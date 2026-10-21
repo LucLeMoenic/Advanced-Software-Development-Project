@@ -345,7 +345,7 @@ public static class SearchEndpoints
         }
     }
 
-    private static async Task<ReadResult<T>> ReadAsync<T>(HttpContext context)
+    internal static async Task<ReadResult<T>> ReadAsync<T>(HttpContext context)
         where T : class
     {
         if (!context.Request.HasJsonContentType())
@@ -397,7 +397,7 @@ public static class SearchEndpoints
             : destination[..80];
     }
 
-    private static IResult ValidationError(
+    internal static IResult ValidationError(
         HttpContext context,
         IReadOnlyDictionary<string, string> fields)
     {
@@ -418,7 +418,7 @@ public static class SearchEndpoints
             "Search was not found.");
     }
 
-    private static IResult DependencyResponseError(HttpContext context)
+    internal static IResult DependencyResponseError(HttpContext context)
     {
         return Error(
             context,
@@ -427,7 +427,7 @@ public static class SearchEndpoints
             "The database service returned an unusable response.");
     }
 
-    private static IResult DependencyUnavailable(HttpContext context)
+    internal static IResult DependencyUnavailable(HttpContext context)
     {
         return Error(
             context,
@@ -471,6 +471,6 @@ public static class SearchEndpoints
             statusCode: statusCode);
     }
 
-    private sealed record ReadResult<T>(T? Value, IResult? Error)
+    internal sealed record ReadResult<T>(T? Value, IResult? Error)
         where T : class;
 }

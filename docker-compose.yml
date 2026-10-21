@@ -52,6 +52,8 @@ services:
       RAG_ENABLED: ${RAG_ENABLED:-false}
       MCP_SERVER_URL: http://host.docker.internal:5400/mcp
       RAG_SERVER_URL: http://host.docker.internal:5500
+      MULTI_AGENT_ENABLED: ${MULTI_AGENT_ENABLED:-false}
+      MULTI_AGENT_SERVER_URL: ${MULTI_AGENT_SERVER_URL:-http://host.docker.internal:5600}
       Services__LiteApiUrl: https://api.liteapi.travel
       LITEAPI_KEY: ${LITEAPI_KEY:-}
       APPLICATION_MODEL: ${APPLICATION_MODEL:-llama3.2:3b}
