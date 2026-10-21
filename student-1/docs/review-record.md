@@ -846,3 +846,18 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** backend 169/169, frontend 28/28 and production build, Compose configuration valid.
 
 **Verdict:** accepted.
+
+## 2026-10-21 - Release 2 Chunk 2 CI Endpoint Tests Review
+
+**Scope:** `student-1/tests/test_endpoints_cicd.py` and the new endpoint-test steps in `student-1.yml`. Self-review by Claude Code before commit.
+
+| Severity | Finding | Resolution |
+|---|---|---|
+| Required | The tests write to the bind-mounted SQLite file. Leftover rows would change the tracked database on every local run. | Each created search is deleted in a fixture teardown; a second run left the saved-search count unchanged. |
+| Required | Fixed calendar dates would start failing once they passed the backend's "today or later" rule. | Dates are computed relative to today. |
+| Required | A failing container start or test gave no backend output to diagnose. | Container logs are printed on failure, and the services are always stopped. |
+| Accepted | The tests depend on the tracked catalogue having active Tokyo stays. | Tokyo is one of the ten committed demonstration destinations; the test asserts at least five results so a data change fails loudly. |
+
+**Validation:** 6/6 against natively run services on a scratch copy of the committed database; JUnit summary 6 of 6.
+
+**Verdict:** accepted. The CI run on push is the remaining check.
