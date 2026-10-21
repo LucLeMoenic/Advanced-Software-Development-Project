@@ -28,7 +28,7 @@ The existing unit suite, Compose validation, image builds and smoke test still r
 | `ci/02-local-live-container-endpoint-check.txt` | 11/11 live checks pass against the built, healthy containers |
 | `ci/03-mutation-check.txt` | Three deliberately introduced bugs (filter ignored, trim removed, wrong status code) each make the tests fail, so they are not vacuous |
 | Whole Student 3 suite | 81 passed (64 existing + 17 new) |
-| **GitHub Actions run** | **TODO: add run URL and screenshot after the first push** (`ci/04-github-actions-run.md`) |
+| **GitHub Actions run** | Green on `main` for the merge of PR #111 (`83b0991`): run 39107215540, step "Post-commit endpoint tests (GET and POST /api/attractions)" = success; also green on every later merge. Links and per-step results: `ci/04-github-actions-runs.md` |
 
 ## Findings recorded, not hidden
 

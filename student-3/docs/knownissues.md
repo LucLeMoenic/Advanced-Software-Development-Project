@@ -41,6 +41,9 @@ removed rather than carried forward stale.
 - **Multi-Agent quality is bounded by a 3B model.** The Planner is generic and the Reviewer mostly restates the deterministic checks. A workflow takes about 1-2 minutes on CPU and the server runs one at a time.
 - **A suspended host fails the running workflow.** A laptop sleeping mid-run makes the pending Ollama call time out (recorded as `dependency_timeout`, `wf-20261018T073712Z-56f37adc`). Keep the machine awake while running or demonstrating a workflow.
 
+- **No `review-cloud` record yet.** The only completed "Cloud Deployment" runs are from the old placeholder workflow (commit `e2ff5e9`); the new `cloud-deployment.yml` is manual-dispatch and has not run. The cloud review needs a real deployment bundle first (see `evidence/release-2/loop/README.md`).
+- **The loop's report reviews are shallow with 3B models.** Both Release 2 reviews ACCEPTed a no-change proposal and found nothing the evidence did not already admit; the recorded human findings are the substance.
+
 ## Rollover Checklist (close before submission)
 
 - [x] Release 1 Stage 1 — MCP tools + RAG knowledge base (PR #62).

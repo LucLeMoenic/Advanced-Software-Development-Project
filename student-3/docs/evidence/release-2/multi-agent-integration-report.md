@@ -25,7 +25,7 @@ server and model text is HTML-escaped (attribute positions use a quote-escaping 
 | `multi-agent-integration/03-disabled-by-default-api.txt` | Disabled (503), offline (502) and healthy responses from the real backend |
 | `multi-agent-integration/server-data/` | The three workflows and the audit log produced by the UI runs (30 entries, chain valid) |
 | `multi-agent-integration/screenshots/` | See below |
-| GitHub Actions run | **TODO**: run URL and job-summary screenshot after the PR runs |
+| GitHub Actions run | Green on the PR branch (run 39567326531) and on `main` for the merge of PR #113 (`cbb57ed`): run 39567695254, including "Test Multi-Agent Server" and "Assert Multi-Agent routes are disabled by default". Links: `ci/04-github-actions-runs.md` |
 
 ## Live UI runs (real browser, real model, Student 3 catalogue, via `http://localhost:5103`)
 

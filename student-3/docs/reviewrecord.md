@@ -306,3 +306,87 @@ For the live evidence the stage actually needs (student-3's cases exercised agai
 | No action needed | Four loop attempts produced zero usable records, extending the pattern from Stages 2 and 4 (implementer repetition, reviewer malformation) with a third failure mode (host environment/memory). | Documented with the same rigour as a finalised record, per the standing instruction not to hide failed attempts. The required live evidence was still obtained, independently of the loop's implementer/reviewer machinery. |
 
 **Verdict (as of 2026-09-30):** No loop record to finalise. The shared-code extension is complete, tested, and used correctly (its own `CaptureAsync` function is what produced the live evidence this stage needed). Four attempts to also exercise the implementer/reviewer loop on this code failed for a genuine, reproducible environment reason unrelated to the reviewer prompt's own accuracy (the subject of every prior entry in this file) — this is the first Release 1 loop failure attributable to host memory/configuration rather than model output quality, and is recorded as such rather than folded into the existing reviewer-accuracy pattern.
+
+
+## 2026-10-21 — Agentic Loop Record Review (record `20261021T082731Z`, Release 2 `review-testing`, changed)
+
+**Scope:** The finalised record `docs/agentic-loop-records/20261021T082731Z-036d7933be304da5b39b842752adeb94.json`, the first run of the shared `review-testing` mode on Student 3's pre-commit security and post-commit endpoint evidence.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Created / finalised | 2026-10-21T08:27:31Z / 2026-10-21T08:47:44Z |
+| Task | Review the pre-commit security report and the post-commit endpoint report for GET and POST `/api/attractions`; check each claim against the logs and GitHub Actions evidence; list missing or weak evidence |
+| Context files (all SHA-256 hashed in the record) | `precommit-security-report.md`, `precommit/05-git-commit-hooks-fire.txt`, `endpoint-testing-report.md`, `ci/04-github-actions-runs.md`, `ci/01-local-pytest-endpoint-tests.txt`, plus `review-testing-v1.txt` |
+| Implementer / reviewer | `qwen2.5:3b` (`shared-implementer-v1`) / `llama3.2:3b` (`shared-reviewer-v1`) |
+| Ollama / options | 0.34.3; temperature 0, context 16,384, max output 4,096 |
+| Pre-test | `review-testing`: reviews supplied files, executes nothing |
+| Post-test | Student 3 `pytest` 130 passed; Student 3 CI run 39567695254 (main @ `cbb57ed`) success |
+
+### Phase-by-phase
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | A generic restatement of the task as goal, requirements, steps, risks and validation. It listed 4 of the 5 evidence files (omitting `ci/01-local-pytest-endpoint-tests.txt`), although all 5 were loaded and hashed. | Accurate but contains no analysis of the evidence. |
+| Act | "No proposed change is needed as this is a review task." | Correct for a review, but it means the Act phase delivered no review content. |
+| Observe | `ACCEPT`, one SUGGESTION: the database validates only that `name` and `category` are present. | **Valid but not discovered.** It is lifted from the report's own "Findings recorded, not hidden" section and is already in `knownissues.md`. |
+| Adapt (machine) | None, because the verdict was ACCEPT. | n/a |
+| Adapt (human) | Decision `changed`: kept the valid suggestion and recorded four gaps the loop missed. | Correct. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| Valid (loop) | No server-side validation of `category` or `rating` | Already in `knownissues.md`; possible follow-up |
+| Missed by loop | Pre-commit scans are local-only, so the Actions evidence proves the tests but not the scans | Open: the technical report should say the scan evidence is the local transcripts |
+| Missed by loop | The 32 KB context cap left out `precommit/01-04` (before/after pip-audit, `--all-files` run, blocked-insecure-file), so those claims were not model-checked | Open: re-run on a smaller, targeted bundle if time allows |
+| Missed by loop | pip-audit on commit is scoped to committed requirements files (a full audit takes minutes) | Documented in `precommit-security-report.md` |
+| Missed by loop | Only Student 3's Python services are covered; the .NET students need dotnet equivalents | Open: other students |
+| Open | The loop ACCEPTed a no-change proposal with no real analysis, the same weakness seen in all Release 1 records | Mitigated by the human decision and notes |
+
+### Automated Evidence
+
+- Post-test results: `student-3/docs/evidence/release-2/loop/post-test-results.txt`.
+- Terminal transcripts: `loop/testing-review-run-terminal.txt`, `loop/finalise-terminal.txt`. Record copy: `loop/testing-review-record.json`.
+
+**Verdict (as of 2026-10-21):** The record is complete and finalised as `changed`. It proves the `review-testing` mode runs end to end on real evidence and produces a hashed, human-finalised log, but the model's own review was shallow; the value is in the recorded human findings.
+
+## 2026-10-21 — Agentic Loop Record Review (record `20261021T084545Z`, Release 2 `review-multi-agent`, changed)
+
+**Scope:** The finalised record `docs/agentic-loop-records/20261021T084545Z-c559fb77d71d447c9a3755a535f3590a.json`, the first run of the shared `review-multi-agent` mode on Student 3's Multi-Agent Server and UI-integration evidence.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Created / finalised | 2026-10-21T08:45:45Z / 2026-10-21T08:47:47Z |
+| Task | Review the Planner, Worker, Reviewer and human-review runs (terminal and UI), the audit-chain verification and the mutation checks; identify unsupported claims, missing roles or records, and degraded or failed runs |
+| Context files (all SHA-256 hashed) | `multi-agent-server-report.md`, `multi-agent-integration-report.md`, `multi-agent-server/transcripts/B-decide-audit-verify.txt`, `multi-agent-integration/02-mutation-check.txt`, plus `review-multi-agent-v1.txt` |
+| Implementer / reviewer | `qwen2.5:3b` / `llama3.2:3b` (same prompts, Ollama and options as above) |
+| Post-test | `multi-agent-server` `pytest` 68 passed; Student 3 `pytest` 130 passed |
+
+### Phase-by-phase
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | A generic plan that **named files that do not exist** (`multi-agent-server/report.md`, `multi-agent-integration/report.md`) instead of the real file names. | Hallucinated paths; no harm because the real files were loaded, but it shows the model was not reading them closely. |
+| Act | "No proposed change is needed." | Correct for a review, but no review content. |
+| Observe | `ACCEPT`, two SUGGESTIONS that are the report's own "Limits" lines (unreliable Reviewer model; one workflow at a time). | **Nothing new.** It repeated what the evidence already admits. |
+| Adapt (human) | Decision `changed`: added five gaps the loop missed. | Correct. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| Missed by loop | The approve decision route was never exercised live (reject, partial and correct were) | Open: do it in the showcase |
+| Missed by loop | Every recorded human decision is labelled `dev-test-run`; the group's own showcase decision is still needed | Open |
+| Missed by loop | The workflow data predates a teammate's later `server.py` changes (single worker, startup recovery), so the snapshot may be stale | Open: re-check before the report |
+| Missed by loop | The review step has no authentication | In `knownissues.md` |
+| Missed by loop | The Reviewer model asserted an unsupported fact ("open on a weekend") in the first UI run | In `knownissues.md` |
+
+### Automated Evidence
+
+- Post-test results: `loop/post-test-results.txt`. Transcripts: `loop/multi-agent-review-run-terminal.txt`, `loop/finalise-terminal.txt`. Record copy: `loop/multi-agent-review-record.json`.
+
+**Verdict (as of 2026-10-21):** The record is complete and finalised as `changed`. The mode works end to end; as with the testing review, the model's analysis was shallow and the human findings carry the value. A third record, `review-cloud`, is blocked until a real cloud deployment exists (see `loop/README.md`).

@@ -1,0 +1,7 @@
+# Post-test evidence collected before finalising (2026-10-21)
+
+student-3:            python -m pytest tests -q                              -> 130 passed
+multi-agent-server:   python -m pytest -q                                    -> 68 passed
+agentic-loop:         dotnet test ai-services/agentic-loop/tests             -> Passed! Failed: 0, Passed: 95, Total: 95
+GitHub Actions:       Student 3 CI run 39567695254 (main @ cbb57ed)          -> success
+                      https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39567695254
