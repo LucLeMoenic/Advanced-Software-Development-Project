@@ -1,4 +1,4 @@
-"""Verify the public gateway and Student 1, 2 and 3 CRUD without native AI dependencies."""
+"""Verify the public gateway and Student 1 to 5 CRUD and AI-off checks without native AI dependencies."""
 
 import argparse
 import json
@@ -63,6 +63,10 @@ def run(base):
     print("PASS: Student 1 AI modes disabled; cached-catalogue search create, rename and delete.")
     check_student3(call)
     print("PASS: Student 3 AI modes disabled; deterministic recommendation; attraction and review CRUD.")
+    check_student4(call)
+    print("PASS: Student 4 AI modes disabled; deterministic advice; budget and expense CRUD.")
+    check_student5(call)
+    print("PASS: Student 5 reference data served; MCP, RAG and advisory disabled (read-only: it has no update or delete).")
     print("Persistence across redeploy, other features' CRUD and rollback require separate evidence.")
 
 
@@ -126,6 +130,74 @@ def check_student3(call):
     finally:
         call(path, "DELETE", expected=204)  # also removes the attraction's reviews
     call(path, expected=404)
+
+
+def check_student4(call):
+    """Student 4 through the gateway: every AI capability off, deterministic advice, and budget/expense CRUD."""
+    api = "/budget-api"
+    modes = call(f"{api}/capabilities")
+    if modes != {"aiEnabled": False, "mcpEnabled": False, "ragEnabled": False}:
+        raise RuntimeError("The cloud baseline must disable every Student 4 AI capability.")
+    if len(call(f"{api}/budgets")) < 10:
+        raise RuntimeError("At least ten demonstration budgets are required.")
+    journeys = call(f"{api}/journeys")
+    advice = call(f"{api}/insights", "POST", {"journeyLabel": journeys[0]["journeyLabel"]})
+    if advice.get("source") != "fallback" or not advice.get("suggestions"):
+        raise RuntimeError("Disabled AI must still return deterministic budget advice.")
+    for endpoint, body in ((f"{api}/budget-guidance", {"question": "How should I split my budget?"}),
+                           (f"{api}/budget-check", {})):
+        call(endpoint, "POST", body, 503)
+    label = f"R2 smoke {uuid.uuid4().hex[:8]}"
+    fields = {"journeyLabel": label, "category": "food", "limitAmountMinor": 20000, "baseCurrency": "AUD",
+              "startDate": "2026-09-01", "endDate": "2026-09-07"}
+    budget = call(f"{api}/budgets", "POST", fields, 201)
+    budget_path = f"{api}/budgets/{budget['id']}"
+    expense_path = None
+    try:
+        call(budget_path, "PUT", {**fields, "limitAmountMinor": 25000})
+        saved = call(budget_path)
+        if saved["limitAmountMinor"] != 25000 or saved["journeyLabel"] != label:
+            raise RuntimeError("Budget update/readback did not preserve the changes.")
+        expense = {"budgetId": budget["id"], "description": "Cloud smoke lunch", "originalAmountMinor": 1500,
+                   "originalCurrency": "AUD", "spentOn": "2026-09-02"}
+        created = call(f"{api}/expenses", "POST", expense, 201)
+        expense_path = f"{api}/expenses/{created['id']}"
+        if created["convertedAmountMinor"] != 1500:
+            raise RuntimeError("A same-currency expense must keep its amount.")
+        call(expense_path, "PUT", {**expense, "description": "Cloud smoke lunch updated", "originalAmountMinor": 1800})
+        updated = call(expense_path)
+        if updated["originalAmountMinor"] != 1800 or updated["convertedAmountMinor"] != 1800:
+            raise RuntimeError("Expense update/readback did not recompute the conversion.")
+    finally:
+        if expense_path:
+            call(expense_path, "DELETE", expected=204)
+        call(budget_path, "DELETE", expected=204)
+    if expense_path:
+        call(expense_path, expected=404)
+    call(budget_path, expected=404)
+
+
+def check_student5(call):
+    """Student 5 through the gateway: reference data is served and every AI route is off.
+
+    Student 5's API has list, get and create but no update or delete, so this check creates nothing
+    (a created row could never be cleaned up from the deployed database). Its advisory endpoint has no
+    explicit AI switch: with the cloud bundle's unreachable model address it answers 503, which is the
+    "disabled" behaviour asserted here.
+    """
+    api = "/logistics/api"
+    destinations = call(f"{api}/destinations")
+    if len(destinations) < 10:
+        raise RuntimeError("At least ten demonstration destinations are required.")
+    first = destinations[0]
+    if call(f"{api}/destinations/{first['id']}")["id"] != first["id"]:
+        raise RuntimeError("Destination readback failed.")
+    for table in ("weather-notes", "transit-options"):
+        if not call(f"{api}/{table}"):
+            raise RuntimeError(f"The Student 5 {table} reference data is empty.")
+    call(f"{api}/mcp/tools", expected=503)
+    call(f"{api}/rag/ask", "POST", {"question": "What is a visa on arrival?"}, 503)
+    call(f"{api}/advisory", "POST", {"destination_id": first["id"]}, 503)
 
 
 if __name__ == "__main__":

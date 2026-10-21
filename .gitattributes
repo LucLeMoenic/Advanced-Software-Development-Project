@@ -1,0 +1,3 @@
+# Shell scripts run on Linux (the Actions runners and the deployment VM) and must keep LF line endings even when
+# checked out on Windows with core.autocrlf=true; CRLF makes bash fail with "unexpected end of file".
+*.sh text eol=lf

@@ -44,7 +44,7 @@ removed rather than carried forward stale.
 - **No `review-cloud` record yet.** The only completed "Cloud Deployment" runs are from the old placeholder workflow (commit `e2ff5e9`); the new `cloud-deployment.yml` is manual-dispatch and has not run. The cloud review needs a real deployment bundle first (see `evidence/release-2/loop/README.md`).
 - **The loop's report reviews are shallow with 3B models.** Both Release 2 reviews ACCEPTed a no-change proposal and found nothing the evidence did not already admit; the recorded human findings are the substance.
 
-- **No real cloud deployment has been run.** Student 3's cloud behaviour is proven only locally against the real services with the bundle's environment (`evidence/release-2/cloud/`). The cloud smoke test covers Students 1, 2 and 3 but not 4 and 5; rollback and backup/restore are not evidenced; nothing provisions the deployment VM. See `evidence/release-2/cloud-readiness-report.md`.
+- **No real cloud deployment has been run.** Student 3's cloud behaviour is proven only locally against the real services with the bundle's environment (`evidence/release-2/cloud/`). The cloud smoke test now covers all five students (Student 5 read-only), and rollback, backup and restore scripts exist and are tested offline, but none of it has run on a VM; the deploy does not ship the operations scripts; nothing provisions the deployment VM. See `evidence/release-2/cloud-readiness-report.md`.
 
 ## Rollover Checklist (close before submission)
 

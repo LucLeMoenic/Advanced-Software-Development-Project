@@ -18,6 +18,12 @@ on:
       - 'scripts/test/junit_summary.py'
       - 'scripts/ci/retry-transient.sh'
       - 'scripts/test/test_retry_transient.py'
+      - 'scripts/test/test_cloud_smoke_student*.py'
+      - 'scripts/test/test_vm_scripts.py'
+      - 'scripts/deploy/smoke_cloud.py'
+      - 'scripts/deploy/rollback-vm.sh'
+      - 'scripts/deploy/backup-data.sh'
+      - 'scripts/deploy/restore-data.sh'
   pull_request:
     paths:
       - 'student-3/**'
@@ -32,6 +38,12 @@ on:
       - 'scripts/test/junit_summary.py'
       - 'scripts/ci/retry-transient.sh'
       - 'scripts/test/test_retry_transient.py'
+      - 'scripts/test/test_cloud_smoke_student*.py'
+      - 'scripts/test/test_vm_scripts.py'
+      - 'scripts/deploy/smoke_cloud.py'
+      - 'scripts/deploy/rollback-vm.sh'
+      - 'scripts/deploy/backup-data.sh'
+      - 'scripts/deploy/restore-data.sh'
   workflow_dispatch:
 
 jobs:
@@ -76,9 +88,17 @@ jobs:
         if: ${{ always() && hashFiles('ai-services/multi-agent-server/multi-agent-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py ai-services/multi-agent-server/multi-agent-junit.xml "Multi-Agent Server tests"
 
-      # The image builds below go through scripts/ci/retry-transient.sh (retries registry/network blips only).
-      - name: Test the CI retry wrapper
-        run: python -m pytest scripts/test/test_retry_transient.py -q
+      # Release 2 cloud tooling, all offline: the per-student cloud smoke checks (Students 3, 4 and 5; Student 1's run in
+      # student-1.yml), the rollback / backup / restore scripts (Linux symlink and readlink behaviour, as on the VM), and the
+      # retry wrapper the image builds below go through (it retries registry/network blips only).
+      - name: Test cloud smoke checks, VM rollback and backup scripts, and the CI retry wrapper
+        run: >
+          python -m pytest -q
+          scripts/test/test_cloud_smoke_student3.py
+          scripts/test/test_cloud_smoke_student4.py
+          scripts/test/test_cloud_smoke_student5.py
+          scripts/test/test_vm_scripts.py
+          scripts/test/test_retry_transient.py
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

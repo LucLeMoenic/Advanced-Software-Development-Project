@@ -94,9 +94,14 @@ def test_cloud_smoke_uses_current_disabled_routes_and_cleans_up(client, monkeypa
     monkeypatch.setattr(smoke, "check_student1", student1_check)
     student3_check = Mock()  # Student 3's section has its own tests (scripts/test/test_cloud_smoke_student3.py)
     monkeypatch.setattr(smoke, "check_student3", student3_check)
+    student4_check, student5_check = Mock(), Mock()  # likewise scripts/test/test_cloud_smoke_student4.py / _student5.py
+    monkeypatch.setattr(smoke, "check_student4", student4_check)
+    monkeypatch.setattr(smoke, "check_student5", student5_check)
     smoke.run("https://smoke.invalid")
     student1_check.assert_called_once()
     student3_check.assert_called_once()
+    student4_check.assert_called_once()
+    student5_check.assert_called_once()
     assert client.get("/api/trips").json == before
 
 
