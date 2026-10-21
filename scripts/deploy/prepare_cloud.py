@@ -11,6 +11,44 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 
+CADDYFILE = """{{DOMAIN}} {
+	# Automatic HTTPS: certificate issued and renewed by Caddy, HTTP redirected to HTTPS, TLS 1.2 minimum.
+	encode zstd gzip
+
+	# Endpoint hardening. Only the verbs the applications use are accepted.
+	@disallowed not method GET HEAD POST PUT PATCH DELETE OPTIONS
+	respond @disallowed "Method not allowed" 405
+
+	# The applications exchange small JSON documents; refuse anything larger before it reaches a backend.
+	request_body {
+		max_size 1MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		# Only the directives the pages can already satisfy. The UIs use inline scripts and CDN scripts, so a
+		# script-src policy is deliberately not applied here.
+		Content-Security-Policy "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
+		-Server
+	}
+
+	reverse_proxy shared-frontend:80 {
+		# Overwrite any client-supplied value so the gateway's per-client rate limit cannot be dodged by forging it.
+		header_up X-Forwarded-For {remote_host}
+	}
+}
+"""
+
+
+def caddyfile(domain):
+    """The hardened Caddyfile for the public TLS gateway (the only service with published ports)."""
+    return CADDYFILE.replace("{{DOMAIN}}", domain)
+
+
 def cloud_config(source, sha, domain):
     if not re.fullmatch(r"[0-9a-f]{40}", sha):
         raise ValueError("A complete lowercase commit SHA is required.")
@@ -48,7 +86,7 @@ def cloud_config(source, sha, domain):
     build = copy.deepcopy(config)
     for service in config["services"].values():
         service.pop("build", None)
-    return build, config, f"{domain} {{\n    reverse_proxy shared-frontend:80\n}}\n"
+    return build, config, caddyfile(domain)
 
 
 def main():

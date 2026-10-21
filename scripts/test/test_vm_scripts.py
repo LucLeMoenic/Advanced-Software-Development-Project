@@ -4,6 +4,7 @@ They mirror the layout deploy-vm.sh writes, under a temporary ASD_ROOT, with a s
 arguments. Linux only: the scripts rely on real symlinks and readlink, exactly as on the deployment VM.
 """
 
+import json
 import os
 import shutil
 import sqlite3
@@ -30,6 +31,8 @@ def vm(tmp_path):
     bin_dir.mkdir()
     stub = bin_dir / "docker"
     stub.write_text('#!/usr/bin/env bash\necho "$*" >> "$STUB_LOG"\n'
+                    'if [[ "$1" == "ps" ]]; then [[ -z "${STUB_NO_CONTAINERS:-}" ]] && echo abc123; exit 0; fi\n'
+                    'if [[ "$1" == "inspect" ]]; then cat "${STUB_ENV_FILE:-/dev/null}"; exit 0; fi\n'
                     '[[ -n "${STUB_FAIL_ON:-}" && "$*" == *"$STUB_FAIL_ON"* ]] && exit 1\nexit 0\n')
     stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
     log = tmp_path / "docker.log"
@@ -56,9 +59,9 @@ def vm(tmp_path):
             link.unlink()
         link.symlink_to(path)
 
-    def run(script, *args, fail_on=""):
+    def run(script, *args, fail_on="", env_extra=None):
         env = {**os.environ, "ASD_ROOT": str(root), "PATH": f"{bin_dir}:{os.environ['PATH']}",
-               "STUB_LOG": str(log), "STUB_FAIL_ON": fail_on}
+               "STUB_LOG": str(log), "STUB_FAIL_ON": fail_on, **(env_extra or {})}
         return subprocess.run([BASH, str(DEPLOY / script), *args], capture_output=True, text=True,  # noqa: S603
                               env=env, timeout=60, check=False)
 
@@ -335,3 +338,173 @@ def test_restore_requires_a_current_release_to_restart(vm):
     result = vm.run("restore-data.sh", str(backup), "--yes")
 
     assert result.returncode != 0 and "no current release" in result.stderr
+
+
+# -- private by default: backups and restore snapshots ---------------------------------------------------------------
+
+def mode(path):
+    return stat.S_IMODE(path.stat().st_mode)
+
+
+def test_backups_are_private_even_when_the_callers_umask_is_permissive(vm):
+    vm.database(1, "a.db", ["x"])
+    previous = os.umask(0o022)  # the default on most systems: new files would be world-readable
+    try:
+        assert vm.run("backup-data.sh").returncode == 0
+    finally:
+        os.umask(previous)
+
+    backup = only_backup(vm)
+    assert mode(vm.root / "backups") == 0o700 and mode(backup) == 0o700 and mode(backup / "student-1") == 0o700
+    assert mode(backup / "student-1" / "a.db") == 0o600 and mode(backup / "SHA256SUMS") == 0o600
+
+
+def test_the_pre_restore_snapshot_is_private_even_when_the_callers_umask_is_permissive(vm):
+    two_releases(vm)
+    vm.database(1, "a.db", ["x"])
+    assert vm.run("backup-data.sh").returncode == 0
+    previous = os.umask(0o022)
+    try:
+        result = vm.run("restore-data.sh", str(only_backup(vm)), "--yes")
+    finally:
+        os.umask(previous)
+
+    assert result.returncode == 0, result.stderr
+    snapshot = next(p for p in (vm.root / "backups").iterdir() if p.name.startswith("pre-restore-"))
+    assert mode(snapshot) == 0o700
+
+
+# -- data-security audit (B6) ------------------------------------------------------------------------------------------
+
+CLEAN_COMPOSE = {"services": {"student1-backend": {"environment": {"AI_ENABLED": "false", "MCP_ENABLED": "false", "LITEAPI_KEY": ""}},
+                              "student3-backend": {"environment": {"AI_ENABLED": "false"}}}}
+
+
+def audited(vm, compose=CLEAN_COMPOSE, container_env="OTHER=1\nLITEAPI_KEY=\nASPNETCORE_HTTP_PORTS=8080\n", private=True, no_containers=False):
+    """Build a VM that passes the audit, then let each test spoil one thing. Returns the audit result."""
+    release = vm.release(NEW)
+    (release / "compose.json").write_text(json.dumps(compose))
+    vm.activate(release)
+    vm.database(1, "accommodation.db", ["x"])
+    (vm.root / "backups").mkdir(exist_ok=True)
+    if private:
+        for folder in (vm.root / "data", vm.root / "data" / "student-1", vm.root / "backups"):
+            folder.chmod(0o700)
+        (vm.root / "data" / "student-1" / "accommodation.db").chmod(0o600)
+    env_file = vm.root.parent / "container-env.txt"
+    env_file.write_text(container_env)
+    extra = {"STUB_ENV_FILE": str(env_file)}
+    if no_containers:
+        extra["STUB_NO_CONTAINERS"] = "1"
+    return vm.run("audit-data-security.sh", env_extra=extra)
+
+
+def test_a_protected_deployment_passes_every_automated_check_and_flags_what_it_cannot_know(vm):
+    result = audited(vm)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    for check in ("perms:data", "perms:backups", "env:secrets", "compose:secrets", "files:credentials"):
+        assert any(line.startswith("PASS") and check in line for line in result.stdout.splitlines()), check
+    assert any(line.startswith("MANUAL") and "disk:encryption" in line for line in result.stdout.splitlines())
+
+
+def test_a_world_readable_database_fails_and_names_the_fix(vm):
+    vm.release  # noqa: B018 - fixture used below
+    result = audited(vm, private=False)
+    (vm.root / "data" / "student-1" / "accommodation.db").chmod(0o644)
+
+    result = vm.run("audit-data-security.sh", env_extra={"STUB_ENV_FILE": str(vm.root.parent / "container-env.txt")})
+
+    assert result.returncode == 1
+    assert any(line.startswith("FAIL") and "perms:data" in line and "chmod -R o-rwx" in line for line in result.stdout.splitlines())
+
+
+def test_a_world_writable_backups_directory_fails(vm):
+    audited(vm)
+    (vm.root / "backups").chmod(0o777)
+
+    result = vm.run("audit-data-security.sh", env_extra={"STUB_ENV_FILE": str(vm.root.parent / "container-env.txt")})
+
+    assert result.returncode == 1
+    assert any(line.startswith("FAIL") and "perms:backups" in line for line in result.stdout.splitlines())
+
+
+def test_a_secret_in_a_container_environment_fails_and_its_value_is_never_printed(vm):
+    secret = "sk-live-do-not-print-0123456789"  # noqa: S105  # pragma: allowlist secret  (a fake value the audit must never echo)
+    result = audited(vm, container_env=f"OTHER=1\nLITEAPI_KEY={secret}\nDB_PASSWORD=hunter2-also-secret\n")
+
+    assert result.returncode == 1
+    line = next(l for l in result.stdout.splitlines() if l.startswith("FAIL") and "env:secrets" in l)
+    assert "LITEAPI_KEY" in line and "DB_PASSWORD" in line
+    assert secret not in result.stdout + result.stderr and "hunter2" not in result.stdout + result.stderr
+
+
+def test_empty_secret_variables_and_ordinary_variables_are_not_flagged(vm):
+    result = audited(vm, container_env="LITEAPI_KEY=\nAPI_KEY=\nPATH=/usr/bin\nASPNETCORE_HTTP_PORTS=8080\n")
+
+    assert result.returncode == 0, result.stdout
+
+
+def test_a_non_empty_api_key_in_the_release_bundle_fails_and_names_the_service(vm):
+    compose = {"services": {"student1-backend": {"environment": {"LITEAPI_KEY": "abc"}}, "student2-backend": {"environment": {}}}}
+
+    result = audited(vm, compose=compose)
+
+    assert result.returncode == 1
+    assert any(l.startswith("FAIL") and "compose:secrets" in l and "student1-backend" in l for l in result.stdout.splitlines())
+
+
+@pytest.mark.parametrize("name", [".env", ".env.production", "id_ed25519", "id_rsa.pub", "server.pem", "tls.key", "credentials.json"])
+def test_credential_files_left_under_the_application_root_fail(vm, name):
+    audited(vm)
+    (vm.root / "releases" / name).write_text("x")
+
+    result = vm.run("audit-data-security.sh", env_extra={"STUB_ENV_FILE": str(vm.root.parent / "container-env.txt")})
+
+    assert result.returncode == 1
+    assert any(l.startswith("FAIL") and "files:credentials" in l and name in l for l in result.stdout.splitlines())
+
+
+def test_enabled_ai_flags_are_reported_as_information_not_failures(vm):
+    compose = {"services": {"student3-backend": {"environment": {"AI_ENABLED": "true", "MCP_ENABLED": "false", "RAG_ENABLED": "true"}}}}
+
+    result = audited(vm, compose=compose)
+
+    assert result.returncode == 0, result.stdout
+    info = next(l for l in result.stdout.splitlines() if l.startswith("INFO"))
+    assert "AI_ENABLED=true" in info and "RAG_ENABLED=true" in info and "MCP_ENABLED" not in info
+
+
+def test_a_clean_baseline_reports_every_flag_false(vm):
+    info = next(l for l in audited(vm).stdout.splitlines() if l.startswith("INFO"))
+
+    assert "every *_ENABLED flag is false" in info
+
+
+def test_the_audit_fails_when_there_is_no_current_release_to_inspect(vm):
+    result = vm.run("audit-data-security.sh", env_extra={"STUB_NO_CONTAINERS": "1"})
+
+    assert result.returncode == 1
+    assert any(l.startswith("FAIL") and "compose:secrets" in l for l in result.stdout.splitlines())
+
+
+def test_missing_data_and_backups_directories_and_no_containers_are_noted_not_failed(vm):
+    release = vm.release(NEW)
+    (release / "compose.json").write_text(json.dumps(CLEAN_COMPOSE))
+    vm.activate(release)
+    (vm.root / "data").rmdir()
+
+    result = vm.run("audit-data-security.sh", env_extra={"STUB_NO_CONTAINERS": "1"})
+
+    assert result.returncode == 0, result.stdout
+    manual = [l for l in result.stdout.splitlines() if l.startswith("MANUAL")]
+    assert {"perms:data", "perms:backups", "env:secrets"} <= {part for line in manual for part in line.split()}
+
+
+def test_the_audit_changes_nothing(vm):
+    audited(vm, private=False)
+    before = sorted((str(p.relative_to(vm.root)), mode(p)) for p in vm.root.rglob("*"))
+
+    vm.run("audit-data-security.sh", env_extra={"STUB_ENV_FILE": str(vm.root.parent / "container-env.txt")})
+
+    assert sorted((str(p.relative_to(vm.root)), mode(p)) for p in vm.root.rglob("*")) == before

@@ -1,68 +1,104 @@
-# Mutation check for rollback-vm.sh, backup-data.sh and restore-data.sh (run inside a Linux container).
-# Each guard was removed on its own, the suite run, and the script restored from an in-memory copy (verified identical).
-# 2026-10-21T09:58Z
+# Mutation check for the VM scripts (rollback, backup, restore, data-security audit), run inside a Linux container.
+# Each guard was removed on its own in a COPY of the scripts, the suite run, and the copy restored from memory (verified identical).
+# 2026-10-21T10:42Z
 
-baseline (no mutation): 23 passed in 1.70s
+baseline (no mutation): 43 passed in 2.74s
 
 R1 rollback proceeds when previous == current (a same-revision redeploy)
-    result: 1 failed, 22 passed in 1.51s
+    result: 1 failed, 42 passed in 2.53s
     caught by: test_rollback_refuses_when_previous_is_the_same_revision
 
 R2 rollback accepts a previous path outside the releases directory
-    result: 4 failed, 19 passed in 1.63s
-    caught by: test_rollback_refuses_a_previous_path_outside_the_releases_directory[/etc], test_rollback_refuses_a_previous_path_outside_the_releases_directory[/tmp/elsewhere/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa] (+2 more)
+    result: 4 failed, 39 passed in 2.70s
+    caught by: test_rollback_refuses_a_previous_path_outside_the_releases_directory[/etc], test_rollback_refuses_a_previous_path_outside_the_releases_directory[/srv/elsewhere/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa] (+2 more)
 
 R3 rollback repoints current BEFORE the previous release starts
-    result: 1 failed, 22 passed in 1.55s
+    result: 1 failed, 42 passed in 2.79s
     caught by: test_a_failed_start_leaves_current_unchanged_and_says_so
 
 R4 rollback does not check the previous revision matches its directory
-    result: 1 failed, 22 passed in 1.50s
+    result: 1 failed, 42 passed in 2.41s
     caught by: test_rollback_refuses_when_the_previous_revision_does_not_match_its_directory
 
 R5 rollback does not check the previous release has its files
-    result: 1 failed, 22 passed in 1.67s
+    result: 1 failed, 42 passed in 2.40s
     caught by: test_rollback_refuses_when_the_previous_release_is_incomplete
 
 B1 backup uses a plain file copy instead of SQLite's backup API
-    result: 9 failed, 14 passed in 1.38s
-    caught by: test_backup_copies_every_database_consistently_with_checksums, test_backup_is_safe_while_a_writer_holds_the_database_open (+7 more)
+    result: 11 failed, 32 passed in 2.58s
+    caught by: test_backup_copies_every_database_consistently_with_checksums, test_backup_is_safe_while_a_writer_holds_the_database_open (+9 more)
 
 B2 backup never prunes old backups
-    result: 1 failed, 22 passed in 1.39s
+    result: 1 failed, 42 passed in 2.50s
     caught by: test_backup_keeps_only_the_newest_timestamped_backups_and_spares_other_folders
 
 B3 backup writes no checksums
-    result: 2 failed, 21 passed in 1.85s
-    caught by: test_backup_copies_every_database_consistently_with_checksums, test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
+    result: 3 failed, 40 passed in 2.40s
+    caught by: test_backup_copies_every_database_consistently_with_checksums, test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services (+1 more)
 
 B4 backup leaves an empty backup directory when there are no databases
-    result: 1 failed, 22 passed in 1.45s
+    result: 1 failed, 42 passed in 2.39s
     caught by: test_backup_with_no_databases_fails_and_leaves_no_empty_backup
 
 S1 restore does not require --yes
-    result: 1 failed, 22 passed in 1.49s
+    result: 1 failed, 42 passed in 2.63s
     caught by: test_restore_without_yes_changes_nothing
 
 S2 restore does not verify the backup checksums
-    result: 1 failed, 22 passed in 1.47s
+    result: 1 failed, 42 passed in 2.54s
     caught by: test_restore_refuses_a_tampered_backup_and_changes_nothing
 
 S3 restore takes no safety snapshot of the current data
-    result: 1 failed, 22 passed in 1.42s
+    result: 1 failed, 42 passed in 2.76s
     caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
 
 S4 restore leaves stale -wal/-shm files
-    result: 1 failed, 22 passed in 1.54s
+    result: 1 failed, 42 passed in 2.74s
     caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
 
 S5 restore does not stop the services before replacing data
-    result: 1 failed, 22 passed in 1.44s
+    result: 1 failed, 42 passed in 2.93s
     caught by: test_restore_replaces_live_data_after_snapshotting_it_and_restarts_services
 
 S6 restore accepts a backup outside the backups directory
-    result: 1 failed, 22 passed in 1.46s
+    result: 1 failed, 42 passed in 2.67s
     caught by: test_restore_refuses_a_backup_outside_the_backups_directory
 
-after restoring: 23 passed in 1.41s
+A1 audit never finds world-accessible data or backups
+    result: 2 failed, 41 passed in 2.62s
+    caught by: test_a_world_readable_database_fails_and_names_the_fix, test_a_world_writable_backups_directory_fails
+
+A2 audit prints secret VALUES, not just names
+    result: 1 failed, 42 passed in 2.69s
+    caught by: test_a_secret_in_a_container_environment_fails_and_its_value_is_never_printed
+
+A3 audit flags EMPTY secret variables as leaks
+    result: 3 failed, 40 passed in 2.58s
+    caught by: test_a_protected_deployment_passes_every_automated_check_and_flags_what_it_cannot_know, test_empty_secret_variables_and_ordinary_variables_are_not_flagged (+1 more)
+
+A4 audit never fails a non-empty LITEAPI_KEY in the bundle
+    result: 1 failed, 42 passed in 2.54s
+    caught by: test_a_non_empty_api_key_in_the_release_bundle_fails_and_names_the_service
+
+A5 audit ignores .env files
+    result: 2 failed, 41 passed in 2.59s
+    caught by: test_credential_files_left_under_the_application_root_fail[.env], test_credential_files_left_under_the_application_root_fail[.env.production]
+
+A6 audit exits 0 even when a check failed
+    result: 12 failed, 31 passed in 2.70s
+    caught by: test_a_world_readable_database_fails_and_names_the_fix, test_a_world_writable_backups_directory_fails (+10 more)
+
+A7 audit hides which AI flags are enabled
+    result: 1 failed, 42 passed in 2.69s
+    caught by: test_enabled_ai_flags_are_reported_as_information_not_failures
+
+U1 backups are created with the caller's default umask (world-readable)
+    result: 1 failed, 42 passed in 2.55s
+    caught by: test_backups_are_private_even_when_the_callers_umask_is_permissive
+
+U2 the pre-restore snapshot keeps the data directory's own permissions
+    result: 1 failed, 42 passed in 2.87s
+    caught by: test_the_pre_restore_snapshot_is_private_even_when_the_callers_umask_is_permissive
+
+after restoring: 43 passed in 2.66s
 mutations not caught: 0

@@ -46,6 +46,9 @@ removed rather than carried forward stale.
 
 - **No real cloud deployment has been run.** Student 3's cloud behaviour is proven only locally against the real services with the bundle's environment (`evidence/release-2/cloud/`). The cloud smoke test now covers all five students (Student 5 read-only), and rollback, backup and restore scripts exist and are tested offline, but none of it has run on a VM; the deploy does not ship the operations scripts; nothing provisions the deployment VM. See `evidence/release-2/cloud-readiness-report.md`.
 
+- **Cloud security controls are proven locally only.** The gateway hardening, the security validator and the data audit were exercised against real software (Caddy, nginx, Student 3's services) but not against a deployed site, so bonus marks B5 and B6 still need a run on the real URL. Disk encryption at rest is a platform setting a script cannot see. The CSP applies only `frame-ancestors`, `base-uri`, `object-src` and `form-action`, because the UIs use inline and CDN scripts; the rate limiter trusts `X-Forwarded-For` from private networks, so it is correct behind Caddy but spoofable if the gateway container is reached directly (as in local development). See `evidence/release-2/security-report.md`.
+- **The AI-in-the-cloud bonuses (B1 to B4) are not started.** They need a real deployment with an Ollama model, and the MCP, RAG and Multi-Agent servers running in containers on the VM.
+
 ## Rollover Checklist (close before submission)
 
 - [x] Release 1 Stage 1 — MCP tools + RAG knowledge base (PR #62).

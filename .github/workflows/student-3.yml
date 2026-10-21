@@ -24,6 +24,11 @@ on:
       - 'scripts/deploy/rollback-vm.sh'
       - 'scripts/deploy/backup-data.sh'
       - 'scripts/deploy/restore-data.sh'
+      - 'scripts/deploy/audit-data-security.sh'
+      - 'scripts/deploy/validate_security.py'
+      - 'scripts/deploy/prepare_cloud.py'
+      - 'scripts/test/test_validate_security.py'
+      - 'scripts/test/test_cloud_config.py'
   pull_request:
     paths:
       - 'student-3/**'
@@ -44,6 +49,11 @@ on:
       - 'scripts/deploy/rollback-vm.sh'
       - 'scripts/deploy/backup-data.sh'
       - 'scripts/deploy/restore-data.sh'
+      - 'scripts/deploy/audit-data-security.sh'
+      - 'scripts/deploy/validate_security.py'
+      - 'scripts/deploy/prepare_cloud.py'
+      - 'scripts/test/test_validate_security.py'
+      - 'scripts/test/test_cloud_config.py'
   workflow_dispatch:
 
 jobs:
@@ -91,7 +101,7 @@ jobs:
       # Release 2 cloud tooling, all offline: the per-student cloud smoke checks (Students 3, 4 and 5; Student 1's run in
       # student-1.yml), the rollback / backup / restore scripts (Linux symlink and readlink behaviour, as on the VM), and the
       # retry wrapper the image builds below go through (it retries registry/network blips only).
-      - name: Test cloud smoke checks, VM rollback and backup scripts, and the CI retry wrapper
+      - name: Test cloud smoke checks, VM scripts, the security validator, the Caddyfile and the CI retry wrapper
         run: >
           python -m pytest -q
           scripts/test/test_cloud_smoke_student3.py
@@ -99,6 +109,8 @@ jobs:
           scripts/test/test_cloud_smoke_student5.py
           scripts/test/test_vm_scripts.py
           scripts/test/test_retry_transient.py
+          scripts/test/test_validate_security.py
+          scripts/test/test_cloud_config.py
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
@@ -187,6 +199,26 @@ jobs:
           assert body['source'] == 'fallback', body
           assert body['attractions_considered'], body
           "
+
+      # Release 2 endpoint security (bonus B5): the public gateway hides its version and rate-limits one client.
+      # Uses the same request/burst code that scripts/deploy/validate_security.py runs against the public URL.
+      - name: Assert the gateway hides its version and rate-limits a flood
+        run: |
+          docker compose up --detach --no-deps --wait shared-frontend
+          python - <<'PY'
+          import importlib.util
+          spec = importlib.util.spec_from_file_location("validate_security", "scripts/deploy/validate_security.py")
+          validator = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(validator)
+          status, headers = validator.request("http://localhost:5100", "GET", "/")
+          assert status == 200, status
+          assert not any(ch.isdigit() for ch in headers.get("server", "")), headers.get("server")
+          statuses = validator.burst("http://localhost:5100", False)
+          limited = statuses.count(429)
+          print(f"{len(statuses)} rapid requests: {limited} limited (429), {statuses.count(200)} served")
+          assert limited > 0, "the gateway did not rate-limit a flood"
+          assert statuses.count(200) >= 60, "the burst allowance should have served at least 60 requests"
+          PY
 
       - name: Stop Student 3 services
         if: always()
