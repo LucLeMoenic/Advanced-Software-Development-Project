@@ -16,6 +16,8 @@ on:
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
       - 'scripts/test/junit_summary.py'
+      - 'scripts/ci/retry-transient.sh'
+      - 'scripts/test/test_retry_transient.py'
   pull_request:
     paths:
       - 'student-3/**'
@@ -28,6 +30,8 @@ on:
       - 'docker-compose.yml'
       - 'scripts/test/student-3.ps1'
       - 'scripts/test/junit_summary.py'
+      - 'scripts/ci/retry-transient.sh'
+      - 'scripts/test/test_retry_transient.py'
   workflow_dispatch:
 
 jobs:
@@ -50,7 +54,7 @@ jobs:
         run: python -m pytest tests/test_endpoints_cicd.py -v --junitxml=endpoint-tests-junit.xml
 
       - name: Publish endpoint test report
-        if: always()
+        if: ${{ always() && hashFiles('student-3/endpoint-tests-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py student-3/endpoint-tests-junit.xml "Student 3 post-commit endpoint tests (GET and POST /api/attractions)"
 
       - name: Upload endpoint test results
@@ -69,14 +73,18 @@ jobs:
           python -m pytest -v --junitxml=multi-agent-junit.xml
 
       - name: Publish Multi-Agent Server test report
-        if: always()
+        if: ${{ always() && hashFiles('ai-services/multi-agent-server/multi-agent-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py ai-services/multi-agent-server/multi-agent-junit.xml "Multi-Agent Server tests"
+
+      # The image builds below go through scripts/ci/retry-transient.sh (retries registry/network blips only).
+      - name: Test the CI retry wrapper
+        run: python -m pytest scripts/test/test_retry_transient.py -q
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
       - name: Build integrated Student 3 containers
-        run: docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build shared-frontend student3-frontend student3-backend student3-database student3-db-init
 
       - name: Initialise and seed Student 3 database
         run: docker compose run --rm --no-deps student3-db-init
@@ -86,6 +94,7 @@ jobs:
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
           MULTI_AGENT_ENABLED: "false"
+          AI_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student3-database student3-backend student3-frontend
 
       - name: Post-commit endpoint tests against running containers (GET and POST /api/attractions)
@@ -142,6 +151,22 @@ jobs:
           "
             echo "disabled as expected: $spec"
           done
+
+      # Release 2 cloud baseline: AI-Mode, MCP, RAG and Multi-Agent all report off, and AI-Mode still answers
+      # deterministically from the catalogue without contacting a model.
+      - name: Assert every AI capability is off and AI-Mode falls back deterministically
+        run: |
+          curl --fail --silent http://localhost:5203/api/capabilities | python -c "
+          import json, sys
+          assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False, 'multiAgentEnabled': False}
+          "
+          curl --fail --silent -X POST http://localhost:5203/api/recommend \
+            -H 'Content-Type: application/json' -d '{"interest":"street art"}' | python -c "
+          import json, sys
+          body = json.load(sys.stdin)
+          assert body['source'] == 'fallback', body
+          assert body['attractions_considered'], body
+          "
 
       - name: Stop Student 3 services
         if: always()

@@ -22,6 +22,16 @@ KNOWN_CATEGORIES = {"sight", "restaurant", "activity"}
 MIN_USABLE_RESPONSE_LENGTH = 15
 
 
+def ai_enabled():
+    """AI-Mode is on unless AI_ENABLED is set to something other than "true".
+
+    The required cloud baseline sets AI_ENABLED=false (scripts/deploy/prepare_cloud.py), so the
+    deployed app never contacts Ollama and answers from the catalogue alone. Read on every call so
+    tests can toggle it with monkeypatch.setenv.
+    """
+    return os.environ.get("AI_ENABLED", "true").lower() == "true"
+
+
 def get_recommendation(interest_text):
     """Runs the full Plan -> Act -> Observe -> Adapt loop and returns a JSON-ready dict."""
 
@@ -37,6 +47,9 @@ def get_recommendation(interest_text):
         candidates = []
 
     candidates = candidates[:MAX_CONTEXT_ATTRACTIONS]
+    if not ai_enabled():
+        print("ADAPT: AI-Mode is disabled (AI_ENABLED is not 'true'); returning the templated response without calling Ollama")
+        return _success_payload(_fallback_text(interest_text, candidates), candidates, source="fallback")
     print(f"ACT: pulled {len(candidates)} attraction(s) as context, calling Ollama model={OLLAMA_MODEL}")
 
     prompt = _build_prompt(interest_text, candidates)

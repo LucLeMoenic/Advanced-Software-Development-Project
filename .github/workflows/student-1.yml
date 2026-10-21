@@ -83,7 +83,7 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build integrated Student 1 containers
-        run: docker compose build shared-frontend student1-frontend student1-backend student1-database
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build shared-frontend student1-frontend student1-backend student1-database
 
       # Release 2 post-commit endpoint tests: POST and PATCH /api/searches against the
       # running backend and database containers, with AI and LiteAPI off as in the cloud.
@@ -100,7 +100,7 @@ jobs:
         run: python -m pytest student-1/tests/test_endpoints_cicd.py -v --junitxml=student-1/endpoint-tests-junit.xml
 
       - name: Publish endpoint test report
-        if: always()
+        if: ${{ always() && hashFiles('student-1/endpoint-tests-junit.xml') != '' }}
         run: python scripts/test/junit_summary.py student-1/endpoint-tests-junit.xml "Student 1 post-commit endpoint tests (POST and PATCH /api/searches)"
 
       - name: Upload endpoint test results

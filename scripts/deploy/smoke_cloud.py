@@ -1,4 +1,4 @@
-"""Verify the public gateway and Student 1 and Student 2 CRUD without native AI dependencies."""
+"""Verify the public gateway and Student 1, 2 and 3 CRUD without native AI dependencies."""
 
 import argparse
 import json
@@ -61,6 +61,8 @@ def run(base):
     print("PASS: six gateway pages; four AI modes disabled; deterministic create; trip/stop CRUD.")
     check_student1(call)
     print("PASS: Student 1 AI modes disabled; cached-catalogue search create, rename and delete.")
+    check_student3(call)
+    print("PASS: Student 3 AI modes disabled; deterministic recommendation; attraction and review CRUD.")
     print("Persistence across redeploy, other features' CRUD and rollback require separate evidence.")
 
 
@@ -90,6 +92,39 @@ def check_student1(call):
         call(f"{path}/reviews", "POST", {}, 503)
     finally:
         call(path, "DELETE", expected=204)
+    call(path, expected=404)
+
+
+def check_student3(call):
+    """Student 3 through the gateway: every AI capability off, and attraction and review CRUD."""
+    api = "/attractions-api"
+    modes = call(f"{api}/capabilities")
+    if modes != {"aiEnabled": False, "mcpEnabled": False, "ragEnabled": False, "multiAgentEnabled": False}:
+        raise RuntimeError("The cloud baseline must disable every Student 3 AI capability.")
+    if len(call(f"{api}/attractions")) < 10:
+        raise RuntimeError("At least ten demonstration attractions are required.")
+    recommendation = call(f"{api}/recommend", "POST", {"interest": "street art"})
+    if recommendation.get("source") != "fallback" or not recommendation.get("recommendation"):
+        raise RuntimeError("Disabled AI must still return a deterministic recommendation.")
+    for endpoint, body in ((f"{api}/mcp/invoke", {"tool": "attractions.search", "arguments": {}}),
+                           (f"{api}/rag/ask", {"question": "Is Chin Chin busy?"}),
+                           (f"{api}/agents/workflows", {"task": "Plan a relaxed day"})):
+        call(endpoint, "POST", body, 503)
+    name = f"R2 smoke {uuid.uuid4().hex[:8]}"
+    fields = {"name": name, "category": "activity", "description": "Synthetic fixture", "rating": 4}
+    attraction = call(f"{api}/attractions", "POST", fields, 201)
+    path = f"{api}/attractions/{attraction['id']}"
+    try:
+        call(path, "PUT", {**fields, "name": f"{name} updated", "rating": 3.5})
+        saved = call(path)
+        if saved["name"] != f"{name} updated" or saved["rating"] != 3.5:
+            raise RuntimeError("Update/readback did not preserve the attraction.")
+        review = call(f"{api}/reviews", "POST", {"attraction_id": attraction["id"], "rating": 5, "comment": "Cloud smoke review"}, 201)
+        listed = call(f"{api}/reviews?attraction_id={attraction['id']}")
+        if [item["id"] for item in listed] != [review["id"]]:
+            raise RuntimeError("Review create/readback failed.")
+    finally:
+        call(path, "DELETE", expected=204)  # also removes the attraction's reviews
     call(path, expected=404)
 
 

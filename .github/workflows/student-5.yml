@@ -64,7 +64,7 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build integrated Student 5 containers
-        run: docker compose build student5-database student5-backend student5-frontend
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build student5-database student5-backend student5-frontend
 
       - name: Start Student 5 services
         run: docker compose up --detach --no-deps --wait student5-database student5-backend student5-frontend

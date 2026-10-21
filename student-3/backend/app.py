@@ -9,7 +9,7 @@ import database_client as db
 import mcp_client
 import multi_agent_client
 import rag_client
-from recommend import get_recommendation
+from recommend import ai_enabled, get_recommendation
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
@@ -30,6 +30,17 @@ def index():
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"})
+
+
+@app.get("/api/capabilities")
+def capabilities():
+    """Which AI capabilities are on. The cloud baseline (and CI) expect every one to be false."""
+    return jsonify({
+        "aiEnabled": ai_enabled(),
+        "mcpEnabled": mcp_client._enabled(),
+        "ragEnabled": rag_client._enabled(),
+        "multiAgentEnabled": multi_agent_client.enabled(),
+    })
 
 
 @app.get("/api/attractions")

@@ -109,7 +109,7 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build integrated Student 2 containers
-        run: docker compose build shared-frontend student2-frontend student2-backend student2-database
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build shared-frontend student2-frontend student2-backend student2-database
 
       - name: Start Student 2 services
         env:

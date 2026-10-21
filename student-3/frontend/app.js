@@ -1049,3 +1049,22 @@ function initAgentsPanel() {
 }
 
 document.addEventListener('DOMContentLoaded', initAgentsPanel);
+
+/**
+ * When the deployment runs with AI-Mode off (the required cloud baseline), say so up front: the
+ * suggestion below then comes from the attraction catalogue alone, never from a model.
+ */
+function initRecommendStatus() {
+  const note = document.getElementById('recommend-status');
+  if (!note) return;
+  fetch('/attractions-api/capabilities')
+    .then((response) => response.json().then((data) => ({ code: response.status, data })))
+    .then(({ code, data }) => {
+      if (code === 200 && data && data.aiEnabled === false) {
+        note.innerHTML = '<p class="empty">AI-Mode is disabled in this deployment. Suggestions come from the attraction catalogue only.</p>';
+      }
+    })
+    .catch(() => {});
+}
+
+document.addEventListener('DOMContentLoaded', initRecommendStatus);

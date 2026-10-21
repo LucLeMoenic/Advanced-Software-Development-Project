@@ -77,7 +77,7 @@ jobs:
         run: docker compose config --quiet
 
       - name: Build integrated Student 4 containers
-        run: docker compose build shared-frontend student4-frontend student4-backend student4-database
+        run: bash scripts/ci/retry-transient.sh 3 20 docker compose build shared-frontend student4-frontend student4-backend student4-database
 
       - name: Start Student 4 services through shared route
         run: docker compose up --detach --no-deps --wait student4-database student4-backend student4-frontend shared-frontend

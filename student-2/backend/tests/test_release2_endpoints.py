@@ -92,8 +92,11 @@ def test_cloud_smoke_uses_current_disabled_routes_and_cleans_up(client, monkeypa
     monkeypatch.setattr(smoke, "urlopen", gateway)
     student1_check = Mock()
     monkeypatch.setattr(smoke, "check_student1", student1_check)
+    student3_check = Mock()  # Student 3's section has its own tests (scripts/test/test_cloud_smoke_student3.py)
+    monkeypatch.setattr(smoke, "check_student3", student3_check)
     smoke.run("https://smoke.invalid")
     student1_check.assert_called_once()
+    student3_check.assert_called_once()
     assert client.get("/api/trips").json == before
 
 

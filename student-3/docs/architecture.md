@@ -168,6 +168,41 @@ Failure behaviour the frontend renders distinctly: disabled (503), server offlin
 (503 `busy`), an already-decided workflow (409), and a workflow that `failed` at a named stage. If only the
 Reviewer model fails the workflow still reaches the human, marked "automatic checks only".
 
+## Release 2: Cloud Deployment and CI/CD (Student 3 view)
+
+Student 3's three services run in the group's cloud bundle behind one public TLS gateway. AI-Mode, MCP, RAG and
+Multi-Agent are disabled by default there: `prepare_cloud.py` sets every `*_ENABLED` flag to `false` and points every AI URL at an
+unreachable address, and Student 3's backend honours `AI_ENABLED` (it never contacts a model when it is off).
+
+```mermaid
+flowchart LR
+    Browser -->|HTTPS 443| Caddy[tls-gateway - only public service]
+    subgraph Private[internal Docker network - no published ports]
+        Caddy --> Gateway[shared-frontend]
+        Gateway -->|/attractions/| S3FE[student3-frontend]
+        Gateway -->|/attractions-api/| S3BE[student3-backend<br/>AI/MCP/RAG/MULTI_AGENT = false]
+        S3BE --> S3DB[student3-database]
+        S3DB --- Data[(/opt/asd/data/student-3/attractions.db)]
+        Init[student3-db-init - idempotent seed] --- Data
+    end
+    S3BE -. no calls: URLs point at 127.0.0.1:9 .-x AI[Ollama / MCP / RAG / Multi-Agent]
+```
+
+```mermaid
+flowchart LR
+    Commit[git commit] --> Pre[pre-commit: Ruff security rules,<br/>detect-secrets, pip-audit]
+    Pre --> Push[git push / PR]
+    Push --> CI[student-3.yml: unit tests, 2 endpoint tests,<br/>live container checks, AI-disabled assertions]
+    CI --> Gate[assert-cloud-ci.ps1:<br/>all six CI workflows green for the same SHA]
+    Gate --> Bundle[prepare_cloud.py: immutable AI-disabled bundle]
+    Bundle --> Build[docker build + image checksums]
+    Build --> Deploy[ssh + deploy-vm.sh to the Azure/AWS Linux VM]
+    Deploy --> Smoke[smoke_cloud.py over public HTTPS:<br/>Students 1, 2, 3 CRUD, AI off]
+```
+
+Student 3's contribution to this flow: the `AI_ENABLED` switch, `GET /api/capabilities`, `check_student3` in the smoke test, and the
+`student-3.yml` baseline assertion. The deployment steps themselves belong to the group's pipeline.
+
 ## Individual Service Architecture
 
 ```mermaid
