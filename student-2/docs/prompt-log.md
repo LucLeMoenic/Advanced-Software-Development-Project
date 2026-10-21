@@ -2,6 +2,20 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-21 - CI Disabled-Mode Smoke Fix
+
+Student 2 CI run `39572296667` failed because the PowerShell smoke script still
+POSTed to the removed standalone workflow-creation endpoint, receiving 404 rather
+than the expected disabled-mode 503. The Python smoke check had been migrated,
+but this CI entry point was missed.
+
+Changed the PowerShell probe to GET the existing workflow-read route with the
+same fixture ID used by backend tests. Retained the 503 and `mode_disabled`
+assertions; no application behavior or checks were weakened.
+Validation before commit: eight disabled-mode/endpoint smoke tests passed,
+PowerShell syntax parsing passed, and `git diff --check` passed. Remote CI must
+confirm the complete container restart/persistence smoke path after pushing.
+
 ## 2026-10-21 - Inline Edit Assessment
 
 **Request:** implement the reviewed design using Ponytail: reuse the existing
