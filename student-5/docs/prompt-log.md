@@ -184,3 +184,49 @@ dotnet run --project ai-services/agentic-loop -- validate-rag --feature student-
 In both runs the implementer concluded that no change was needed. Terminal
 output is in `evidence/release-1/loop/`. I finalised both records myself
 after reviewing them: (e) `kept`, (f) `kept` (see `review-record.md`).
+
+## Release 2
+
+Plan: [`release-2-plan.md`](release-2-plan.md). Code was written by an AI coding
+assistant in supervised sessions; every change was reviewed, tested and committed
+by me.
+
+### Chunk 1 - AI-off guard (TL-FR-18), 21 October 2026
+
+**Why:** the cloud baseline (`scripts/deploy/prepare_cloud.py`) sets
+`AI_ENABLED=false` on every backend, but Student 5's backend never read it, so
+`POST /api/advisory` would still have called Ollama and timed out in the cloud.
+
+**Prompt (summary):** "Start Chunk 1": make AI-Mode switchable the same way MCP and
+RAG already are, default on, and verify it in tests and the live container.
+
+**AI-written change:**
+
+- `ollama_client.py`: `OllamaDisabled` exception, `enabled` flag and
+  `ensure_enabled()`, checked at the top of `generate()`.
+- `advisory.py`: `generate_advisory()` calls `ensure_enabled()` *before* the
+  database read, so a disabled advisory makes no network call at all.
+- `app.py`: `AI_ENABLED` read through `env_flag(..., default=True)`. AI-Mode is the
+  Release 0 core feature, unlike opt-in MCP/RAG. 503 handler returns
+  `{"error": "ai_disabled", "message": "AI-Mode is disabled."}`, the same shape as
+  the MCP/RAG disabled responses.
+- `ui.py`: `OllamaDisabled` renders a "switched off for this deployment" notice.
+- `docker-compose.yml`: `AI_ENABLED: ${AI_ENABLED:-true}` on `student5-backend`.
+- Tests: `ai_off_client` fixture, plus 5 tests for env parsing, a 503 with no
+  network call, a 400 still returned first for a bad body, CRUD with AI off, and
+  the UI notice.
+
+**Correction during the session:** the first CRUD-with-AI-off test mocked
+`/destinations`; the database API path is `/api/destinations`. Found by reading
+the existing fixtures before running, then fixed.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Backend pytest (repo `.venv`, Python 3.13) | `130 passed in 2.88s` |
+| Full Student 5 suites (`student-5.ps1` equivalents) | database 26, backend 130, MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Independent AI code review | No findings; see `review-record.md` (Release 2 - Chunk 1) |
+| Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
+| Live container, `AI_ENABLED=false` | `POST /api/advisory` returns `503 {"error":"ai_disabled",...}` in 0.006 s; `/logistics/ui/advisory` through the shared gateway renders the notice; `GET /api/destinations` returns 200 |
+| Live container, `AI_ENABLED=true` (restored) | Real grounded advisory from `llama3.2:3b`, HTTP 200 in 2.65 s |

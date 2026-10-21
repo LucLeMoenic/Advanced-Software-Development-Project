@@ -26,6 +26,7 @@ from ollama_client import (
     DEFAULT_APPLICATION_MODEL,
     DEFAULT_OLLAMA_URL,
     OllamaClient,
+    OllamaDisabled,
     OllamaUnavailable,
 )
 from rag_client import DEFAULT_RAG_SERVER_URL, RagClient
@@ -34,9 +35,12 @@ from ui import ui_bp
 DEFAULT_DATABASE_API_URL = "http://student5-database:8080"
 
 
-def env_flag(name: str) -> bool:
-    """An opt-in boolean: only the literal "true" (any case) switches it on."""
-    return os.environ.get(name, "false").strip().lower() == "true"
+def env_flag(name: str, default: bool = False) -> bool:
+    """A boolean flag: only the literal "true" (any case) switches it on.
+
+    An unset variable falls back to ``default``; any other value is off.
+    """
+    return os.environ.get(name, str(default)).strip().lower() == "true"
 
 
 # ---------------------------------------------------------------------------
@@ -210,6 +214,9 @@ def create_app(config: Optional[dict] = None) -> Flask:
     app.config["APPLICATION_MODEL"] = os.environ.get(
         "APPLICATION_MODEL", DEFAULT_APPLICATION_MODEL
     )
+    # AI-Mode is the Release 0 core feature, so it stays on unless the
+    # deployment switches it off -- the cloud baseline and CI set it to false.
+    app.config["AI_ENABLED"] = env_flag("AI_ENABLED", default=True)
     # Release 1 integrations fail closed: MCP and RAG stay off unless the
     # deployment opts in, so CI never reaches for shared servers it lacks.
     app.config["MCP_SERVER_URL"] = os.environ.get("MCP_SERVER_URL", DEFAULT_MCP_SERVER_URL)
@@ -221,7 +228,9 @@ def create_app(config: Optional[dict] = None) -> Flask:
 
     app.config["DATABASE_CLIENT"] = DatabaseClient(app.config["DATABASE_API_URL"])
     app.config["OLLAMA_CLIENT"] = OllamaClient(
-        app.config["OLLAMA_URL"], app.config["APPLICATION_MODEL"]
+        app.config["OLLAMA_URL"],
+        app.config["APPLICATION_MODEL"],
+        enabled=app.config["AI_ENABLED"],
     )
     app.config["MCP_CLIENT"] = McpClient(app.config["MCP_SERVER_URL"], app.config["MCP_ENABLED"])
     app.config["RAG_CLIENT"] = RagClient(app.config["RAG_SERVER_URL"], app.config["RAG_ENABLED"])
@@ -235,6 +244,11 @@ def create_app(config: Optional[dict] = None) -> Flask:
         # Distinct from the database 503 above so the caller (and whoever is
         # reading the logs) can tell which dependency is down.
         return jsonify({"error": "ai service unavailable"}), 503
+
+    @app.errorhandler(OllamaDisabled)
+    def handle_ai_disabled(_exc):
+        # Same shape as the MCP/RAG "disabled" responses in integrations.py.
+        return jsonify({"error": "ai_disabled", "message": "AI-Mode is disabled."}), 503
 
     @app.errorhandler(404)
     def handle_not_found(_exc):

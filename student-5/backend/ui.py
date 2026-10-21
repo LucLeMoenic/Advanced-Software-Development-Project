@@ -36,7 +36,7 @@ from advisory import (
 from db_client import DatabaseUnavailable
 from integrations import InvalidRequest, clean_question, invoke_tool, rag
 from mcp_client import McpDisabled, McpToolError, McpUnavailable
-from ollama_client import OllamaUnavailable
+from ollama_client import OllamaDisabled, OllamaUnavailable
 from rag_client import RagDisabled, RagTimeout, RagUnavailable
 
 ui_bp = Blueprint("ui", __name__, url_prefix="/ui")
@@ -102,6 +102,11 @@ def fragment_database_unavailable(_exc):
 @ui_bp.errorhandler(OllamaUnavailable)
 def fragment_ai_unavailable(_exc):
     return notice("The travel adviser is unavailable right now. Please try again shortly.")
+
+
+@ui_bp.errorhandler(OllamaDisabled)
+def fragment_ai_disabled(_exc):
+    return notice("AI advisories are switched off for this deployment (AI-Mode is disabled).")
 
 
 @ui_bp.errorhandler(McpDisabled)
