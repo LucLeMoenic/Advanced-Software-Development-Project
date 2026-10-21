@@ -546,7 +546,8 @@ def test_rag_transport_preserves_bounded_trip_context(monkeypatch):
 
 
 @pytest.mark.parametrize("action", ["move_day", "swap_days", "move_stop", "reorder_before", "reorder_after", "add_stop", "remove_stop", "update_stop", "shift_dates"])
-def test_edit_runs_through_registered_mcp_tools_and_real_database(tmp_path, monkeypatch, action):
+@pytest.mark.parametrize("multi_agent", [False, True])
+def test_edit_runs_through_registered_mcp_tools_and_real_database(tmp_path, monkeypatch, action, multi_agent):
     import asyncio
     import importlib.util
     from pathlib import Path
@@ -585,7 +586,16 @@ def test_edit_runs_through_registered_mcp_tools_and_real_database(tmp_path, monk
             return self.call("itinerary.apply_edit", {"trip_id": trip_id, "token": token})
 
     model = FakeReviewModel()
-    client = review_client(model, RegisteredMcp())
+    from test_multi_agent import Server, ready, ID
+    agents = Server()
+    class DatabaseAdapter:
+        def request(self, method, path, payload=None):
+            response = database.open(path, method=method, json=payload)
+            return response.json, response.status_code
+    client = create_app(
+        mcp_client=RegisteredMcp(), review_model=model, database_client=DatabaseAdapter(),
+        multi_agent_client=agents, settings={"AI_ENABLED": True, "MCP_ENABLED": True, "MULTI_AGENT_ENABLED": multi_agent},
+    ).test_client()
     for activity in ("Lunch", "Gallery"):
         database.post("/api/data/stops", json={"tripId": 1, "day": 1, "activity": activity, "notes": "", "sortOrder": 0})
     before = database.get("/api/data/trips/1").json
@@ -607,6 +617,17 @@ def test_edit_runs_through_registered_mcp_tools_and_real_database(tmp_path, monk
     assert result.status_code == 200
     assert database.get("/api/data/trips/1").json == before
     token = {"token": result.json["preview"]["token"]}
+    if multi_agent:
+        assert result.json["preview"]["workflowId"] == ID
+        token["workflowId"] = ID
+        assert client.post("/api/trips/1/edit-confirm", json=token).status_code == 409
+        assert client.post(f"/api/trips/1/multi-agent-workflows/{ID}/decision", json={"decision": "approve"}).status_code == 200
+        from itsdangerous import TimestampSigner
+        expired_time = TimestampSigner("test").get_timestamp() + 601
+        with monkeypatch.context() as clock:
+            clock.setattr(TimestampSigner, "get_timestamp", lambda self: expired_time)
+            assert client.post("/api/trips/1/edit-confirm", json=token).status_code == 400
+        assert database.get("/api/data/trips/1").json == before
     saved = client.post("/api/trips/1/edit-confirm", json=token)
     assert saved.status_code == 200
     after = database.get("/api/data/trips/1").json
@@ -627,11 +648,16 @@ def test_edit_runs_through_registered_mcp_tools_and_real_database(tmp_path, monk
         assert (stop["day"], stop["sortOrder"]) == (change["toDay"], change["toOrder"])
     assert client.post("/api/trips/1/edit-confirm", json=token).status_code == 409
     assert len(model.calls) == (0 if explicit else 1)
+    agents.record = ready()
     model.answer = {"operation": {"action": "undo", "sourceDay": 1, "targetDay": 1, "stopId": 0}, "clarification": ""}
     undo = client.post("/api/trips/1/edit-operation-preview", json={"operation": model.answer["operation"]})
     assert undo.status_code == 200
     assert database.get("/api/data/trips/1").json == after
-    assert client.post("/api/trips/1/edit-confirm", json={"token": undo.json["preview"]["token"]}).status_code == 200
+    undo_token = {"token": undo.json["preview"]["token"]}
+    if multi_agent:
+        undo_token["workflowId"] = ID
+        assert client.post(f"/api/trips/1/multi-agent-workflows/{ID}/decision", json={"decision": "approve"}).status_code == 200
+    assert client.post("/api/trips/1/edit-confirm", json=undo_token).status_code == 200
     restored = database.get("/api/data/trips/1").json
     assert (restored["startDate"], restored["endDate"]) == (before["startDate"], before["endDate"])
     assert [(stop["id"], stop["day"], stop["sortOrder"], stop["notes"]) for stop in restored["stops"]] == [

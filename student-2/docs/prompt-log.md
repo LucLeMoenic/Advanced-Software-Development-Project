@@ -2,6 +2,54 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-21 - Inline Edit Assessment
+
+**Request:** implement the reviewed design using Ponytail: reuse the existing
+editor and shared server; replace the separate Plan review tab.
+
+**Changes:** existing edit/operation previews now start an assessment when
+Multi-Agent is enabled. Server-derived evidence includes the complete request
+and before/after changes, a full saved-trip fingerprint and a preview-token hash.
+Confirmation requires an accepted matching workflow and still uses the existing
+signed, expiring, revision-bound database transaction. Reused the review component
+inline; human assessment decisions never execute prose or partially apply an
+indivisible operation. Correcting the actual edit requires a new preview/review.
+Disabled mode preserves Release 1 editing. No shared agent runtime or other
+student feature code changed; the shared README link description was updated.
+
+**Validation:** backend suites total 257 passed, 11 existing opt-in live skips
+(250 backend/review tests plus 7 endpoint/smoke tests); final focused review suite
+57 passed. Frontend 45 passed and production build passed. Ruff, live helper
+`--help` and `git diff --check` passed. Tests exercise full MCP/database application
+with Multi-Agent on/off, undo, expiry, stale/mismatched tokens, all four decisions,
+bounded complete evidence, failed saves, disabled mode and late UI responses.
+Updated the cloud smoke check to use the remaining workflow GET route instead
+of the removed creation route; exercised its CRUD/disabled checks against the
+real database API with gateway-page fixtures.
+
+**Live developer check:** isolated loopback services and disposable seeded
+database; real `llama3.2:3b` Planner/Worker/Reviewer completed an undo assessment
+in workflow `wf-20261021T031345Z-b9269ae2`. Reviewer returned non-degraded
+`concerns`, visibly retained. Browser confirmation was disabled before acceptance.
+An explicitly labelled automated developer-test approval left the database
+unchanged; the separate browser confirmation then persisted the exact undo.
+Shared CLI `show` displayed the same record; `verify` reported 10 valid audit
+entries. This is not genuine human showcase acceptance or container networking
+evidence. Two natural-language preview attempts hit the existing 20-second
+editor-model deadline before any workflow was created; preloading did not resolve
+that live limitation. No timeout or shared-model policy was weakened to hide it.
+Stopped all temporary native services and removed the disposable database/helper.
+
+**Commit preparation:** moved the uncommitted work onto
+`LLM/Student_2_Edit_Assessment` from updated `main` (`cbb57ed`).
+Revalidation found the new upstream Student 1 cloud check exceeded the Student 2
+test fixture's scope. Mocked that check only in the Student 2 fixture and asserted
+it is called; the production check is unchanged and its own tests pass.
+Combined backend results after that fix: 257 passed/11 opt-in skips; frontend
+45 passed plus production build; cloud configuration/Student 1 smoke suites
+10 passed; updated live helper `--help` passed. Split into backend, frontend,
+cloud-check and documentation commits without pushing.
+
 ## 2026-10-20 - Release 2 Implementation
 
 21 October ownership correction: user directed other students to implement
