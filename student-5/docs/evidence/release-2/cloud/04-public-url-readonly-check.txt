@@ -1,0 +1,30 @@
+# Read-only check of the deployed Student 5 feature on the public URL, 2026-10-22T10:12:29Z
+# Nothing is written: GETs only, and AI routes that refuse with 503 before any database or model call.
+10:12:29Z  GET    https://asd-epic-assignment.duckdns.org/health
+    -> HTTP 200 in 0.932650s
+healthy 
+10:12:30Z  GET    https://asd-epic-assignment.duckdns.org/logistics/
+    -> HTTP 200 in 0.204606s
+<!doctype html> <!--   Student 5 - Travel Logistics & Advisory Service: frontend microservice.    One page, no build ste
+10:12:31Z  GET    https://asd-epic-assignment.duckdns.org/logistics/api/destinations
+    -> HTTP 200 in 0.165221s
+[{"country":"Japan","id":1,"notes":"Short-stay tourist entry for Australian passport holders. Visit Japan Web pre-registration speeds up immigration and customs
+    destinations listed: 12
+10:12:32Z  GET    https://asd-epic-assignment.duckdns.org/logistics/api/weather-notes
+    -> HTTP 200 in 0.189389s
+[{"destination_id":1,"id":1,"notes":"Mild days and heavy cherry blossom crowds. Pack layers because inland evenings stay
+10:12:32Z  GET    https://asd-epic-assignment.duckdns.org/logistics/api/transit-options
+    -> HTTP 200 in 0.219707s
+[{"destination_id":1,"details":"A Japan Rail Pass covers most Shinkansen services between major cities and is cheapest b
+10:12:33Z  POST   https://asd-epic-assignment.duckdns.org/logistics/api/advisory
+    -> HTTP 503 in 0.220416s
+{"error":"ai_disabled","message":"AI-Mode is disabled."} 
+10:12:33Z  GET    https://asd-epic-assignment.duckdns.org/logistics/api/mcp/tools
+    -> HTTP 503 in 0.142297s
+{"error":"mcp_disabled","message":"MCP is disabled."} 
+10:12:34Z  POST   https://asd-epic-assignment.duckdns.org/logistics/api/rag/ask
+    -> HTTP 503 in 0.168117s
+{"error":"rag_disabled","message":"RAG is disabled."} 
+10:12:34Z  POST   https://asd-epic-assignment.duckdns.org/logistics/api/destinations/1/readiness-reviews
+    -> HTTP 503 in 0.150693s
+{"error":"multi_agent_disabled","message":"Multi-Agent is disabled."} 

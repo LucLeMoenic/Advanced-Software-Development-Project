@@ -1,0 +1,1038 @@
+﻿2026-10-22T00:15:12.2701674Z Current runner version: '2.338.0'
+2026-10-22T00:15:12.2722910Z ##[group]Runner Image Provisioner
+2026-10-22T00:15:12.2723705Z Hosted Compute Agent
+2026-10-22T00:15:12.2724205Z Version: 20261015.610
+2026-10-22T00:15:12.2724791Z Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+2026-10-22T00:15:12.2725420Z Build Date: 2026-10-14T17:06:54Z
+2026-10-22T00:15:12.2725987Z Worker ID: {ae956b3a-cb0e-47ee-8166-cf0ed4a00b31}
+2026-10-22T00:15:12.2726927Z Region: westus3
+2026-10-22T00:15:12.2727394Z Cloud: Azure
+2026-10-22T00:15:12.2727863Z ##[endgroup]
+2026-10-22T00:15:12.2729279Z ##[group]Operating System
+2026-10-22T00:15:12.2729816Z Ubuntu
+2026-10-22T00:15:12.2730328Z 24.04.5
+2026-10-22T00:15:12.2730767Z LTS
+2026-10-22T00:15:12.2731220Z ##[endgroup]
+2026-10-22T00:15:12.2731748Z ##[group]Runner Image
+2026-10-22T00:15:12.2732261Z Image: ubuntu-24.04
+2026-10-22T00:15:12.2732766Z Version: 20261018.339.1
+2026-10-22T00:15:12.2733839Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261018.339/images/ubuntu/Ubuntu2404-Readme.md
+2026-10-22T00:15:12.2735151Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261018.339
+2026-10-22T00:15:12.2735950Z ##[endgroup]
+2026-10-22T00:15:12.2736909Z ##[group]GITHUB_TOKEN Permissions
+2026-10-22T00:15:12.2738438Z Contents: read
+2026-10-22T00:15:12.2739135Z Metadata: read
+2026-10-22T00:15:12.2739627Z ##[endgroup]
+2026-10-22T00:15:12.2741583Z Secret source: Actions
+2026-10-22T00:15:12.2742423Z Cache mode: write
+2026-10-22T00:15:12.2743023Z Prepare workflow directory
+2026-10-22T00:15:12.3050860Z Prepare all required actions
+2026-10-22T00:15:12.3104489Z Getting action download info
+2026-10-22T00:15:12.5896967Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+2026-10-22T00:15:12.6737140Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+2026-10-22T00:15:12.7758041Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-22T00:15:13.0257849Z Complete job name: logistics-services
+2026-10-22T00:15:13.0896200Z ##[group]Run actions/checkout@v4
+2026-10-22T00:15:13.0896929Z with:
+2026-10-22T00:15:13.0897428Z   repository: LucLeMoenic/Advanced-Software-Development-Project
+2026-10-22T00:15:13.0900947Z   token: ***
+2026-10-22T00:15:13.0901327Z   ssh-strict: true
+2026-10-22T00:15:13.0901714Z   ssh-user: git
+2026-10-22T00:15:13.0902103Z   persist-credentials: true
+2026-10-22T00:15:13.0902646Z   clean: true
+2026-10-22T00:15:13.0903037Z   sparse-checkout-cone-mode: true
+2026-10-22T00:15:13.0903479Z   fetch-depth: 1
+2026-10-22T00:15:13.0903851Z   fetch-tags: false
+2026-10-22T00:15:13.0904247Z   show-progress: true
+2026-10-22T00:15:13.0904628Z   lfs: false
+2026-10-22T00:15:13.0904997Z   submodules: false
+2026-10-22T00:15:13.0905396Z   set-safe-directory: true
+2026-10-22T00:15:13.0905837Z   allow-unsafe-pr-checkout: false
+2026-10-22T00:15:13.0906509Z env:
+2026-10-22T00:15:13.0906858Z   MCP_ENABLED: false
+2026-10-22T00:15:13.0907277Z   RAG_ENABLED: false
+2026-10-22T00:15:13.0907647Z ##[endgroup]
+2026-10-22T00:15:13.1741881Z Syncing repository: LucLeMoenic/Advanced-Software-Development-Project
+2026-10-22T00:15:13.1743937Z ##[group]Getting Git version info
+2026-10-22T00:15:13.1744902Z Working directory is '/home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project'
+2026-10-22T00:15:13.1746270Z [command]/usr/bin/git version
+2026-10-22T00:15:13.1801849Z git version 2.55.0
+2026-10-22T00:15:13.1820190Z ##[endgroup]
+2026-10-22T00:15:13.1831155Z Temporarily overriding HOME='/home/runner/work/_temp/65d97084-c213-475d-b018-096bbcfe88b7' before making global git config changes
+2026-10-22T00:15:13.1833131Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-22T00:15:13.1835570Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:13.1886720Z Deleting the contents of '/home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project'
+2026-10-22T00:15:13.1890991Z ##[group]Initializing the repository
+2026-10-22T00:15:13.1894874Z [command]/usr/bin/git init /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:13.1990680Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-22T00:15:13.1992330Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-22T00:15:13.1995767Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-22T00:15:13.1996792Z hint: call:
+2026-10-22T00:15:13.1997346Z hint:
+2026-10-22T00:15:13.1998088Z hint: 	git config --global init.defaultBranch <name>
+2026-10-22T00:15:13.1999101Z hint:
+2026-10-22T00:15:13.1999902Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-22T00:15:13.2001178Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-22T00:15:13.2002267Z hint:
+2026-10-22T00:15:13.2002871Z hint: 	git branch -m <name>
+2026-10-22T00:15:13.2003516Z hint:
+2026-10-22T00:15:13.2004380Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-22T00:15:13.2006312Z Initialized empty Git repository in /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/.git/
+2026-10-22T00:15:13.2010953Z [command]/usr/bin/git remote add origin https://github.com/LucLeMoenic/Advanced-Software-Development-Project
+2026-10-22T00:15:13.2055518Z ##[endgroup]
+2026-10-22T00:15:13.2056545Z ##[group]Disabling automatic garbage collection
+2026-10-22T00:15:13.2060517Z [command]/usr/bin/git config --local gc.auto 0
+2026-10-22T00:15:13.2089375Z ##[endgroup]
+2026-10-22T00:15:13.2090708Z ##[group]Setting up auth
+2026-10-22T00:15:13.2094608Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-22T00:15:13.2124333Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-22T00:15:13.2469110Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-22T00:15:13.2519265Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-22T00:15:13.2736740Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-22T00:15:13.2772814Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-22T00:15:13.2973721Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-22T00:15:13.3015818Z ##[endgroup]
+2026-10-22T00:15:13.3023090Z ##[group]Fetching the repository
+2026-10-22T00:15:13.3024487Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +e523738c19c76821eb3e5ce576e430c3451007d1:refs/remotes/origin/main
+2026-10-22T00:15:14.4988073Z From https://github.com/LucLeMoenic/Advanced-Software-Development-Project
+2026-10-22T00:15:14.4990515Z  * [new ref]         e523738c19c76821eb3e5ce576e430c3451007d1 -> origin/main
+2026-10-22T00:15:14.4994781Z ##[endgroup]
+2026-10-22T00:15:14.4996338Z ##[group]Determining the checkout info
+2026-10-22T00:15:14.4997917Z ##[endgroup]
+2026-10-22T00:15:14.4999878Z [command]/usr/bin/git sparse-checkout disable
+2026-10-22T00:15:14.5102562Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-22T00:15:14.5134748Z ##[group]Checking out the ref
+2026-10-22T00:15:14.5137740Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2026-10-22T00:15:14.5983850Z Switched to a new branch 'main'
+2026-10-22T00:15:14.5988268Z branch 'main' set up to track 'origin/main'.
+2026-10-22T00:15:14.5997780Z ##[endgroup]
+2026-10-22T00:15:14.6044839Z [command]/usr/bin/git log -1 --format=%H
+2026-10-22T00:15:14.6073117Z e523738c19c76821eb3e5ce576e430c3451007d1
+2026-10-22T00:15:14.6442234Z ##[group]Run actions/setup-python@v5
+2026-10-22T00:15:14.6443182Z with:
+2026-10-22T00:15:14.6443882Z   python-version: 3.11
+2026-10-22T00:15:14.6444665Z   cache: pip
+2026-10-22T00:15:14.6446971Z   cache-dependency-path: student-5/database/requirements.txt
+student-5/backend/requirements.txt
+ai-services/mcp-server/requirements.txt
+ai-services/rag-server/requirements.txt
+
+2026-10-22T00:15:14.6449703Z   check-latest: false
+2026-10-22T00:15:14.6456963Z   token: ***
+2026-10-22T00:15:14.6457709Z   update-environment: true
+2026-10-22T00:15:14.6458580Z   allow-prereleases: false
+2026-10-22T00:15:14.6459499Z   freethreaded: false
+2026-10-22T00:15:14.6460251Z env:
+2026-10-22T00:15:14.6460921Z   MCP_ENABLED: false
+2026-10-22T00:15:14.6461676Z   RAG_ENABLED: false
+2026-10-22T00:15:14.6462433Z ##[endgroup]
+2026-10-22T00:15:14.7548015Z ##[group]Installed versions
+2026-10-22T00:15:14.7625448Z (node:2130) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-22T00:15:14.7629073Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-22T00:15:14.7631169Z Successfully set up CPython (3.11.17)
+2026-10-22T00:15:14.7633306Z ##[endgroup]
+2026-10-22T00:15:14.7934123Z [command]/opt/hostedtoolcache/Python/3.11.17/x64/bin/pip cache dir
+2026-10-22T00:15:15.0346222Z /home/runner/.cache/pip
+2026-10-22T00:15:15.2506287Z Cache hit for: setup-python-Linux-x64-24.04-Ubuntu-python-3.11.17-pip-0b2bf4f5a01c64c7c31c731b150698b914df93c842959e1764af34970397337a
+2026-10-22T00:15:15.2592409Z (node:2130) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-22T00:15:16.3446528Z Received 20947103 of 20947103 (100.0%), 23.1 MBs/sec
+2026-10-22T00:15:16.3446972Z Cache Size: ~20 MB (20947103 B)
+2026-10-22T00:15:16.3467493Z [command]/usr/bin/tar -xf /home/runner/work/_temp/bebecca8-68e9-4a97-ad83-421ebce51078/cache.tzst -P -C /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project --use-compress-program unzstd
+2026-10-22T00:15:16.4011894Z Cache restored successfully
+2026-10-22T00:15:16.4024000Z Cache restored from key: setup-python-Linux-x64-24.04-Ubuntu-python-3.11.17-pip-0b2bf4f5a01c64c7c31c731b150698b914df93c842959e1764af34970397337a
+2026-10-22T00:15:16.4201526Z ##[group]Run pwsh -NoProfile -File scripts/test/student-5.ps1
+2026-10-22T00:15:16.4201953Z pwsh -NoProfile -File scripts/test/student-5.ps1
+2026-10-22T00:15:16.4352198Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:16.4352427Z env:
+2026-10-22T00:15:16.4352604Z   MCP_ENABLED: false
+2026-10-22T00:15:16.4352795Z   RAG_ENABLED: false
+2026-10-22T00:15:16.4353050Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:16.4353413Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:16.4353763Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:16.4354077Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:16.4354397Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:16.4354710Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:16.4354995Z ##[endgroup]
+2026-10-22T00:15:17.8112632Z Collecting flask<4.0,>=3.0 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.8125089Z   Using cached flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+2026-10-22T00:15:17.8299046Z Collecting pytest<9.0,>=8.0 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 2))
+2026-10-22T00:15:17.8310775Z   Using cached pytest-8.4.2-py3-none-any.whl.metadata (7.7 kB)
+2026-10-22T00:15:17.8386303Z Collecting blinker>=1.9.0 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.8397534Z   Using cached blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+2026-10-22T00:15:17.8510947Z Collecting click>=8.1.3 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.8527322Z   Using cached click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+2026-10-22T00:15:17.8593733Z Collecting itsdangerous>=2.2.0 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.8604256Z   Using cached itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-22T00:15:17.8685433Z Collecting jinja2>=3.1.2 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.8695953Z   Using cached jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-10-22T00:15:17.9208600Z Collecting markupsafe>=2.1.1 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.9220872Z   Using cached markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+2026-10-22T00:15:17.9331095Z Collecting werkzeug>=3.1.0 (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 1))
+2026-10-22T00:15:17.9342008Z   Using cached werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+2026-10-22T00:15:17.9412172Z Collecting iniconfig>=1 (from pytest<9.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 2))
+2026-10-22T00:15:17.9422138Z   Using cached iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-10-22T00:15:17.9511520Z Collecting packaging>=20 (from pytest<9.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 2))
+2026-10-22T00:15:17.9521425Z   Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+2026-10-22T00:15:17.9602848Z Collecting pluggy<2,>=1.5 (from pytest<9.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 2))
+2026-10-22T00:15:17.9615212Z   Using cached pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-10-22T00:15:17.9725907Z Collecting pygments>=2.7.2 (from pytest<9.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/database/requirements.txt (line 2))
+2026-10-22T00:15:17.9736794Z   Using cached pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-10-22T00:15:17.9791713Z Using cached flask-3.1.3-py3-none-any.whl (103 kB)
+2026-10-22T00:15:17.9806254Z Using cached pytest-8.4.2-py3-none-any.whl (365 kB)
+2026-10-22T00:15:17.9823083Z Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-10-22T00:15:17.9840153Z Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-10-22T00:15:17.9853898Z Using cached click-8.5.0-py3-none-any.whl (125 kB)
+2026-10-22T00:15:17.9867907Z Using cached iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-10-22T00:15:17.9883915Z Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-10-22T00:15:17.9898455Z Using cached jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-10-22T00:15:17.9913986Z Using cached markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+2026-10-22T00:15:17.9926887Z Using cached packaging-26.3-py3-none-any.whl (129 kB)
+2026-10-22T00:15:17.9944303Z Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-10-22T00:15:17.9967170Z Using cached werkzeug-3.1.9-py3-none-any.whl (228 kB)
+2026-10-22T00:15:18.0707185Z Installing collected packages: pygments, pluggy, packaging, markupsafe, itsdangerous, iniconfig, click, blinker, werkzeug, pytest, jinja2, flask
+2026-10-22T00:15:19.1100032Z 
+2026-10-22T00:15:19.1117576Z Successfully installed blinker-1.9.0 click-8.5.0 flask-3.1.3 iniconfig-2.3.1 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.4 packaging-26.3 pluggy-1.7.0 pygments-2.21.0 pytest-8.4.2 werkzeug-3.1.9
+2026-10-22T00:15:19.3855861Z Requirement already satisfied: flask<4.0,>=3.0 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (3.1.3)
+2026-10-22T00:15:19.4382429Z Collecting requests<3.0,>=2.31 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 2))
+2026-10-22T00:15:19.4394909Z   Using cached requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-10-22T00:15:19.4413562Z Requirement already satisfied: pytest<10.0,>=8.0 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 3)) (8.4.2)
+2026-10-22T00:15:19.4631963Z Collecting responses<1.0,>=0.25 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 4))
+2026-10-22T00:15:19.4643765Z   Using cached responses-0.26.3-py3-none-any.whl.metadata (48 kB)
+2026-10-22T00:15:19.4769083Z Collecting mcp==2.2.0 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.4780271Z   Using cached mcp-2.2.0-py3-none-any.whl.metadata (7.8 kB)
+2026-10-22T00:15:19.4898021Z Collecting anyio<5.0,>=4.5 (from -r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 6))
+2026-10-22T00:15:19.4909953Z   Using cached anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+2026-10-22T00:15:19.5012158Z Collecting httpx2>=2.5.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.5607253Z   Downloading httpx2-2.16.0-py3-none-any.whl.metadata (10 kB)
+2026-10-22T00:15:19.5766243Z Collecting jsonschema>=4.20.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.5777079Z   Using cached jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+2026-10-22T00:15:19.5859233Z Collecting mcp-types==2.2.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.5869419Z   Using cached mcp_types-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-22T00:15:19.6066274Z Collecting opentelemetry-api>=1.28.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.6076852Z   Using cached opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+2026-10-22T00:15:19.6710630Z Collecting pydantic>=2.12.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.6724521Z   Using cached pydantic-2.14.1-py3-none-any.whl.metadata (133 kB)
+2026-10-22T00:15:19.6853985Z Collecting pyjwt>=2.10.1 (from pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.6864704Z   Using cached pyjwt-2.15.1-py3-none-any.whl.metadata (3.5 kB)
+2026-10-22T00:15:19.6949510Z Collecting python-multipart>=0.0.9 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.6959775Z   Using cached python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+2026-10-22T00:15:19.7068077Z Collecting sse-starlette>=3.0.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.7078330Z   Using cached sse_starlette-3.5.0-py3-none-any.whl.metadata (15 kB)
+2026-10-22T00:15:19.7296658Z Collecting starlette>=0.27 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.7396932Z   Downloading starlette-1.9.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-22T00:15:19.7527462Z Collecting typing-extensions>=4.13.0 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.7538592Z   Using cached typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-10-22T00:15:19.7606509Z Collecting typing-inspection>=0.4.1 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.7616627Z   Using cached typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+2026-10-22T00:15:19.7753905Z Collecting uvicorn>=0.31.1 (from mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.7764210Z   Using cached uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-22T00:15:19.7789350Z Requirement already satisfied: blinker>=1.9.0 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (1.9.0)
+2026-10-22T00:15:19.7792489Z Requirement already satisfied: click>=8.1.3 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (8.5.0)
+2026-10-22T00:15:19.7795642Z Requirement already satisfied: itsdangerous>=2.2.0 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (2.2.0)
+2026-10-22T00:15:19.7798234Z Requirement already satisfied: jinja2>=3.1.2 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (3.1.6)
+2026-10-22T00:15:19.7801020Z Requirement already satisfied: markupsafe>=2.1.1 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (3.0.4)
+2026-10-22T00:15:19.7803620Z Requirement already satisfied: werkzeug>=3.1.0 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from flask<4.0,>=3.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 1)) (3.1.9)
+2026-10-22T00:15:19.8590174Z Collecting charset_normalizer<4,>=2 (from requests<3.0,>=2.31->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 2))
+2026-10-22T00:15:19.8602544Z   Using cached charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+2026-10-22T00:15:19.8721080Z Collecting idna<4,>=2.5 (from requests<3.0,>=2.31->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 2))
+2026-10-22T00:15:19.8730970Z   Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-10-22T00:15:19.8861046Z Collecting urllib3<3,>=1.26 (from requests<3.0,>=2.31->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 2))
+2026-10-22T00:15:19.8871208Z   Using cached urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-10-22T00:15:19.8985445Z Collecting certifi>=2023.5.7 (from requests<3.0,>=2.31->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 2))
+2026-10-22T00:15:19.9086294Z   Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+2026-10-22T00:15:19.9127422Z Requirement already satisfied: iniconfig>=1 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from pytest<10.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 3)) (2.3.1)
+2026-10-22T00:15:19.9130160Z Requirement already satisfied: packaging>=20 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from pytest<10.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 3)) (26.3)
+2026-10-22T00:15:19.9133320Z Requirement already satisfied: pluggy<2,>=1.5 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from pytest<10.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 3)) (1.7.0)
+2026-10-22T00:15:19.9136087Z Requirement already satisfied: pygments>=2.7.2 in /opt/hostedtoolcache/Python/3.11.17/x64/lib/python3.11/site-packages (from pytest<10.0,>=8.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 3)) (2.21.0)
+2026-10-22T00:15:19.9378805Z Collecting pyyaml (from responses<1.0,>=0.25->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 4))
+2026-10-22T00:15:19.9389929Z   Using cached pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+2026-10-22T00:15:19.9523141Z Collecting httpcore2==2.16.0 (from httpx2>=2.5.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.9623002Z   Downloading httpcore2-2.16.0-py3-none-any.whl.metadata (27 kB)
+2026-10-22T00:15:19.9761673Z Collecting truststore>=0.10 (from httpx2>=2.5.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.9771671Z   Using cached truststore-0.10.5-py3-none-any.whl.metadata (4.5 kB)
+2026-10-22T00:15:19.9847941Z Collecting h11>=0.16 (from httpcore2==2.16.0->httpx2>=2.5.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.9858282Z   Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-10-22T00:15:19.9962365Z Collecting attrs>=22.2.0 (from jsonschema>=4.20.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:19.9972643Z   Using cached attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-10-22T00:15:20.0052363Z Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=4.20.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.0062644Z   Using cached jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+2026-10-22T00:15:20.0185243Z Collecting referencing>=0.28.4 (from jsonschema>=4.20.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.0195480Z   Using cached referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+2026-10-22T00:15:20.2092111Z Collecting rpds-py>=0.25.0 (from jsonschema>=4.20.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.2109868Z   Using cached rpds_py-2026.9.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+2026-10-22T00:15:20.2217873Z Collecting annotated-types>=0.6.0 (from pydantic>=2.12.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.2227657Z   Using cached annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+2026-10-22T00:15:20.7061007Z Collecting pydantic-core==2.50.1 (from pydantic>=2.12.0->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.7075586Z   Using cached pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
+2026-10-22T00:15:20.8248696Z Collecting cryptography>=3.4.0 (from pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.8260583Z   Using cached cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.4 kB)
+2026-10-22T00:15:20.9005458Z Collecting cffi>=2.0.0 (from cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.9016997Z   Using cached cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+2026-10-22T00:15:20.9097285Z Collecting pycparser (from cffi>=2.0.0->cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/backend/requirements.txt (line 5))
+2026-10-22T00:15:20.9107759Z   Using cached pycparser-3.11-py3-none-any.whl.metadata (8.2 kB)
+2026-10-22T00:15:20.9237547Z Using cached mcp-2.2.0-py3-none-any.whl (365 kB)
+2026-10-22T00:15:20.9249264Z Using cached mcp_types-2.2.0-py3-none-any.whl (69 kB)
+2026-10-22T00:15:20.9260131Z Using cached requests-2.34.2-py3-none-any.whl (73 kB)
+2026-10-22T00:15:20.9271125Z Using cached responses-0.26.3-py3-none-any.whl (36 kB)
+2026-10-22T00:15:20.9281968Z Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+2026-10-22T00:15:20.9293556Z Using cached charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+2026-10-22T00:15:20.9304852Z Using cached idna-3.20-py3-none-any.whl (69 kB)
+2026-10-22T00:15:20.9315790Z Using cached urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-10-22T00:15:20.9475957Z Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+2026-10-22T00:15:20.9707487Z Downloading httpx2-2.16.0-py3-none-any.whl (97 kB)
+2026-10-22T00:15:20.9839478Z Downloading httpcore2-2.16.0-py3-none-any.whl (85 kB)
+2026-10-22T00:15:20.9871880Z Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+2026-10-22T00:15:20.9882962Z Using cached jsonschema-4.26.0-py3-none-any.whl (90 kB)
+2026-10-22T00:15:20.9893929Z Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-10-22T00:15:20.9904944Z Using cached jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+2026-10-22T00:15:20.9915781Z Using cached opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+2026-10-22T00:15:20.9926709Z Using cached pydantic-2.14.1-py3-none-any.whl (488 kB)
+2026-10-22T00:15:20.9939688Z Using cached pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+2026-10-22T00:15:20.9956465Z Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+2026-10-22T00:15:20.9967154Z Using cached pyjwt-2.15.1-py3-none-any.whl (33 kB)
+2026-10-22T00:15:20.9978187Z Using cached cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl (4.8 MB)
+2026-10-22T00:15:21.0004214Z Using cached cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (217 kB)
+2026-10-22T00:15:21.0015553Z Using cached python_multipart-0.0.32-py3-none-any.whl (30 kB)
+2026-10-22T00:15:21.0026525Z Using cached referencing-0.37.0-py3-none-any.whl (26 kB)
+2026-10-22T00:15:21.0037609Z Using cached rpds_py-2026.9.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (375 kB)
+2026-10-22T00:15:21.0049449Z Using cached sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+2026-10-22T00:15:21.0154035Z Downloading starlette-1.9.0-py3-none-any.whl (80 kB)
+2026-10-22T00:15:21.0189457Z Using cached truststore-0.10.5-py3-none-any.whl (19 kB)
+2026-10-22T00:15:21.0200192Z Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-10-22T00:15:21.0210970Z Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+2026-10-22T00:15:21.0221837Z Using cached uvicorn-0.54.0-py3-none-any.whl (87 kB)
+2026-10-22T00:15:21.0232808Z Using cached pycparser-3.11-py3-none-any.whl (51 kB)
+2026-10-22T00:15:21.0244251Z Using cached pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+2026-10-22T00:15:21.1241011Z Installing collected packages: urllib3, typing-extensions, truststore, rpds-py, pyyaml, python-multipart, pyjwt, pycparser, idna, h11, charset_normalizer, certifi, attrs, annotated-types, uvicorn, typing-inspection, requests, referencing, pydantic-core, opentelemetry-api, httpcore2, cffi, anyio, starlette, responses, pydantic, jsonschema-specifications, httpx2, cryptography, sse-starlette, mcp-types, jsonschema, mcp
+2026-10-22T00:15:22.4799976Z 
+2026-10-22T00:15:22.4817915Z Successfully installed annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 certifi-2026.10.19 cffi-2.1.1 charset_normalizer-3.5.2 cryptography-50.0.2 h11-0.16.0 httpcore2-2.16.0 httpx2-2.16.0 idna-3.20 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 mcp-2.2.0 mcp-types-2.2.0 opentelemetry-api-1.45.1 pycparser-3.11 pydantic-2.14.1 pydantic-core-2.50.1 pyjwt-2.15.1 python-multipart-0.0.32 pyyaml-6.0.3 referencing-0.37.0 requests-2.34.2 responses-0.26.3 rpds-py-2026.9.1 sse-starlette-3.5.0 starlette-1.9.0 truststore-0.10.5 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-2.8.0 uvicorn-0.54.0
+2026-10-22T00:15:23.0946242Z ============================= test session starts ==============================
+2026-10-22T00:15:23.0946831Z platform linux -- Python 3.11.17, pytest-8.4.2, pluggy-1.7.0
+2026-10-22T00:15:23.0947590Z rootdir: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:23.0948299Z configfile: pyproject.toml
+2026-10-22T00:15:23.0948640Z plugins: anyio-4.15.1
+2026-10-22T00:15:23.0949122Z collected 26 items
+2026-10-22T00:15:23.0949293Z 
+2026-10-22T00:15:23.5674176Z tests/test_database_api.py ..........................                    [100%]
+2026-10-22T00:15:23.5674606Z 
+2026-10-22T00:15:23.5674806Z ============================== 26 passed in 0.49s ==============================
+2026-10-22T00:15:24.5863415Z ============================= test session starts ==============================
+2026-10-22T00:15:24.5863986Z platform linux -- Python 3.11.17, pytest-8.4.2, pluggy-1.7.0
+2026-10-22T00:15:24.5864479Z rootdir: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:24.5864908Z configfile: pyproject.toml
+2026-10-22T00:15:24.5865124Z plugins: anyio-4.15.1
+2026-10-22T00:15:24.5865326Z collected 199 items
+2026-10-22T00:15:24.5865440Z 
+2026-10-22T00:15:24.8794753Z tests/test_advisory.py .......................                           [ 11%]
+2026-10-22T00:15:25.2094221Z tests/test_backend_api.py ..............................                 [ 26%]
+2026-10-22T00:15:25.3365568Z tests/test_endpoints_cicd.py .............                               [ 33%]
+2026-10-22T00:15:25.8700078Z tests/test_integrations.py ............................................. [ 55%]
+2026-10-22T00:15:25.9953164Z ............                                                             [ 61%]
+2026-10-22T00:15:26.5567770Z tests/test_readiness.py ................................................ [ 85%]
+2026-10-22T00:15:26.6953979Z ........                                                                 [ 89%]
+2026-10-22T00:15:27.1096117Z tests/test_ui_fragments.py ....................                          [100%]
+2026-10-22T00:15:27.1096548Z 
+2026-10-22T00:15:27.1096734Z ============================= 199 passed in 2.58s ==============================
+2026-10-22T00:15:30.0797639Z ============================= test session starts ==============================
+2026-10-22T00:15:30.0798253Z platform linux -- Python 3.11.17, pytest-9.0.3, pluggy-1.7.0
+2026-10-22T00:15:30.0799260Z rootdir: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:30.0799960Z configfile: pyproject.toml
+2026-10-22T00:15:30.0800262Z plugins: anyio-4.15.1
+2026-10-22T00:15:30.0800534Z collected 34 items
+2026-10-22T00:15:30.0800723Z 
+2026-10-22T00:15:30.4334281Z tests/test_logistics_tools.py ..................................         [100%]
+2026-10-22T00:15:30.4334716Z 
+2026-10-22T00:15:30.4334898Z ============================== 34 passed in 0.83s ==============================
+2026-10-22T00:15:30.6975678Z ============================= test session starts ==============================
+2026-10-22T00:15:30.6976087Z platform linux -- Python 3.11.17, pytest-9.0.3, pluggy-1.7.0
+2026-10-22T00:15:30.6976568Z rootdir: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:30.6977253Z configfile: pyproject.toml
+2026-10-22T00:15:30.6977466Z plugins: anyio-4.15.1
+2026-10-22T00:15:30.6977648Z collected 17 items
+2026-10-22T00:15:30.6977755Z 
+2026-10-22T00:15:30.7302779Z tests/test_student5_retrieval.py .................                       [100%]
+2026-10-22T00:15:30.7303083Z 
+2026-10-22T00:15:30.7303217Z ============================== 17 passed in 0.03s ==============================
+2026-10-22T00:15:30.8021352Z ##[group]Run python -m pytest student-5/backend/tests/test_endpoints_cicd.py -v --junitxml=student-5/endpoint-tests-junit.xml
+2026-10-22T00:15:30.8022090Z python -m pytest student-5/backend/tests/test_endpoints_cicd.py -v --junitxml=student-5/endpoint-tests-junit.xml
+2026-10-22T00:15:30.8069673Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:30.8069886Z env:
+2026-10-22T00:15:30.8070058Z   MCP_ENABLED: false
+2026-10-22T00:15:30.8070255Z   RAG_ENABLED: false
+2026-10-22T00:15:30.8070496Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:30.8070841Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:30.8071179Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:30.8071488Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:30.8071789Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:30.8072136Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:30.8072551Z   AI_ENABLED: false
+2026-10-22T00:15:30.8072734Z   MULTI_AGENT_ENABLED: false
+2026-10-22T00:15:30.8072930Z ##[endgroup]
+2026-10-22T00:15:31.6142522Z ============================= test session starts ==============================
+2026-10-22T00:15:31.6143281Z platform linux -- Python 3.11.17, pytest-9.0.3, pluggy-1.7.0 -- /opt/hostedtoolcache/Python/3.11.17/x64/bin/python
+2026-10-22T00:15:31.6143963Z cachedir: .pytest_cache
+2026-10-22T00:15:31.6144620Z rootdir: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:15:31.6145320Z configfile: pyproject.toml
+2026-10-22T00:15:31.6145651Z plugins: anyio-4.15.1
+2026-10-22T00:15:31.6335014Z collecting ... collected 13 items
+2026-10-22T00:15:31.6335277Z 
+2026-10-22T00:15:31.6503357Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_201_with_the_stored_row PASSED [  7%]
+2026-10-22T00:15:31.6608467Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[empty-body] PASSED [ 15%]
+2026-10-22T00:15:31.6705672Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[missing-visa-requirement] PASSED [ 23%]
+2026-10-22T00:15:31.6804610Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[blank-country] PASSED [ 30%]
+2026-10-22T00:15:31.6901283Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_with_non_json_body_relays_database_400 PASSED [ 38%]
+2026-10-22T00:15:31.6999311Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_503_when_database_is_down PASSED [ 46%]
+2026-10-22T00:15:31.7110569Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_forwards_only_supplied_fields_and_returns_200 PASSED [ 53%]
+2026-10-22T00:15:31.7207334Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement] PASSED [ 61%]
+2026-10-22T00:15:31.7303982Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[non-string-country] PASSED [ 69%]
+2026-10-22T00:15:31.7399234Z student-5/backend/tests/test_endpoints_cicd.py::test_update_unknown_destination_relays_database_404 PASSED [ 76%]
+2026-10-22T00:15:31.7489559Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_with_non_integer_id_is_404_without_database_call PASSED [ 84%]
+2026-10-22T00:15:31.7596784Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[connection-refused] PASSED [ 92%]
+2026-10-22T00:15:31.8795345Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[read-timeout] PASSED [100%]
+2026-10-22T00:15:31.8796046Z 
+2026-10-22T00:15:31.8797428Z - generated xml file: /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project/student-5/endpoint-tests-junit.xml -
+2026-10-22T00:15:31.8798474Z ============================== 13 passed in 0.16s ==============================
+2026-10-22T00:15:32.0459993Z ##[group]Run python scripts/test/junit_summary.py student-5/endpoint-tests-junit.xml "Student 5 post-commit endpoint tests (POST and PUT /api/destinations)"
+2026-10-22T00:15:32.0460838Z python scripts/test/junit_summary.py student-5/endpoint-tests-junit.xml "Student 5 post-commit endpoint tests (POST and PUT /api/destinations)"
+2026-10-22T00:15:32.0506973Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:32.0507176Z env:
+2026-10-22T00:15:32.0507336Z   MCP_ENABLED: false
+2026-10-22T00:15:32.0507528Z   RAG_ENABLED: false
+2026-10-22T00:15:32.0507762Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0508106Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:32.0508443Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0509059Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0509386Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0509722Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:32.0509979Z ##[endgroup]
+2026-10-22T00:15:32.0731303Z ### Student 5 post-commit endpoint tests (POST and PUT /api/destinations)
+2026-10-22T00:15:32.0731848Z 
+2026-10-22T00:15:32.0732044Z | Test | Result |
+2026-10-22T00:15:32.0732326Z |---|---|
+2026-10-22T00:15:32.0732921Z | `test_endpoints_cicd::test_create_destination_returns_201_with_the_stored_row` | pass |
+2026-10-22T00:15:32.0733832Z | `test_endpoints_cicd::test_create_destination_relays_database_400_for_invalid_input[empty-body]` | pass |
+2026-10-22T00:15:32.0734886Z | `test_endpoints_cicd::test_create_destination_relays_database_400_for_invalid_input[missing-visa-requirement]` | pass |
+2026-10-22T00:15:32.0735890Z | `test_endpoints_cicd::test_create_destination_relays_database_400_for_invalid_input[blank-country]` | pass |
+2026-10-22T00:15:32.0736769Z | `test_endpoints_cicd::test_create_destination_with_non_json_body_relays_database_400` | pass |
+2026-10-22T00:15:32.0737615Z | `test_endpoints_cicd::test_create_destination_returns_503_when_database_is_down` | pass |
+2026-10-22T00:15:32.0738497Z | `test_endpoints_cicd::test_update_destination_forwards_only_supplied_fields_and_returns_200` | pass |
+2026-10-22T00:15:32.0739675Z | `test_endpoints_cicd::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement]` | pass |
+2026-10-22T00:15:32.0740742Z | `test_endpoints_cicd::test_update_destination_relays_database_400_for_invalid_input[non-string-country]` | pass |
+2026-10-22T00:15:32.0741676Z | `test_endpoints_cicd::test_update_unknown_destination_relays_database_404` | pass |
+2026-10-22T00:15:32.0742513Z | `test_endpoints_cicd::test_update_destination_with_non_integer_id_is_404_without_database_call` | pass |
+2026-10-22T00:15:32.0743395Z | `test_endpoints_cicd::test_update_destination_returns_503_when_database_is_down[connection-refused]` | pass |
+2026-10-22T00:15:32.0744368Z | `test_endpoints_cicd::test_update_destination_returns_503_when_database_is_down[read-timeout]` | pass |
+2026-10-22T00:15:32.0744897Z 
+2026-10-22T00:15:32.0745017Z **13 of 13 passed**
+2026-10-22T00:15:32.0745196Z 
+2026-10-22T00:15:32.0823216Z ##[group]Run actions/upload-artifact@v4
+2026-10-22T00:15:32.0823445Z with:
+2026-10-22T00:15:32.0823626Z   name: student-5-endpoint-test-results
+2026-10-22T00:15:32.0823862Z   path: student-5/endpoint-tests-junit.xml
+2026-10-22T00:15:32.0824100Z   if-no-files-found: warn
+2026-10-22T00:15:32.0824296Z   compression-level: 6
+2026-10-22T00:15:32.0824475Z   overwrite: false
+2026-10-22T00:15:32.0824652Z   include-hidden-files: false
+2026-10-22T00:15:32.0824841Z env:
+2026-10-22T00:15:32.0824999Z   MCP_ENABLED: false
+2026-10-22T00:15:32.0825180Z   RAG_ENABLED: false
+2026-10-22T00:15:32.0825398Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0825745Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:32.0826083Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0826386Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0826703Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:32.0827001Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:32.0827255Z ##[endgroup]
+2026-10-22T00:15:32.2118708Z (node:2308) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-22T00:15:32.2119841Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-22T00:15:32.2186274Z With the provided path, there will be 1 file uploaded
+2026-10-22T00:15:32.2187533Z Artifact name is valid!
+2026-10-22T00:15:32.2188009Z Root directory input is valid!
+2026-10-22T00:15:32.5371488Z Beginning upload of artifact content to blob storage
+2026-10-22T00:15:32.5505551Z (node:2308) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+2026-10-22T00:15:32.7490739Z Uploaded bytes 641
+2026-10-22T00:15:32.8052381Z Finished uploading artifact content to blob storage!
+2026-10-22T00:15:32.8053473Z SHA256 digest of uploaded artifact zip is d2cc635acaa2f8742e8e7a84fc433e3d5ee7d9350eccfa189e35cda63b7c2d54
+2026-10-22T00:15:32.8054587Z Finalizing artifact upload
+2026-10-22T00:15:33.2470890Z Artifact student-5-endpoint-test-results.zip successfully finalized. Artifact ID 12391554143
+2026-10-22T00:15:33.2471915Z Artifact student-5-endpoint-test-results has been successfully uploaded! Final size is 641 bytes. Artifact ID is 12391554143
+2026-10-22T00:15:33.2476701Z Artifact download URL: https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39698558980/artifacts/12391554143
+2026-10-22T00:15:33.2604948Z ##[group]Run docker compose config --quiet
+2026-10-22T00:15:33.2605235Z docker compose config --quiet
+2026-10-22T00:15:33.2651648Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:33.2651881Z env:
+2026-10-22T00:15:33.2652064Z   MCP_ENABLED: false
+2026-10-22T00:15:33.2652263Z   RAG_ENABLED: false
+2026-10-22T00:15:33.2652533Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.2652893Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:33.2653257Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.2653581Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.2653902Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.2654215Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:33.2654493Z ##[endgroup]
+2026-10-22T00:15:33.5549567Z ##[group]Run bash scripts/ci/retry-transient.sh 3 20 docker compose build student5-database student5-backend student5-frontend
+2026-10-22T00:15:33.5550278Z bash scripts/ci/retry-transient.sh 3 20 docker compose build student5-database student5-backend student5-frontend
+2026-10-22T00:15:33.5596423Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:33.5596638Z env:
+2026-10-22T00:15:33.5596808Z   MCP_ENABLED: false
+2026-10-22T00:15:33.5597002Z   RAG_ENABLED: false
+2026-10-22T00:15:33.5597239Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.5597589Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:33.5597938Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.5598240Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.5598555Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:33.5599035Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:33.5599304Z ##[endgroup]
+2026-10-22T00:15:33.9840016Z #1 [internal] load local bake definitions
+2026-10-22T00:15:34.0846523Z #1 reading from stdin 1.59kB done
+2026-10-22T00:15:34.0846886Z #1 DONE 0.0s
+2026-10-22T00:15:34.0847053Z 
+2026-10-22T00:15:34.0847228Z #2 [student5-backend internal] load build definition from Dockerfile
+2026-10-22T00:15:34.0847573Z #2 transferring dockerfile: 1.04kB done
+2026-10-22T00:15:34.2421479Z #2 DONE 0.0s
+2026-10-22T00:15:34.2421648Z 
+2026-10-22T00:15:34.2421863Z #3 [student5-frontend internal] load build definition from Dockerfile
+2026-10-22T00:15:34.2422201Z #3 transferring dockerfile: 508B done
+2026-10-22T00:15:34.2422423Z #3 DONE 0.0s
+2026-10-22T00:15:34.2422519Z 
+2026-10-22T00:15:34.2422679Z #4 [student5-database internal] load build definition from Dockerfile
+2026-10-22T00:15:34.2422975Z #4 transferring dockerfile: 790B done
+2026-10-22T00:15:34.2423183Z #4 DONE 0.0s
+2026-10-22T00:15:34.2423279Z 
+2026-10-22T00:15:34.2423496Z #5 [student5-database internal] load metadata for docker.io/library/python:3.11-slim
+2026-10-22T00:15:34.4135385Z #5 ...
+2026-10-22T00:15:34.4135564Z 
+2026-10-22T00:15:34.4135783Z #6 [auth] library/python:pull token for registry-1.docker.io
+2026-10-22T00:15:34.4136185Z #6 DONE 0.0s
+2026-10-22T00:15:34.4136340Z 
+2026-10-22T00:15:34.4136527Z #7 [auth] library/nginx:pull token for registry-1.docker.io
+2026-10-22T00:15:34.4136910Z #7 DONE 0.0s
+2026-10-22T00:15:34.5638053Z 
+2026-10-22T00:15:34.5638580Z #8 [student5-frontend internal] load metadata for docker.io/library/nginx:alpine
+2026-10-22T00:15:34.9229967Z #8 DONE 0.8s
+2026-10-22T00:15:34.9230219Z 
+2026-10-22T00:15:34.9230720Z #5 [student5-database internal] load metadata for docker.io/library/python:3.11-slim
+2026-10-22T00:15:34.9231276Z #5 DONE 0.7s
+2026-10-22T00:15:34.9231422Z 
+2026-10-22T00:15:34.9231616Z #9 [student5-database internal] load .dockerignore
+2026-10-22T00:15:34.9232052Z #9 transferring context: 2B done
+2026-10-22T00:15:34.9232271Z #9 DONE 0.0s
+2026-10-22T00:15:34.9232390Z 
+2026-10-22T00:15:34.9232507Z #10 [student5-backend internal] load .dockerignore
+2026-10-22T00:15:34.9232780Z #10 transferring context: 2B done
+2026-10-22T00:15:34.9232999Z #10 DONE 0.0s
+2026-10-22T00:15:34.9233098Z 
+2026-10-22T00:15:34.9233206Z #11 [student5-database internal] load build context
+2026-10-22T00:15:34.9233473Z #11 transferring context: 76.99kB done
+2026-10-22T00:15:34.9233684Z #11 DONE 0.0s
+2026-10-22T00:15:34.9233778Z 
+2026-10-22T00:15:34.9233878Z #12 [student5-backend internal] load build context
+2026-10-22T00:15:34.9234139Z #12 transferring context: 622.27kB 0.0s done
+2026-10-22T00:15:34.9234355Z #12 DONE 0.0s
+2026-10-22T00:15:34.9234452Z 
+2026-10-22T00:15:34.9234561Z #13 [student5-frontend internal] load .dockerignore
+2026-10-22T00:15:34.9234812Z #13 transferring context: 2B done
+2026-10-22T00:15:34.9235033Z #13 DONE 0.0s
+2026-10-22T00:15:34.9235143Z 
+2026-10-22T00:15:34.9235257Z #14 [student5-frontend internal] load build context
+2026-10-22T00:15:34.9235776Z #14 transferring context: 65.31kB done
+2026-10-22T00:15:34.9235996Z #14 DONE 0.0s
+2026-10-22T00:15:34.9236096Z 
+2026-10-22T00:15:34.9236440Z #15 [student5-database 1/7] FROM docker.io/library/python:3.11-slim@sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8
+2026-10-22T00:15:34.9237113Z #15 resolve docker.io/library/python:3.11-slim@sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8 done
+2026-10-22T00:15:34.9237675Z #15 sha256:b95327ce1439e687237841b0210677aeadd62d55a060a5f6bcb9c15bf6251dd3 1.75kB / 1.75kB done
+2026-10-22T00:15:34.9238159Z #15 sha256:b4403f3b7acf5e0700a5dd4e7ab01456d62b557a208a04f8a42d3470d93b5730 5.49kB / 5.49kB done
+2026-10-22T00:15:34.9238634Z #15 sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 0B / 29.84MB 0.1s
+2026-10-22T00:15:34.9239282Z #15 sha256:90d47cf54851a8d83f33db71f0025a8ba367c12fb24817259dd9736098cb305b 0B / 1.29MB 0.1s
+2026-10-22T00:15:34.9239789Z #15 sha256:6d9af71a343efe2a00fdfc9507db3bdf3530bf3f8cf2975eb1be235a7eb70128 14.46MB / 14.46MB 0.1s
+2026-10-22T00:15:34.9240290Z #15 sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8 10.37kB / 10.37kB done
+2026-10-22T00:15:35.0773228Z #15 sha256:b95327ce1439e687237841b0210677aeadd62d55a060a5f6bcb9c15bf6251dd3 1.75kB / 1.75kB done
+2026-10-22T00:15:35.0773798Z #15 sha256:b4403f3b7acf5e0700a5dd4e7ab01456d62b557a208a04f8a42d3470d93b5730 5.49kB / 5.49kB done
+2026-10-22T00:15:35.0853240Z #15 sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 6.29MB / 29.84MB 0.2s
+2026-10-22T00:15:35.0854558Z #15 sha256:90d47cf54851a8d83f33db71f0025a8ba367c12fb24817259dd9736098cb305b 1.29MB / 1.29MB 0.2s done
+2026-10-22T00:15:35.0855821Z #15 sha256:6d9af71a343efe2a00fdfc9507db3bdf3530bf3f8cf2975eb1be235a7eb70128 14.46MB / 14.46MB 0.2s done
+2026-10-22T00:15:35.0856604Z #15 sha256:cce12316475d7d56d605f76e1d811d0dc4e7227f2d4afd29951521264f504ff8 10.37kB / 10.37kB done
+2026-10-22T00:15:35.0857151Z #15 sha256:b0aec4a98ced1e92f1d50c37aa89c78d60e3dc6a52d61f8134afda24b185ad06 0B / 249B 0.2s
+2026-10-22T00:15:35.2226761Z #15 sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 29.84MB / 29.84MB 0.4s
+2026-10-22T00:15:35.2228052Z #15 sha256:b0aec4a98ced1e92f1d50c37aa89c78d60e3dc6a52d61f8134afda24b185ad06 249B / 249B 0.3s done
+2026-10-22T00:15:35.3246096Z #15 sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 29.84MB / 29.84MB 0.4s done
+2026-10-22T00:15:35.3246770Z #15 extracting sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034
+2026-10-22T00:15:35.4771793Z #15 sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 29.84MB / 29.84MB 0.4s done
+2026-10-22T00:15:36.2212015Z #15 extracting sha256:f2be67225471500c788ce88c597eb5ea8336e912ad1ca4815650e0281afe2034 0.8s done
+2026-10-22T00:15:36.2808097Z #15 extracting sha256:90d47cf54851a8d83f33db71f0025a8ba367c12fb24817259dd9736098cb305b
+2026-10-22T00:15:36.5245052Z #15 extracting sha256:90d47cf54851a8d83f33db71f0025a8ba367c12fb24817259dd9736098cb305b 0.1s done
+2026-10-22T00:15:37.0622238Z #15 extracting sha256:6d9af71a343efe2a00fdfc9507db3bdf3530bf3f8cf2975eb1be235a7eb70128 0.1s
+2026-10-22T00:15:37.7047003Z #15 extracting sha256:6d9af71a343efe2a00fdfc9507db3bdf3530bf3f8cf2975eb1be235a7eb70128 0.6s done
+2026-10-22T00:15:38.0004144Z #15 extracting sha256:b0aec4a98ced1e92f1d50c37aa89c78d60e3dc6a52d61f8134afda24b185ad06
+2026-10-22T00:15:38.2318160Z #15 extracting sha256:b0aec4a98ced1e92f1d50c37aa89c78d60e3dc6a52d61f8134afda24b185ad06 done
+2026-10-22T00:15:38.2319328Z #15 DONE 3.2s
+2026-10-22T00:15:38.2320788Z 
+2026-10-22T00:15:38.2321505Z #16 [student5-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d
+2026-10-22T00:15:38.2322712Z #16 resolve docker.io/library/nginx:alpine@sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d done
+2026-10-22T00:15:38.2323768Z #16 sha256:138af827713b7671ef4ee2deea73bc6f08ae265130ce350307e3e7b52cd4b51b 2.50kB / 2.50kB done
+2026-10-22T00:15:38.2325023Z #16 sha256:76090a34b858323b6ab169711adc08253b5bee7123a973dc581ed46b643bc109 12.32kB / 12.32kB done
+2026-10-22T00:15:38.2325990Z #16 sha256:892bb2152464f0c5d8972593a5f5afaf8054552580b699d95f8ff4af08c2d33d 10.33kB / 10.33kB done
+2026-10-22T00:15:38.2326984Z #16 sha256:6711e0c4f5a79e8db637a3412394f29da647e54476d67c5b211a11527568ddc5 4.42MB / 4.42MB 0.2s done
+2026-10-22T00:15:38.2327907Z #16 extracting sha256:6711e0c4f5a79e8db637a3412394f29da647e54476d67c5b211a11527568ddc5 0.1s done
+2026-10-22T00:15:38.2328952Z #16 sha256:3bf3671a4e6a18510ca49e3a4a226c2ef734a646e01e34e1ad0eff5faa01e3a0 629B / 629B 0.3s done
+2026-10-22T00:15:38.2335648Z #16 sha256:b44956913298a55652fa97af34d296339c089250911e46e1a1c0eab8a88538c7 966B / 966B 0.4s done
+2026-10-22T00:15:38.2336595Z #16 sha256:70683d58fa5c20b5b31c9998a16f6634720d3393dc62934a608754abe449fe3b 1.21kB / 1.21kB 0.4s done
+2026-10-22T00:15:38.2337542Z #16 sha256:6638b436592c96dd194db76a6b786b60b344d80ebe160e646c871d4e7eff25b5 1.40kB / 1.40kB 0.5s done
+2026-10-22T00:15:38.2338525Z #16 sha256:710ec83ca6cd71fa5636d861343b5660636728f71992fd1b68914e03c7af3ad4 405B / 405B 0.4s done
+2026-10-22T00:15:38.2339961Z #16 sha256:1fdd0614a47ec2896aea36fb280a7b5e8655614dfb56ec1a64002131791de601 20.53MB / 20.53MB 0.8s done
+2026-10-22T00:15:38.2340884Z #16 extracting sha256:3bf3671a4e6a18510ca49e3a4a226c2ef734a646e01e34e1ad0eff5faa01e3a0 done
+2026-10-22T00:15:38.2341760Z #16 extracting sha256:b44956913298a55652fa97af34d296339c089250911e46e1a1c0eab8a88538c7 done
+2026-10-22T00:15:38.2342596Z #16 extracting sha256:710ec83ca6cd71fa5636d861343b5660636728f71992fd1b68914e03c7af3ad4 done
+2026-10-22T00:15:38.2343457Z #16 extracting sha256:70683d58fa5c20b5b31c9998a16f6634720d3393dc62934a608754abe449fe3b done
+2026-10-22T00:15:38.2344306Z #16 extracting sha256:6638b436592c96dd194db76a6b786b60b344d80ebe160e646c871d4e7eff25b5 done
+2026-10-22T00:15:38.2345187Z #16 extracting sha256:1fdd0614a47ec2896aea36fb280a7b5e8655614dfb56ec1a64002131791de601 0.3s done
+2026-10-22T00:15:38.2345874Z #16 DONE 3.2s
+2026-10-22T00:15:38.2346170Z 
+2026-10-22T00:15:38.2346443Z #17 [student5-database 2/7] WORKDIR /app
+2026-10-22T00:15:38.2347135Z #17 DONE 0.0s
+2026-10-22T00:15:38.2347424Z 
+2026-10-22T00:15:38.2347834Z #18 [student5-frontend 2/4] COPY nginx.conf /etc/nginx/conf.d/default.conf
+2026-10-22T00:15:38.2348446Z #18 DONE 0.0s
+2026-10-22T00:15:38.2348736Z 
+2026-10-22T00:15:38.2349141Z #19 [student5-backend 3/7] COPY requirements.txt .
+2026-10-22T00:15:38.2349643Z #19 DONE 0.0s
+2026-10-22T00:15:38.2349920Z 
+2026-10-22T00:15:38.2350226Z #20 [student5-database 3/7] COPY requirements.txt .
+2026-10-22T00:15:38.2350724Z #20 DONE 0.0s
+2026-10-22T00:15:38.2351004Z 
+2026-10-22T00:15:38.2351384Z #21 [student5-frontend 3/4] COPY index.html /usr/share/nginx/html/index.html
+2026-10-22T00:15:38.2351979Z #21 DONE 0.0s
+2026-10-22T00:15:38.2352251Z 
+2026-10-22T00:15:38.2352628Z #22 [student5-frontend 4/4] COPY style.css /usr/share/nginx/html/style.css
+2026-10-22T00:15:38.2353227Z #22 DONE 0.0s
+2026-10-22T00:15:38.2353484Z 
+2026-10-22T00:15:38.2353779Z #23 [student5-frontend] exporting to image
+2026-10-22T00:15:38.2354284Z #23 exporting layers
+2026-10-22T00:15:39.0234293Z #23 exporting layers 0.9s done
+2026-10-22T00:15:39.1959571Z #23 writing image sha256:bb356ec1be499248d78a8b685c82e3f5978fae1658709374f3b134854a371801 done
+2026-10-22T00:15:39.1960827Z #23 naming to docker.io/library/advanced-software-development-project-student5-frontend done
+2026-10-22T00:15:39.1961530Z #23 DONE 0.9s
+2026-10-22T00:15:39.1961722Z 
+2026-10-22T00:15:39.1961963Z #24 [student5-frontend] resolving provenance for metadata file
+2026-10-22T00:15:39.1962502Z #24 DONE 0.0s
+2026-10-22T00:15:39.1962671Z 
+2026-10-22T00:15:39.1962999Z #25 [student5-database 4/7] RUN pip install --no-cache-dir -r requirements.txt
+2026-10-22T00:15:39.2410740Z #25 1.179 Collecting flask<4.0,>=3.0 (from -r requirements.txt (line 1))
+2026-10-22T00:15:39.3515495Z #25 1.195   Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+2026-10-22T00:15:39.3516573Z #25 1.239 Collecting pytest<9.0,>=8.0 (from -r requirements.txt (line 2))
+2026-10-22T00:15:39.3517226Z #25 1.242   Downloading pytest-8.4.2-py3-none-any.whl.metadata (7.7 kB)
+2026-10-22T00:15:39.3517935Z #25 1.256 Collecting blinker>=1.9.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.3518636Z #25 1.259   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+2026-10-22T00:15:39.3519454Z #25 1.276 Collecting click>=8.1.3 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.3520150Z #25 1.279   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+2026-10-22T00:15:39.3520854Z #25 1.290 Collecting itsdangerous>=2.2.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.4616690Z #25 1.293   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-22T00:15:39.4617469Z #25 1.308 Collecting jinja2>=3.1.2 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.4618175Z #25 1.311   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-10-22T00:15:39.4619076Z #25 1.356 Collecting markupsafe>=2.1.1 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.4620058Z #25 1.360   Downloading markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+2026-10-22T00:15:39.4620865Z #25 1.383 Collecting werkzeug>=3.1.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:39.4621527Z #25 1.385   Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+2026-10-22T00:15:39.5630032Z #25 1.401 Collecting iniconfig>=1 (from pytest<9.0,>=8.0->-r requirements.txt (line 2))
+2026-10-22T00:15:39.5630830Z #25 1.404   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-10-22T00:15:39.5631871Z #25 1.405 Requirement already satisfied: packaging>=20 in /usr/local/lib/python3.11/site-packages (from pytest<9.0,>=8.0->-r requirements.txt (line 2)) (26.3)
+2026-10-22T00:15:39.5632966Z #25 1.417 Collecting pluggy<2,>=1.5 (from pytest<9.0,>=8.0->-r requirements.txt (line 2))
+2026-10-22T00:15:39.5633647Z #25 1.420   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-10-22T00:15:39.5634721Z #25 1.443 Collecting pygments>=2.7.2 (from pytest<9.0,>=8.0->-r requirements.txt (line 2))
+2026-10-22T00:15:39.5635450Z #25 1.446   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-10-22T00:15:39.5636063Z #25 1.461 Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+2026-10-22T00:15:39.5636989Z #25 1.465    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 103.4/103.4 kB 36.4 MB/s eta 0:00:00
+2026-10-22T00:15:39.5637568Z #25 1.468 Downloading pytest-8.4.2-py3-none-any.whl (365 kB)
+2026-10-22T00:15:39.5638235Z #25 1.472    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 365.8/365.8 kB 174.7 MB/s eta 0:00:00
+2026-10-22T00:15:39.5638789Z #25 1.475 Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-10-22T00:15:39.5639432Z #25 1.478 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+2026-10-22T00:15:39.5640101Z #25 1.480    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.3/125.3 kB 435.9 MB/s eta 0:00:00
+2026-10-22T00:15:39.5640649Z #25 1.483 Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-10-22T00:15:39.5641221Z #25 1.486 Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-10-22T00:15:39.5641766Z #25 1.489 Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-10-22T00:15:39.5642452Z #25 1.491    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 423.2 MB/s eta 0:00:00
+2026-10-22T00:15:39.5643294Z #25 1.494 Downloading markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+2026-10-22T00:15:39.5644132Z #25 1.498 Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-10-22T00:15:39.5644656Z #25 1.501 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-10-22T00:15:39.6916751Z #25 1.506    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 357.7 MB/s eta 0:00:00
+2026-10-22T00:15:39.6917387Z #25 1.509 Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+2026-10-22T00:15:39.6918410Z #25 1.511    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 228.7/228.7 kB 497.7 MB/s eta 0:00:00
+2026-10-22T00:15:39.6919585Z #25 1.574 Installing collected packages: pygments, pluggy, markupsafe, itsdangerous, iniconfig, click, blinker, werkzeug, pytest, jinja2, flask
+2026-10-22T00:15:40.6022932Z #25 2.540 Successfully installed blinker-1.9.0 click-8.5.0 flask-3.1.3 iniconfig-2.3.1 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.4 pluggy-1.7.0 pygments-2.21.0 pytest-8.4.2 werkzeug-3.1.9
+2026-10-22T00:15:40.7085127Z #25 2.541 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+2026-10-22T00:15:40.7086644Z #25 2.617 
+2026-10-22T00:15:40.7087098Z #25 2.617 [notice] A new release of pip is available: 24.0 -> 26.2.2
+2026-10-22T00:15:40.7087789Z #25 2.617 [notice] To update, run: pip install --upgrade pip
+2026-10-22T00:15:40.8821033Z #25 DONE 2.8s
+2026-10-22T00:15:40.8821784Z 
+2026-10-22T00:15:40.8823121Z #26 [student5-backend 4/7] RUN pip install --no-cache-dir -r requirements.txt
+2026-10-22T00:15:40.8824253Z #26 1.182 Collecting flask<4.0,>=3.0 (from -r requirements.txt (line 1))
+2026-10-22T00:15:40.8829096Z #26 1.217   Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+2026-10-22T00:15:40.8831105Z #26 1.243 Collecting requests<3.0,>=2.31 (from -r requirements.txt (line 2))
+2026-10-22T00:15:40.8832262Z #26 1.253   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+2026-10-22T00:15:40.8847783Z #26 1.295 Collecting pytest<10.0,>=8.0 (from -r requirements.txt (line 3))
+2026-10-22T00:15:40.8850096Z #26 1.305   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+2026-10-22T00:15:40.8850833Z #26 1.327 Collecting responses<1.0,>=0.25 (from -r requirements.txt (line 4))
+2026-10-22T00:15:40.8851585Z #26 1.337   Downloading responses-0.26.3-py3-none-any.whl.metadata (48 kB)
+2026-10-22T00:15:40.8852629Z #26 1.347      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 48.8/48.8 kB 4.9 MB/s eta 0:00:00
+2026-10-22T00:15:40.8853333Z #26 1.371 Collecting mcp==2.2.0 (from -r requirements.txt (line 5))
+2026-10-22T00:15:40.8854319Z #26 1.381   Downloading mcp-2.2.0-py3-none-any.whl.metadata (7.8 kB)
+2026-10-22T00:15:40.8855027Z #26 1.401 Collecting anyio<5.0,>=4.5 (from -r requirements.txt (line 6))
+2026-10-22T00:15:40.8855739Z #26 1.413   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+2026-10-22T00:15:40.8856518Z #26 1.436 Collecting httpx2>=2.5.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8857264Z #26 1.446   Downloading httpx2-2.16.0-py3-none-any.whl.metadata (10 kB)
+2026-10-22T00:15:40.8858025Z #26 1.471 Collecting jsonschema>=4.20.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8858961Z #26 1.482   Downloading jsonschema-4.26.0-py3-none-any.whl.metadata (7.6 kB)
+2026-10-22T00:15:40.8859733Z #26 1.493 Collecting mcp-types==2.2.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8860516Z #26 1.504   Downloading mcp_types-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-22T00:15:40.8861352Z #26 1.525 Collecting opentelemetry-api>=1.28.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8862215Z #26 1.535   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+2026-10-22T00:15:40.8863016Z #26 1.631 Collecting pydantic>=2.12.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8863799Z #26 1.641   Downloading pydantic-2.14.1-py3-none-any.whl.metadata (133 kB)
+2026-10-22T00:15:40.8864659Z #26 1.652      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 133.0/133.0 kB 14.4 MB/s eta 0:00:00
+2026-10-22T00:15:40.8865492Z #26 1.672 Collecting pyjwt>=2.10.1 (from pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8866329Z #26 1.681   Downloading pyjwt-2.15.1-py3-none-any.whl.metadata (3.5 kB)
+2026-10-22T00:15:40.8867114Z #26 1.695 Collecting python-multipart>=0.0.9 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8868193Z #26 1.705   Downloading python_multipart-0.0.32-py3-none-any.whl.metadata (2.1 kB)
+2026-10-22T00:15:40.8869179Z #26 1.724 Collecting sse-starlette>=3.0.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8870017Z #26 1.734   Downloading sse_starlette-3.5.0-py3-none-any.whl.metadata (15 kB)
+2026-10-22T00:15:40.8870789Z #26 1.785 Collecting starlette>=0.27 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8871558Z #26 1.795   Downloading starlette-1.9.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-22T00:15:40.8872372Z #26 1.812 Collecting typing-extensions>=4.13.0 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8873231Z #26 1.822   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+2026-10-22T00:15:40.8874069Z #26 1.835 Collecting typing-inspection>=0.4.1 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8874926Z #26 1.846   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+2026-10-22T00:15:40.8875744Z #26 1.886 Collecting uvicorn>=0.31.1 (from mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8876506Z #26 1.896   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+2026-10-22T00:15:40.8877291Z #26 1.912 Collecting blinker>=1.9.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8878061Z #26 1.922   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+2026-10-22T00:15:40.8879007Z #26 1.939 Collecting click>=8.1.3 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8879718Z #26 1.949   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+2026-10-22T00:15:40.8880511Z #26 1.960 Collecting itsdangerous>=2.2.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8881384Z #26 1.970   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-10-22T00:15:40.8882228Z #26 1.985 Collecting jinja2>=3.1.2 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8883017Z #26 1.998   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-10-22T00:15:40.8883787Z #26 2.043 Collecting markupsafe>=2.1.1 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8885075Z #26 2.053   Downloading markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+2026-10-22T00:15:40.8886185Z #26 2.096 Collecting werkzeug>=3.1.0 (from flask<4.0,>=3.0->-r requirements.txt (line 1))
+2026-10-22T00:15:40.8886991Z #26 2.106   Downloading werkzeug-3.1.9-py3-none-any.whl.metadata (4.1 kB)
+2026-10-22T00:15:40.8887856Z #26 2.213 Collecting charset_normalizer<4,>=2 (from requests<3.0,>=2.31->-r requirements.txt (line 2))
+2026-10-22T00:15:40.8889214Z #26 2.223   Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+2026-10-22T00:15:40.8890452Z #26 2.225      ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.4/46.4 kB 375.4 MB/s eta 0:00:00
+2026-10-22T00:15:40.8891239Z #26 2.242 Collecting idna<4,>=2.5 (from requests<3.0,>=2.31->-r requirements.txt (line 2))
+2026-10-22T00:15:40.8892030Z #26 2.251   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+2026-10-22T00:15:40.8892808Z #26 2.315 Collecting urllib3<3,>=1.26 (from requests<3.0,>=2.31->-r requirements.txt (line 2))
+2026-10-22T00:15:40.8893616Z #26 2.324   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+2026-10-22T00:15:40.8894450Z #26 2.343 Collecting certifi>=2023.5.7 (from requests<3.0,>=2.31->-r requirements.txt (line 2))
+2026-10-22T00:15:40.8895678Z #26 2.353   Downloading certifi-2026.10.19-py3-none-any.whl.metadata (2.5 kB)
+2026-10-22T00:15:40.8896502Z #26 2.368 Collecting iniconfig>=1.0.1 (from pytest<10.0,>=8.0->-r requirements.txt (line 3))
+2026-10-22T00:15:40.8897270Z #26 2.378   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+2026-10-22T00:15:40.8898686Z #26 2.380 Requirement already satisfied: packaging>=22 in /usr/local/lib/python3.11/site-packages (from pytest<10.0,>=8.0->-r requirements.txt (line 3)) (26.3)
+2026-10-22T00:15:40.8900199Z #26 2.392 Collecting pluggy<2,>=1.5 (from pytest<10.0,>=8.0->-r requirements.txt (line 3))
+2026-10-22T00:15:40.8906650Z #26 2.402   Downloading pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+2026-10-22T00:15:40.8907535Z #26 2.421 Collecting pygments>=2.7.2 (from pytest<10.0,>=8.0->-r requirements.txt (line 3))
+2026-10-22T00:15:40.8908359Z #26 2.431   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+2026-10-22T00:15:40.8909428Z #26 2.505 Collecting pyyaml (from responses<1.0,>=0.25->-r requirements.txt (line 4))
+2026-10-22T00:15:40.8910515Z #26 2.514   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+2026-10-22T00:15:40.8911635Z #26 2.553 Collecting httpcore2==2.16.0 (from httpx2>=2.5.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8912932Z #26 2.563   Downloading httpcore2-2.16.0-py3-none-any.whl.metadata (27 kB)
+2026-10-22T00:15:40.8913818Z #26 2.578 Collecting truststore>=0.10 (from httpx2>=2.5.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8914660Z #26 2.587   Downloading truststore-0.10.5-py3-none-any.whl.metadata (4.5 kB)
+2026-10-22T00:15:40.8915565Z #26 2.604 Collecting h11>=0.16 (from httpcore2==2.16.0->httpx2>=2.5.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8916363Z #26 2.613   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+2026-10-22T00:15:40.8917401Z #26 2.648 Collecting attrs>=22.2.0 (from jsonschema>=4.20.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8918230Z #26 2.658   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-10-22T00:15:40.8919299Z #26 2.671 Collecting jsonschema-specifications>=2023.03.6 (from jsonschema>=4.20.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8920366Z #26 2.681   Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl.metadata (2.9 kB)
+2026-10-22T00:15:40.8921358Z #26 2.713 Collecting referencing>=0.28.4 (from jsonschema>=4.20.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:40.8922520Z #26 2.724   Downloading referencing-0.37.0-py3-none-any.whl.metadata (2.8 kB)
+2026-10-22T00:15:41.0400680Z #26 ...
+2026-10-22T00:15:41.0401296Z 
+2026-10-22T00:15:41.0401693Z #27 [student5-database 5/7] COPY app.py schema.sql seed.sql ./
+2026-10-22T00:15:41.0402420Z #27 DONE 0.0s
+2026-10-22T00:15:41.0402762Z 
+2026-10-22T00:15:41.0403316Z #28 [student5-database 6/7] COPY tests ./tests
+2026-10-22T00:15:41.0404052Z #28 DONE 0.0s
+2026-10-22T00:15:41.0404417Z 
+2026-10-22T00:15:41.0408077Z #29 [student5-database 7/7] RUN mkdir -p /data
+2026-10-22T00:15:41.0409004Z #29 DONE 0.1s
+2026-10-22T00:15:41.1475830Z 
+2026-10-22T00:15:41.1476733Z #26 [student5-backend 4/7] RUN pip install --no-cache-dir -r requirements.txt
+2026-10-22T00:15:41.1477697Z #26 3.076 Collecting rpds-py>=0.25.0 (from jsonschema>=4.20.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:41.1478766Z #26 3.087   Downloading rpds_py-2026.9.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+2026-10-22T00:15:41.3447353Z #26 3.134 Collecting annotated-types>=0.6.0 (from pydantic>=2.12.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:41.3448753Z #26 3.134   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+2026-10-22T00:15:41.9425507Z #26 3.882 Collecting pydantic-core==2.50.1 (from pydantic>=2.12.0->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:42.1807881Z #26 ...
+2026-10-22T00:15:42.1808088Z 
+2026-10-22T00:15:42.1808225Z #30 [student5-database] exporting to image
+2026-10-22T00:15:42.1808608Z #30 exporting layers 1.0s done
+2026-10-22T00:15:42.1809158Z #30 writing image sha256:416c977b06b97861f5f2bf8941e2dfbd3911e498215192e1c36e6676861d6d57 done
+2026-10-22T00:15:42.1809691Z #30 naming to docker.io/library/advanced-software-development-project-student5-database done
+2026-10-22T00:15:42.1810065Z #30 DONE 1.0s
+2026-10-22T00:15:42.1810173Z 
+2026-10-22T00:15:42.1810652Z #31 [student5-database] resolving provenance for metadata file
+2026-10-22T00:15:42.1810938Z #31 DONE 0.0s
+2026-10-22T00:15:42.1811048Z 
+2026-10-22T00:15:42.1811241Z #26 [student5-backend 4/7] RUN pip install --no-cache-dir -r requirements.txt
+2026-10-22T00:15:42.1811778Z #26 3.892   Downloading pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.5 kB)
+2026-10-22T00:15:42.2026986Z #26 4.142 Collecting cryptography>=3.4.0 (from pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:42.3632912Z #26 4.153   Downloading cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl.metadata (4.4 kB)
+2026-10-22T00:15:42.3698535Z #26 4.310 Collecting cffi>=2.0.0 (from cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:42.4759666Z #26 4.320   Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (2.5 kB)
+2026-10-22T00:15:42.4760388Z #26 4.366 Collecting pycparser (from cffi>=2.0.0->cryptography>=3.4.0->pyjwt[crypto]>=2.10.1->mcp==2.2.0->-r requirements.txt (line 5))
+2026-10-22T00:15:42.4760933Z #26 4.376   Downloading pycparser-3.11-py3-none-any.whl.metadata (8.2 kB)
+2026-10-22T00:15:42.4761294Z #26 4.395 Downloading mcp-2.2.0-py3-none-any.whl (365 kB)
+2026-10-22T00:15:42.4762010Z #26 4.405    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 365.7/365.7 kB 39.1 MB/s eta 0:00:00
+2026-10-22T00:15:42.4762401Z #26 4.416 Downloading mcp_types-2.2.0-py3-none-any.whl (69 kB)
+2026-10-22T00:15:42.5774656Z #26 4.417    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.1/69.1 kB 430.3 MB/s eta 0:00:00
+2026-10-22T00:15:42.5775279Z #26 4.427 Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+2026-10-22T00:15:42.5775968Z #26 4.429    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 103.4/103.4 kB 461.8 MB/s eta 0:00:00
+2026-10-22T00:15:42.5776528Z #26 4.438 Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+2026-10-22T00:15:42.5777220Z #26 4.440    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 73.1/73.1 kB 420.6 MB/s eta 0:00:00
+2026-10-22T00:15:42.5777771Z #26 4.450 Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+2026-10-22T00:15:42.5778511Z #26 4.453    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 386.5/386.5 kB 232.2 MB/s eta 0:00:00
+2026-10-22T00:15:42.5779074Z #26 4.463 Downloading responses-0.26.3-py3-none-any.whl (36 kB)
+2026-10-22T00:15:42.5779438Z #26 4.473 Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+2026-10-22T00:15:42.5779985Z #26 4.474    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 132.1/132.1 kB 466.6 MB/s eta 0:00:00
+2026-10-22T00:15:42.5780517Z #26 4.484 Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-10-22T00:15:42.5781038Z #26 4.494 Downloading certifi-2026.10.19-py3-none-any.whl (136 kB)
+2026-10-22T00:15:42.5781501Z #26 4.495    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 136.5/136.5 kB 484.3 MB/s eta 0:00:00
+2026-10-22T00:15:42.5782040Z #26 4.505 Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+2026-10-22T00:15:42.5782792Z #26 4.507    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 270.0/270.0 kB 393.4 MB/s eta 0:00:00
+2026-10-22T00:15:42.5783140Z #26 4.517 Downloading click-8.5.0-py3-none-any.whl (125 kB)
+2026-10-22T00:15:42.6860593Z #26 4.519    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 125.3/125.3 kB 348.6 MB/s eta 0:00:00
+2026-10-22T00:15:42.6861232Z #26 4.529 Downloading httpx2-2.16.0-py3-none-any.whl (97 kB)
+2026-10-22T00:15:42.6861674Z #26 4.530    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 97.9/97.9 kB 191.0 MB/s eta 0:00:00
+2026-10-22T00:15:42.6862035Z #26 4.540 Downloading httpcore2-2.16.0-py3-none-any.whl (85 kB)
+2026-10-22T00:15:42.6862467Z #26 4.541    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 85.1/85.1 kB 451.3 MB/s eta 0:00:00
+2026-10-22T00:15:42.6862800Z #26 4.551 Downloading idna-3.20-py3-none-any.whl (69 kB)
+2026-10-22T00:15:42.6863179Z #26 4.553    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 69.6/69.6 kB 439.7 MB/s eta 0:00:00
+2026-10-22T00:15:42.6863534Z #26 4.562 Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+2026-10-22T00:15:42.6863901Z #26 4.572 Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-10-22T00:15:42.6864250Z #26 4.582 Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-10-22T00:15:42.6864640Z #26 4.584    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 134.9/134.9 kB 480.7 MB/s eta 0:00:00
+2026-10-22T00:15:42.6864988Z #26 4.594 Downloading jsonschema-4.26.0-py3-none-any.whl (90 kB)
+2026-10-22T00:15:42.6865400Z #26 4.595    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.6/90.6 kB 391.1 MB/s eta 0:00:00
+2026-10-22T00:15:42.6865908Z #26 4.605 Downloading markupsafe-3.0.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+2026-10-22T00:15:42.6866440Z #26 4.615 Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+2026-10-22T00:15:42.6866858Z #26 4.616    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 60.3/60.3 kB 435.6 MB/s eta 0:00:00
+2026-10-22T00:15:42.6867190Z #26 4.626 Downloading pluggy-1.7.0-py3-none-any.whl (27 kB)
+2026-10-22T00:15:42.7865931Z #26 4.636 Downloading pydantic-2.14.1-py3-none-any.whl (488 kB)
+2026-10-22T00:15:42.7866912Z #26 4.639    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 488.1/488.1 kB 269.5 MB/s eta 0:00:00
+2026-10-22T00:15:42.7867969Z #26 4.649 Downloading pydantic_core-2.50.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.2 MB)
+2026-10-22T00:15:42.7869044Z #26 4.662    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.2/2.2 MB 179.0 MB/s eta 0:00:00
+2026-10-22T00:15:42.7869638Z #26 4.672 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+2026-10-22T00:15:42.7870320Z #26 4.676    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.3/1.3 MB 488.0 MB/s eta 0:00:00
+2026-10-22T00:15:42.7870876Z #26 4.686 Downloading pyjwt-2.15.1-py3-none-any.whl (33 kB)
+2026-10-22T00:15:42.7871463Z #26 4.695 Downloading python_multipart-0.0.32-py3-none-any.whl (30 kB)
+2026-10-22T00:15:42.7872082Z #26 4.705 Downloading sse_starlette-3.5.0-py3-none-any.whl (17 kB)
+2026-10-22T00:15:42.7872661Z #26 4.715 Downloading starlette-1.9.0-py3-none-any.whl (80 kB)
+2026-10-22T00:15:42.7873587Z #26 4.716    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 80.3/80.3 kB 465.9 MB/s eta 0:00:00
+2026-10-22T00:15:42.7874253Z #26 4.726 Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+2026-10-22T00:15:42.8995793Z #26 4.728    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 45.6/45.6 kB 289.7 MB/s eta 0:00:00
+2026-10-22T00:15:42.8996371Z #26 4.738 Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+2026-10-22T00:15:42.8996762Z #26 4.748 Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+2026-10-22T00:15:42.8997176Z #26 4.750    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 135.7/135.7 kB 481.5 MB/s eta 0:00:00
+2026-10-22T00:15:42.8997642Z #26 4.759 Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+2026-10-22T00:15:42.8998092Z #26 4.761    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.4/87.4 kB 351.7 MB/s eta 0:00:00
+2026-10-22T00:15:42.8998476Z #26 4.771 Downloading werkzeug-3.1.9-py3-none-any.whl (228 kB)
+2026-10-22T00:15:42.8999157Z #26 4.773    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 228.7/228.7 kB 500.6 MB/s eta 0:00:00
+2026-10-22T00:15:42.8999975Z #26 4.782 Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+2026-10-22T00:15:42.9000902Z #26 4.786    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 499.1 MB/s eta 0:00:00
+2026-10-22T00:15:42.9001468Z #26 4.796 Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+2026-10-22T00:15:42.9002003Z #26 4.806 Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-10-22T00:15:42.9002623Z #26 4.807    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.5/67.5 kB 425.4 MB/s eta 0:00:00
+2026-10-22T00:15:42.9003116Z #26 4.817 Downloading cryptography-50.0.2-cp311-abi3-manylinux_2_34_x86_64.whl (4.8 MB)
+2026-10-22T00:15:43.1210715Z #26 4.839    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.8/4.8 MB 228.4 MB/s eta 0:00:00
+2026-10-22T00:15:43.1218695Z #26 4.850 Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+2026-10-22T00:15:43.1219669Z #26 4.860 Downloading jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+2026-10-22T00:15:43.1220298Z #26 4.869 Downloading referencing-0.37.0-py3-none-any.whl (26 kB)
+2026-10-22T00:15:43.1221052Z #26 4.879 Downloading rpds_py-2026.9.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (375 kB)
+2026-10-22T00:15:43.1221650Z #26 4.882    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 375.4/375.4 kB 493.7 MB/s eta 0:00:00
+2026-10-22T00:15:43.1222008Z #26 4.892 Downloading truststore-0.10.5-py3-none-any.whl (19 kB)
+2026-10-22T00:15:43.1222425Z #26 4.902 Downloading cffi-2.1.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (217 kB)
+2026-10-22T00:15:43.1222913Z #26 4.903    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 217.8/217.8 kB 470.2 MB/s eta 0:00:00
+2026-10-22T00:15:43.1223261Z #26 4.913 Downloading pycparser-3.11-py3-none-any.whl (51 kB)
+2026-10-22T00:15:43.1223664Z #26 4.915    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 51.2/51.2 kB 401.4 MB/s eta 0:00:00
+2026-10-22T00:15:43.1225207Z #26 5.061 Installing collected packages: urllib3, typing-extensions, truststore, rpds-py, pyyaml, python-multipart, pyjwt, pygments, pycparser, pluggy, markupsafe, itsdangerous, iniconfig, idna, h11, click, charset_normalizer, certifi, blinker, attrs, annotated-types, werkzeug, uvicorn, typing-inspection, requests, referencing, pytest, pydantic-core, opentelemetry-api, jinja2, httpcore2, cffi, anyio, starlette, responses, pydantic, jsonschema-specifications, httpx2, flask, cryptography, sse-starlette, mcp-types, jsonschema, mcp
+2026-10-22T00:15:45.4246783Z #26 7.364 Successfully installed annotated-types-0.8.0 anyio-4.15.1 attrs-26.1.0 blinker-1.9.0 certifi-2026.10.19 cffi-2.1.1 charset_normalizer-3.5.2 click-8.5.0 cryptography-50.0.2 flask-3.1.3 h11-0.16.0 httpcore2-2.16.0 httpx2-2.16.0 idna-3.20 iniconfig-2.3.1 itsdangerous-2.2.0 jinja2-3.1.6 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 markupsafe-3.0.4 mcp-2.2.0 mcp-types-2.2.0 opentelemetry-api-1.45.1 pluggy-1.7.0 pycparser-3.11 pydantic-2.14.1 pydantic-core-2.50.1 pygments-2.21.0 pyjwt-2.15.1 pytest-9.1.1 python-multipart-0.0.32 pyyaml-6.0.3 referencing-0.37.0 requests-2.34.2 responses-0.26.3 rpds-py-2026.9.1 sse-starlette-3.5.0 starlette-1.9.0 truststore-0.10.5 typing-extensions-4.16.0 typing-inspection-0.4.4 urllib3-2.8.0 uvicorn-0.54.0 werkzeug-3.1.9
+2026-10-22T00:15:45.6514805Z #26 7.364 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+2026-10-22T00:15:45.6515534Z #26 7.441 
+2026-10-22T00:15:45.6515790Z #26 7.441 [notice] A new release of pip is available: 24.0 -> 26.2.2
+2026-10-22T00:15:45.6516138Z #26 7.441 [notice] To update, run: pip install --upgrade pip
+2026-10-22T00:15:46.3616290Z #26 DONE 8.3s
+2026-10-22T00:15:46.5647268Z 
+2026-10-22T00:15:46.5648462Z #32 [student5-backend 5/7] COPY app.py db_client.py ollama_client.py advisory.py ui.py integrations.py mcp_client.py rag_client.py      multi_agent_client.py readiness.py ./
+2026-10-22T00:15:46.5649553Z #32 DONE 0.0s
+2026-10-22T00:15:46.5649711Z 
+2026-10-22T00:15:46.5649914Z #33 [student5-backend 6/7] COPY templates ./templates
+2026-10-22T00:15:46.5650352Z #33 DONE 0.0s
+2026-10-22T00:15:46.5650520Z 
+2026-10-22T00:15:46.5650668Z #34 [student5-backend 7/7] COPY tests ./tests
+2026-10-22T00:15:46.5651054Z #34 DONE 0.0s
+2026-10-22T00:15:46.5651213Z 
+2026-10-22T00:15:46.5651353Z #35 [student5-backend] exporting to image
+2026-10-22T00:15:47.1538661Z #35 exporting layers 0.7s done
+2026-10-22T00:15:47.1755011Z #35 writing image sha256:ad01356bd87573a12ea0e04e560404c4bb3e6900bf23c835765d2cb76e6ec487 done
+2026-10-22T00:15:47.1755792Z #35 naming to docker.io/library/advanced-software-development-project-student5-backend done
+2026-10-22T00:15:47.1756202Z #35 DONE 0.7s
+2026-10-22T00:15:47.1756316Z 
+2026-10-22T00:15:47.1756460Z #36 [student5-backend] resolving provenance for metadata file
+2026-10-22T00:15:47.1756745Z #36 DONE 0.0s
+2026-10-22T00:15:47.1756944Z  student5-backend  Built
+2026-10-22T00:15:47.1757198Z  student5-frontend  Built
+2026-10-22T00:15:47.1757486Z  student5-database  Built
+2026-10-22T00:15:47.1869422Z ##[group]Run docker compose up --detach --no-deps --wait student5-database student5-backend student5-frontend
+2026-10-22T00:15:47.1870456Z docker compose up --detach --no-deps --wait student5-database student5-backend student5-frontend
+2026-10-22T00:15:47.1934527Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:15:47.1934859Z env:
+2026-10-22T00:15:47.1935119Z   MCP_ENABLED: false
+2026-10-22T00:15:47.1935427Z   RAG_ENABLED: false
+2026-10-22T00:15:47.1935822Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:47.1936384Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:15:47.1936735Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:47.1937061Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:47.1937378Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:15:47.1937685Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:15:47.1937995Z   AI_ENABLED: false
+2026-10-22T00:15:47.1938190Z   MULTI_AGENT_ENABLED: false
+2026-10-22T00:15:47.1938392Z ##[endgroup]
+2026-10-22T00:15:47.2791102Z  Network advanced-software-development-project_default  Creating
+2026-10-22T00:15:47.3080930Z  Network advanced-software-development-project_default  Created
+2026-10-22T00:15:47.3087558Z  Container advanced-software-development-project-student5-database-1  Creating
+2026-10-22T00:15:47.3517193Z  Container advanced-software-development-project-student5-database-1  Created
+2026-10-22T00:15:47.3518306Z  Container advanced-software-development-project-student5-backend-1  Creating
+2026-10-22T00:15:47.3609605Z  Container advanced-software-development-project-student5-backend-1  Created
+2026-10-22T00:15:47.3610436Z  Container advanced-software-development-project-student5-frontend-1  Creating
+2026-10-22T00:15:47.3672453Z  Container advanced-software-development-project-student5-frontend-1  Created
+2026-10-22T00:15:47.3682472Z  Container advanced-software-development-project-student5-database-1  Starting
+2026-10-22T00:15:47.5197584Z  Container advanced-software-development-project-student5-database-1  Started
+2026-10-22T00:15:47.5198419Z  Container advanced-software-development-project-student5-database-1  Waiting
+2026-10-22T00:15:53.0210453Z  Container advanced-software-development-project-student5-database-1  Healthy
+2026-10-22T00:15:53.0211273Z  Container advanced-software-development-project-student5-backend-1  Starting
+2026-10-22T00:15:53.1897634Z  Container advanced-software-development-project-student5-backend-1  Started
+2026-10-22T00:15:53.1898782Z  Container advanced-software-development-project-student5-backend-1  Waiting
+2026-10-22T00:15:58.6913144Z  Container advanced-software-development-project-student5-backend-1  Healthy
+2026-10-22T00:15:58.6913693Z  Container advanced-software-development-project-student5-frontend-1  Starting
+2026-10-22T00:15:58.8136967Z  Container advanced-software-development-project-student5-frontend-1  Started
+2026-10-22T00:15:58.8138037Z  Container advanced-software-development-project-student5-database-1  Waiting
+2026-10-22T00:15:58.8138778Z  Container advanced-software-development-project-student5-frontend-1  Waiting
+2026-10-22T00:15:58.8139426Z  Container advanced-software-development-project-student5-backend-1  Waiting
+2026-10-22T00:15:59.3150090Z  Container advanced-software-development-project-student5-backend-1  Healthy
+2026-10-22T00:15:59.3150676Z  Container advanced-software-development-project-student5-database-1  Healthy
+2026-10-22T00:16:09.3148580Z  Container advanced-software-development-project-student5-frontend-1  Healthy
+2026-10-22T00:16:09.3226321Z ##[group]Run curl --fail --silent http://localhost:5305/health
+2026-10-22T00:16:09.3226735Z curl --fail --silent http://localhost:5305/health
+2026-10-22T00:16:09.3227059Z curl --fail --silent http://localhost:5205/health
+2026-10-22T00:16:09.3227377Z curl --fail --silent http://localhost:5105/ > /dev/null
+2026-10-22T00:16:09.3227902Z curl --fail --silent http://localhost:5205/api/destinations | python -c "import json,sys; assert len(json.load(sys.stdin)) >= 12"
+2026-10-22T00:16:09.3228528Z 
+2026-10-22T00:16:09.3228798Z # AI-Mode, MCP and RAG are integrated but disabled here: assert the
+2026-10-22T00:16:09.3229393Z # documented fail-closed 503 bodies instead of calling servers CI does not run.
+2026-10-22T00:16:09.3229743Z check_disabled() {
+2026-10-22T00:16:09.3230036Z   curl --silent --write-out '\n%{http_code}' "$@" | python -c "
+2026-10-22T00:16:09.3230352Z import json, sys
+2026-10-22T00:16:09.3230597Z *body, status = sys.stdin.read().splitlines()
+2026-10-22T00:16:09.3230866Z assert status == '503', status
+2026-10-22T00:16:09.3231122Z error = json.loads('\n'.join(body))['error']
+2026-10-22T00:16:09.3231456Z assert error in ('ai_disabled', 'mcp_disabled', 'rag_disabled'), error
+2026-10-22T00:16:09.3231755Z "
+2026-10-22T00:16:09.3231924Z }
+2026-10-22T00:16:09.3232147Z check_disabled http://localhost:5205/api/mcp/tools
+2026-10-22T00:16:09.3232582Z check_disabled -X POST http://localhost:5205/api/mcp/invoke -H 'Content-Type: application/json' \
+2026-10-22T00:16:09.3233048Z   -d '{"tool":"logistics.get_weather","arguments":{"destination_id":1}}'
+2026-10-22T00:16:09.3233511Z check_disabled -X POST http://localhost:5205/api/rag/ask -H 'Content-Type: application/json' \
+2026-10-22T00:16:09.3233903Z   -d '{"question":"What is an eVisa?"}'
+2026-10-22T00:16:09.3234315Z check_disabled -X POST http://localhost:5205/api/advisory -H 'Content-Type: application/json' \
+2026-10-22T00:16:09.3234698Z   -d '{"destination_id":1}'
+2026-10-22T00:16:09.3235007Z # Through the frontend proxy too, so the browser path is covered.
+2026-10-22T00:16:09.3235461Z check_disabled -X POST http://localhost:5105/api/rag/ask -H 'Content-Type: application/json' \
+2026-10-22T00:16:09.3235839Z   -d '{"question":"What is an eVisa?"}'
+2026-10-22T00:16:09.3282175Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:16:09.3282395Z env:
+2026-10-22T00:16:09.3282570Z   MCP_ENABLED: false
+2026-10-22T00:16:09.3282759Z   RAG_ENABLED: false
+2026-10-22T00:16:09.3283001Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.3283351Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:16:09.3283685Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.3284002Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.3284310Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.3284619Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:16:09.3284881Z ##[endgroup]
+2026-10-22T00:16:09.3426636Z {"service":"student5-database","status":"ok"}
+2026-10-22T00:16:09.3483475Z {"service":"student5-backend","status":"ok"}
+2026-10-22T00:16:09.4566384Z ##[group]Run python student-5/backend/tests/live_endpoint_check.py http://localhost:5205
+2026-10-22T00:16:09.4566943Z python student-5/backend/tests/live_endpoint_check.py http://localhost:5205
+2026-10-22T00:16:09.4612550Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:16:09.4612769Z env:
+2026-10-22T00:16:09.4612937Z   MCP_ENABLED: false
+2026-10-22T00:16:09.4613125Z   RAG_ENABLED: false
+2026-10-22T00:16:09.4613363Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.4613712Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:16:09.4614058Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.4614364Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.4614669Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.4614968Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:16:09.4615232Z ##[endgroup]
+2026-10-22T00:16:09.5385218Z PASS  POST /api/destinations valid -> 201  status=201
+2026-10-22T00:16:09.5385762Z PASS  POST returns an id and the stored fields  
+2026-10-22T00:16:09.5386300Z PASS  POST missing visa_requirement -> 400 from the database  status=400
+2026-10-22T00:16:09.5386843Z PASS  Rejected POST stored nothing  before=13 after=13
+2026-10-22T00:16:09.5387340Z PASS  PUT /api/destinations/<id> valid -> 200  status=200
+2026-10-22T00:16:09.5387828Z PASS  PUT merges the change and keeps the country  
+2026-10-22T00:16:09.5388216Z PASS  GET after PUT returns the updated row  status=200
+2026-10-22T00:16:09.5388554Z PASS  PUT blank visa_requirement -> 400 from the database  status=400
+2026-10-22T00:16:09.5389026Z PASS  Rejected PUT changed nothing  
+2026-10-22T00:16:09.5389332Z PASS  PUT unknown id -> 404 from the database  status=404
+2026-10-22T00:16:09.5389615Z PASS  Cleanup DELETE -> 204  status=204
+2026-10-22T00:16:09.5389875Z PASS  Deleted destination is gone (404)  status=404
+2026-10-22T00:16:09.5390052Z 
+2026-10-22T00:16:09.5390151Z 12/12 checks passed
+2026-10-22T00:16:09.5492253Z ##[group]Run docker compose down
+2026-10-22T00:16:09.5492510Z docker compose down
+2026-10-22T00:16:09.5539046Z shell: /usr/bin/bash -e {0}
+2026-10-22T00:16:09.5539511Z env:
+2026-10-22T00:16:09.5539800Z   MCP_ENABLED: false
+2026-10-22T00:16:09.5540195Z   RAG_ENABLED: false
+2026-10-22T00:16:09.5551165Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.5551740Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+2026-10-22T00:16:09.5552229Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.5552671Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.5553117Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+2026-10-22T00:16:09.5553497Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+2026-10-22T00:16:09.5553768Z ##[endgroup]
+2026-10-22T00:16:09.6403854Z  Container advanced-software-development-project-student5-frontend-1  Stopping
+2026-10-22T00:16:09.7478466Z  Container advanced-software-development-project-student5-frontend-1  Stopped
+2026-10-22T00:16:09.7480155Z  Container advanced-software-development-project-student5-frontend-1  Removing
+2026-10-22T00:16:09.7544109Z  Container advanced-software-development-project-student5-frontend-1  Removed
+2026-10-22T00:16:09.7545161Z  Container advanced-software-development-project-student5-backend-1  Stopping
+2026-10-22T00:16:19.9183851Z  Container advanced-software-development-project-student5-backend-1  Stopped
+2026-10-22T00:16:19.9184713Z  Container advanced-software-development-project-student5-backend-1  Removing
+2026-10-22T00:16:19.9235489Z  Container advanced-software-development-project-student5-backend-1  Removed
+2026-10-22T00:16:19.9236322Z  Container advanced-software-development-project-student5-database-1  Stopping
+2026-10-22T00:16:30.0292771Z  Container advanced-software-development-project-student5-database-1  Stopped
+2026-10-22T00:16:30.0293686Z  Container advanced-software-development-project-student5-database-1  Removing
+2026-10-22T00:16:30.0343671Z  Container advanced-software-development-project-student5-database-1  Removed
+2026-10-22T00:16:30.0349675Z  Network advanced-software-development-project_default  Removing
+2026-10-22T00:16:30.1104262Z  Network advanced-software-development-project_default  Removed
+2026-10-22T00:16:30.1226012Z Post job cleanup.
+2026-10-22T00:16:30.2220485Z Cache hit occurred on the primary key setup-python-Linux-x64-24.04-Ubuntu-python-3.11.17-pip-0b2bf4f5a01c64c7c31c731b150698b914df93c842959e1764af34970397337a, not saving cache.
+2026-10-22T00:16:30.2221662Z (node:3568) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+2026-10-22T00:16:30.2222405Z (Use `node --trace-deprecation ...` to show where the warning was created)
+2026-10-22T00:16:30.2346621Z Post job cleanup.
+2026-10-22T00:16:30.3078192Z [command]/usr/bin/git version
+2026-10-22T00:16:30.3115881Z git version 2.55.0
+2026-10-22T00:16:30.3149279Z Temporarily overriding HOME='/home/runner/work/_temp/8bd765ef-345b-47da-a6f2-daa2809242e0' before making global git config changes
+2026-10-22T00:16:30.3150030Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-22T00:16:30.3154580Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/Advanced-Software-Development-Project/Advanced-Software-Development-Project
+2026-10-22T00:16:30.3199573Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-22T00:16:30.3239987Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-22T00:16:30.3538541Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-22T00:16:30.3558953Z http.https://github.com/.extraheader
+2026-10-22T00:16:30.3579273Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2026-10-22T00:16:30.3610083Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-22T00:16:30.3941356Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-22T00:16:30.3979348Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-22T00:16:30.4334449Z Cleaning up orphan processes
+2026-10-22T00:16:30.4598335Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

@@ -1,0 +1,101 @@
+# Excerpt of GitHub Actions run 39741981906 (Cloud Deployment, workflow_dispatch on main, commit 851bdd7f4a7bc455e751b020c05a977608989e3a, conclusion: success)
+# https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39741981906
+# Full log: 01-cloud-run-39741981906-full-log.txt. Secrets (host, domain, credentials) are masked as *** by GitHub.
+# Steps (gh run view --json jobs):
+#   Set up job: success
+#   Run actions/checkout@v5: success
+#   Run actions/setup-python@v6: success
+#   Require all CI for the deployed revision: success
+#   Require protected AI credentials: skipped
+#   Prepare and validate cloud configuration: success
+#   Build immutable application images: success
+#   Package AI preparation without deployment: skipped
+#   Retain AI preparation bundle: skipped
+#   Prepare private gateway credentials: skipped
+#   Configure pinned SSH access: success
+#   Deploy to the approved Azure or AWS Linux VM: success
+#   Wait for public HTTPS readiness: success
+#   Verify public gateway and Student 1 to 5 CRUD: success
+#   Verify protected group CRUD and AI integrations: skipped
+#   Retain deployment evidence: success
+#   Remove runner credentials: success
+#   Post Run actions/setup-python@v6: success
+#   Post Run actions/checkout@v5: success
+#   Complete job: success
+
+## Selected log lines (gates, deployment, readiness, smoke)
+131:2026-10-22T07:39:21.9014658Z ##[group]Run pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
+132:2026-10-22T07:39:21.9017813Z pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
+147:2026-10-22T07:39:27.3372985Z ##[group]Run python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --ai-services "$CLOUD_AI_SERVICES" --output cloud-bundle
+170:2026-10-22T07:39:27.9914444Z sha256sum compose.json Caddyfile revision.txt smoke_cloud.py smoke_cloud_ai.py cloud_auth.py \
+171:2026-10-22T07:39:27.9915310Z   accommodation.db deploy-vm.sh pull-models-vm.sh ai-services.txt vm-pull-images.txt images.tar > SHA256SUMS
+2540:2026-10-22T07:40:48.6958097Z scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,smoke_cloud_ai.py,cloud_auth.py,accommodation.db,deploy-vm.sh,pull-models-vm.sh,ai-services
+2544:2026-10-22T07:40:48.6961749Z ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash asd-upload/$GITHUB_SHA/deploy-vm.sh $GITHUB_SHA"
+2559:2026-10-22T07:42:16.9161257Z compose.json: OK
+2560:2026-10-22T07:42:16.9161911Z Caddyfile: OK
+2561:2026-10-22T07:42:16.9162242Z revision.txt: OK
+2562:2026-10-22T07:42:16.9162581Z smoke_cloud.py: OK
+2563:2026-10-22T07:42:16.9162940Z smoke_cloud_ai.py: OK
+2564:2026-10-22T07:42:16.9163283Z cloud_auth.py: OK
+2565:2026-10-22T07:42:16.9163930Z accommodation.db: OK
+2566:2026-10-22T07:42:16.9164276Z deploy-vm.sh: OK
+2567:2026-10-22T07:42:16.9164607Z pull-models-vm.sh: OK
+2568:2026-10-22T07:42:16.9165310Z ai-services.txt: OK
+2569:2026-10-22T07:42:16.9165651Z vm-pull-images.txt: OK
+2570:2026-10-22T07:42:17.7308513Z images.tar: OK
+2630:2026-10-22T07:43:04.2432244Z  Container asd-cloud-student5-database-1  Started
+2632:2026-10-22T07:43:04.3669011Z  Container asd-cloud-student1-database-1  Started
+2634:2026-10-22T07:43:04.3988503Z  Container asd-cloud-student2-database-1  Started
+2636:2026-10-22T07:43:04.4302909Z  Container asd-cloud-student3-db-init-1  Started
+2638:2026-10-22T07:43:04.4339463Z  Container asd-cloud-student4-database-1  Started
+2642:2026-10-22T07:43:05.1830531Z  Container asd-cloud-student3-database-1  Started
+2646:2026-10-22T07:43:09.9032585Z  Container asd-cloud-student5-backend-1  Started
+2654:2026-10-22T07:43:15.2364894Z  Container asd-cloud-student1-backend-1  Started
+2656:2026-10-22T07:43:15.3595019Z  Container asd-cloud-student2-backend-1  Started
+2658:2026-10-22T07:43:15.5556465Z  Container asd-cloud-student4-backend-1  Started
+2662:2026-10-22T07:43:16.4034606Z  Container asd-cloud-student3-backend-1  Started
+2666:2026-10-22T07:43:16.6349103Z  Container asd-cloud-student5-frontend-1  Started
+2671:2026-10-22T07:43:25.9789562Z  Container asd-cloud-student1-frontend-1  Started
+2674:2026-10-22T07:43:26.1506708Z  Container asd-cloud-student2-frontend-1  Started
+2675:2026-10-22T07:43:26.3420343Z  Container asd-cloud-student4-frontend-1  Started
+2678:2026-10-22T07:43:27.0425260Z  Container asd-cloud-student3-frontend-1  Started
+2690:2026-10-22T07:43:37.6848705Z  Container asd-cloud-shared-frontend-1  Started
+2694:2026-10-22T07:43:48.3887369Z  Container asd-cloud-tls-gateway-1  Started
+2734:2026-10-22T07:43:49.5122611Z  Container asd-cloud-tls-gateway-1  Started
+2754:2026-10-22T07:43:49.5371032Z   CLOUD_AUTH_PASSWORD: 
+2756:2026-10-22T07:43:50.3368313Z PASS: verified HTTPS gateway is ready.
+2759:2026-10-22T07:43:50.3507524Z python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt
+2773:2026-10-22T07:44:28.9050071Z PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+2774:2026-10-22T07:44:28.9051786Z PASS: Student 1 cloud profile and CRUD checks.
+2775:2026-10-22T07:44:28.9052636Z PASS: Student 3 cloud profile and CRUD checks.
+2776:2026-10-22T07:44:28.9053695Z PASS: Student 4 cloud profile and CRUD checks.
+2777:2026-10-22T07:44:28.9054452Z PASS: Student 5 cloud profile and CRUD checks.
+2778:2026-10-22T07:44:28.9055268Z Persistence across redeploy and rollback require separate evidence.
+2783:cloud-bundle/revision.txt
+
+## Artifact cloud-baseline-evidence-851bdd7f... : revision.txt
+851bdd7f4a7bc455e751b020c05a977608989e3a
+## Artifact: cloud-smoke.txt
+PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+PASS: Student 1 cloud profile and CRUD checks.
+PASS: Student 3 cloud profile and CRUD checks.
+PASS: Student 4 cloud profile and CRUD checks.
+PASS: Student 5 cloud profile and CRUD checks.
+Persistence across redeploy and rollback require separate evidence.
+## Artifact: ai-services.txt (AI services prepared for the VM; empty = none)
+[]
+## Artifact: compose.json, student5-backend environment as deployed
+{
+ "AI_ENABLED": "false",
+ "APPLICATION_MODEL": "llama3.2:3b",
+ "DATABASE_API_URL": "http://student5-database:8080",
+ "MCP_ENABLED": "false",
+ "MCP_SERVER_URL": "http://127.0.0.1:9",
+ "MULTI_AGENT_ENABLED": "false",
+ "MULTI_AGENT_SERVER_URL": "http://127.0.0.1:9",
+ "OLLAMA_URL": "http://127.0.0.1:9",
+ "RAG_ENABLED": "false",
+ "RAG_SERVER_URL": "http://127.0.0.1:9",
+ "Services__OllamaUrl": "http://127.0.0.1:9",
+ "LITEAPI_KEY": ""
+}

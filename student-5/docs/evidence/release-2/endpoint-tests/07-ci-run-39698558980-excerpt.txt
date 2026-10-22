@@ -1,0 +1,86 @@
+# Excerpt of GitHub Actions run 39698558980 (Student 5 CI, push to main, commit e523738c19c76821eb3e5ce576e430c3451007d1, conclusion: success)
+# https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39698558980
+# Branch run before merge: 39697590918 (AC/student5-r2-endpoint-ci @ afb34bb5384e7f85726372133dea8edbeab0736a, success).
+# Kept: test-step commands, AI flags, results and the JUnit summary. Full log: 06-ci-run-39698558980-full-log.txt
+# Steps (gh run view --json jobs):
+#   Set up job: success
+#   Run actions/checkout@v4: success
+#   Run actions/setup-python@v5: success
+#   Test Student 5 services, MCP tools and RAG retrieval: success
+#   Post-commit endpoint tests (POST and PUT /api/destinations): success
+#   Publish endpoint test report: success
+#   Upload endpoint test results: success
+#   Validate Docker Compose config: success
+#   Build integrated Student 5 containers: success
+#   Start Student 5 services: success
+#   Smoke test Student 5 integration: success
+#   Post-commit endpoint tests against running containers (POST and PUT /api/destinations): success
+#   Show Student 5 container logs on failure: skipped
+#   Stop Student 5 services: success
+#   Post Run actions/setup-python@v5: success
+#   Post Run actions/checkout@v4: success
+#   Complete job: success
+
+2026-10-22T00:15:12.7758041Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+2026-10-22T00:15:13.0906858Z   MCP_ENABLED: false
+2026-10-22T00:15:13.0907277Z   RAG_ENABLED: false
+2026-10-22T00:15:14.6460921Z   MCP_ENABLED: false
+2026-10-22T00:15:14.6461676Z   RAG_ENABLED: false
+2026-10-22T00:15:16.4352604Z   MCP_ENABLED: false
+2026-10-22T00:15:16.4352795Z   RAG_ENABLED: false
+2026-10-22T00:15:23.5674806Z ============================== 26 passed in 0.49s ==============================
+2026-10-22T00:15:27.1096734Z ============================= 199 passed in 2.58s ==============================
+2026-10-22T00:15:30.4334898Z ============================== 34 passed in 0.83s ==============================
+2026-10-22T00:15:30.7303217Z ============================== 17 passed in 0.03s ==============================
+2026-10-22T00:15:30.8021352Z ##[group]Run python -m pytest student-5/backend/tests/test_endpoints_cicd.py -v --junitxml=student-5/endpoint-tests-junit.xml
+2026-10-22T00:15:30.8070058Z   MCP_ENABLED: false
+2026-10-22T00:15:30.8070255Z   RAG_ENABLED: false
+2026-10-22T00:15:30.8072551Z   AI_ENABLED: false
+2026-10-22T00:15:30.8072734Z   MULTI_AGENT_ENABLED: false
+2026-10-22T00:15:31.6503357Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_201_with_the_stored_row PASSED [  7%]
+2026-10-22T00:15:31.6608467Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[empty-body] PASSED [ 15%]
+2026-10-22T00:15:31.6705672Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[missing-visa-requirement] PASSED [ 23%]
+2026-10-22T00:15:31.6804610Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[blank-country] PASSED [ 30%]
+2026-10-22T00:15:31.6901283Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_with_non_json_body_relays_database_400 PASSED [ 38%]
+2026-10-22T00:15:31.6999311Z student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_503_when_database_is_down PASSED [ 46%]
+2026-10-22T00:15:31.7110569Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_forwards_only_supplied_fields_and_returns_200 PASSED [ 53%]
+2026-10-22T00:15:31.7207334Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement] PASSED [ 61%]
+2026-10-22T00:15:31.7303982Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[non-string-country] PASSED [ 69%]
+2026-10-22T00:15:31.7399234Z student-5/backend/tests/test_endpoints_cicd.py::test_update_unknown_destination_relays_database_404 PASSED [ 76%]
+2026-10-22T00:15:31.7489559Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_with_non_integer_id_is_404_without_database_call PASSED [ 84%]
+2026-10-22T00:15:31.7596784Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[connection-refused] PASSED [ 92%]
+2026-10-22T00:15:31.8795345Z student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[read-timeout] PASSED [100%]
+2026-10-22T00:15:31.8798474Z ============================== 13 passed in 0.16s ==============================
+2026-10-22T00:15:32.0459993Z ##[group]Run python scripts/test/junit_summary.py student-5/endpoint-tests-junit.xml "Student 5 post-commit endpoint tests (POST and PUT /api/destinations)"
+2026-10-22T00:15:32.0507336Z   MCP_ENABLED: false
+2026-10-22T00:15:32.0507528Z   RAG_ENABLED: false
+2026-10-22T00:15:32.0745017Z **13 of 13 passed**
+2026-10-22T00:15:32.0823216Z ##[group]Run actions/upload-artifact@v4
+2026-10-22T00:15:32.0824999Z   MCP_ENABLED: false
+2026-10-22T00:15:32.0825180Z   RAG_ENABLED: false
+2026-10-22T00:15:32.5371488Z Beginning upload of artifact content to blob storage
+2026-10-22T00:15:32.8052381Z Finished uploading artifact content to blob storage!
+2026-10-22T00:15:32.8053473Z SHA256 digest of uploaded artifact zip is d2cc635acaa2f8742e8e7a84fc433e3d5ee7d9350eccfa189e35cda63b7c2d54
+2026-10-22T00:15:32.8054587Z Finalizing artifact upload
+2026-10-22T00:15:33.2470890Z Artifact student-5-endpoint-test-results.zip successfully finalized. Artifact ID 12391554143
+2026-10-22T00:15:33.2471915Z Artifact student-5-endpoint-test-results has been successfully uploaded! Final size is 641 bytes. Artifact ID is 12391554143
+2026-10-22T00:15:33.2476701Z Artifact download URL: https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39698558980/artifacts/12391554143
+2026-10-22T00:15:33.2652064Z   MCP_ENABLED: false
+2026-10-22T00:15:33.2652263Z   RAG_ENABLED: false
+2026-10-22T00:15:33.5596808Z   MCP_ENABLED: false
+2026-10-22T00:15:33.5597002Z   RAG_ENABLED: false
+2026-10-22T00:15:47.1935119Z   MCP_ENABLED: false
+2026-10-22T00:15:47.1935427Z   RAG_ENABLED: false
+2026-10-22T00:15:47.1937995Z   AI_ENABLED: false
+2026-10-22T00:15:47.1938190Z   MULTI_AGENT_ENABLED: false
+2026-10-22T00:16:09.3282570Z   MCP_ENABLED: false
+2026-10-22T00:16:09.3282759Z   RAG_ENABLED: false
+2026-10-22T00:16:09.3426636Z {"service":"student5-database","status":"ok"}
+2026-10-22T00:16:09.3483475Z {"service":"student5-backend","status":"ok"}
+2026-10-22T00:16:09.4566384Z ##[group]Run python student-5/backend/tests/live_endpoint_check.py http://localhost:5205
+2026-10-22T00:16:09.4612937Z   MCP_ENABLED: false
+2026-10-22T00:16:09.4613125Z   RAG_ENABLED: false
+2026-10-22T00:16:09.5390151Z 12/12 checks passed
+2026-10-22T00:16:09.5539800Z   MCP_ENABLED: false
+2026-10-22T00:16:09.5540195Z   RAG_ENABLED: false
+2026-10-22T00:16:30.4598335Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://git
