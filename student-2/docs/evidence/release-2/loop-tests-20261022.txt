@@ -1,0 +1,6 @@
+  AgenticLoop -> C:\git\GitHub\Uni\Advanced-Software-Development-Project\ai-services\agentic-loop\bin\Debug\net8.0\AgenticLoop.dll
+  AgenticLoop.Tests -> C:\git\GitHub\Uni\Advanced-Software-Development-Project\ai-services\agentic-loop\tests\bin\Debug\net8.0\AgenticLoop.Tests.dll
+Test run for C:\git\GitHub\Uni\Advanced-Software-Development-Project\ai-services\agentic-loop\tests\bin\Debug\net8.0\AgenticLoop.Tests.dll (.NETCoreApp,Version=v8.0)
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:    95, Skipped:     0, Total:    95, Duration: 331 ms - AgenticLoop.Tests.dll (net8.0)

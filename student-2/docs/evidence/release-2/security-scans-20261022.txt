@@ -1,0 +1,25 @@
+ruff security rules (flake8-bandit)......................................Passed
+- hook id: ruff-check
+- duration: 0.08s
+
+All checks passed!
+
+detect-secrets...........................................................Passed
+- hook id: detect-secrets
+- duration: 1.49s
+pip-audit (requirements files in this commit)............................Passed
+- hook id: pip-audit
+- duration: 48.77s
+
+== pip-audit student-2/backend/requirements.txt
+WARNING:venv:Actual environment location may have moved due to redirects, links or junctions.
+  Requested location: "C:\Users\LUC~1.LEM\AppData\Local\Temp\tmpx2heqjjd\Scripts\python.exe"
+  Actual location:    "C:\Users\Luc.LeMoenic\AppData\Local\Temp\tmpx2heqjjd\Scripts\python.exe"
+No known vulnerabilities found
+== pip-audit student-2/database/requirements.txt
+WARNING:venv:Actual environment location may have moved due to redirects, links or junctions.
+  Requested location: "C:\Users\LUC~1.LEM\AppData\Local\Temp\tmpa7l015ep\Scripts\python.exe"
+  Actual location:    "C:\Users\Luc.LeMoenic\AppData\Local\Temp\tmpa7l015ep\Scripts\python.exe"
+No known vulnerabilities found
+pip-audit OK for 2 requirements file(s)
+

@@ -1,0 +1,125 @@
+Student 2 Release 2 evidence review input - 22 October 2026
+
+Scope and provenance
+--------------------
+This is an evidence-readiness report, not a release approval.
+Base revision: 7798bc882338dc33723217dd36d7bd0ff3228993.
+Branch: LLM/Student_2_Deployment_Readiness.
+The working tree contains uncommitted deployment-preparation changes. Source
+hashes and the installed-hook check are in validation-provenance-20261022.json.
+No commit, push, cloud deployment or human approval was performed for this review.
+Other students' features are outside this validation scope.
+
+Testing Report Review
+---------------------
+Fresh local runs on the working tree:
+- Backend: 257 passed, 11 skipped. The skips are existing opt-in live checks;
+  they do not demonstrate a successful model or integrated UI run.
+- Named endpoint suite: 7 passed. This suite is INCLUDED in the 257 above,
+  not seven additional independent backend tests.
+- Database: 39 passed.
+- Shared agentic loop: 95 passed, 0 failed, 0 skipped.
+
+The required endpoint functions are POST /api/trips and PUT /api/trips/{id}.
+The endpoint suite covers successful create/update with persisted readback,
+invalid input without mutation, a missing record, and dependency failures.
+It uses the Flask backend test client, a real temporary SQLite database API
+served over loopback HTTP, and AI-disabled settings. Its cloud-smoke test
+mocks the gateway and other student checks; it is NOT a public cloud test.
+See endpoint-tests-20261022.txt and endpoint-tests-20261022.xml.
+
+Commands from the repository root (Python uses an isolated session venv):
+  cd student-2\backend; python -m pytest tests -q
+  cd student-2\backend; python -m pytest tests\test_release2_endpoints.py -v
+  cd student-2\database; python -m pytest tests -q
+  dotnet test ai-services\agentic-loop\tests\AgenticLoop.Tests.csproj --no-restore --verbosity minimal
+
+Local pre-commit invocation passed Ruff security rules, detect-secrets and
+pip-audit. Exact invocation:
+  python -m pre_commit run --files student-2\backend\app.py student-2\backend\requirements.txt student-2\backend\tests\test_release2_endpoints.py student-2\database\app.py student-2\database\requirements.txt --verbose
+Both Student 2 runtime requirement files had no known vulnerabilities and no
+accepted advisory exceptions. See security-scans-20261022.txt.
+This was an explicit manual hook invocation, NOT evidence of hooks firing
+during an actual git commit. The hook file exists locally. The scan scope is
+the five named files, not the whole repository or all students' dependencies.
+
+Verified GitHub Actions baseline:
+  https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39694482270
+  revision: 7798bc882338dc33723217dd36d7bd0ff3228993
+  conclusion: success
+  Release 2 create and update endpoint evidence: success
+  Shared agentic-loop review modes: success
+See ci-baseline-20261022.json for all step conclusions.
+This proves remote CI for the base commit only, NOT for the uncommitted
+Waitress/dependency/workflow/persistence-smoke changes. Those still need a
+successful pushed CI run. A CI loop-test step is not a live two-model review.
+
+Multi-Agent Workflow Review
+--------------------------
+Current intended Student 2 workflow:
+  frontend -> backend -> exact MCP edit preview -> shared native
+  Planner -> Worker -> Reviewer -> explicit human assessment decision ->
+  separate preview confirmation -> database save.
+An approved assessment is not itself a save. Corrections and partial acceptance
+concern assessment text, not partial execution of an indivisible signed preview.
+The preview token hash binds acceptance to the proposed edit; stale snapshots,
+expiry and database revision checks remain authoritative.
+
+Available retained live capture: native-quality-rerun.json, 20 October.
+It records genuine agent outputs, Reviewer pass, unchanged saved trip and audit
+verification. Its execution is a native backend test client -> container
+database API plus native Multi-Agent HTTP server, not container-to-native
+backend connectivity or a full integrated browser demonstration.
+It predates the current inline edit-assessment workflow and its Worker prompt
+revision. It explicitly has no human decision. Audit entries are filtered to
+that workflow and are not a standalone complete audit chain.
+
+The existing runbook describes a later 21 October synthetic undo assessment
+through native browser/CLI, with automated-test approval and separate save.
+The raw workflow store for that run is not part of this input. Treat this as
+a documented historical claim, not independently checked execution evidence.
+Neither run supplies a genuine human terminal/UI decision for the showcase.
+The runbook also records two natural-language edit-preview timeouts at the
+20-second model deadline and unresolved container-to-native connectivity.
+Those acceptance gaps have not been retested or resolved in this review.
+
+Required next evidence: current inline-edit workflow history, exact preview
+binding, non-degraded agent outputs or explicit failure handling, audit
+verification, integrated container/frontend execution and a genuine human
+decision. Do not infer these from unit tests or the older native capture.
+
+Cloud Deployment Report Review
+------------------------------
+The release baseline requires an integrated Azure or AWS application with
+frontend/backend/database CRUD working and AI-Mode, MCP, RAG and Multi-Agent
+disabled by default. A final human release decision is required.
+
+The existing shared cloud-validation runbook says that no real cloud deployment
+had been run when it was written. It describes the VM/DNS/operator prerequisites,
+same-revision CI gate, deployment and validation commands.
+Current Student 2 docs describe local AI-off gateway CRUD/persistence checks.
+Those are local checks, not evidence of a public Azure/AWS deployment.
+
+Read-only GitHub verification on 22 October found successful cloud-labelled
+runs for older revision e2ff5e9d42e2ebc8e05bda685a17033b3984f028.
+Inspecting the latest of those runs:
+  https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39506483909
+  event: workflow_run
+  job: deploy
+  steps: Set up job, Deploy placeholder, Complete job
+See cloud-workflow-runs-20261022.json and cloud-run-detail-20261022.json.
+The green conclusion is NOT actual deployment evidence: the run executed a
+placeholder, not the current deployment and cloud validation implementation.
+
+No approved cloud target, actual deployment artifact, public application CRUD
+result, cloud persistence result or human release decision is supplied here.
+Cloud acceptance remains BLOCKED on that evidence. A review of these gaps may
+demonstrate review-mode execution, but cannot satisfy successful cloud deployment
+or certify the integrated release. Optional bonus cloud AI is not a prerequisite.
+
+Human decision and interpretation
+--------------------------------
+All new model review records must remain pending human finalisation.
+A model ACCEPT verdict evaluates its proposed report, not release acceptance.
+Reviewers may miss facts or invent recommendations; independently check their
+output against the evidence and retain unresolved or failed checks explicitly.

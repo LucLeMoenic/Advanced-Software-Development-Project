@@ -144,8 +144,8 @@ For other revisions, arrange missing runs before deployment; missing is not pass
 The [bundle builder](../../scripts/deploy/prepare_cloud.py) derives the integrated
 Compose services, tags images by SHA, keeps backend/database ports private,
 disables all four AI modes and uses persistent `/opt/asd/data/student-N` storage.
-Student 1/3/5 AI-off guards are pending work for their respective owners, not
-included here. Do not accept the cloud baseline until they are implemented and tested.
+Student 1/3/5 AI-off guards have since merged under their respective owners.
+Their presence is not a substitute for running the full integrated cloud smoke.
 Caddy provides the shared HTTPS entry point; native AI services are not deployed.
 
 Operator prerequisites: an approved **Azure or AWS Linux VM**, budget, DNS,
@@ -162,7 +162,55 @@ Before manual rollback, back up databases and check schema compatibility.
 Use the previous release's Compose file with project `asd-cloud`; image rollback
 does not restore data. All-feature CRUD and redeploy persistence need live evidence.
 
+### Student 2 deployment preparation - 22 October 2026
+
+- Backend and database now use pinned Waitress 3.0.2 with their existing
+  `python app.py` entry points and `PORT` configuration. One process per service
+  preserves the database's process-local preview signing key; threaded requests
+  retain concurrent health/CRUD handling. A database container replacement
+  invalidates outstanding edit previews by design, but not saved trips or stops.
+- Flask 3.1.3 and requests 2.33.0 replace the vulnerable pins documented in the
+  audit policy. Student 2's accepted exceptions were removed; both complete
+  requirement sets passed the existing pip-audit runner with no known findings.
+- Student 2 CI now starts the actual shared gateway and runs the existing
+  disabled-mode/CRUD/regeneration smoke through `/itinerary-api/` on port 5100.
+  The persistence check replaces the database container with `--force-recreate`
+  while keeping its storage, rather than merely restarting the same container.
+  Cloud smoke script changes now trigger Student 2 CI.
+- Local validation: backend 257 passed/11 opt-in live skips; database 39 passed;
+  frontend 45 passed and production build; cloud configuration 6 passed.
+  All four images built. A disposable four-service stack derived from the cloud
+  configuration passed the gateway smoke, including every disabled AI route
+  checked by the script, fallback generation, trip/stop CRUD, regeneration and
+  exact saved-itinerary equality after database container replacement.
+  Both live Python services returned the `waitress` server header.
+- Browser check through `/itinerary/`: created a four-stop fallback itinerary,
+  updated its budget, verified Edit/Advice controls were disabled, and confirmed
+  deletion. API readback returned 404 and the original ten seeded trips remained.
+  The hidden browser's normal click stability wait stalled, so DOM-driven
+  interactions were used; this is not a keyboard/responsive acceptance test.
+- The disposable stack used a separate named volume and loopback port 55102,
+  without touching the existing integrated app or its databases. It validates
+  Student 2 plus the real shared gateway, not other students, public TLS, cloud
+  access controls or a full group deployment. Native AI services were not used.
+- Scoped Ruff security, detect-secrets and pip-audit hooks passed. On this
+  Windows host the existing virtual environment must be on `PATH` for the
+  hook's `python` command; the initial run hit the Microsoft Store alias and
+  passed after correcting the command environment.
+
+For a deployed group stack, use the full
+[`smoke_cloud.py`](../../scripts/deploy/smoke_cloud.py) against its public HTTPS
+origin. The Student 2 PowerShell `-Smoke` check also **replaces the database
+container**, so run it only against an explicitly selected disposable/test
+Compose project or during an approved maintenance window.
+
 ## Evidence and remaining acceptance
+
+22 October: captured fresh tests/scans and live Testing/Multi-Agent reviews;
+both await human finalisation. Cloud review failed output validation twice;
+the inspected green cloud run was only a placeholder. See the
+[review notes and records](review-record.md) and
+[evidence report](evidence/release-2/review-input-20261022.txt).
 
 21 October inline-edit validation: backend suites total 257 passed/11 opt-in
 live skips, frontend 45 passed plus production build, Ruff and whitespace checks
@@ -198,10 +246,18 @@ That capture predates inline edit assessment. The updated
 now checks edit assessment through native MCP/Ollama/Multi-Agent dependencies;
 use synthetic data only. It does not decide or save.
 
-**Pending:** container-to-native connectivity (LAN and WSL adapter probes timed
+The merged Student 2 baseline passed main CI run
+[`39694482270`](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39694482270).
+The 22 October deployment-preparation changes above are locally validated;
+they still need their own pushed CI run.
+
+**Pending for full Release 2 acceptance:** container-to-native connectivity (LAN and WSL adapter probes timed
 out; loopback forwarding was refused), genuine terminal/UI human decisions,
-all-feature local AI demonstration, pushed CI, approved cloud deployment,
-all-feature cloud CRUD/persistence, three live finalised report reviews, report
-and showcase. No firewall changes, paid provisioning or approvals are inferred.
+all-feature local AI demonstration, approved cloud deployment,
+all-feature cloud CRUD/persistence, current-evidence human finalisation of the
+Student 2 testing/Multi-Agent reviews, a successful cloud review, complete group
+review coverage, report and showcase. Student 3 already has finalised testing
+and Multi-Agent records; these do not cover Student 2 or certify the group.
+No firewall changes, paid provisioning or approvals are inferred.
 The app runs with existing local configuration; disabled capabilities do not
 demonstrate enabled AI functionality. This is not a certified group release.

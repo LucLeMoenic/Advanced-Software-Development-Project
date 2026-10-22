@@ -1,0 +1,41 @@
+{
+  "capturedAt": "2026-10-22T00:18:54.1539663Z",
+  "baseCommit": "7798bc882338dc33723217dd36d7bd0ff3228993",
+  "branch": "LLM/Student_2_Deployment_Readiness",
+  "workingTree": "Uncommitted deployment-preparation changes; baseline CI is not CI for this working tree.",
+  "preCommitHookInstalled": true,
+  "sourceFiles": [
+    {
+      "path": "student-2\\backend\\app.py",
+      "sha256": "9E1AD193898AC2CED7E2D6D826ACB54D1C39C9DC2150CA1C9CE2E611AB0989D3"
+    },
+    {
+      "path": "student-2\\backend\\requirements.txt",
+      "sha256": "F5012ED4F875455131DC178DADB812581D47C2A072C69938769005A93A56333C"
+    },
+    {
+      "path": "student-2\\backend\\tests\\test_release2_endpoints.py",
+      "sha256": "FF93380E65E9625ECBC1B192E5DEA1CF025DB37B0B4FA4BDFA5D4CF69AFBED82"
+    },
+    {
+      "path": "student-2\\database\\app.py",
+      "sha256": "2CEBE7C9CCF9BD8AE654CAE960066A627735B78828A26184B7607D9C4C454754"
+    },
+    {
+      "path": "student-2\\database\\requirements.txt",
+      "sha256": "B02745ADA85497F32EFADB11DB4192CCB79556883635241409E3DDF6EDBFDB86"
+    },
+    {
+      "path": ".github\\workflows\\student-2.yml",
+      "sha256": "C61E3078E93A61B147BD444375CFA87A3E13CA8FC7B8F2E63D21C0C0DA223B6A"
+    },
+    {
+      "path": "scripts\\test\\student-2.ps1",
+      "sha256": "416750B3F584C712F1AA1554E60DB03A337E8CC7331C0C56E13230930FE90ACF"
+    },
+    {
+      "path": "scripts\\security\\pip-audit-accepted.json",
+      "sha256": "8DE35193F7E0FD4EA3E6B57DB9ED69E0C340405D82A71981093AD2FF9397ACB5"
+    }
+  ]
+}
