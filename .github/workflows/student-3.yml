@@ -27,8 +27,15 @@ on:
       - 'scripts/deploy/audit-data-security.sh'
       - 'scripts/deploy/validate_security.py'
       - 'scripts/deploy/prepare_cloud.py'
+      - 'scripts/deploy/smoke_cloud_ai.py'
+      - 'scripts/deploy/system_test_local.py'
+      - 'scripts/deploy/pull-models-vm.sh'
+      - 'deploy/cloud/**'
       - 'scripts/test/test_validate_security.py'
       - 'scripts/test/test_cloud_config.py'
+      - 'scripts/test/test_cloud_ai_profile.py'
+      - 'scripts/test/test_cloud_smoke_ai.py'
+      - 'scripts/test/test_system_test_local.py'
   pull_request:
     paths:
       - 'student-3/**'
@@ -52,8 +59,15 @@ on:
       - 'scripts/deploy/audit-data-security.sh'
       - 'scripts/deploy/validate_security.py'
       - 'scripts/deploy/prepare_cloud.py'
+      - 'scripts/deploy/smoke_cloud_ai.py'
+      - 'scripts/deploy/system_test_local.py'
+      - 'scripts/deploy/pull-models-vm.sh'
+      - 'deploy/cloud/**'
       - 'scripts/test/test_validate_security.py'
       - 'scripts/test/test_cloud_config.py'
+      - 'scripts/test/test_cloud_ai_profile.py'
+      - 'scripts/test/test_cloud_smoke_ai.py'
+      - 'scripts/test/test_system_test_local.py'
   workflow_dispatch:
 
 jobs:
@@ -111,6 +125,9 @@ jobs:
           scripts/test/test_retry_transient.py
           scripts/test/test_validate_security.py
           scripts/test/test_cloud_config.py
+          scripts/test/test_cloud_ai_profile.py
+          scripts/test/test_cloud_smoke_ai.py
+          scripts/test/test_system_test_local.py
 
       - name: Validate Docker Compose config
         run: docker compose config --quiet

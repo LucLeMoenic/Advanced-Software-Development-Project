@@ -1,0 +1,12 @@
+KILLED   cleanup not in finally
+KILLED   no 404 check after delete
+KILLED   retry any path
+KILLED   retry on any error
+KILLED   mcp 200 accepted
+KILLED   https/any host allowed
+KILLED   model check dropped
+KILLED   ma health body ignored
+KILLED   list check dropped
+KILLED   approval note dropped
+KILLED   front end skipped
+survivors: []

@@ -1,0 +1,25 @@
+2026-10-22T01:15:31Z
+# Native (non-containerised) listeners
+  TCP    127.0.0.1:5400         0.0.0.0:0              LISTENING       1852
+  TCP    127.0.0.1:5500         0.0.0.0:0              LISTENING       27408
+  TCP    127.0.0.1:5600         0.0.0.0:0              LISTENING       11988
+  TCP    127.0.0.1:11434        0.0.0.0:0              LISTENING       15592
+
+# Owning processes
+port 11434 pid 15592: ollama
+port 5400 pid 1852: python
+port 5500 pid 27408: python
+port 5600 pid 11988: python
+
+# Ollama
+{"models":[{"name":"llama3.2:3b","model":"llama3.2:3b","size":2561524365,"digest":"a80c4f17acd5...","details":{"parent_model":"","format":"gguf","family":"llama","families":["llama"],"parameter_size":"3.2B","quantization_level":"Q4_K_M"},"expires_at":"2026-10-22T12:43:28.3137027+11:00","size_vram":0,"context_length":4096}]}
+# Backend env seen by Student 3's container
+AI_ENABLED=true
+MCP_ENABLED=true
+MCP_SERVER_URL=http://host.docker.internal:5400/mcp
+MULTI_AGENT_ENABLED=true
+MULTI_AGENT_SERVER_URL=http://host.docker.internal:5600
+OLLAMA_MODEL=llama3.2:3b
+OLLAMA_URL=http://host.docker.internal:11434
+RAG_ENABLED=true
+RAG_SERVER_URL=http://host.docker.internal:5500

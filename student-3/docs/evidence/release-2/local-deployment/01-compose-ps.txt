@@ -1,0 +1,22 @@
+# docker compose ps (integrated app, Frontend/Backend/Database only; no AI service is a container)
+2026-10-22T01:15:28Z
+SERVICE             STATUS                    PORTS
+shared-frontend     Up 10 minutes (healthy)   0.0.0.0:5100->80/tcp, [::]:5100->80/tcp
+student1-backend    Up 11 minutes (healthy)   0.0.0.0:5201->8080/tcp, [::]:5201->8080/tcp
+student1-database   Up 11 minutes (healthy)   0.0.0.0:5301->8080/tcp, [::]:5301->8080/tcp
+student1-frontend   Up 10 minutes (healthy)   0.0.0.0:5101->80/tcp, [::]:5101->80/tcp
+student2-backend    Up 11 minutes (healthy)   0.0.0.0:5202->8080/tcp, [::]:5202->8080/tcp
+student2-database   Up 11 minutes (healthy)   0.0.0.0:5302->8080/tcp, [::]:5302->8080/tcp
+student2-frontend   Up 10 minutes (healthy)   0.0.0.0:5102->80/tcp, [::]:5102->80/tcp
+student3-backend    Up 10 minutes (healthy)   0.0.0.0:5203->8080/tcp, [::]:5203->8080/tcp
+student3-database   Up 11 minutes (healthy)   0.0.0.0:5303->8080/tcp, [::]:5303->8080/tcp
+student3-frontend   Up 10 minutes (healthy)   0.0.0.0:5103->80/tcp, [::]:5103->80/tcp
+student4-backend    Up 11 minutes (healthy)   0.0.0.0:5204->8080/tcp, [::]:5204->8080/tcp
+student4-database   Up 11 minutes (healthy)   0.0.0.0:5304->8080/tcp, [::]:5304->8080/tcp
+student4-frontend   Up 10 minutes (healthy)   0.0.0.0:5104->80/tcp, [::]:5104->80/tcp
+student5-backend    Up 11 minutes (healthy)   0.0.0.0:5205->8080/tcp, [::]:5205->8080/tcp
+student5-database   Up 11 minutes (healthy)   0.0.0.0:5305->8080/tcp, [::]:5305->8080/tcp
+student5-frontend   Up 10 minutes (healthy)   0.0.0.0:5105->80/tcp, [::]:5105->80/tcp
+
+# Services defined in docker-compose.yml that look like AI services (expect none)
+none
