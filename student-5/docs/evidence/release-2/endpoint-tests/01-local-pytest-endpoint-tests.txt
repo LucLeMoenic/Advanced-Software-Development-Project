@@ -1,0 +1,24 @@
+==================================================================== test session starts ====================================================================
+platform win32 -- Python 3.13.2, pytest-9.1.1, pluggy-1.6.0 -- <repo>\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: <repo>
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.5
+collecting ... collected 13 items
+
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_201_with_the_stored_row PASSED                                         [  7%]
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[empty-body] PASSED                       [ 15%]
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[missing-visa-requirement] PASSED         [ 23%]
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[blank-country] PASSED                    [ 30%]
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_with_non_json_body_relays_database_400 PASSED                                  [ 38%]
+student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_503_when_database_is_down PASSED                                       [ 46%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_forwards_only_supplied_fields_and_returns_200 PASSED                           [ 53%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement] PASSED           [ 61%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[non-string-country] PASSED               [ 69%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_unknown_destination_relays_database_404 PASSED                                             [ 76%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_with_non_integer_id_is_404_without_database_call PASSED                        [ 84%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[connection-refused] PASSED                   [ 92%]
+student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[read-timeout] PASSED                         [100%]
+
+--------------- generated xml file: <repo>\student-5\endpoint-tests-junit.xml ----------------
+==================================================================== 13 passed in 0.32s =====================================================================
