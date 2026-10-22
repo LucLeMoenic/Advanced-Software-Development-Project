@@ -379,3 +379,61 @@ same commands locally (AI off, then restore) and write the endpoint-testing repo
 | Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
 | Local stack restored | backend recreated from `.env` (`AI_ENABLED=true`, MCP/RAG `true`, Multi-Agent `false`) |
 | GitHub Actions run | Not yet run: needs the push. To be added to the endpoint-testing report. |
+
+### Chunk 4 - Pre-commit security testing evidence, 22 October 2026
+
+**Why:** the Release 2 brief requires Ruff security rules, detect-secrets and
+pip-audit to run locally during the commit workflow, with a report of results and
+findings. Student 5 still had an accepted pip-audit exception
+(`PYSEC-2026-1845`, pytest below 9 in `database/requirements.txt`). That pin also
+made a combined install with the shared MCP/RAG requirements (`pytest==9.0.3`)
+impossible.
+
+**Prompt (summary):** "Chunk 4 of my plan": retire the Student 5 pip-audit
+exception, run the three hooks over every tracked Student 5 file, fix or document
+each finding, prepare a blocked-commit demo for me to run, and write the
+pre-commit report with captures.
+
+**AI-written change:**
+
+- `database/requirements.txt` and `backend/requirements.txt`:
+  `pytest>=9.0.3,<10.0` (database was `>=8.0,<9.0`; backend was `>=8.0,<10.0`).
+- `scripts/security/pip-audit-accepted.json`: Student 5 entry removed. The Student 2
+  entries are unchanged.
+- `database/app.py`: reasons added to three bare `# noqa: S608` comments. Comment
+  only, no code change.
+- `docs/evidence/release-2/precommit-security-report.md` and `precommit/01`-`03`.
+  `04-blocked-commit.txt` is captured by me from a real `git commit`.
+- Shared config (`.pre-commit-config.yaml`, `pyproject.toml`, `.secrets.baseline`)
+  is unchanged. pip-audit 2.10.1 was installed into the repo `.venv`.
+
+**Corrections during the session:**
+
+- The pip-audit hook is `language: system` with `entry: python`. It ran the
+  WindowsApps Python, which has no `pip_audit`, so a commit changing a
+  requirements file would have been blocked. This is worked around by committing
+  with `.venv` activated. It is flagged in the report for the shared config owner,
+  not changed.
+- After the independent review:
+  - the report no longer describes the real blocked commit as done. It gives the
+    dry-run result and points to `04`;
+  - `03` now shows the resolver's "would install" output and the pytest version,
+    not comments;
+  - wording on ignore scope was corrected;
+  - the backend floor was raised;
+  - the `noqa` reasons were added.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| pip-audit, database as on `main` (exception off) | 2 entries for `PYSEC-2026-1845` (pytest 8.4.2, fix 9.0.3), exit 1 |
+| pip-audit hook, both Student 5 requirements files after the bump | Passed: "No known vulnerabilities found" for both, no exceptions applied |
+| Combined install, database + MCP + RAG requirements (`--dry-run`) | Before: `ResolutionImpossible`. After: exit 0, pytest 9.0.3, Flask 3.1.3 |
+| Ruff hook, all 111 tracked Student 5 files | Passed. Raw with ignores off: 369 `S101` (tests only), 2 `S104`. With `noqa` ignored: 5 `S608`, traced and safe |
+| detect-secrets hook, all 111 files | Passed. 4 raw candidates (3 SHA-256 evidence hashes, 1 SRI hash), already `is_secret: false`; baseline unchanged |
+| Blocked-commit dry run (`pre-commit run --files` on an untracked insecure file) | Ruff `S602` and detect-secrets "AWS Access Key", exit 1; file deleted |
+| Full Student 5 suites (pytest 9.1.1) | database 26, backend 199, MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Independent AI code review | 0 critical, 1 important, 3 minor, 2 nits; all addressed. See `review-record.md` (Release 2 - Chunk 4) |
+| Pre-commit hooks on the changed files | Ruff Passed; detect-secrets Passed; pip-audit Passed |
+| Real blocked `git commit` | Run by me after handover; recorded in `precommit/04-blocked-commit.txt` |

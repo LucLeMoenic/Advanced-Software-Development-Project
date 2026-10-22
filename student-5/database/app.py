@@ -222,7 +222,7 @@ def create_resource(table):
 
     db = get_db()
     cursor = db.execute(
-        f"INSERT INTO {table} ({columns}) VALUES ({placeholders})",  # noqa: S608
+        f"INSERT INTO {table} ({columns}) VALUES ({placeholders})",  # noqa: S608 - columns from WRITABLE_FIELDS
         tuple(values.values()),
     )
     db.commit()
@@ -239,7 +239,7 @@ def update_resource(table, row_id):
 
     db = get_db()
     db.execute(
-        f"UPDATE {table} SET {assignments} WHERE id = ?",  # noqa: S608
+        f"UPDATE {table} SET {assignments} WHERE id = ?",  # noqa: S608 - columns from WRITABLE_FIELDS
         tuple(values.values()) + (row_id,),
     )
     db.commit()
@@ -248,7 +248,7 @@ def update_resource(table, row_id):
 
 def delete_resource(table, row_id):
     db = get_db()
-    cursor = db.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))  # noqa: S608
+    cursor = db.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))  # noqa: S608 - fixed name
     db.commit()
     if cursor.rowcount == 0:
         return error(f"No {table} row with id {row_id}", 404)

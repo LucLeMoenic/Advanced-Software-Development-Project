@@ -340,3 +340,50 @@ I accepted the review. Validation after the fixes:
 - pre-commit passed.
 
 Details are in `prompt-log.md` (Release 2, Chunk 3).
+
+## Release 2 - Chunk 4 review: pre-commit security testing evidence
+
+Before committing, the working-tree diff was given to an independent AI code-review
+agent with read-only access. The diff covered both Student 5 `requirements.txt`
+files, `scripts/security/pip-audit-accepted.json`, the pre-commit report and
+captures `01`-`03`. The reviewer compared it against `.pre-commit-config.yaml`,
+`pyproject.toml`, `.git/hooks/pre-commit`, `pip_audit_all.py`, `database/app.py`,
+`docker-compose.yml`, `student-5.ps1` and `student-5.yml`. It was asked to check:
+
+- pin correctness and Python 3.11 compatibility;
+- every count, line and port in the report;
+- the safety of the `noqa: S608` SQL;
+- what the detect-secrets candidates are;
+- the pip-audit `PATH` claim;
+- whether the new files would fail the hooks themselves;
+- overclaiming.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| The report described the real blocked `git commit` (`04`) as done before it existed, and `01`-`03` are `pre-commit run --files` runs, not a commit. | Important | Fixed: the report gives the verified dry-run result and points to `04` for the real commit, which I capture myself. The Chunk 4 commits also fire all three hooks. |
+| `03` showed the resolved pytest/Flask versions and "under pytest 9" as comments, not output. | Minor | Fixed: `03` now shows the resolver's "would install" lines and `pytest --version`. |
+| "With inline `noqa` ignored as well" suggested the per-file ignores were also off. | Minor | Fixed: "(per-file ignores on)". |
+| The backend `pytest>=8.0,<10.0` floor still allowed the vulnerable 8.x. | Minor (optional) | Fixed: `>=9.0.3,<10.0`; backend 199 passed. |
+| Finding 2 understated the per-file-ignore scope (`S105`/`S106` and `scripts/test`). | Nit | Fixed wording. No `S105`/`S106` exist in Student 5. |
+| Three `# noqa: S608` comments had no reason. | Nit | Fixed: comment-only change. |
+
+The reviewer confirmed:
+
+- the pins are 3.11-compatible and consistent with MCP/RAG, CI and the Dockerfile;
+- the JSON is valid and the Student 2 entries are intact;
+- every count, line number and port is correct;
+- table and column names in the SQL come only from literals and `WRITABLE_FIELDS`;
+- the four candidates are SHA-256 and SRI hashes;
+- the pip-audit `PATH` behaviour fails closed;
+- the new files pass detect-secrets;
+- there are no tool or model names in the text.
+
+It warned that `04` must have the fake key redacted before it is committed.
+
+I accepted the review. Validation after the fixes:
+
+- database 26, backend 199, MCP logistics 34 and RAG student-5 retrieval 17 tests
+  passed;
+- all three hooks passed.
+
+Details are in `prompt-log.md` (Release 2, Chunk 4).
