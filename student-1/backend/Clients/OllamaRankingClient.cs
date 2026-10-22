@@ -136,7 +136,7 @@ public sealed class OllamaRankingClient(
                         type = "string",
                         minLength = 1,
                         maxLength = 160,
-                        pattern = "^[A-Z][^\\r\\n]{0,158}\\.$"
+                        pattern = "^[A-Z][^ \\t\\r\\n]*( [^ \\t\\r\\n]+){7,17}\\.$"
                     }
                 },
                 required = new[] { "accommodationId", "rank", "reason" },

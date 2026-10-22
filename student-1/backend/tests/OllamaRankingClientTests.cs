@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Accommodation.Backend.Api;
 using Accommodation.Backend.Clients;
 
@@ -132,13 +133,18 @@ public sealed class OllamaRankingClientTests
                 .GetProperty("reason")
                 .GetProperty("maxLength")
                 .GetInt32());
-        Assert.Equal(
-            "^[A-Z][^\\r\\n]{0,158}\\.$",
-            itemSchema
-                .GetProperty("properties")
-                .GetProperty("reason")
-                .GetProperty("pattern")
-                .GetString());
+        var reasonPattern = itemSchema
+            .GetProperty("properties")
+            .GetProperty("reason")
+            .GetProperty("pattern")
+            .GetString()!;
+        foreach (var words in new[] { 7, 8, 18, 19 })
+        {
+            var reason = "Metro " + string.Join(" ", Enumerable.Repeat("access", words - 2)) + " helps.";
+            Assert.Equal(words is >= 8 and <= 18, Regex.IsMatch(reason, reasonPattern));
+        }
+        Assert.DoesNotMatch(reasonPattern,
+            "Ginza Food District Inn offers a convenient location, with free WiFi and air conditioning to enhance the traveller's stay.");
     }
 
     public static TheoryData<string> InvalidRankings()
