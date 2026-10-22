@@ -1,0 +1,24 @@
+# Gateway (nginx) hardening, tested against the real rebuilt shared-frontend container with Student 3's services behind it, 2026-10-21T10:17:55Z
+
+== nginx accepts the configuration
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+== version hidden (server_tokens off)
+Server: nginx
+
+== normal traffic: 60 requests at about 10 per second on a real route (a page load plus clicks is far below this)
+  status counts: {200: 60} | ever limited: False
+
+== flood: 300 requests as fast as possible from one client (limit: 30/s sustained, burst 60)
+  /health (answered by an nginx `return`, rewrite phase: exempt on purpose so healthchecks are never throttled)
+    {200: 300} in 1.90s; expected about 60 + 30 x 1.9 = 116 allowed on a limited route
+  / (static home page)
+    {200: 129, 429: 171} in 2.32s; expected about 60 + 30 x 2.3 = 129 allowed on a limited route
+  /attractions/ (proxied to Student 3's frontend)
+    {200: 151, 429: 149} in 3.05s; expected about 60 + 30 x 3.1 = 151 allowed on a limited route
+  /attractions-api/attractions (proxied API, backend + database)
+    {200: 182, 429: 118} in 4.08s; expected about 60 + 30 x 4.1 = 182 allowed on a limited route
+
+== recovery: after a pause the same client is served again
+  /attractions-api/attractions -> 200

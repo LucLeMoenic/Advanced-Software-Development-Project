@@ -200,6 +200,15 @@ flowchart LR
     Deploy --> Smoke[smoke_cloud.py over public HTTPS:<br/>Students 1 to 5 CRUD, AI off]
 ```
 
+Endpoint and data security controls on that path (bonus B5 and B6), described in `evidence/release-2/security-report.md`:
+
+| Layer | Controls |
+|---|---|
+| Public gateway (Caddy) | automatic TLS 1.2+ and HTTP to HTTPS redirect, HSTS, nosniff, frame protection, referrer and permissions policy, `Server` header removed, method allow-list (405), 1 MB body limit (413), client address overwritten for the rate limiter |
+| Gateway (nginx) | per-client rate limit (429), version hidden, 1 MB body limit |
+| Network | only `tls-gateway` publishes ports; every other service is on an internal network |
+| Data and secrets | blank `LITEAPI_KEY`, unreachable AI URLs, private (700/600) backups and restore snapshots, a read-only audit script, platform disk encryption |
+
 Student 3's contribution to this flow: the `AI_ENABLED` switch, `GET /api/capabilities`, `check_student3` in the smoke test, and the
 `student-3.yml` baseline assertion. The deployment steps themselves belong to the group's pipeline.
 

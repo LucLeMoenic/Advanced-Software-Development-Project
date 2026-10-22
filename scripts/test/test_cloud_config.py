@@ -56,3 +56,52 @@ def test_cloud_refuses_partial_application_or_unknown_storage():
     value["services"]["student2-database"]["volumes"][0]["target"] = "/elsewhere"
     with pytest.raises(ValueError):
         module.cloud_config(value, "a" * 40, "asd.example.org")
+
+
+# -- the public gateway's Caddyfile (Release 2 endpoint security) -----------------------------------------------------
+
+@pytest.fixture
+def caddy():
+    return module.caddyfile("asd.example.org")
+
+
+@pytest.mark.parametrize("control", [
+    'Strict-Transport-Security "max-age=31536000; includeSubDomains"',
+    'X-Content-Type-Options "nosniff"',
+    'X-Frame-Options "DENY"',
+    'Referrer-Policy "strict-origin-when-cross-origin"',
+    "Permissions-Policy",
+    "frame-ancestors 'none'",
+    "-Server",
+    "max_size 1MB",
+    "@disallowed not method GET HEAD POST PUT PATCH DELETE OPTIONS",
+    'respond @disallowed "Method not allowed" 405',
+    "header_up X-Forwarded-For {remote_host}",
+    "reverse_proxy shared-frontend:80",
+])
+def test_the_gateway_caddyfile_keeps_every_endpoint_security_control(caddy, control):
+    assert control in caddy
+
+
+def test_the_caddyfile_names_only_the_requested_domain_and_leaves_no_placeholder(caddy):
+    assert caddy.splitlines()[0] == "asd.example.org {"
+    assert "{{DOMAIN}}" not in caddy and caddy.count("asd.example.org") == 1
+
+
+def test_the_bundle_ships_exactly_the_generated_caddyfile():
+    _, _, shipped = module.cloud_config(source(), "a" * 40, "asd.example.org")
+
+    assert shipped == module.caddyfile("asd.example.org")
+
+
+def test_a_script_src_policy_is_deliberately_not_applied(caddy):
+    # The UIs use inline and CDN scripts; a script-src policy would break them. This documents the choice.
+    # Only directives are checked: the file's own comment explains the decision and so mentions the word.
+    directives = [line for line in caddy.splitlines() if not line.strip().startswith("#")]
+    assert not any("script-src" in line or "default-src" in line for line in directives)
+
+
+def test_only_the_tls_gateway_publishes_ports():
+    _, config, _ = module.cloud_config(source(), "a" * 40, "asd.example.org")
+
+    assert [name for name, service in config["services"].items() if service.get("ports")] == ["tls-gateway"]

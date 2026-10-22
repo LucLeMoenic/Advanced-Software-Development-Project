@@ -1,0 +1,64 @@
+# Mutation check for scripts/deploy/validate_security.py: each decision was broken on its own, the tests run,
+# and the file restored from an in-memory copy (verified identical).
+# 2026-10-21T10:36Z
+
+baseline (no mutation): 58 passed in 7.65s
+
+V1 HSTS accepts any max-age
+    result: 6 failed, 52 passed in 7.71s
+    caught by: test_each_missing_header_fails_only_its_own_check[strict-transport-security-header:hsts], test_hsts_must_have_a_long_max_age[max-age=0] (+4 more)
+
+V2 nosniff is never required
+    result: 1 failed, 57 passed in 7.62s
+    caught by: test_each_missing_header_fails_only_its_own_check[x-content-type-options-header:nosniff]
+
+V3 framing protection is never required
+    result: 1 failed, 57 passed in 7.72s
+    caught by: test_framing_is_protected_by_either_x_frame_options_or_csp_frame_ancestors
+
+V4 a server version leak is accepted
+    result: 2 failed, 56 passed in 7.73s
+    caught by: test_the_server_header_must_not_reveal_a_version[nginx/1.27.2-True], test_the_server_header_must_not_reveal_a_version[Apache/2.4.58-True]
+
+V5 TLS 1.1 is accepted
+    result: 2 failed, 56 passed in 7.75s
+    caught by: test_only_tls_1_2_or_newer_is_acceptable[TLSv1.1-False], test_old_tls_fails
+
+V6 a nearly expired certificate is accepted
+    result: 3 failed, 55 passed in 7.80s
+    caught by: test_a_verified_certificate_needs_at_least_a_week_left[6-False], test_a_verified_certificate_needs_at_least_a_week_left[0-False] (+1 more)
+
+V7 reachable internal ports are accepted
+    result: 2 failed, 56 passed in 7.77s
+    caught by: test_the_ports_check_fails_and_names_every_reachable_port, test_a_reachable_backend_port_fails
+
+V8 a redirect to plain http is accepted
+    result: 1 failed, 57 passed in 7.71s
+    caught by: test_a_redirect_to_another_plain_http_url_fails
+
+V9 TRACE is accepted
+    result: 2 failed, 56 passed in 7.61s
+    caught by: test_an_allowed_trace_verb_fails, test_main_exits_non_zero_when_any_check_fails_and_zero_otherwise
+
+V10 an oversized body is accepted
+    result: 1 failed, 57 passed in 7.69s
+    caught by: test_an_oversized_body_that_is_accepted_fails
+
+V11 missing rate limiting is accepted
+    result: 2 failed, 56 passed in 7.78s
+    caught by: test_no_rate_limiting_fails, test_an_unreachable_host_fails_cleanly_instead_of_crashing
+
+V12 --insecure is allowed for any host
+    result: 4 failed, 54 passed in 7.74s
+    caught by: test_insecure_is_refused_for_every_non_loopback_host[example.org], test_insecure_is_refused_for_every_non_loopback_host[10.0.0.5] (+2 more)
+
+V13 a plain-http origin is accepted
+    result: 4 failed, 54 passed in 7.71s
+    caught by: test_only_an_https_origin_is_accepted[http://example.org], test_only_an_https_origin_is_accepted[example.org] (+2 more)
+
+V14 the exit code ignores failures
+    result: 1 failed, 57 passed in 7.68s
+    caught by: test_main_exits_non_zero_when_any_check_fails_and_zero_otherwise
+
+after restoring: 58 passed in 7.57s
+mutations not caught: 0

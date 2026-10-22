@@ -1,0 +1,31 @@
+# scripts/deploy/validate_security.py against a REAL Caddy 2.10.2 (the Caddyfile prepare_cloud.py generates, plus 'tls internal' for a local certificate)
+# in front of the REAL rebuilt nginx gateway and Student 3's services, 2026-10-21T10:34:54Z
+# --insecure is only for this local self-signed gateway; the validator refuses it for any non-loopback host.
+
+$ python scripts/deploy/validate_security.py https://localhost:8443 --http-origin http://localhost:8081 --insecure --skip-ports
+PASS  redirect   GET http://localhost:8081/ -> 308 Location='https://localhost/'
+PASS  tls:version negotiated TLSv1.3 (need TLSv1.2 or newer)
+PASS  tls:cert   certificate verification skipped (--insecure); local testing only
+PASS  header:hsts Strict-Transport-Security max-age=31536000 (need at least 15552000)
+PASS  header:nosniff X-Content-Type-Options='nosniff'
+PASS  header:framing X-Frame-Options='DENY', CSP frame-ancestors=True
+PASS  header:referrer Referrer-Policy='strict-origin-when-cross-origin'
+PASS  header:permissions Permissions-Policy='camera=(), microphone=(), geolocation=(), payment=()'
+PASS  header:server Server=None (must not reveal a product version)
+PASS  methods    TRACE / -> 405 (expected 405)
+PASS  body       POST / with 2 MB -> 413 (expected 413)
+PASS  ports      skipped (--skip-ports)
+PASS  ratelimit  240 rapid requests from one client: 176 answered 429, 64 answered 200
+
+13 of 13 checks passed
+exit=0
+
+# Same gateway, ports check ENABLED. This local development stack publishes service ports to the host, so the check must FAIL here;
+# in the cloud bundle no service except tls-gateway publishes a port, which is what this check verifies there.
+$ python scripts/deploy/validate_security.py https://localhost:8443 --http-origin http://localhost:8081 --insecure --skip-rate-limit
+FAIL  ports      REACHABLE from outside: [5103, 5203, 5303, 5100, 11434]
+12 of 13 checks passed
+
+# Note on an earlier run of this same check: the first version of the validator reported ratelimit FAIL (0 of 240 limited) because its client
+# created a new TLS context and connection per request and so ran at exactly 30 req/s, the limiter's own rate. Measured: 30 req/s before,
+# 722 req/s with one cached context and persistent connections. Fixed; the deployment's limit was working all along.

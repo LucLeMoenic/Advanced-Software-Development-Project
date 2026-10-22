@@ -9,6 +9,7 @@
 # backups are kept. ASD_ROOT defaults to /opt/asd.
 set -euo pipefail
 
+umask 077  # backups are copies of every database: directories 700, files 600, never readable by other users
 root="${ASD_ROOT:-/opt/asd}"
 keep="${ASD_BACKUP_KEEP:-7}"
 fail() { echo "backup: $*" >&2; exit 1; }

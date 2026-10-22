@@ -1,0 +1,7 @@
+# Build context for multi-agent-server.Dockerfile: send only what the image copies, not the whole repository.
+*
+!ai-services/multi-agent-server/**
+!ai-services/agentic-loop/prompts/**
+**/__pycache__
+**/tests
+**/data

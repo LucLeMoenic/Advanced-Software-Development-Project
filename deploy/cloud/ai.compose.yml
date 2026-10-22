@@ -1,0 +1,88 @@
+# Release 2 cloud AI profile (bonus B1 to B4): the AI services that run in the CLOUD deployment only.
+#
+# This file is deliberately NOT part of docker-compose.yml: the brief keeps AI-Mode (Ollama), MCP, RAG and the Multi-Agent
+# Server out of the local Compose stack, where they run natively. scripts/deploy/prepare_cloud.py merges the services chosen with
+# --ai-services into the cloud bundle; with no --ai-services nothing here is used and the required baseline (all AI off) is unchanged.
+#
+# Every service is on the bundle's internal network with no published ports: only the TLS gateway is public.
+services:
+  ollama:
+    image: ollama/ollama:0.34.3  # pinned; the VM pulls it directly (about 8 GB), it is not shipped through the runner
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_MAX_LOADED_MODELS: "1"  # one resident model: this host class is memory-constrained
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_KEEP_ALIVE: 10m
+    volumes:
+      - ollama-models:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  mcp-server:
+    build:
+      context: ../..
+      dockerfile: deploy/cloud/mcp-server.Dockerfile
+    restart: unless-stopped
+    environment:
+      MCP_HOST: 0.0.0.0
+      MCP_PORT: "5400"
+      MCP_ALLOWED_HOSTS: "mcp-server:*"  # the Host header the backends send; the server rejects any host not listed
+      STUDENT1_DATABASE_API_URL: http://student1-database:8080
+      STUDENT2_DATABASE_API_URL: http://student2-database:8080
+      STUDENT3_DATABASE_API_URL: http://student3-database:8080
+      STUDENT4_BACKEND_API_URL: http://student4-backend:8080
+      STUDENT5_DATABASE_API_URL: http://student5-database:8080
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1', 5400), 3).close()"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  rag-server:
+    build:
+      context: ../..
+      dockerfile: deploy/cloud/rag-server.Dockerfile
+    restart: unless-stopped
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      RAG_MODEL: llama3.2:3b
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5500/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  multi-agent-server:
+    build:
+      context: ../..
+      dockerfile: deploy/cloud/multi-agent-server.Dockerfile
+    restart: unless-stopped
+    environment:
+      OLLAMA_URL: http://ollama:11434
+      MULTI_AGENT_MODEL: llama3.2:3b
+      MULTI_AGENT_DATA_DIR: /data
+    volumes:
+      - multi-agent-data:/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5600/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  ollama-models: {}
+  multi-agent-data: {}

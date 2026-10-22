@@ -9,6 +9,7 @@
 # ASD_ROOT defaults to /opt/asd.
 set -euo pipefail
 
+umask 077  # the pre-restore snapshot holds a full copy of live data
 root="${ASD_ROOT:-/opt/asd}"
 fail() { echo "restore: $*" >&2; exit 1; }
 
@@ -40,6 +41,8 @@ stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 safety="$root/backups/pre-restore-$stamp"
 mkdir -p "$safety"
 cp -a "$root/data/." "$safety/"
+# cp -a copies the source directory's own mode onto $safety, overriding the umask, so make the snapshot private explicitly.
+chmod -R go-rwx "$safety"
 echo "restore: current data saved to $safety"
 
 compose=(docker compose --project-name asd-cloud --file "$root/current/compose.json")

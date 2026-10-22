@@ -1,0 +1,7 @@
+# Build context for rag-server.Dockerfile: send only what the image copies, not the whole repository.
+*
+!ai-services/rag-server/**
+!ai-services/agentic-loop/prompts/**
+**/__pycache__
+**/tests
+**/data

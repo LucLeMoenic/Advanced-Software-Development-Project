@@ -24,7 +24,7 @@ One-time, copy the operations scripts to the VM. The deploy does **not** ship th
 until you do this:
 
 ```bash
-scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/restore-data.sh <user>@<vm>:/opt/asd/bin/
+scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/restore-data.sh scripts/deploy/audit-data-security.sh <user>@<vm>:/opt/asd/bin/
 ```
 
 ## 2. GitHub configuration
@@ -64,11 +64,45 @@ PASS: Student 5 reference data served; MCP, RAG and advisory disabled (read-only
 |---|---|---|
 | The deployed UI loads for every feature | Open `https://<domain>/` and each of `/accommodation/`, `/itinerary/`, `/attractions/`, `/budget/`, `/logistics/`; screenshot each | 7 |
 | AI services are visibly off | Screenshot Student 3's "Ask the AI" note and the disabled Multi-Agent panel; the other features' disabled states | 7 |
-| Only the gateway is public | On the VM: `docker ps --format '{{.Names}}\t{{.Ports}}'`; only `tls-gateway` shows `0.0.0.0:80/443`. From outside: `curl -m 5 http://<domain>:5203/health` must fail | B5 |
+| Only the gateway is public | On the VM: `docker ps --format '{{.Names}}\t{{.Ports}}'`; only `tls-gateway` shows `0.0.0.0:80/443`. From outside: `curl -m 5 http://<domain>:5203/health` must fail (the validator below also checks this) | B5 |
 | Backends and database are on an internal network | `docker network inspect asd-cloud_private --format '{{.Internal}}'` prints `true` | B5 |
 | TLS is valid | `curl -vI https://<domain>/` shows a verified certificate | B5 |
 | No secret reaches the app | `docker compose --project-name asd-cloud -f /opt/asd/current/compose.json config` shows `LITEAPI_KEY` blank and every `*_ENABLED` flag `false` | B6 |
 | Data is stored on the VM volume | `ls -l /opt/asd/data/student-*/` | B6 |
+
+### Endpoint security validation (bonus B5)
+
+Run from any machine, against the deployed site (it sends a few hundred requests in a few seconds, so use it only on your own deployment):
+
+```bash
+python scripts/deploy/validate_security.py https://<domain>
+```
+
+It checks the HTTP to HTTPS redirect, TLS version and certificate, the security headers, that `TRACE` is refused (405), that a 2 MB
+body is refused (413), that no backend, database or AI-service port is reachable from outside, and that a burst from one client is
+rate-limited (429). It exits 1 if anything fails. **Capture the full output.** Its local run is in
+`student-3/docs/evidence/release-2/security/03-live-validator-run.txt`.
+
+### Data security validation (bonus B6)
+
+On the VM (script copied in section 1):
+
+```bash
+bash /opt/asd/bin/audit-data-security.sh
+```
+
+It is read-only and checks that data and backups are not accessible to other users, that no container has a secret in its
+environment (names only are printed), that `LITEAPI_KEY` is blank in the release, and that no credential file is left under `/opt/asd`.
+It also reports which `*_ENABLED` flags are on. It cannot see disk encryption, so capture the provider's evidence for the VM's disk:
+
+```bash
+# Azure (check the output shows platform-managed or customer-managed encryption at rest)
+az disk show --resource-group <group> --name <os-disk-name> --query "encryption"
+# AWS (check Encrypted is true)
+aws ec2 describe-volumes --volume-ids <volume-id> --query "Volumes[].Encrypted"
+```
+
+(Commands to adapt to your resource names; confirm the output rather than assuming it.)
 
 ## 5. Persistence across a redeploy
 
@@ -113,7 +147,8 @@ passing smoke test. The scripts' behaviour is covered by `scripts/test/test_vm_s
 | 6 `cloud-deployment.yml` | the successful run URL and its logs |
 | 7 Cloud app and CRUD | the smoke transcript, the section 4 screenshots |
 | `review-cloud` mode | one finalised record whose context files include: the run URL and `cloud-smoke.txt`, the section 4 and 5 outputs, and the section 6 transcript. Run it only on a real deployment's evidence |
-| B5 / B6 | the section 4 outputs for endpoint and data security |
+| B5 | the full `validate_security.py` output against the deployed URL, plus the section 4 checks |
+| B6 | the `audit-data-security.sh` output, the provider's disk-encryption evidence, and the section 4 data checks |
 
 ## 8. Known gaps
 
