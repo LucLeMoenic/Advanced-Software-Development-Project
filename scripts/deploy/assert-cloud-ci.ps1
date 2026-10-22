@@ -15,8 +15,8 @@ foreach ($name in @("Student 1 CI", "Student 2 CI", "Student 3 CI", "Student 4 C
         $blocked += $name
         continue
     }
-    if ($blocked.Count) {
-        throw "Required CI is missing, incomplete or unsuccessful for $Sha on main: $($blocked -join ', '). Run these workflows manually on main and wait for success before deploying. All six checks must pass for this exact revision; if main advances, validate the new revision instead. Missing/skipped checks cannot permit deployment."
-    }
     Write-Host "$name passed: $($latest.html_url)"
+}
+if ($blocked.Count) {
+    throw "Required CI is missing, incomplete or unsuccessful for $Sha on main: $($blocked -join ', '). Run these workflows manually on main and wait for success before deploying. All six checks must pass for this exact revision; if main advances, validate the new revision instead. Missing/skipped checks cannot permit deployment."
 }
