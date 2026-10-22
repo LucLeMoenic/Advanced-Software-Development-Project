@@ -66,7 +66,7 @@ def run(base):
     check_student4(call)
     print("PASS: Student 4 AI modes disabled; deterministic advice; budget and expense CRUD.")
     check_student5(call)
-    print("PASS: Student 5 reference data served; MCP, RAG and advisory disabled (read-only: it has no update or delete).")
+    print("PASS: Student 5 AI modes disabled; reference data served; destination CRUD.")
     print("Persistence across redeploy, other features' CRUD and rollback require separate evidence.")
 
 
@@ -178,26 +178,40 @@ def check_student4(call):
 
 
 def check_student5(call):
-    """Student 5 through the gateway: reference data is served and every AI route is off.
+    """Student 5 through the gateway: every AI route off, reference data served, and destination CRUD.
 
-    Student 5's API has list, get and create but no update or delete, so this check creates nothing
-    (a created row could never be cleaned up from the deployed database). Its advisory endpoint has no
-    explicit AI switch: with the cloud bundle's unreachable model address it answers 503, which is the
-    "disabled" behaviour asserted here.
+    The 503 bodies are checked as well as the status, because a backend that is down also answers 503
+    through the gateway; only the named error proves the switch is off. The AI routes are checked before
+    anything is created, so an enabled deployment fails without writing a row.
     """
     api = "/logistics/api"
     destinations = call(f"{api}/destinations")
     if len(destinations) < 10:
         raise RuntimeError("At least ten demonstration destinations are required.")
-    first = destinations[0]
-    if call(f"{api}/destinations/{first['id']}")["id"] != first["id"]:
-        raise RuntimeError("Destination readback failed.")
     for table in ("weather-notes", "transit-options"):
         if not call(f"{api}/{table}"):
             raise RuntimeError(f"The Student 5 {table} reference data is empty.")
-    call(f"{api}/mcp/tools", expected=503)
-    call(f"{api}/rag/ask", "POST", {"question": "What is a visa on arrival?"}, 503)
-    call(f"{api}/advisory", "POST", {"destination_id": first["id"]}, 503)
+    seeded = destinations[0]["id"]
+    for path, method, body, code in ((f"{api}/advisory", "POST", {"destination_id": seeded}, "ai_disabled"),
+                                     (f"{api}/mcp/tools", "GET", None, "mcp_disabled"),
+                                     (f"{api}/rag/ask", "POST", {"question": "What is a visa on arrival?"}, "rag_disabled"),
+                                     (f"{api}/destinations/{seeded}/readiness-reviews", "POST", {}, "multi_agent_disabled")):
+        refusal = call(path, method, body, 503)
+        if not isinstance(refusal, dict) or refusal.get("error") != code:
+            raise RuntimeError(f"{method} {path}: expected the {code} body.")
+    country = f"R2 smoke {uuid.uuid4().hex[:8]}"
+    destination = call(f"{api}/destinations", "POST", {"country": country, "visa_requirement": "Synthetic fixture"}, 201)
+    path = f"{api}/destinations/{destination['id']}"
+    try:
+        if call(path).get("country") != country:
+            raise RuntimeError("Destination create/readback failed.")
+        call(path, "PUT", {"visa_requirement": "Synthetic fixture updated", "notes": "Cloud smoke"})
+        saved = call(path)
+        if saved.get("country") != country or saved.get("visa_requirement") != "Synthetic fixture updated":
+            raise RuntimeError("Update/readback did not preserve the destination.")
+    finally:
+        call(path, "DELETE", expected=204)
+    call(path, expected=404)
 
 
 if __name__ == "__main__":

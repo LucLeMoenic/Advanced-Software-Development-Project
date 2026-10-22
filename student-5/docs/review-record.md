@@ -387,3 +387,57 @@ I accepted the review. Validation after the fixes:
 - all three hooks passed.
 
 Details are in `prompt-log.md` (Release 2, Chunk 4).
+
+## Release 2 - Chunk 5 review: cloud deployment smoke coverage
+
+Before committing, the working-tree diff was given to an independent AI code-review
+agent with read-only access. The diff covered `check_student5` and the Student 5
+`PASS` line in `scripts/deploy/smoke_cloud.py`, and
+`scripts/test/test_cloud_smoke_student5.py`. The reviewer compared it against:
+
+- the gateway and Student 5 nginx routing;
+- `app.py`, `advisory.py`, `integrations.py` and `readiness.py`;
+- the database's validation and status codes;
+- `prepare_cloud.py`;
+- the other students' check functions.
+
+It was asked to check:
+
+- the routes and disabled bodies the check assumes;
+- cleanup on every failure path;
+- consistency with the shared file's style;
+- whether each assertion is shown to matter by a test;
+- Python 3.11 compatibility.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| The create readback (`Destination create/readback failed`) and the "country kept" half of the update check were never made to fail, because the fake always stored and merged correctly. | Minor | Fixed: fake options `corrupt="create"` and `corrupt="update"`, each asserting the message and that the row is deleted. Mutation check: removing either check now fails 1 test. |
+| Cleanup was tested at only one failure point. A `call()` raising after the create (for example a `500` on the update or the first readback) was not covered. | Minor | Fixed: `error_on="GET"` / `"PUT"` cases. Mutation check: replacing the `finally` fails 5 tests. |
+
+The reviewer confirmed:
+
+- `/logistics/api/*` reaches `student5-backend` `/api/*`;
+- each disabled check runs before any database read or network call;
+- a down backend or an nginx HTML `503` fails the body check;
+- `prepare_cloud.py` sets all four flags `false` on `student5-backend`;
+- the POST body meets the required fields and the PUT is a partial merge;
+- the seed data meets the thresholds;
+- the code is Python 3.11-compatible and matches the other check functions.
+
+It also noted two limits that every check function in the file shares, left
+unchanged to keep the shared file consistent:
+
+- a failing `DELETE` in `finally` can hide the original error;
+- a create that succeeds on the server but times out on the client would leave
+  one row.
+
+I accepted the review. Validation after the fixes:
+
+- smoke tests: 18 passed;
+- all of `scripts/test`: 229 passed, 58 skipped;
+- live local check: `PASS` with all four flags `false`;
+- database 26, backend 199, MCP logistics 34 and RAG student-5 retrieval 17 tests
+  passed;
+- pre-commit passed.
+
+Details are in `prompt-log.md` (Release 2, Chunk 5).
