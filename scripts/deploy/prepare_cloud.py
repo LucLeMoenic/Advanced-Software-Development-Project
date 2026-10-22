@@ -22,6 +22,14 @@ UNREACHABLE = "http://127.0.0.1:9"  # nothing listens here: a disabled service i
 CLOUD_MODEL = "llama3.2:3b"  # one model for every consumer, so a single model is resident in the VM's memory
 AI_COMPOSE = ROOT / "deploy" / "cloud" / "ai.compose.yml"
 
+def cloud_proxy_config(name):
+    directory = ROOT / ("shared/vue-frontend" if name == "shared-frontend" else f"student-{name[7]}/frontend")
+    text = (directory / "nginx.conf").read_text(encoding="utf-8")
+    # Two model attempts can take 360 seconds; preserve routing and leave time for backend error responses.
+    text = re.sub(r"proxy_(read|send)_timeout\s+\d+s;", r"proxy_\1_timeout 400s;", text)
+    text = text.replace("server {", "server {\n    proxy_read_timeout 400s;\n    proxy_send_timeout 400s;", 1)
+    return text.replace("$", "$$")
+
 
 def parse_ai_services(value):
     """'ai,mcp' -> frozenset({'ai', 'mcp'}); '' -> empty. Only the four known components are accepted."""
@@ -107,6 +115,7 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
         service["networks"] = ["private"]
         environment = service.setdefault("environment", {})
         if name.endswith("-backend"):
+            environment["CLOUD_AI_SLOW_MODE"] = "true" if ai else "false"
             switches = {"AI_ENABLED": "ai", "MCP_ENABLED": "mcp", "RAG_ENABLED": "rag", "MULTI_AGENT_ENABLED": "multi-agent"}
             environment.update({flag: "true" if component in ai else "false" for flag, component in switches.items()})
             ollama = "http://ollama:11434" if "ai" in ai else UNREACHABLE
@@ -118,6 +127,7 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
             })
             if "ai" in ai and name == "student3-backend":
                 environment["OLLAMA_MODEL"] = CLOUD_MODEL
+                environment["OLLAMA_TIMEOUT"] = "180"
             if "ai" in ai:
                 for setting in ("APPLICATION_MODEL", "STUDENT4_MODEL"):
                     if setting in environment:
@@ -139,6 +149,8 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
             config["networks"]["egress"] = {}
         if "build" in service:  # built from this repository like the application services
             service["image"] = f"asd-{name}:{sha}"
+        if name == "rag-server":
+            service.setdefault("environment", {})["CLOUD_AI_SLOW_MODE"] = "true"
         config["services"][name] = service
     for volume in ai_source.get("volumes", {}) if wanted else {}:
         if any(volume == (v.get("source") if isinstance(v, dict) else v) for name in wanted
@@ -155,6 +167,14 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
             "type": "bind", "source": "./gateway-auth.caddy", "target": "/etc/caddy/gateway-auth.caddy",
             "read_only": True, "bind": {"create_host_path": False},
         })
+        config["services"]["student2-frontend"]["build"].setdefault("args", {})["VITE_CLOUD_AI_SLOW_MODE"] = "true"
+        config["services"]["student2-frontend"]["image"] = f"asd-student2-frontend:{sha}-ai"
+        config["configs"] = {}
+        for name in ("shared-frontend", *(f"student{i}-frontend" for i in range(1, 6))):
+            key = f"{name}-nginx"
+            config["configs"][key] = {"content": cloud_proxy_config(name)}
+            target = "/etc/nginx/templates/default.conf.template" if name == "shared-frontend" else "/etc/nginx/conf.d/default.conf"
+            config["services"][name]["configs"] = [{"source": key, "target": target}]
     build = copy.deepcopy(config)
     for service in config["services"].values():
         service.pop("build", None)

@@ -6,9 +6,23 @@ convention test_recommend.py uses for Ollama.
 
 import pytest
 import requests
+import importlib
 
 import rag_client
 
+
+@pytest.mark.parametrize("slow,expected", [("false", 30), ("true", 200)])
+def test_cloud_timeout_is_passed_to_the_rag_request(monkeypatch, slow, expected):
+    with monkeypatch.context() as configured:
+        configured.setenv("CLOUD_AI_SLOW_MODE", slow)
+        configured.setenv("RAG_ENABLED", "true")
+        importlib.reload(rag_client)
+        def post(url, json, timeout):
+            assert timeout == expected
+            return FakeResponse({"answer": "a", "citations": [], "confidence": "low"})
+        configured.setattr(rag_client.requests, "post", post)
+        assert rag_client.ask("Budget?")["answer"] == "a"
+    importlib.reload(rag_client)
 
 class FakeResponse:
     def __init__(self, payload, status_code=200):

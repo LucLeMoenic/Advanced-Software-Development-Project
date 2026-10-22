@@ -27,11 +27,12 @@ from multi_agent_client import DEFAULT_MULTI_AGENT_SERVER_URL, MultiAgentClient
 from ollama_client import (
     DEFAULT_APPLICATION_MODEL,
     DEFAULT_OLLAMA_URL,
+    DEFAULT_TIMEOUT_SECONDS as OLLAMA_TIMEOUT_SECONDS,
     OllamaClient,
     OllamaDisabled,
     OllamaUnavailable,
 )
-from rag_client import DEFAULT_RAG_SERVER_URL, RagClient
+from rag_client import DEFAULT_RAG_SERVER_URL, DEFAULT_TIMEOUT_SECONDS as RAG_TIMEOUT_SECONDS, RagClient
 from readiness import readiness_bp
 from ui import ui_bp
 
@@ -240,9 +241,12 @@ def create_app(config: Optional[dict] = None) -> Flask:
         app.config["OLLAMA_URL"],
         app.config["APPLICATION_MODEL"],
         enabled=app.config["AI_ENABLED"],
+        timeout=180 if env_flag("CLOUD_AI_SLOW_MODE") else OLLAMA_TIMEOUT_SECONDS,
     )
     app.config["MCP_CLIENT"] = McpClient(app.config["MCP_SERVER_URL"], app.config["MCP_ENABLED"])
-    app.config["RAG_CLIENT"] = RagClient(app.config["RAG_SERVER_URL"], app.config["RAG_ENABLED"])
+    app.config["RAG_CLIENT"] = RagClient(
+        app.config["RAG_SERVER_URL"], app.config["RAG_ENABLED"],
+        timeout=200 if env_flag("CLOUD_AI_SLOW_MODE") else RAG_TIMEOUT_SECONDS)
     app.config["MULTI_AGENT_CLIENT"] = MultiAgentClient(
         app.config["MULTI_AGENT_SERVER_URL"], app.config["MULTI_AGENT_ENABLED"]
     )

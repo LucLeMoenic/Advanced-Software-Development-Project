@@ -59,6 +59,27 @@ def make(components=""):
 def backends(config):
     return {name: s for name, s in config["services"].items() if name.endswith("-backend")}
 
+def test_cloud_ai_deadlines_are_wired_end_to_end_without_changing_baseline():
+    baseline_build, baseline, _ = make()
+    build, enabled, _ = make("ai,mcp,rag,multi-agent")
+    assert all(s["environment"]["CLOUD_AI_SLOW_MODE"] == "false" for s in backends(baseline).values())
+    assert all(s["environment"]["CLOUD_AI_SLOW_MODE"] == "true" for s in backends(enabled).values())
+    assert enabled["services"]["rag-server"]["environment"]["CLOUD_AI_SLOW_MODE"] == "true"
+    assert enabled["services"]["student3-backend"]["environment"]["OLLAMA_TIMEOUT"] == "180"
+    assert "configs" not in baseline
+    assert "VITE_CLOUD_AI_SLOW_MODE" not in baseline_build["services"]["student2-frontend"]["build"].get("args", {})
+    assert build["services"]["student2-frontend"]["build"]["args"]["VITE_CLOUD_AI_SLOW_MODE"] == "true"
+    assert enabled["services"]["student2-frontend"]["image"] == f"asd-student2-frontend:{SHA}-ai"
+    assert baseline["services"]["student2-frontend"]["image"] == f"asd-student2-frontend:{SHA}"
+    assert len(enabled["configs"]) == 6
+    for name, value in enabled["configs"].items():
+        content = value["content"]
+        assert "proxy_read_timeout 400s;" in content and "proxy_send_timeout 400s;" in content
+        assert "$$" in content
+        service = enabled["services"][name.removesuffix("-nginx")]
+        assert service["configs"][0]["source"] == name
+        assert service["configs"][0]["target"].startswith("/etc/nginx/")
+
 
 # -- parsing --------------------------------------------------------------------------------------------------------
 

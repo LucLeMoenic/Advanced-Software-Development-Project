@@ -29,10 +29,15 @@ Review this register before AI, schema, Compose, CI, or public API changes and a
   private bcrypt snippet on the VM. Real isolated Caddy tests verify anonymous
   and incorrect-password rejection and credential stripping. This is shared
   demo access, not per-user record or human-decision authorization (P=3, I=5).
-- The `m7i-flex.large` target has 2 vCPU/8 GiB and no measured AI capacity.
-  Provisioning verifies and warms one shared model; backend timeouts, schema
-  failures, grounding and concurrency still require live evidence (P=4, I=4).
-  The deployment smoke rejects fallback and stops agents at human review.
+- The `m7i-flex.large` target has 2 vCPU/8 GiB. EC2 logs confirmed a successful
+  8.56-second warm-up but cancellation of real itinerary inference at 20.02
+  seconds. Approved cloud-only slow mode now allows 180 seconds per model call,
+  nested RAG budgets through 200 seconds, browser preview/advice budgets of
+  390/230 seconds and 400-second nginx read/send timeouts. Sequential retry
+  paths fit within these budgets; local defaults and human approval remain
+  unchanged. Schema failures, grounding, real CPU latency and queued concurrent
+  requests still require live evidence (P=4, I=4). The deployment smoke rejects
+  fallback, uses a 420-second request budget and stops agents at human review.
 - Failed provisioning or smoke may leave changed containers, even if a previous
   release link is retained. Inspect and explicitly roll back; do not assume an
   atomic deployment (P=3, I=4). Baseline rollback disables AI and removes the

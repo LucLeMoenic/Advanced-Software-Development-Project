@@ -50,9 +50,13 @@ def itinerary_only(monkeypatch):
 
 
 @pytest.mark.parametrize("enabled", [frozenset(), frozenset({"ai", "mcp", "rag", "multi-agent"})])
-def test_selected_profile_checks_generation_and_crud_and_removes_fixture(itinerary_only, enabled):
+def test_selected_profile_checks_generation_and_crud_and_removes_fixture(itinerary_only, enabled, monkeypatch):
     gateway = Gateway(enabled)
-    smoke_cloud.run("https://example.org", enabled=enabled, call=gateway)
+    def make_call(origin, timeout):
+        assert timeout == (420 if enabled else 30)
+        return gateway
+    monkeypatch.setattr(smoke_cloud, "make_call", make_call)
+    smoke_cloud.run("https://example.org", enabled=enabled)
     assert gateway.deleted
     assert any(method == "PUT" for _, method, _ in gateway.calls)
     assert any(status == 503 for _, _, status in gateway.calls) == (not enabled)
@@ -61,6 +65,6 @@ def test_selected_profile_checks_generation_and_crud_and_removes_fixture(itinera
 def test_fallback_cannot_pass_ai_deployment_and_fixture_is_removed(itinerary_only):
     enabled = frozenset({"ai", "mcp", "rag", "multi-agent"})
     gateway = Gateway(enabled, generation="fallback")
-    with pytest.raises(RuntimeError, match="generation did not match"):
+    with pytest.raises(RuntimeError, match="expected mode=ai, stops=4; received mode=fallback, stops=4"):
         smoke_cloud.run("https://example.org", enabled=enabled, call=gateway)
     assert gateway.deleted

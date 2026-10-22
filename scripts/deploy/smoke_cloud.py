@@ -7,7 +7,7 @@ from cloud_auth import make_call
 
 
 def run(base, enabled=frozenset(), call=None):
-    call = call or make_call(base, timeout=200 if enabled else 30)
+    call = call or make_call(base, timeout=420 if enabled else 30)
     for route in ("/", "/accommodation/", "/itinerary/", "/attractions/", "/budget/", "/logistics/"):
         call(route)
     modes = call("/itinerary-api/capabilities")
@@ -21,8 +21,12 @@ def run(base, enabled=frozenset(), call=None):
     trip = call("/itinerary-api/trips", "POST", criteria, 201)
     path = f"/itinerary-api/trips/{trip['id']}"
     try:
-        if trip.get("generationMode") != ("ai" if "ai" in enabled else "fallback") or len(trip.get("stops", [])) != 4:
-            raise RuntimeError("Trip generation did not match the selected AI mode or required stop count.")
+        expected_mode = "ai" if "ai" in enabled else "fallback"
+        if trip.get("generationMode") != expected_mode or len(trip.get("stops", [])) != 4:
+            raise RuntimeError(
+                f"Trip generation did not match the selected AI mode or required stop count: "
+                f"expected mode={expected_mode}, stops=4; received mode={trip.get('generationMode')}, "
+                f"stops={len(trip.get('stops', []))}. Check student2-backend and Ollama logs for the cause.")
         call(path, "PUT", {**criteria, "budget": 1200})
         saved = call(path)
         if saved["budget"] != 1200 or saved["stops"] != trip["stops"]:

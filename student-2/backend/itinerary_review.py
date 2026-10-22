@@ -395,6 +395,7 @@ class ReviewModel:
     def __init__(self, url, model):
         self.url = url.rstrip("/")
         self.model = model
+        self.timeout = 180 if os.getenv("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 20
         configured = os.getenv("ITINERARY_REVIEW_PROMPT")
         self.prompt_path = Path(configured) if configured else (
             Path(__file__).resolve().parent.parent.parent / "ai-services/agentic-loop/prompts/itinerary-review-v1.txt")
@@ -407,8 +408,8 @@ class ReviewModel:
         try:
             prompt_path = self.edit_prompt_path if stage == "select_edit" else self.prompt_path
             instructions = prompt_path.read_text(encoding="utf-8")
-            with anyio.fail_after(20):
-                async with httpx.AsyncClient(timeout=20) as client:
+            with anyio.fail_after(self.timeout):
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
                     prompt_data = {"itinerary": data.get("itinerary"), "question": data.get("question")} if stage == "select_edit" else data
                     payload = {"model": self.model, "system": instructions,
                                "prompt": json.dumps({"stage": stage, "data": prompt_data}), "stream": False,

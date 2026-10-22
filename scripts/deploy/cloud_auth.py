@@ -52,7 +52,7 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
-def make_call(base, timeout=200, authenticated=True):
+def make_call(base, timeout=420, authenticated=True):
     parsed = urlparse(base)
     if (parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password
             or parsed.path not in ("", "/") or parsed.query or parsed.fragment):
