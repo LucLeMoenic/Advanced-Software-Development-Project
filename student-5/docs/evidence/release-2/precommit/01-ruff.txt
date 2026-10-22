@@ -1,0 +1,34 @@
+# Ruff security rules over every tracked Student 5 file (111 files), 2026-10-22T00:33:20Z, branch AC/student5-r2-precommit
+# Command: python -m pre_commit run ruff-check --verbose --files $(git ls-files student-5)
+ruff security rules (flake8-bandit)......................................Passed
+- hook id: ruff-check
+- duration: 0.07s
+
+All checks passed!
+
+
+## Supporting scan: same ruff 0.17.1, pyproject per-file-ignores disabled (what the config accepts)
+# Command: ruff check --select S --config "lint.per-file-ignores = {}" --statistics $(git ls-files 'student-5/*.py')
+369	S101	assert
+  2	S104	hardcoded-bind-all-interfaces
+Found 371 errors.
+# S101 by file (all under tests/):
+     41 student-5\backend\tests\test_advisory.py
+     30 student-5\backend\tests\test_backend_api.py
+     31 student-5\backend\tests\test_endpoints_cicd.py
+     66 student-5\backend\tests\test_integrations.py
+    106 student-5\backend\tests\test_readiness.py
+     48 student-5\backend\tests\test_ui_fragments.py
+     47 student-5\database\tests\test_database_api.py
+# S104 locations:
+student-5\backend\app.py:287:27: S104 Possible binding to all interfaces
+student-5\database\app.py:364:27: S104 Possible binding to all interfaces
+
+## Supporting scan: inline noqa suppressions ignored (per-file ignores still on)
+# Command: ruff check --select S --ignore-noqa $(git ls-files 'student-5/*.py')
+student-5\database\app.py:189:9: S608 Possible SQL injection vector through string-based query construction
+student-5\database\app.py:195:11: S608 Possible SQL injection vector through string-based query construction
+student-5\database\app.py:225:9: S608 Possible SQL injection vector through string-based query construction
+student-5\database\app.py:242:9: S608 Possible SQL injection vector through string-based query construction
+student-5\database\app.py:251:25: S608 Possible SQL injection vector through string-based query construction
+Found 5 errors.

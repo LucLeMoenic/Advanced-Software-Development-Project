@@ -1,0 +1,78 @@
+# pip-audit over the Student 5 requirements files, 2026-10-22T00:33:20Z, branch AC/student5-r2-precommit
+
+## Before: student-5/database/requirements.txt as on main (pytest>=8.0,<9.0), exception NOT applied
+# Command: python -m pip_audit --requirement student-5/database/requirements.txt --progress-spinner off
+Found 2 known vulnerabilities in 1 package
+Name   Version ID              Fix Versions
+------ ------- --------------- ------------
+pytest 8.4.2   PYSEC-2026-1845 9.0.3
+pytest 8.4.2   PYSEC-2026-1845 9.0.3
+exit=1
+
+## Before: combined install with the shared MCP/RAG requirements
+# Command: python -m pip install --dry-run --ignore-installed -r student-5/database/requirements.txt -r ai-services/mcp-server/requirements.txt -r ai-services/rag-server/requirements.txt
+ERROR: Cannot install pytest<9.0 and >=8.0 and pytest==9.0.3 because these package versions have conflicting dependencies.
+ERROR: ResolutionImpossible: for help visit https://pip.pypa.io/en/latest/topics/dependency-resolution/#dealing-with-dependency-conflicts
+exit=1
+
+## Change
+diff --git a/scripts/security/pip-audit-accepted.json b/scripts/security/pip-audit-accepted.json
+index 714d2cf..9befd5e 100644
+--- a/scripts/security/pip-audit-accepted.json
++++ b/scripts/security/pip-audit-accepted.json
+@@ -11,11 +11,5 @@
+     "recorded": "2026-10-18",
+     "ids": ["PYSEC-2026-2151"],
+     "fix": "flask>=3.1.3"
+-  },
+-  "student-5/database/requirements.txt": {
+-    "owner": "Student 5",
+-    "recorded": "2026-10-18",
+-    "ids": ["PYSEC-2026-1845"],
+-    "fix": "pytest>=9.0.3 (dev-only dependency)"
+   }
+ }
+diff --git a/student-5/backend/requirements.txt b/student-5/backend/requirements.txt
+index 70e3e69..7b4af28 100644
+--- a/student-5/backend/requirements.txt
++++ b/student-5/backend/requirements.txt
+@@ -1,6 +1,6 @@
+ flask>=3.0,<4.0
+ requests>=2.31,<3.0
+-pytest>=8.0,<10.0
++pytest>=9.0.3,<10.0
+ responses>=0.25,<1.0
+ mcp==2.2.0
+ anyio>=4.5,<5.0
+diff --git a/student-5/database/requirements.txt b/student-5/database/requirements.txt
+index 1938d6d..c7b9448 100644
+--- a/student-5/database/requirements.txt
++++ b/student-5/database/requirements.txt
+@@ -1,2 +1,2 @@
+ flask>=3.0,<4.0
+-pytest>=8.0,<9.0
++pytest>=9.0.3,<10.0
+
+## After: pre-commit pip-audit hook (no accepted exception for Student 5 remains)
+# Command: python -m pre_commit run pip-audit --verbose --files $(git ls-files student-5)
+pip-audit (requirements files in this commit)............................Passed
+- hook id: pip-audit
+- duration: 39.48s
+
+== pip-audit student-5/backend/requirements.txt
+No known vulnerabilities found
+== pip-audit student-5/database/requirements.txt
+No known vulnerabilities found
+pip-audit OK for 2 requirements file(s)
+
+
+## After: combined install with the shared MCP/RAG requirements
+# Command: same as above, plus --report <file>; pytest and Flask taken from the report
+dry=0
+would install pytest 9.0.3
+would install Flask 3.1.3
+
+## After: Student 5 database tests
+# Command: cd student-5/database && python -m pytest -q
+pytest 9.1.1
+26 passed in 1.23s
