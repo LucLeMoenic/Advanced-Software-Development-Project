@@ -7,9 +7,25 @@ the rubric and the `review-cloud` loop mode need. Everything here follows the sc
 **Status when this was written:** the pipeline and every check below were exercised locally and in offline tests, but
 **no real cloud deployment has been run**. This runbook is the procedure for the first one. Fill in the evidence as you go.
 
-## 1. One-time VM setup (needs the platform decision and a VM)
+## 1. One-time VM setup (needs the platform decision)
 
-The deploy script (`deploy-vm.sh`) assumes a Linux VM that already exists. Nothing in the repository provisions it.
+`scripts/deploy/provision-vm.sh` creates the VM on either platform, with everything in the table below, and prints the exact
+`gh` commands for section 2. Run it from Git Bash, WSL, macOS or Linux, signed in to the chosen platform's CLI:
+
+```bash
+bash scripts/deploy/provision-vm.sh azure <name>   # az login first; domain <name>.<region>.cloudapp.azure.com
+bash scripts/deploy/provision-vm.sh aws <name>     # aws configure first; domain <elastic-ip>.sslip.io
+```
+
+It creates an Ubuntu 24.04 VM (2 vCPU, 8 GB; `ASD_VM_SIZE` and `ASD_REGION` override the size and region), a 64 GB disk
+encrypted at rest, a static public address, and a firewall allowing only 22, 80 and 443. `deploy/cloud/cloud-init.yaml`
+installs Docker, the Compose plugin and `python3`, and creates `/opt/asd` for the deploy user on first boot. The script waits
+for that, checks Docker and `/opt/asd` over SSH, records the VM's host key for `CLOUD_KNOWN_HOSTS`, and prints the
+disk-encryption evidence command (section 4) and the command that deletes everything. On AWS it needs a default VPC.
+
+Port 22 is open to any address because GitHub-hosted runners have no fixed IPs; the VM accepts key-based SSH only.
+
+If you set a VM up by hand instead, it needs:
 
 | Requirement | Why |
 |---|---|
@@ -20,12 +36,8 @@ The deploy script (`deploy-vm.sh`) assumes a Linux VM that already exists. Nothi
 | Inbound 80 and 443 open (and 22 from the runners or your IP) | Caddy uses both ports to obtain and serve the TLS certificate |
 | Nothing else published | Backends and databases must stay on the internal network (see section 4) |
 
-One-time, copy the operations scripts to the VM. The deploy does **not** ship them, so rollback and backup are not available
-until you do this:
-
-```bash
-scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/restore-data.sh scripts/deploy/audit-data-security.sh <user>@<vm>:/opt/asd/bin/
-```
+Every deployment installs the operations scripts (`rollback-vm.sh`, `backup-data.sh`, `restore-data.sh`,
+`audit-data-security.sh`, `pull-models-vm.sh`) in `/opt/asd/bin`, so they always match the deployed revision.
 
 ## 2. GitHub configuration
 
@@ -43,9 +55,15 @@ commit being deployed.
 
 ## 3. Deploy
 
-Actions, then **Cloud Deployment**, then **Run workflow** on `main`. The workflow: checks the six CI runs for the commit, runs
-`prepare_cloud.py` (AI-disabled bundle), builds images, ships them over SSH with pinned host keys and checksums, runs
-`deploy-vm.sh`, then runs `smoke_cloud.py` against `https://$CLOUD_DOMAIN`.
+Actions, then **Cloud Deployment**, then **Run workflow** on `main` (or `gh workflow run cloud-deployment.yml --ref main`).
+The workflow: checks the six CI runs for the commit, runs `prepare_cloud.py` (AI-disabled bundle), builds images, ships them
+over SSH with pinned host keys and checksums, runs `deploy-vm.sh`, then runs `smoke_cloud.py` against `https://$CLOUD_DOMAIN`.
+
+For the cloud AI bonus (B1 to B4), set the `ai_services` input, for example `ai,mcp,rag,multi-agent`
+(`gh workflow run cloud-deployment.yml --ref main -f ai_services=ai,mcp,rag,multi-agent`). The bundle then includes the chosen
+services from `deploy/cloud/ai.compose.yml`, the VM pulls the Ollama image, the workflow pulls the model with
+`pull-models-vm.sh`, and `smoke_cloud_ai.py` replaces the baseline smoke test. Run the workflow again with the input empty to
+return to the required baseline.
 
 **Capture:** the run URL and its uploaded artifact `cloud-deployment-<sha>` (`compose.json`, `revision.txt`, `SHA256SUMS`,
 `cloud-smoke.txt`). A successful smoke prints these lines:
@@ -85,7 +103,7 @@ rate-limited (429). It exits 1 if anything fails. **Capture the full output.** I
 
 ### Data security validation (bonus B6)
 
-On the VM (script copied in section 1):
+On the VM (installed by every deployment, section 1):
 
 ```bash
 bash /opt/asd/bin/audit-data-security.sh
@@ -116,7 +134,7 @@ is the cloud proof.
 
 ## 6. Backup, restore and rollback
 
-Run on the VM (scripts copied in section 1). Each prints what it did and exits non-zero on any problem.
+Run on the VM (installed by every deployment, section 1). Each prints what it did and exits non-zero on any problem.
 
 ```bash
 # Backup: consistent online copies of every SQLite database, with checksums; keeps the newest 7.
@@ -152,7 +170,6 @@ passing smoke test. The scripts' behaviour is covered by `scripts/test/test_vm_s
 
 ## 8. Known gaps
 
-- Nothing provisions the VM, its firewall or Docker; it is set up by hand.
-- The deploy does not ship the operations scripts (section 1). Adding them to the bundle would remove the manual copy.
+- `provision-vm.sh` creates a VM once; it does not update or resize an existing one, and re-running it with the same name fails.
 - Student 5's API has no update or delete and no explicit AI switch, so its smoke check is read-only and treats the unreachable-model `503` as "AI disabled".
 - The review step in the Multi-Agent panel has no authentication, which matters if the Multi-Agent bonus is enabled in the cloud.

@@ -21,6 +21,8 @@ NEEDS_OLLAMA = frozenset({"ai", "rag", "multi-agent"})
 UNREACHABLE = "http://127.0.0.1:9"  # nothing listens here: a disabled service is unreachable, not just switched off
 CLOUD_MODEL = "llama3.2:3b"  # one model for every consumer, so a single model is resident in the VM's memory
 AI_COMPOSE = ROOT / "deploy" / "cloud" / "ai.compose.yml"
+# Shipped in every bundle; deploy-vm.sh installs them in /opt/asd/bin.
+OPERATIONS_SCRIPTS = ("rollback-vm.sh", "backup-data.sh", "restore-data.sh", "audit-data-security.sh", "pull-models-vm.sh")
 
 
 def parse_ai_services(value):
@@ -192,7 +194,7 @@ def main():
     (args.output / "vm-pull-images.txt").write_text("".join(f"{image}\n" for image in vm_pulled), encoding="utf-8")
     (args.output / "ai-services.txt").write_text(",".join(sorted(ai)) + "\n", encoding="utf-8")
     shutil.copyfile(ROOT / "student-1/database/storage/accommodation.db", args.output / "accommodation.db")
-    for filename in ("deploy-vm.sh", "smoke_cloud.py"):
+    for filename in ("deploy-vm.sh", "smoke_cloud.py", *OPERATIONS_SCRIPTS):
         shutil.copyfile(Path(__file__).with_name(filename), args.output / filename)
     mode = f"cloud AI components enabled: {', '.join(sorted(ai))}" if ai else "AI disabled"
     print(f"Prepared {len(config['services'])} cloud services ({mode}); no resources were provisioned.")
