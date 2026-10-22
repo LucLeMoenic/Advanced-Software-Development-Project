@@ -1,0 +1,18 @@
+## MCP tool call (Student 5 -> native MCP server, logistics.check_visa_requirement)
+$ curl -sS -X POST http://localhost:5100/logistics/api/mcp/invoke -H 'Content-Type: application/json' -d '{"tool": "logistics.check_visa_requirement", "arguments": {"destination_id": 3}}'
+# sent 2026-10-22T10:00:23Z
+HTTP 200 in 0.377461s
+{
+  "result": {
+    "destination": {
+      "country": "Vietnam",
+      "id": 3,
+      "notes": "Single and multiple entry eVisa applied for online before departure. Carry a printed copy of the approval letter.",
+      "visa_requirement": "eVisa"
+    },
+    "official_source_reminder": "General guidance only. Confirm entry requirements with Smartraveller and the destination's official immigration authority before booking.",
+    "ok": true
+  },
+  "tool": "logistics.check_visa_requirement"
+}
+

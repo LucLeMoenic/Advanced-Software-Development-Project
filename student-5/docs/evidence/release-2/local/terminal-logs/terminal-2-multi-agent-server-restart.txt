@@ -1,0 +1,24 @@
+# Terminal 2 (restarted): same command as terminal-2-multi-agent-server.log. uvicorn access log, unmodified; no timestamps.
+# Copied 2026-10-22T10:45:11Z.
+
+Starting one native Multi-Agent Server. Ctrl+C stops only this process.
+Health: http://127.0.0.1:5600/health
+Run the existing Release 1 stack separately with MULTI_AGENT_ENABLED=true.
+INFO:     Started server process [26056]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5600 (Press CTRL+C to quit)
+INFO:     127.0.0.1:52567 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52568 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52569 - "GET /workflows HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52570 - "GET /audit/verify HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52574 - "POST /workflows/wf-20261022T100101Z-f83e9cc6/decision HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52575 - "GET /workflows/wf-20261022T100101Z-f83e9cc6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52577 - "GET /audit?workflow_id=wf-20261022T100101Z-f83e9cc6 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52578 - "GET /audit/verify HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52725 - "GET /workflows/wf-20261022T100857Z-16996759 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53709 - "GET /workflows/wf-20261022T100857Z-16996759 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53710 - "GET /workflows/wf-20261022T100857Z-16996759 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53711 - "POST /workflows/wf-20261022T100857Z-16996759/decision HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60497 - "GET /workflows/wf-20261022T100857Z-16996759 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60498 - "GET /audit/verify HTTP/1.1" 200 OK

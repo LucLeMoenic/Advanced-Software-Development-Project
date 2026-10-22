@@ -1,0 +1,69 @@
+# Native (non-containerised) services and Student 5 containers: health checks
+# Captured 2026-10-22T09:59:52Z from Git Bash on the host (Windows 11).
+
+## Native services (host processes, not Compose services)
+09:59:52Z  Ollama /api/tags                       GET http://127.0.0.1:11434/api/tags
+    -> HTTP 200 in 0.050337s
+{"models":[{"name":"qwen2.5:3b","model":"qwen2.5:3b","modified_at":"2026-10-21T19:18:36.4318722+11:00","size":1929912432,"digest":"357c53fb659c…","de
+    installed: qwen2.5:3b, qwen2.5-coder:7b, llama3.2:3b
+    loaded:    llama3.2:3b
+09:59:53Z  MCP server (bare GET; 400/406 = up)    GET http://127.0.0.1:5400/mcp
+    -> HTTP 400 in 0.010893s
+{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"Bad Request: Missing session ID"}}
+09:59:53Z  RAG server /health                     GET http://127.0.0.1:5500/health
+    -> HTTP 200 in 0.009127s
+{"status":"ok"}
+09:59:53Z  Multi-Agent Server /health             GET http://127.0.0.1:5600/health
+    -> HTTP 200 in 0.007450s
+{"status":"ok","busy":false}
+## Listening processes
+11434  pid 43472  ollama
+5400   pid 15900  python
+5500   pid 32872  python
+5600   pid 22572  python
+
+## AI services are not Compose services
+$ docker compose config --services | grep -i -E 'ollama|mcp|rag|multi|agent' || echo none
+none
+
+## Student 5 containers
+SERVICE             STATUS                        PORTS
+shared-frontend     Up About a minute (healthy)   0.0.0.0:5100->80/tcp, [::]:5100->80/tcp
+student5-backend    Up 2 minutes (healthy)        0.0.0.0:5205->8080/tcp, [::]:5205->8080/tcp
+student5-database   Up 3 minutes (healthy)        0.0.0.0:5305->8080/tcp, [::]:5305->8080/tcp
+student5-frontend   Up 2 minutes (healthy)        0.0.0.0:5105->80/tcp, [::]:5105->80/tcp
+
+09:59:58Z  student5-backend /health (5205)        GET http://localhost:5205/health
+    -> HTTP 200 in 0.007156s
+{"service":"student5-backend","status":"ok"} 
+09:59:58Z  student5-database /health (5305)       GET http://localhost:5305/health
+    -> HTTP 200 in 0.020204s
+{"service":"student5-database","status":"ok"} 
+09:59:59Z  student5-frontend /health (5105)       GET http://localhost:5105/health
+    -> HTTP 200 in 0.007021s
+ok
+09:59:59Z  gateway /health (5100)                 GET http://localhost:5100/health
+    -> HTTP 200 in 0.006269s
+healthy 
+09:59:59Z  gateway /logistics/ (first 80 bytes)   GET http://localhost:5100/logistics/
+    -> HTTP 200 in 0.007722s
+<!doctype html> <!--   Student 5 - Travel Logistics & Advisory Service: fronte
+
+## Flags and native URLs the Student 5 backend received
+$ docker compose exec -T student5-backend env | grep -E '_ENABLED|_URL|MODEL' | sort
+AI_ENABLED=true
+APPLICATION_MODEL=llama3.2:3b
+DATABASE_API_URL=http://student5-database:8080
+MCP_ENABLED=true
+MCP_SERVER_URL=http://host.docker.internal:5400/mcp
+MULTI_AGENT_ENABLED=true
+MULTI_AGENT_SERVER_URL=http://host.docker.internal:5600
+OLLAMA_URL=http://host.docker.internal:11434
+RAG_ENABLED=true
+RAG_SERVER_URL=http://host.docker.internal:5500
+
+## Student 5 backend reaches each native service from inside the container
+  ollama       http://host.docker.internal:11434/api/tags -> 200
+  rag          http://host.docker.internal:5500/health -> 200
+  multi-agent  http://host.docker.internal:5600/health -> 200
+  mcp          http://host.docker.internal:5400/mcp -> 400

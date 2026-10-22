@@ -1,0 +1,15 @@
+# Native RAG server started by start-release1.ps1 (Start-Process, output redirected). stdout then stderr, unmodified; no timestamps.
+# Copied 2026-10-22T10:24:43Z from %TEMP%\asd-release1$n.log and rag.err.log
+## stdout
+INFO:     127.0.0.1:59385 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60943 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51861 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51871 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51884 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51893 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51920 - "POST /query HTTP/1.1" 200 OK
+## stderr
+INFO:     Started server process [32872]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5500 (Press CTRL+C to quit)

@@ -1,0 +1,10 @@
+# Student 5 destination CRUD through the local gateway, 2026-10-22T11:18:43Z
+# gateway -> student5-frontend -> student5-backend -> student5-database (SQLite); unique country, delete in finally
+destinations before: 12
+POST   /logistics/api/destinations                                -> 201     81 ms  {"country":"R2 local CRUD 184a4750","id":17,"notes":"Local CRUD evidence row.","visa_requirement":"visa-free"}
+GET    /logistics/api/destinations/17                             -> 200     34 ms  {"country":"R2 local CRUD 184a4750","id":17,"notes":"Local CRUD evidence row.","visa_requirement":"visa-free"}
+PUT    /logistics/api/destinations/17                             -> 200     73 ms  {"country":"R2 local CRUD 184a4750","id":17,"notes":"Updated by the local CRUD check.","visa_requirement":"eVisa"}
+GET    /logistics/api/destinations/17                             -> 200     45 ms  {"country":"R2 local CRUD 184a4750","id":17,"notes":"Updated by the local CRUD check.","visa_requirement":"eVisa"}
+DELETE /logistics/api/destinations/17                             -> 204     81 ms  
+GET    /logistics/api/destinations/17                             -> 404     42 ms  {"error":"No destinations row with id 17"}
+destinations after: 12 | leftover test rows: []
