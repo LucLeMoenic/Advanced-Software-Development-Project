@@ -78,6 +78,17 @@ def test_student4_check_passes_for_baseline_and_removes_both_rows():
     assert gateway.calls[-2:] == [("GET", f"{API}/expenses/26"), ("GET", f"{API}/budgets/14")]  # 404 readbacks
 
 
+@pytest.mark.parametrize("source", ["ai", "ai_retry", "fallback"])
+def test_ai_profile_requires_model_advice_and_retains_crud(source):
+    gateway = FakeGateway(capabilities={key: True for key in OFF}, source=source)
+    if source == "fallback":
+        with pytest.raises(RuntimeError, match="AI budget advice failed"):
+            module.check_student4(gateway, {"ai", "mcp", "rag", "multi-agent"})
+    else:
+        module.check_student4(gateway, {"ai", "mcp", "rag", "multi-agent"})
+        assert gateway.budget_deleted and gateway.expense_deleted
+
+
 @pytest.mark.parametrize("flag", list(OFF))
 def test_student4_check_fails_when_any_ai_capability_is_enabled(flag):
     gateway = FakeGateway(capabilities={**OFF, flag: True})

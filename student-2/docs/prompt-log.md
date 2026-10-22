@@ -2,6 +2,130 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-22 - Protected Cloud AI Activation
+
+**Request and approval:** make the supported AI modes deployable end to end.
+The user approved HTTPS username/password protection for the entire AI demo
+and implementation, local validation and a feature-branch commit; they will
+merge and deploy. This supersedes the deferred-activation decision below.
+Created `LLM/Student_2_Protected_Cloud_AI` from `origin/main` (`ac8909f`) and
+carried forward the preparation changes without losing the older stashed work.
+
+**Implementation:** added opt-in `ai` deployment while retaining `baseline`
+as the default and `prepare-ai` as a no-SSH/no-activation build. Credentials
+are validated before image builds. Caddy hashes the password from stdin;
+only a private mode-0600 bcrypt snippet is sent over pinned SSH, separately
+from artifacts. Every AI-demo browser/API route requires authentication;
+Authorization is stripped before reaching the application. HTTPS probes
+verify certificates, refuse redirects and check anonymous rejection for all
+five feature boundaries. The runner removes its credential material.
+
+AI releases use a separate `<sha>-ai` directory, keeping same-revision
+baseline/AI rollback targets distinct. Provisioning verifies model presence
+and a nonempty warm-up response before switching `current`. Recreated gateway
+containers pick up password rotations. Rollback accepts AI release names and
+removes orphaned services when reverting to baseline. MCP has controlled
+outbound network access for the existing weather provider integration; its
+ports remain unpublished.
+
+The authenticated full-group smoke covers CRUD and every implemented AI,
+MCP, RAG and Multi-Agent integration. AI generation fallback fails the check.
+RAG requires cited answers, and agents stop at human review without sending
+decisions or confirming itinerary edits. Student 4 has no Multi-Agent
+implementation; no other student's runtime feature code was changed.
+Updated Student 2 CI, the shared runbook and the owning risk plan.
+
+**Validation before commit:** 215 Python configuration/authentication/smoke
+tests passed, including three real isolated Caddy TLS cases using ordinary,
+space-padded and UTF-8 synthetic passwords. These verify correct-password
+access, anonymous/wrong-password rejection and upstream credential stripping.
+The first real check exposed Caddy's required newline on stdin; reproduced
+the EOF failure, fixed framing and reran successfully. All test containers
+and their network were removed.
+
+All 72 Linux VM-script tests passed, including missing credentials, model
+warm-up failure/empty output, same-SHA mode changes and AI rollback. The
+exact-revision CI-gate regressions, Ruff security rules on changed Python,
+workflow YAML/Bash checks and LF/whitespace checks passed. Real generated
+baseline (18 services) and protected-AI (22 services) bundles passed Compose
+validation and contained no credential snippet. Prior AI image build/startup
+evidence below still applies; unchanged images were not rebuilt.
+The commit secret scan flagged the synthetic URL-userinfo rejection fixture;
+added a narrowly scoped false-positive annotation, not a scanner bypass.
+
+**Limits and handoff:** no AWS resources or live flags changed, and no remote
+workflow was started. Actual inference and full browser/persistence/rollback
+acceptance on the 2-vCPU/8-GiB EC2 target remain unverified. Backend deadlines
+were not relaxed; model warm-up does not guarantee CPU latency or concurrency.
+Failed provisioning/smoke can leave changed containers and requires explicit
+inspection/rollback. Shared-password access is not tenant isolation. Baseline
+rollback intentionally returns to public AI-off access; older AI rollback
+restores that release's password. After merge, configure the two `prod` auth
+secrets, satisfy the six exact-revision CI checks and run mode `ai`.
+
+## 2026-10-22 - Cloud AI Deployment Preparation, Activation Deferred
+
+**Request and decision:** prepare cloud AI for the existing `m7i-flex.large`.
+The user explicitly chose to leave AI deployment disabled until access controls
+are decided. Existing uncommitted TLS-readiness changes were retained.
+
+**Implementation:** added `baseline` (default) and `prepare-ai` workflow modes.
+Preparation builds the application plus the existing cloud AI profile and
+uploads a checksummed bundle without configuring SSH, contacting EC2, downloading
+models or running live tests. The normal deployment remains AI-off. There is no
+public AI activation option; access controls require a separate reviewed change.
+Included AI metadata, both smoke scripts and the model-pull helper in bundles.
+The VM installer explicitly pulls upstream images and provisions/verifies the
+single cloud model against the new Compose file before switching `current`.
+All enabled application consumers use `llama3.2:3b`; MCP-only has no model pull.
+Failed provisioning is fatal, and same-revision retries retain the prior rollback
+target. The existing AI smoke now stops at human review rather than fabricating
+an automated approval. Student 2 CI runs the related cloud regression suites.
+
+**Validation:** 116 configuration/profile/smoke tests passed locally. The Linux
+VM suite passed 66 tests; after adding MCP-only coverage, the affected deployment
+selection passed 10 tests (57 unrelated cases deselected). Exact-revision CI-gate
+regressions, workflow YAML/mode/isolation checks, Bash syntax, Ruff security
+rules and whitespace checks passed. Real baseline (18 services) and AI
+(22 services) bundles generated and passed Compose validation.
+
+Docker Compose image building stalled because the local Docker context is
+Podman without Buildx. Stopped that command and successfully built all three AI
+Dockerfiles with native Podman and their existing ignore files. Isolated MCP,
+RAG and Multi-Agent containers passed startup probes, published no ports and
+were removed. The pinned Ollama registry manifest includes Linux amd64; no
+Ollama image/model was downloaded. A Linux test initially found CRLF in the
+edited deploy script; normalized it to the repository's required LF and reran
+successfully. Restored missing pytest/Ruff only in the existing local venv.
+
+**Limits:** no AWS resources, live data or deployed flags changed; no commits,
+pushes or remote workflow runs were made. Image startup does not prove model
+inference, MCP database access, RAG grounding or a live multi-agent workflow.
+The AI smoke covers Student 3's shared paths, not every feature. Target memory,
+latency/deadlines, protected access, full-group CRUD and real human decisions
+remain required before enabling public AI. See the shared cloud runbook.
+
+## 2026-10-22 - Wait for Cloud TLS Readiness
+
+**Request:** investigate the public smoke test's TLS internal-error failure.
+Run 39735811024 finished VM deployment and failed its first public smoke request
+at 06:52:48 UTC. A verified HTTPS probe returned 200 at 06:53:16 UTC; DNS pointed
+to the configured VM and HTTP redirected to HTTPS. This is consistent with
+initial certificate provisioning, but Caddy logs were not available to confirm
+the precise TLS error.
+
+**Change:** added a bounded curl readiness step between deployment and smoke
+testing. Only the read-only public HTTPS GET is retried, at most 12 times within
+a 180-second retry window, with 15-second requests and a four-minute step limit.
+Certificate verification stays enabled and persistent failure remains fatal.
+CRUD requests are unchanged and are not retried. Updated the cloud runbook.
+
+**Validation:** workflow YAML/order/timeout/TLS-option assertions passed. The
+workflow's curl command succeeded against the public site; Python verified
+HTTPS 200 responses for all six gateway pages without modifying application
+data. Whitespace checks passed. Full cloud CRUD was not rerun and no new GitHub
+deployment was started; these local checks do not make the failed run green.
+
 ## 2026-10-22 - Cloud Deployment CI Recovery
 
 **Request:** fix the failed cloud deployment, pull current main, then create a

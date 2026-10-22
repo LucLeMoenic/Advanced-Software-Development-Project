@@ -4,8 +4,11 @@ How to deploy the integrated application to the group's Azure or AWS Linux VM, p
 the rubric and the `review-cloud` loop mode need. Everything here follows the scripts in `scripts/deploy/` and
 `.github/workflows/cloud-deployment.yml`; nothing is assumed beyond them.
 
-**Status when this was written:** the pipeline and every check below were exercised locally and in offline tests, but
-**no real cloud deployment has been run**. This runbook is the procedure for the first one. Fill in the evidence as you go.
+**Status (22 October 2026):** the AI-off baseline has reached the public HTTPS
+gateway. Its initial smoke run failed during TLS startup; later page probes
+passed, not a complete cloud acceptance run. Protected AI activation is now
+implemented and locally tested, but has **not been deployed or model-tested on
+AWS**. Collect real deployment evidence using the procedure below.
 
 ## 1. One-time VM setup (needs the platform decision and a VM)
 
@@ -36,7 +39,9 @@ scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/r
 | Variable | `CLOUD_DOMAIN` | the public DNS name, no scheme or path |
 | Secret | `CLOUD_SSH_KEY` | private key for the deploy user |
 | Secret | `CLOUD_KNOWN_HOSTS` | the VM's host key line (`ssh-keyscan -t ed25519 <host>`) |
-| Environment | `production` | the workflow runs in it; add required reviewers if the group wants a manual gate |
+| Secret | `CLOUD_AUTH_USER` | required for `ai`: 1-64 letters, digits, dots, underscores or hyphens |
+| Secret | `CLOUD_AUTH_PASSWORD` | required for `ai`: a strong, unique password of 16-72 UTF-8 bytes, without line breaks or NUL |
+| Environment | `prod` | must match the workflow exactly; add required reviewers if the group wants a manual gate |
 
 The workflow only runs from `main`, and `assert-cloud-ci.ps1` requires all six CI workflows to have succeeded for the exact
 commit being deployed.
@@ -48,10 +53,13 @@ required workflows support **Run workflow**: manually run any missing checks on
 the gate or use a successful run from an older commit. A gate failure lists every
 missing, incomplete or unsuccessful workflow.
 
-Set the three `CLOUD_*` values as Actions **variables**, not secrets; only the SSH
-key and known-hosts entry belong in **secrets**. Empty variables in a deployment
+Set the host, user and domain as Actions **variables**, not secrets; the SSH
+key, known-hosts entry and AI gateway credentials belong in **secrets**. Verify
+the scanned SSH fingerprint through a trusted VM console before saving it.
+Empty variables in a deployment
 log mean the workflow cannot see the required settings. Configuring the
-`production` environment requires repository administration access.
+`prod` environment requires repository administration access. Settings in a
+different environment, such as `production`, are not visible to this job.
 
 The deployment runner is pinned to Ubuntu 24.04 and its checkout, Python setup
 and artifact actions use Node.js 24. Evidence upload is skipped if deployment
@@ -59,36 +67,123 @@ fails before producing any evidence files.
 
 ## 3. Deploy
 
-Actions, then **Cloud Deployment**, then **Run workflow** on `main`. The workflow: checks the six CI runs for the commit, runs
+Actions, then **Cloud Deployment**, then **Run workflow** on `main`, leaving
+**mode** set to **baseline**. The workflow: checks the six CI runs for the commit, runs
 `prepare_cloud.py` (AI-disabled bundle), builds images, ships them over SSH with pinned host keys and checksums, runs
-`deploy-vm.sh`, then runs `smoke_cloud.py` against `https://$CLOUD_DOMAIN`.
+`deploy-vm.sh`, waits for public HTTPS readiness, then runs `smoke_cloud.py`
+against `https://$CLOUD_DOMAIN`.
 
-**Capture:** the run URL and its uploaded artifact `cloud-deployment-<sha>` (`compose.json`, `revision.txt`, `SHA256SUMS`,
-`cloud-smoke.txt`). A successful smoke prints these lines:
+Containers starting does not mean Caddy has obtained its first TLS certificate.
+The readiness step retries only a read-only HTTPS GET, with certificate
+verification enabled, every five seconds within a 180-second retry window
+(each request has a 15-second limit). Persistent failures stop verification;
+the subsequent CRUD smoke requests are not retried. If readiness fails, check
+the Caddy logs, public DNS and inbound ports 80/443 rather than disabling TLS
+verification.
+
+**Capture:** the run URL and its uploaded artifact `cloud-baseline-evidence-<sha>`
+(`compose.json`, `revision.txt`, `SHA256SUMS`, `cloud-smoke.txt`, `ai-services.txt`,
+`vm-pull-images.txt`). A successful smoke prints these lines:
 
 ```
-PASS: six gateway pages; four AI modes disabled; deterministic create; trip/stop CRUD.
-PASS: Student 1 AI modes disabled; cached-catalogue search create, rename and delete.
-PASS: Student 3 AI modes disabled; deterministic recommendation; attraction and review CRUD.
-PASS: Student 4 AI modes disabled; deterministic advice; budget and expense CRUD.
-PASS: Student 5 reference data served; MCP, RAG and advisory disabled (read-only: it has no update or delete).
+PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+PASS: Student 1 cloud profile and CRUD checks.
+PASS: Student 3 cloud profile and CRUD checks.
+PASS: Student 4 cloud profile and CRUD checks.
+PASS: Student 5 cloud profile and CRUD checks.
 ```
+
+### Prepare cloud AI without enabling it
+
+The user-selected target is an `m7i-flex.large` (2 vCPU, 8 GiB RAM, CPU-only).
+The user has approved **HTTPS username/password protection for the entire AI
+demo**. Use the protected activation mode below, rather than enabling flags in
+the running baseline. Never expose Ollama/MCP/RAG/Multi-Agent ports directly.
+
+Select **mode: prepare-ai** to build the integrated application plus the existing
+[cloud AI profile](../../deploy/cloud/ai.compose.yml). This mode:
+
+- Uses the same six-workflow, exact-main-revision CI gate.
+- Builds the MCP, RAG and Multi-Agent images and prepares the Ollama service.
+- Uploads `cloud-ai-preparation-<sha>` containing a checksummed
+  `cloud-ai-bundle.tar` with application images, Compose configuration, AI
+  metadata, VM deployment/model-pull helpers, and both smoke scripts.
+- Does **not** configure SSH, contact EC2, download models, run live smoke tests,
+  or enable any public AI feature. The artifact expires after seven days.
+- Retains preparation evidence as `cloud-prepare-ai-evidence-<sha>`; a successful
+  preparation run is not evidence of a successful deployment or live AI.
+
+The VM installer consumes the bundle's upstream-image list, explicitly pulls
+Ollama, and provisions `llama3.2:3b` against the new release's Compose file before
+marking that release current. All enabled application consumers use this one
+cloud model. MCP-only bundles do not pull a model. Pull, listing or nonempty
+inference warm-up failures stop activation; they can still leave changed containers, so inspect before
+retrying. Redeploying the same revision preserves its real rollback predecessor.
+Both baseline and AI metadata/scripts are covered by bundle checksums.
+
+### Activate protected cloud AI
+
+1. Merge the feature branch and obtain all six successful CI results on the exact
+   `main` revision. Set `CLOUD_AUTH_USER` and `CLOUD_AUTH_PASSWORD` in the `prod`
+   environment's secrets. Do not put credentials in source, artifacts or commands.
+2. Check free disk space and memory on the VM. Allow space for the roughly 8 GB
+   upstream Ollama image, roughly 2 GB model, application images, retained
+   releases and databases. Eight GiB RAM is not a measured capacity guarantee.
+3. Run **Cloud Deployment** on `main` with **mode: ai**. The workflow validates
+   credentials, builds all application/AI images, hashes the password using Caddy,
+   transfers only the bcrypt snippet separately over pinned SSH, provisions and
+   warms `llama3.2:3b`, then verifies authenticated HTTPS and anonymous rejection
+   for every feature. The snippet is not included in either artifact.
+4. The authenticated `smoke_cloud_ai.py --all-features` check runs group CRUD and
+   every implemented AI, MCP, RAG and Multi-Agent integration. AI generation must
+   report real AI success, not deterministic fallback. Cited RAG responses and
+   agent stages are checked. Multi-Agent smoke stops at `awaiting_human_review`
+   and prints workflow IDs; it never submits decisions or confirms an itinerary
+   edit. **Student 4 has AI/MCP/RAG but no Multi-Agent implementation.**
+5. Open the HTTPS site, sign in using the configured credentials, and complete the
+   browser and human-decision checks. Keep the run URL and
+   `cloud-ai-evidence-<sha>`, including `cloud-smoke.txt`. A failed smoke is not a
+   successful deployment and does not automatically roll containers back.
+
+The gate covers every browser/API route. Caddy strips `Authorization` before
+forwarding to the application; plaintext credentials are not passed to app/AI
+containers. The hash is stored in the release's `gateway-auth.caddy` with mode
+0600. Missing credentials fail closed. Redeploy `ai` to rotate the password;
+rollback to an older AI release also restores that release's credentials.
+This is a shared demonstration account, **not per-user access control or tenant
+isolation**: authenticated participants share records and decision permissions.
+
+AI releases use `/opt/asd/releases/<sha>-ai`; baseline releases use
+`/opt/asd/releases/<sha>`, so changing modes at the same revision preserves a
+rollback target. Baseline redeployment/rollback removes orphaned AI containers
+and **returns to the unprotected, AI-off assessment profile**. Persistent models
+and app data are not removed. Copy the updated rollback script in section 1.
+
+Benchmark sequential real requests on the target. Ollama permits one loaded
+model and one parallel request, but CPU inference can still exceed backend,
+gateway and UI deadlines. Model warm-up removes cold-start overhead, not this
+capacity limit. Longer smoke-client timeouts do not change backend deadlines.
+Retain baseline, backup and rollback evidence; live model accuracy, CPU latency
+and concurrent-user capacity are not established by local regression tests.
 
 ## 4. Validate what the smoke test cannot
 
 | Check | How | Rubric / bonus |
 |---|---|---|
 | The deployed UI loads for every feature | Open `https://<domain>/` and each of `/accommodation/`, `/itinerary/`, `/attractions/`, `/budget/`, `/logistics/`; screenshot each | 7 |
-| AI services are visibly off | Screenshot Student 3's "Ask the AI" note and the disabled Multi-Agent panel; the other features' disabled states | 7 |
+| AI state matches the selected profile | Baseline: capture disabled controls. AI: sign in and capture real model/tool/citation output and human review without automatic approval | 7 |
 | Only the gateway is public | On the VM: `docker ps --format '{{.Names}}\t{{.Ports}}'`; only `tls-gateway` shows `0.0.0.0:80/443`. From outside: `curl -m 5 http://<domain>:5203/health` must fail (the validator below also checks this) | B5 |
 | Backends and database are on an internal network | `docker network inspect asd-cloud_private --format '{{.Internal}}'` prints `true` | B5 |
 | TLS is valid | `curl -vI https://<domain>/` shows a verified certificate | B5 |
-| No secret reaches the app | `docker compose --project-name asd-cloud -f /opt/asd/current/compose.json config` shows `LITEAPI_KEY` blank and every `*_ENABLED` flag `false` | B6 |
+| No secret reaches the app | Compose shows `LITEAPI_KEY` blank and no gateway password in container environment; enabled flags match the selected profile. AI gateway hash is mounted only into Caddy | B6 |
 | Data is stored on the VM volume | `ls -l /opt/asd/data/student-*/` | B6 |
 
 ### Endpoint security validation (bonus B5)
 
-Run from any machine, against the deployed site (it sends a few hundred requests in a few seconds, so use it only on your own deployment):
+Run against the **baseline** site (it sends a few hundred requests in a few
+seconds, so use it only on your own deployment). This validator does not supply
+AI gateway credentials; its rate-limit/body-size checks are not authenticated AI
+evidence. Protected AI has separate authenticated readiness and route checks:
 
 ```bash
 python scripts/deploy/validate_security.py https://<domain>
@@ -108,7 +203,10 @@ bash /opt/asd/bin/audit-data-security.sh
 ```
 
 It is read-only and checks that data and backups are not accessible to other users, that no container has a secret in its
-environment (names only are printed), that `LITEAPI_KEY` is blank in the release, and that no credential file is left under `/opt/asd`.
+environment (names only are printed), that `LITEAPI_KEY` is blank in the release,
+and scans for common credential filenames under `/opt/asd`. For AI, separately
+verify each intentionally retained `gateway-auth.caddy` is owned by the deploy
+user, mode 0600, and never included in evidence; do not print its contents.
 It also reports which `*_ENABLED` flags are on. It cannot see disk encryption, so capture the provider's evidence for the VM's disk:
 
 ```bash
@@ -152,8 +250,16 @@ release's images were pruned, and in that case leaves `current` unchanged. After
 python scripts/deploy/smoke_cloud.py https://<domain>
 ```
 
+For a protected AI release, supply gateway credentials through environment
+variables from a trusted secret source (not command history), then run:
+
+```bash
+python scripts/deploy/cloud_auth.py verify https://<domain> --required
+python scripts/deploy/smoke_cloud_ai.py https://<domain> --components ai,mcp,rag,multi-agent --all-features
+```
+
 **Capture** a terminal transcript of: a backup, a restore from it (with data changed in between), and a rollback followed by a
-passing smoke test. The scripts' behaviour is covered by `scripts/test/test_vm_scripts.py` (23 tests, Linux).
+passing smoke test. The scripts' behaviour is covered by `scripts/test/test_vm_scripts.py` (72 tests, Linux).
 
 ## 7. Evidence map
 
@@ -170,5 +276,7 @@ passing smoke test. The scripts' behaviour is covered by `scripts/test/test_vm_s
 
 - Nothing provisions the VM, its firewall or Docker; it is set up by hand.
 - The deploy does not ship the operations scripts (section 1). Adding them to the bundle would remove the manual copy.
-- Student 5's API has no update or delete and no explicit AI switch, so its smoke check is read-only and treats the unreachable-model `503` as "AI disabled".
-- The review step in the Multi-Agent panel has no authentication, which matters if the Multi-Agent bonus is enabled in the cloud.
+- Shared-password access does not isolate authenticated users or assign decision roles.
+- Student 4 has no Multi-Agent path; other owners must explicitly implement any new feature scope.
+- Protected AI has not yet passed real inference, complete browser flows, persistence
+  and rollback checks on the target EC2 instance. Its 2-vCPU/8-GiB capacity remains unmeasured.

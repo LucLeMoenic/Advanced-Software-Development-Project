@@ -63,6 +63,7 @@ class FakeGateway:
                 return 200, {"status": "failed", "error": {"stage": "working", "code": "dependency_timeout", "message": "timed out"}}
             return 200, {"status": "awaiting_human_review", "plan": f.get("plan", {"objective": "o"}), "work": {"items": []},
                          "review": {"verdict": "pass"},
+                         "human_decision": f.get("human_decision"),
                          "history": f.get("history", [{"stage": "planner"}, {"stage": "worker"}, {"stage": "reviewer"}])}
         if path == f"{API}/agents/workflows/{WORKFLOW}/decision":
             return 200, {"status": f.get("decided", "approved"), "final_output": f.get("final", {"items": []})}
@@ -184,13 +185,14 @@ def test_rag_must_give_a_grounded_answer_with_citations(fault):
 
 # -- B4 Multi-Agent ---------------------------------------------------------------------------------------------------------------
 
-def test_the_workflow_is_polled_until_it_reaches_human_review_then_approved():
+def test_the_workflow_is_polled_until_human_review_without_submitting_a_decision(capsys):
     gateway = FakeGateway(ALL, polls_until_ready=5)
 
     run(gateway)
 
     assert gateway.polls == 5
-    assert gateway.calls[-1][1].endswith("/decision") or any(p.endswith("/decision") for _, p in gateway.calls)
+    assert not any(p.endswith("/decision") for _, p in gateway.calls)
+    assert f"MANUAL: review workflow {API}/agents/workflows/{WORKFLOW}" in capsys.readouterr().out
 
 
 def test_a_failed_workflow_reports_its_stage_and_code():
@@ -227,10 +229,9 @@ def test_history_must_show_all_three_agents_in_order():
         run(FakeGateway(ALL, history=[{"stage": "worker"}, {"stage": "planner"}, {"stage": "reviewer"}]))
 
 
-@pytest.mark.parametrize("fault", [{"decided": "rejected"}, {"final": None}])
-def test_the_human_approval_must_be_recorded_with_a_final_output(fault):
-    with pytest.raises(RuntimeError, match="approval was not recorded"):
-        run(FakeGateway(ALL, **fault))
+def test_a_workflow_with_an_existing_human_decision_is_not_reported_as_pending():
+    with pytest.raises(RuntimeError, match="already has a human decision"):
+        run(FakeGateway(ALL, human_decision={"decision": "approve"}))
 
 
 # -- disabled components -------------------------------------------------------------------------------------------------------------
@@ -272,3 +273,83 @@ def test_main_returns_zero_when_everything_passes(monkeypatch):
 def test_main_reports_bad_components_as_a_failure_not_a_crash(capsys):
     assert module.main(["https://cloud.example", "--components", "telepathy"]) == 1
     assert "Choose from" in capsys.readouterr().out
+
+
+class OtherFeaturesGateway:
+    def __init__(self, fail_path=None):
+        self.calls = []
+        self.fail_path = fail_path
+
+    def __call__(self, path, method="GET", body=None, expected=200):
+        self.calls.append((path, method, body))
+        assert not path.endswith("/decision"), "Smoke tests must not manufacture human decisions."
+        if path == self.fail_path:
+            raise RuntimeError("injected dependency failure")
+        if path in ("/accommodation/api/searches", "/itinerary-api/trips", "/logistics/api/destinations"):
+            return [{"id": 1}]
+        if path == "/itinerary-api/trips/1":
+            return {"id": 1}
+        if path == "/budget-api/journeys":
+            return [{"journeyLabel": "Demo"}]
+        if path == "/logistics/api/advisory":
+            return {"advisory": "Recorded advice", "model": "llama3.2:3b"}
+        if path == "/accommodation/api/assistant" and body["mode"] == "lookup":
+            return {"tool": "accommodation.get_search", "result": {"id": 1}}
+        if path.endswith("/mcp-summary"):
+            return {"tool": "itinerary.get_summary", "summary": {"tripId": 1}}
+        if path == "/budget-api/budget-check":
+            return {"tool": "budget.get_summary", "result": {"ok": True}}
+        if path == "/logistics/api/mcp/invoke":
+            return {"result": {"ok": True}}
+        if path in ("/accommodation/api/assistant", "/itinerary-api/itinerary-advice",
+                    "/budget-api/budget-guidance", "/logistics/api/rag/ask"):
+            return {"answer": "Grounded advice", "citations": [{"source": "test"}], "confidence": "high"}
+        if path.endswith("/edit-preview"):
+            return {"preview": {"workflowId": WORKFLOW}}
+        if method == "POST" and path.endswith(("/reviews", "/readiness-reviews")):
+            assert expected == 202
+            return {"id": WORKFLOW}
+        if WORKFLOW in path:
+            return {"status": "awaiting_human_review", "plan": {"objective": "demo"}, "work": {"items": []},
+                    "review": {"verdict": "pass"}, "human_decision": None,
+                    "history": [{"stage": stage} for stage in ("planner", "worker", "reviewer")]}
+        raise AssertionError(f"Unexpected path: {path}")
+
+
+def test_all_supported_feature_integrations_are_exercised_without_human_decisions(capsys):
+    gateway = OtherFeaturesGateway()
+    module.check_other_features(gateway, ALL)
+    output = capsys.readouterr().out
+    assert output.count("MANUAL:") == 3
+    assert "Student 4 has no Multi-Agent integration" in output
+    assert any(path == "/logistics/api/advisory" for path, _, _ in gateway.calls)
+    assert sum(path.endswith("/rag/ask") or path.endswith("/itinerary-advice")
+               or path.endswith("/budget-guidance") for path, _, _ in gateway.calls) == 3
+
+
+@pytest.mark.parametrize("path", ["/logistics/api/advisory", "/accommodation/api/assistant",
+                                 "/itinerary-api/trips/1/mcp-summary", "/budget-api/budget-check",
+                                 "/logistics/api/mcp/invoke", "/itinerary-api/itinerary-advice",
+                                 "/budget-api/budget-guidance", "/logistics/api/rag/ask",
+                                 "/accommodation/api/searches/1/reviews", "/itinerary-api/trips/1/edit-preview",
+                                 "/logistics/api/destinations/1/readiness-reviews"])
+def test_any_feature_dependency_failure_blocks_group_ai_acceptance(path):
+    with pytest.raises(RuntimeError, match="injected dependency failure"):
+        module.check_other_features(OtherFeaturesGateway(fail_path=path), ALL)
+
+
+@pytest.mark.parametrize("answer", [
+    {"confidence": "insufficient", "citations": [], "answer": "No answer"},
+    {"confidence": "high", "citations": [], "answer": "Uncited"},
+    {"confidence": "high", "citations": [{"source": "x"}], "answer": ""},
+])
+def test_grounded_answer_checks_reject_abstention_or_missing_evidence(answer):
+    with pytest.raises(RuntimeError, match="grounded answer"):
+        module.grounded(answer, "Test feature")
+
+
+def test_full_group_cli_requires_credentials_before_any_requests(monkeypatch):
+    monkeypatch.delenv("CLOUD_AUTH_USER", raising=False)
+    monkeypatch.delenv("CLOUD_AUTH_PASSWORD", raising=False)
+    monkeypatch.setattr(module, "make_call", lambda *args: pytest.fail("Must reject before network access."))
+    assert module.main(["https://cloud.example", "--components", "ai,mcp,rag,multi-agent", "--all-features"]) == 1

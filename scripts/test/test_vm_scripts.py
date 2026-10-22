@@ -1,10 +1,11 @@
-"""Offline tests for rollback-vm.sh, backup-data.sh and restore-data.sh.
+"""Offline tests for VM deployment, model provisioning, rollback, backup, restore and data auditing.
 
 They mirror the layout deploy-vm.sh writes, under a temporary ASD_ROOT, with a stub `docker` that records its
 arguments. Linux only: the scripts rely on real symlinks and readlink, exactly as on the deployment VM.
 """
 
 import json
+import hashlib
 import os
 import shutil
 import sqlite3
@@ -31,11 +32,12 @@ def vm(tmp_path):
     bin_dir.mkdir()
     stub = bin_dir / "docker"
     stub.write_text('#!/usr/bin/env bash\necho "$*" >> "$STUB_LOG"\n'
+                    '[[ -n "${STUB_FAIL_ON:-}" && "$*" == *"$STUB_FAIL_ON"* ]] && exit 1\n'
                     'if [[ "$1" == "ps" ]]; then [[ -z "${STUB_NO_CONTAINERS:-}" ]] && echo abc123; exit 0; fi\n'
                     'if [[ "$1" == "inspect" ]]; then cat "${STUB_ENV_FILE:-/dev/null}"; exit 0; fi\n'
                     'if [[ "$*" == *" ps --services"* ]]; then printf "%s" "${STUB_SERVICES:-}"; exit 0; fi\n'
                     'if [[ "$*" == *"ollama list"* ]]; then cat "${STUB_OLLAMA_LIST:-/dev/null}"; exit 0; fi\n'
-                    '[[ -n "${STUB_FAIL_ON:-}" && "$*" == *"$STUB_FAIL_ON"* ]] && exit 1\nexit 0\n')
+                    'if [[ "$*" == *"ollama run"* ]]; then printf "%s" "${STUB_WARMUP-OK}"; exit 0; fi\nexit 0\n')
     stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
     log = tmp_path / "docker.log"
 
@@ -112,7 +114,7 @@ def test_rollback_starts_the_previous_release_then_repoints_current(vm):
     assert (old / "rolled-back-from.txt").read_text().strip() == str(new)
     calls = vm.docker_calls()
     assert calls[0].endswith(f"{old}/compose.json config --quiet")
-    assert calls[1].endswith(f"{old}/compose.json up --detach --no-build --wait --wait-timeout 240")
+    assert calls[1].endswith(f"{old}/compose.json up --detach --no-build --remove-orphans --wait --wait-timeout 240")
     assert "--project-name asd-cloud" in calls[1]
 
 
@@ -582,3 +584,148 @@ def test_a_model_name_that_only_prefixes_a_listed_one_does_not_count_as_listed(v
     result = pulling(vm, "llama3.2", listing="NAME ID SIZE MODIFIED\nllama3.2:3b abc 2 GB now\n")
 
     assert result.returncode != 0 and "not listed" in result.stderr
+
+
+def deployment_bundle(vm, components="", listing=LISTING):
+    needs_model = bool(set(components.split(",")) & {"ai", "rag", "multi-agent"})
+    home = vm.root.parent / ("home-" + (components or "baseline").replace(",", "-"))
+    upload = home / "asd-upload" / NEW
+    upload.mkdir(parents=True)
+    for filename in ("deploy-vm.sh", "pull-models-vm.sh", "smoke_cloud.py", "smoke_cloud_ai.py", "cloud_auth.py"):
+        (upload / filename).write_text((DEPLOY / filename).read_text())
+    for filename, content in {
+        "compose.json": "{}", "Caddyfile": "example.org {}", "revision.txt": NEW + "\n",
+        "images.tar": "stub archive", "accommodation.db": "seed fixture",
+        "ai-services.txt": components + "\n",
+        "vm-pull-images.txt": "ollama/ollama:0.34.3\n" if needs_model else "",
+    }.items():
+        (upload / filename).write_text(content)
+    (upload / "SHA256SUMS").write_text("".join(
+        f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in sorted(upload.iterdir())))
+    if components:
+        (upload / "gateway-auth.caddy").write_text("basic_auth { example synthetic-test-hash }\n")
+    listing_file = vm.root.parent / "ollama-list.txt"
+    listing_file.write_text(listing)
+    return upload, {"HOME": str(home), "STUB_SERVICES": "ollama\n" if needs_model else "",
+                    "STUB_OLLAMA_LIST": str(listing_file)}
+
+
+@pytest.mark.parametrize("components", ["", "mcp"])
+def test_deploy_without_model_dependencies_preserves_data_and_does_not_pull_models(vm, components):
+    old = vm.release(OLD)
+    vm.activate(old)
+    db = vm.database(1, "accommodation.db", ["keep"])
+    before = db.read_bytes()
+    _, env = deployment_bundle(vm, components)
+
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert db.read_bytes() == before
+    release = vm.root / "releases" / (NEW + ("-ai" if components else ""))
+    assert (vm.root / "current").resolve() == release
+    assert (release / "previous-release.txt").read_text().strip() == str(old)
+    assert (release / "smoke_cloud_ai.py").is_file()
+    assert not any("pull" in call for call in vm.docker_calls())
+
+
+def test_ai_deploy_pulls_upstream_image_then_provisions_models_in_the_new_release(vm):
+    old = vm.release(OLD)
+    vm.activate(old)
+    _, env = deployment_bundle(vm, "ai,mcp,multi-agent,rag")
+
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+
+    assert result.returncode == 0, result.stdout + result.stderr
+    calls = vm.docker_calls()
+    pull = calls.index("pull ollama/ollama:0.34.3")
+    start = next(i for i, call in enumerate(calls) if " up --detach" in call)
+    model = next(i for i, call in enumerate(calls) if "ollama pull llama3.2:3b" in call)
+    assert pull < start < model
+    assert f"{vm.root}/releases/{NEW}-ai/compose.json" in calls[model]
+    assert (vm.root / "current").resolve() == vm.root / "releases" / (NEW + "-ai")
+    assert (vm.root / "current" / "gateway-auth.caddy").stat().st_mode & 0o777 == 0o600
+
+
+@pytest.mark.parametrize("failure", ["pull ollama/ollama", " up --detach", "ollama pull llama3.2:3b"])
+def test_failed_ai_deploy_does_not_mark_the_new_release_current(vm, failure):
+    old = vm.release(OLD)
+    vm.activate(old)
+    _, env = deployment_bundle(vm, "ai")
+
+    result = vm.run("deploy-vm.sh", NEW, fail_on=failure, env_extra=env)
+
+    assert result.returncode != 0
+    assert any(failure in call for call in vm.docker_calls())
+    assert (vm.root / "current").resolve() == old
+    assert "Services started" not in result.stdout
+
+
+def test_deploy_checks_model_provisioning_rather_than_trusting_a_successful_pull(vm):
+    _, env = deployment_bundle(vm, "ai", listing="NAME ID SIZE MODIFIED\n")
+
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+
+    assert result.returncode != 0 and "not listed" in result.stderr
+    assert not (vm.root / "current").exists()
+
+
+def test_deploy_rejects_tampered_ai_metadata_before_docker_runs(vm):
+    upload, env = deployment_bundle(vm)
+    (upload / "ai-services.txt").write_text("ai\n")
+
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+
+    assert result.returncode != 0
+    assert vm.docker_calls() == []
+
+
+def test_redeploying_same_revision_keeps_the_real_previous_release(vm):
+    old = vm.release(OLD)
+    vm.activate(old)
+    _, env = deployment_bundle(vm)
+    assert vm.run("deploy-vm.sh", NEW, env_extra=env).returncode == 0
+
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (vm.root / "releases" / NEW / "previous-release.txt").read_text().strip() == str(old)
+
+
+def test_ai_deployment_without_gateway_credentials_fails_before_any_docker_command(vm):
+    upload, env = deployment_bundle(vm, "ai")
+    (upload / "gateway-auth.caddy").unlink()
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env)
+    assert result.returncode != 0 and "requires the private gateway" in result.stderr
+    assert not vm.docker_calls()
+
+
+@pytest.mark.parametrize("failed", [True, False])
+def test_model_warmup_failure_or_empty_output_blocks_activation(vm, failed):
+    _, env = deployment_bundle(vm, "ai")
+    env["STUB_WARMUP"] = ""
+    result = vm.run("deploy-vm.sh", NEW, env_extra=env, fail_on="ollama run" if failed else "")
+    assert result.returncode != 0 and ("warming" in result.stderr or "no response" in result.stderr)
+    assert not (vm.root / "current").exists()
+
+
+def test_switching_baseline_to_ai_at_same_sha_preserves_a_working_rollback(vm):
+    _, baseline_env = deployment_bundle(vm)
+    assert vm.run("deploy-vm.sh", NEW, env_extra=baseline_env).returncode == 0
+    _, ai_env = deployment_bundle(vm, "ai,mcp,multi-agent,rag")
+    result = vm.run("deploy-vm.sh", NEW, env_extra=ai_env)
+    assert result.returncode == 0, result.stderr
+    assert (vm.root / "current").resolve().name == NEW + "-ai"
+    assert (vm.root / "releases" / NEW / "ai-services.txt").read_text().strip() == ""
+    assert vm.run("rollback-vm.sh").returncode == 0
+    assert (vm.root / "current").resolve().name == NEW
+
+
+def test_rollback_accepts_a_protected_ai_release_suffix(vm):
+    previous = vm.release(OLD + "-ai", revision=OLD)
+    current = vm.release(NEW, previous=previous)
+    vm.activate(current)
+    result = vm.run("rollback-vm.sh")
+    assert result.returncode == 0, result.stderr
+    assert (vm.root / "current").resolve() == previous
+    assert any("--remove-orphans" in call for call in vm.docker_calls())

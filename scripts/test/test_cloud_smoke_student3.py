@@ -64,6 +64,17 @@ def test_student3_check_passes_for_baseline_and_deletes_its_attraction():
     assert gateway.calls[-1] == ("GET", f"{API}/attractions/7")  # the 404 readback after deletion
 
 
+@pytest.mark.parametrize("source", ["ai", "ai_retry", "fallback"])
+def test_ai_profile_requires_model_recommendations_and_retains_crud(source):
+    gateway = FakeGateway(capabilities={key: True for key in OFF}, source=source)
+    if source == "fallback":
+        with pytest.raises(RuntimeError, match="AI recommendation failed"):
+            module.check_student3(gateway, {"ai", "mcp", "rag", "multi-agent"})
+    else:
+        module.check_student3(gateway, {"ai", "mcp", "rag", "multi-agent"})
+        assert gateway.deleted
+
+
 @pytest.mark.parametrize("flag", list(OFF))
 def test_student3_check_fails_when_any_ai_capability_is_enabled(flag):
     gateway = FakeGateway(capabilities={**OFF, flag: True})

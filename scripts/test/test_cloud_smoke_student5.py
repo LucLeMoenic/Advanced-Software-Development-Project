@@ -74,6 +74,13 @@ def test_student5_check_passes_for_baseline_and_deletes_its_destination():
     assert {(method, path) for method, path, _ in DISABLED.values()} <= set(gateway.calls[:create])
 
 
+def test_ai_profile_retains_crud_without_expecting_disabled_routes():
+    gateway = FakeGateway(leaks=DISABLED)
+    module.check_student5(gateway, {"ai", "mcp", "rag", "multi-agent"})
+    assert gateway.deleted
+    assert not {(method, path) for method, path, _ in DISABLED.values()} & set(gateway.calls)
+
+
 def test_student5_check_requires_the_seeded_demonstration_destinations():
     with pytest.raises(RuntimeError, match="At least ten demonstration destinations"):
         module.check_student5(FakeGateway(destinations=9))
