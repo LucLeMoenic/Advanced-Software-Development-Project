@@ -619,5 +619,7 @@ def create_app(database_path=None):
     return app
 
 if __name__ == "__main__":
+    from waitress import serve
+
     app = create_app()
-    app.run(host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
+    serve(app, host="0.0.0.0", port=int(os.getenv("PORT", "8080")))

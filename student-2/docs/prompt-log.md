@@ -2,6 +2,50 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-22 - Student 2 Deployment Preparation
+
+**Request:** get Student 2's implementation ready for deployment.
+
+**Scope and changes:** prepared the Release 2 AI-disabled cloud baseline, without
+provisioning cloud resources or changing another student's feature. Created
+`LLM/Student_2_Deployment_Readiness`. Replaced Flask development serving with
+pinned, single-process threaded Waitress in backend/database, preserving `PORT`
+and the process-local signed-preview contract. Updated Flask/requests to the
+fixed versions already identified by the audit policy and removed only Student
+2's accepted exceptions. CI now starts the shared gateway and runs the existing
+CRUD/disabled-mode smoke through it; the script also checks overview/decision
+guards and replaces the database container to prove storage survives replacement.
+Cloud smoke edits now trigger Student 2 CI. Updated deployment docs and stale
+ownership/previous-CI status without claiming live AI or cloud acceptance.
+
+**Validation:** backend 257 passed/11 existing opt-in live skips; database 39
+passed; frontend 45 passed plus production build; cloud configuration 6 passed.
+Built backend/database/frontend/shared-gateway images and started an isolated
+cloud-derived stack on loopback 55102 with its own named data volume and all AI
+disabled. Real gateway smoke passed deterministic create, trip/stop CRUD,
+regeneration, disabled modes and exact saved-state comparison after database
+container replacement. Both Python services reported Waitress over HTTP.
+Ruff security and detect-secrets passed; pip-audit found no known vulnerabilities
+in either updated requirement set, with no Student 2 exceptions. The first
+combined hook run could not find Python via the Windows Store alias; rerunning
+with the existing test venv on PATH passed all three hooks.
+
+**Commit preparation recheck:** backend 257 passed/11 opt-in live skips,
+database 39 passed and cloud configuration 6 passed. The smoke script parsed
+without PowerShell errors and `docker compose config --quiet` passed.
+
+**Browser and cleanup:** the actual gateway UI created a four-stop fallback
+itinerary, saved a budget change, showed disabled Edit/Advice controls and
+confirmed deletion. API readback verified 404 and ten original seeded trips.
+Used DOM-driven interactions after the hidden browser's click-stability wait
+stalled; no claim of keyboard/responsive acceptance. Removed the disposable
+stack, named volume and generated cloud/test bundle; existing app data was
+untouched.
+
+**Limits:** local baseline readiness is not a real Azure/AWS deployment, new
+remote CI result, whole-group certification or enabled-AI acceptance. The prior
+natural-language editor timeout remains a separate local-AI issue.
+
 ## 2026-10-21 - CI Disabled-Mode Smoke Fix
 
 Student 2 CI run `39572296667` failed because the PowerShell smoke script still
