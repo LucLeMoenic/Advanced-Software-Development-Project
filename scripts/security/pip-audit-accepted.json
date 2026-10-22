@@ -11,11 +11,5 @@
     "recorded": "2026-10-18",
     "ids": ["PYSEC-2026-2151"],
     "fix": "flask>=3.1.3"
-  },
-  "student-5/database/requirements.txt": {
-    "owner": "Student 5",
-    "recorded": "2026-10-18",
-    "ids": ["PYSEC-2026-1845"],
-    "fix": "pytest>=9.0.3 (dev-only dependency)"
   }
 }
