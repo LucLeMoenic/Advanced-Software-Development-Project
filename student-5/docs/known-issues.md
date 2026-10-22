@@ -1,6 +1,6 @@
 # Known Issues and Limitations
 
-Student 5 (Alex Chen), Release 0 and Release 1. Honest limitations of the delivered feature.
+Student 5 (Alex Chen), Release 0, Release 1 and Release 2. Honest limitations of the delivered feature.
 Each entry says what the problem is, what it costs, and what would fix it.
 
 ## Development and tooling
@@ -202,3 +202,67 @@ both and recorded his decision with `finalise`: (e) `kept`, (f) `kept`.
 Release 1 adds no database routes, and the issue above remains as described.
 The new MCP and RAG routes do not have it: they use distinct `502` and `504`
 codes for dependency failures.
+
+## Release 2
+
+Found while gathering the Chunk 6 evidence (22 October 2026). None of these was fixed in
+Chunk 6, which changed no code.
+
+### The results row collapses on a short viewport
+
+`main.page-shell` is a viewport-height grid with five rows: the trip form, the results, and
+three collapsible sections. On a window about 790 px high the results row gets about 57 px, so
+the destination details and the advisory scroll inside a box that is barely visible. Collapsing
+the trip form raises that to about 200 px. The screenshots in `evidence/release-2/local/` and
+`cloud/` show it. The fix is a minimum height for the results row, or letting the page scroll
+rather than fitting the viewport.
+
+### A readiness review cannot be reopened
+
+The readiness panel only has "Start readiness review". After a reload or a second tab, a review
+that is waiting for a decision cannot be shown again, although the server still holds it. For
+the Chunk 6 evidence, the page's own `htmx.ajax` was used to load the existing review into the
+panel. The fix is a short list of the destination's open reviews, or keeping the workflow id
+in the URL.
+
+### "Decided by" is easy to misuse
+
+On Chunk 2 workflow `wf-20261021T233233Z-96e03a60`, the reason for the decision was typed into
+**Decided by** and **Notes** was left empty. The label and the field width do not make it clear
+that it takes a name. The record is kept as it is. A placeholder ("Your name") and a hint under
+**Notes** would help.
+
+### The checklist checkbox is oversized
+
+In the readiness review, each item's checkbox renders much larger than the text and squeezes
+the subject column to a few words per line (`multi-agent-server/screenshots/01`). It is
+cosmetic, and the form still works.
+
+### Advisory lists sometimes show doubled bullets
+
+The model sometimes writes `- -` at the start of a line (local evidence `03-ai-advisory.txt`,
+and in the browser). It is a formatting artefact of the model output. Stripping a repeated
+leading `-` when rendering would fix it.
+
+### A RAG answer can add a word its source does not say
+
+For "What is the difference between visa on arrival and an eVisa?", the answer called a visa
+on arrival "an electronic visa issued at the border". The cited chunk says only that it is
+issued at the border. The answer was rated `confidence: low`, so the UI's caution was shown,
+but the claim itself was unsupported.
+
+### The Student 5 reviewer prompt fails in the Release 2 report modes
+
+See "The 3B reviewer echoes the worked examples in its prompt" above. In `review-testing`,
+`reviewer-llama32-v2.md` produced the same echo twice at temperature 0, and no record was
+written. The three Release 2 records use the shared `reviewer.md` instead
+(`evidence/release-2/loop/README.md`). A report-mode version of the Student 5 prompt is
+still to do.
+
+### Shared dependencies found (for their owners; not changed here)
+
+- `scripts/deploy/start-release1.ps1` exits with code 1 when `MULTI_AGENT_ENABLED=true`. Its
+  Student 2 probe compares the capabilities reply to an exact dictionary, and the reply now
+  also contains `multiAgentEnabled`. All services are healthy regardless.
+- The cloud baseline still has no persistence-across-redeploy or rollback evidence
+  (`cloud-smoke.txt` says so). This belongs to the cloud workflow owner.
