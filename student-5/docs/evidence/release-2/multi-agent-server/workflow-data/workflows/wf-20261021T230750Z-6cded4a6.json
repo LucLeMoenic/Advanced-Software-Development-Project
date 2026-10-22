@@ -1,0 +1,430 @@
+{
+  "id": "wf-20261021T230750Z-6cded4a6",
+  "feature": "student-5",
+  "task": "Trip readiness review for Japan. Write a pre-departure checklist from the supplied records only: the entry requirement and documents to prepare, what to pack for each recorded season, and how to get around with each recorded transit option. One item per record. Where a record is missing or a rule must be confirmed, say to check Smartraveller or the official source.",
+  "submitted_by": "student-5-frontend",
+  "status": "approved",
+  "created_at": "2026-10-21T23:07:50.527Z",
+  "updated_at": "2026-10-21T23:36:35.380Z",
+  "evidence": [
+    {
+      "id": "destination-1",
+      "title": "Japan \u2014 entry requirement",
+      "text": "Records supplied: 2 of 2 weather notes, 2 of 2 transit options. Visa requirement on record: visa-free. Entry notes: Short-stay tourist entry for Australian passport holders. Visit Japan Web pre-registration speeds up immigration and customs."
+    },
+    {
+      "id": "weather-1",
+      "title": "Japan \u2014 weather: Spring (Mar-May)",
+      "text": "Season: Spring (Mar-May). Mild days and heavy cherry blossom crowds. Pack layers because inland evenings stay cold well into April."
+    },
+    {
+      "id": "weather-2",
+      "title": "Japan \u2014 weather: Summer (Jun-Aug)",
+      "text": "Season: Summer (Jun-Aug). Hot and humid with the tsuyu rains through June, and typhoon disruption building from late August."
+    },
+    {
+      "id": "transit-1",
+      "title": "Japan \u2014 transit: rail",
+      "text": "Transit type: rail. A Japan Rail Pass covers most Shinkansen services between major cities and is cheapest bought before arrival."
+    },
+    {
+      "id": "transit-2",
+      "title": "Japan \u2014 transit: metro",
+      "text": "Transit type: metro. Tokyo Metro and Toei lines accept Suica or Pasmo IC cards, which also work on buses and in convenience stores."
+    }
+  ],
+  "plan": {
+    "objective": "Plan a pre-departure checklist for Japan based on the provided evidence.",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "Gather required documents, including the Australian passport and any necessary visas (if required) to check against Smartraveller or the official source."
+      },
+      {
+        "id": "s2",
+        "description": "Pack clothing and accessories suitable for each season: Spring (Mar-May), Summer (Jun-Aug), and any other seasons mentioned in the evidence."
+      },
+      {
+        "id": "s3",
+        "description": "Research and purchase a Japan Rail Pass for rail travel between major cities."
+      },
+      {
+        "id": "s4",
+        "description": "Understand the transit options and payment methods for metro travel in Tokyo, including Suica or Pasmo IC cards."
+      }
+    ],
+    "required_evidence_ids": [
+      "destination-1",
+      "weather-1",
+      "weather-2",
+      "transit-1",
+      "transit-2"
+    ],
+    "success_criteria": [
+      "The checklist includes all required documents for entry into Japan.",
+      "The checklist includes clothing and accessories suitable for each season.",
+      "The Japan Rail Pass is purchased and ready for use.",
+      "The Worker understands the transit options and payment methods for metro travel in Tokyo."
+    ]
+  },
+  "work": {
+    "summary": "Pre-departure checklist for Japan based on the provided evidence.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Japan \u2014 entry requirement",
+        "detail": "Short-stay tourist entry for Australian passport holders. Visit Japan Web pre-registration speeds up immigration and customs.",
+        "evidence_ids": [
+          "destination-1"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Japan \u2014 weather: Spring (Mar-May)",
+        "detail": "Pack layers because inland evenings stay cold well into April.",
+        "evidence_ids": [
+          "weather-1"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Japan \u2014 weather: Summer (Jun-Aug)",
+        "detail": "Hot and humid with the tsuyu rains through June, and typhoon disruption building from late August.",
+        "evidence_ids": [
+          "weather-2"
+        ]
+      },
+      {
+        "id": "i4",
+        "subject": "Japan \u2014 transit: rail",
+        "detail": "A Japan Rail Pass covers most Shinkansen services between major cities and is cheapest bought before arrival.",
+        "evidence_ids": [
+          "transit-1"
+        ]
+      },
+      {
+        "id": "i5",
+        "subject": "Japan \u2014 transit: metro",
+        "detail": "Tokyo Metro and Toei lines accept Suica or Pasmo IC cards, which also work on buses and in convenience stores.",
+        "evidence_ids": [
+          "transit-2"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "concerns",
+    "model_verdict": "pass",
+    "degraded": false,
+    "automatic_findings": [],
+    "model_findings": [
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "The entry requirement is correctly stated as short-stay tourist entry for Australian passport holders."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "The detail for Japan \u2014 weather: Spring (Mar-May) is accurate, mentioning the need to pack layers for cold evenings."
+      },
+      {
+        "severity": "info",
+        "item_id": "i3",
+        "message": "The detail for Japan \u2014 weather: Summer (Jun-Aug) is accurate, mentioning the hot and humid weather with tsuyu rains."
+      },
+      {
+        "severity": "info",
+        "item_id": "i4",
+        "message": "The detail for Japan \u2014 transit: rail is accurate, mentioning the Japan Rail Pass and its benefits."
+      },
+      {
+        "severity": "info",
+        "item_id": "i5",
+        "message": "The detail for Japan \u2014 transit: metro is accurate, mentioning the acceptance of Suica or Pasmo IC cards."
+      },
+      {
+        "severity": "warning",
+        "item_id": "i2",
+        "message": "The detail for Japan \u2014 weather: Spring (Mar-May) could be improved by mentioning the cherry blossom crowds."
+      }
+    ],
+    "findings": [
+      {
+        "severity": "info",
+        "item_id": "i1",
+        "message": "The entry requirement is correctly stated as short-stay tourist entry for Australian passport holders."
+      },
+      {
+        "severity": "info",
+        "item_id": "i2",
+        "message": "The detail for Japan \u2014 weather: Spring (Mar-May) is accurate, mentioning the need to pack layers for cold evenings."
+      },
+      {
+        "severity": "info",
+        "item_id": "i3",
+        "message": "The detail for Japan \u2014 weather: Summer (Jun-Aug) is accurate, mentioning the hot and humid weather with tsuyu rains."
+      },
+      {
+        "severity": "info",
+        "item_id": "i4",
+        "message": "The detail for Japan \u2014 transit: rail is accurate, mentioning the Japan Rail Pass and its benefits."
+      },
+      {
+        "severity": "info",
+        "item_id": "i5",
+        "message": "The detail for Japan \u2014 transit: metro is accurate, mentioning the acceptance of Suica or Pasmo IC cards."
+      },
+      {
+        "severity": "warning",
+        "item_id": "i2",
+        "message": "The detail for Japan \u2014 weather: Spring (Mar-May) could be improved by mentioning the cherry blossom crowds."
+      }
+    ],
+    "recommendations": [
+      "Check the official source for the most up-to-date information on visa requirements.",
+      "Consider adding a note about the need to pack warm clothing for cold evenings in spring.",
+      "Verify the accuracy of the Japan Rail Pass details.",
+      "Review the transit options and payment methods for metro travel in Tokyo to ensure accuracy."
+    ]
+  },
+  "human_decision": {
+    "decision": "approve",
+    "notes": "",
+    "decided_by": "terminal-reviewer",
+    "decided_at": "2026-10-21T23:36:35.380Z"
+  },
+  "final_output": {
+    "summary": "Pre-departure checklist for Japan based on the provided evidence.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Japan \u2014 entry requirement",
+        "detail": "Short-stay tourist entry for Australian passport holders. Visit Japan Web pre-registration speeds up immigration and customs.",
+        "evidence_ids": [
+          "destination-1"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Japan \u2014 weather: Spring (Mar-May)",
+        "detail": "Pack layers because inland evenings stay cold well into April.",
+        "evidence_ids": [
+          "weather-1"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Japan \u2014 weather: Summer (Jun-Aug)",
+        "detail": "Hot and humid with the tsuyu rains through June, and typhoon disruption building from late August.",
+        "evidence_ids": [
+          "weather-2"
+        ]
+      },
+      {
+        "id": "i4",
+        "subject": "Japan \u2014 transit: rail",
+        "detail": "A Japan Rail Pass covers most Shinkansen services between major cities and is cheapest bought before arrival.",
+        "evidence_ids": [
+          "transit-1"
+        ]
+      },
+      {
+        "id": "i5",
+        "subject": "Japan \u2014 transit: metro",
+        "detail": "Tokyo Metro and Toei lines accept Suica or Pasmo IC cards, which also work on buses and in convenience stores.",
+        "evidence_ids": [
+          "transit-2"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-21T23:07:50.651Z",
+      "finished_at": "2026-10-21T23:08:05.135Z",
+      "duration_ms": 14483,
+      "ok": true,
+      "output": {
+        "objective": "Plan a pre-departure checklist for Japan based on the provided evidence.",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "Gather required documents, including the Australian passport and any necessary visas (if required) to check against Smartraveller or the official source."
+          },
+          {
+            "id": "s2",
+            "description": "Pack clothing and accessories suitable for each season: Spring (Mar-May), Summer (Jun-Aug), and any other seasons mentioned in the evidence."
+          },
+          {
+            "id": "s3",
+            "description": "Research and purchase a Japan Rail Pass for rail travel between major cities."
+          },
+          {
+            "id": "s4",
+            "description": "Understand the transit options and payment methods for metro travel in Tokyo, including Suica or Pasmo IC cards."
+          }
+        ],
+        "required_evidence_ids": [
+          "destination-1",
+          "weather-1",
+          "weather-2",
+          "transit-1",
+          "transit-2"
+        ],
+        "success_criteria": [
+          "The checklist includes all required documents for entry into Japan.",
+          "The checklist includes clothing and accessories suitable for each season.",
+          "The Japan Rail Pass is purchased and ready for use.",
+          "The Worker understands the transit options and payment methods for metro travel in Tokyo."
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v2.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-21T23:08:05.197Z",
+      "finished_at": "2026-10-21T23:08:10.432Z",
+      "duration_ms": 5235,
+      "ok": true,
+      "output": {
+        "summary": "Pre-departure checklist for Japan based on the provided evidence.",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Japan \u2014 entry requirement",
+            "detail": "Short-stay tourist entry for Australian passport holders. Visit Japan Web pre-registration speeds up immigration and customs.",
+            "evidence_ids": [
+              "destination-1"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Japan \u2014 weather: Spring (Mar-May)",
+            "detail": "Pack layers because inland evenings stay cold well into April.",
+            "evidence_ids": [
+              "weather-1"
+            ]
+          },
+          {
+            "id": "i3",
+            "subject": "Japan \u2014 weather: Summer (Jun-Aug)",
+            "detail": "Hot and humid with the tsuyu rains through June, and typhoon disruption building from late August.",
+            "evidence_ids": [
+              "weather-2"
+            ]
+          },
+          {
+            "id": "i4",
+            "subject": "Japan \u2014 transit: rail",
+            "detail": "A Japan Rail Pass covers most Shinkansen services between major cities and is cheapest bought before arrival.",
+            "evidence_ids": [
+              "transit-1"
+            ]
+          },
+          {
+            "id": "i5",
+            "subject": "Japan \u2014 transit: metro",
+            "detail": "Tokyo Metro and Toei lines accept Suica or Pasmo IC cards, which also work on buses and in convenience stores.",
+            "evidence_ids": [
+              "transit-2"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-21T23:08:10.563Z",
+      "finished_at": "2026-10-21T23:08:18.059Z",
+      "duration_ms": 7495,
+      "ok": true,
+      "output": {
+        "verdict": "concerns",
+        "model_verdict": "pass",
+        "degraded": false,
+        "automatic_findings": [],
+        "model_findings": [
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "The entry requirement is correctly stated as short-stay tourist entry for Australian passport holders."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "The detail for Japan \u2014 weather: Spring (Mar-May) is accurate, mentioning the need to pack layers for cold evenings."
+          },
+          {
+            "severity": "info",
+            "item_id": "i3",
+            "message": "The detail for Japan \u2014 weather: Summer (Jun-Aug) is accurate, mentioning the hot and humid weather with tsuyu rains."
+          },
+          {
+            "severity": "info",
+            "item_id": "i4",
+            "message": "The detail for Japan \u2014 transit: rail is accurate, mentioning the Japan Rail Pass and its benefits."
+          },
+          {
+            "severity": "info",
+            "item_id": "i5",
+            "message": "The detail for Japan \u2014 transit: metro is accurate, mentioning the acceptance of Suica or Pasmo IC cards."
+          },
+          {
+            "severity": "warning",
+            "item_id": "i2",
+            "message": "The detail for Japan \u2014 weather: Spring (Mar-May) could be improved by mentioning the cherry blossom crowds."
+          }
+        ],
+        "findings": [
+          {
+            "severity": "info",
+            "item_id": "i1",
+            "message": "The entry requirement is correctly stated as short-stay tourist entry for Australian passport holders."
+          },
+          {
+            "severity": "info",
+            "item_id": "i2",
+            "message": "The detail for Japan \u2014 weather: Spring (Mar-May) is accurate, mentioning the need to pack layers for cold evenings."
+          },
+          {
+            "severity": "info",
+            "item_id": "i3",
+            "message": "The detail for Japan \u2014 weather: Summer (Jun-Aug) is accurate, mentioning the hot and humid weather with tsuyu rains."
+          },
+          {
+            "severity": "info",
+            "item_id": "i4",
+            "message": "The detail for Japan \u2014 transit: rail is accurate, mentioning the Japan Rail Pass and its benefits."
+          },
+          {
+            "severity": "info",
+            "item_id": "i5",
+            "message": "The detail for Japan \u2014 transit: metro is accurate, mentioning the acceptance of Suica or Pasmo IC cards."
+          },
+          {
+            "severity": "warning",
+            "item_id": "i2",
+            "message": "The detail for Japan \u2014 weather: Spring (Mar-May) could be improved by mentioning the cherry blossom crowds."
+          }
+        ],
+        "recommendations": [
+          "Check the official source for the most up-to-date information on visa requirements.",
+          "Consider adding a note about the need to pack warm clothing for cold evenings in spring.",
+          "Verify the accuracy of the Japan Rail Pass details.",
+          "Review the transit options and payment methods for metro travel in Tokyo to ensure accuracy."
+        ]
+      }
+    }
+  ],
+  "error": null
+}

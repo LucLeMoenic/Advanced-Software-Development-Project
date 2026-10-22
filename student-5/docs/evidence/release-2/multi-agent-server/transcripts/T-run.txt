@@ -1,0 +1,36 @@
+# Terminal 3 (ai-services/multi-agent-server), 2026-10-22T10:01:00Z
+# Evidence file built from the live Student 5 database (destination 3) by the backend's own readiness.build_evidence()
+$ python cli.py run --feature student-5 --task "Trip readiness review for Vietnam. Write a pre-departure checklist from the supplied records only: the entry requirement and documents to prepare, what to pack for each recorded season, and how to get around with each recorded transit option. One item per record. Where a record is missing or a rule must be confirmed, say to check Smartraveller or the official source." --evidence-file ../../student-5/docs/evidence/release-2/multi-agent-server/transcripts/T-evidence-vietnam.json --submitted-by student-5-terminal
+Created wf-20261022T100101Z-f83e9cc6 with 3 evidence entries
+[21:01:02] wf-20261022T100101Z-f83e9cc6: planning
+[21:01:08] wf-20261022T100101Z-f83e9cc6: working
+[21:01:14] wf-20261022T100101Z-f83e9cc6: reviewing
+[21:01:17] wf-20261022T100101Z-f83e9cc6: awaiting_human_review
+
+=== Workflow wf-20261022T100101Z-f83e9cc6  (student-5)  status: awaiting_human_review ===
+Task: Trip readiness review for Vietnam. Write a pre-departure checklist from the supplied records only: the entry requirement and documents to prepare, what to pack for each recorded season, and how to get around with each recorded transit option. One item per record. Where a record is missing or a rule must be confirmed, say to check Smartraveller or the official source.
+
+PLANNER  objective: Create a pre-departure checklist for Vietnam based on the provided evidence.
+  s1. Gather required documents, including the approval letter for the eVisa.
+  s2. Pack clothing suitable for both the cool and dry climate of the south and the cool and drizzly climate of the north.
+  s3. Book a soft sleeper berth on the Reunification Express for the train journey from Hanoi to Ho Chi Minh City.
+  s4. Check Smartraveller or the official source for any additional requirements or updates.
+  requires evidence: destination-3, weather-5, transit-5
+
+WORKER   Pre-departure checklist for Vietnam based on the provided evidence.
+  [i1] Vietnam — entry requirement: Carry a printed copy of the approval letter for the eVisa.  (evidence: destination-3)
+  [i2] Vietnam — weather: Winter (Dec-Feb): Pack clothing suitable for both cool and drizzly climates.  (evidence: weather-5)
+  [i3] Vietnam — transit: rail: Book soft sleeper berths on the Reunification Express several days ahead.  (evidence: transit-5)
+  [i4] Vietnam — entry requirement: Apply for a single or multiple entry eVisa online before departure.  (evidence: destination-3)
+  [i5] Vietnam — transit: rail: The Reunification Express runs from Hanoi to Ho Chi Minh City.  (evidence: transit-5)
+
+REVIEWER verdict: CONCERNS (model said pass)
+  - warning  i4   Subject 'Vietnam — entry requirement' is repeated.
+  - warning  i5   Subject 'Vietnam — transit: rail' is repeated.
+  * Clarify the repeated subject in the checklist to avoid confusion.
+  * Consider adding a note to the repeated subject to highlight the duplicate entry.
+  * Review the checklist for any other repeated subjects.
+  * Verify the checklist for consistency and accuracy.
+
+Next: python cli.py review wf-20261022T100101Z-f83e9cc6
+exit=0

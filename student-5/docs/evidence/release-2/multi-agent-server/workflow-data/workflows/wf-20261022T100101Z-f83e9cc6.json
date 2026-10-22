@@ -1,0 +1,329 @@
+{
+  "id": "wf-20261022T100101Z-f83e9cc6",
+  "feature": "student-5",
+  "task": "Trip readiness review for Vietnam. Write a pre-departure checklist from the supplied records only: the entry requirement and documents to prepare, what to pack for each recorded season, and how to get around with each recorded transit option. One item per record. Where a record is missing or a rule must be confirmed, say to check Smartraveller or the official source.",
+  "submitted_by": "student-5-terminal",
+  "status": "partially_accepted",
+  "created_at": "2026-10-22T10:01:01.436Z",
+  "updated_at": "2026-10-22T10:36:06.289Z",
+  "evidence": [
+    {
+      "id": "destination-3",
+      "title": "Vietnam \u2014 entry requirement",
+      "text": "Records supplied: 1 of 1 weather notes, 1 of 1 transit options. Visa requirement on record: eVisa. Entry notes: Single and multiple entry eVisa applied for online before departure. Carry a printed copy of the approval letter."
+    },
+    {
+      "id": "weather-5",
+      "title": "Vietnam \u2014 weather: Winter (Dec-Feb)",
+      "text": "Season: Winter (Dec-Feb). Cool and drizzly in Hanoi and the north while the south stays hot and dry - pack for both climates."
+    },
+    {
+      "id": "transit-5",
+      "title": "Vietnam \u2014 transit: rail",
+      "text": "Transit type: rail. The Reunification Express runs Hanoi to Ho Chi Minh City. Book soft sleeper berths several days ahead."
+    }
+  ],
+  "plan": {
+    "objective": "Create a pre-departure checklist for Vietnam based on the provided evidence.",
+    "steps": [
+      {
+        "id": "s1",
+        "description": "Gather required documents, including the approval letter for the eVisa."
+      },
+      {
+        "id": "s2",
+        "description": "Pack clothing suitable for both the cool and dry climate of the south and the cool and drizzly climate of the north."
+      },
+      {
+        "id": "s3",
+        "description": "Book a soft sleeper berth on the Reunification Express for the train journey from Hanoi to Ho Chi Minh City."
+      },
+      {
+        "id": "s4",
+        "description": "Check Smartraveller or the official source for any additional requirements or updates."
+      }
+    ],
+    "required_evidence_ids": [
+      "destination-3",
+      "weather-5",
+      "transit-5"
+    ],
+    "success_criteria": [
+      "The approval letter for the eVisa is present in the traveller's documents.",
+      "The traveller has packed clothing suitable for both climates.",
+      "The Reunification Express train journey has been booked.",
+      "The traveller has checked Smartraveller or the official source for any additional requirements."
+    ]
+  },
+  "work": {
+    "summary": "Pre-departure checklist for Vietnam based on the provided evidence.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Vietnam \u2014 entry requirement",
+        "detail": "Carry a printed copy of the approval letter for the eVisa.",
+        "evidence_ids": [
+          "destination-3"
+        ]
+      },
+      {
+        "id": "i2",
+        "subject": "Vietnam \u2014 weather: Winter (Dec-Feb)",
+        "detail": "Pack clothing suitable for both cool and drizzly climates.",
+        "evidence_ids": [
+          "weather-5"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Vietnam \u2014 transit: rail",
+        "detail": "Book soft sleeper berths on the Reunification Express several days ahead.",
+        "evidence_ids": [
+          "transit-5"
+        ]
+      },
+      {
+        "id": "i4",
+        "subject": "Vietnam \u2014 entry requirement",
+        "detail": "Apply for a single or multiple entry eVisa online before departure.",
+        "evidence_ids": [
+          "destination-3"
+        ]
+      },
+      {
+        "id": "i5",
+        "subject": "Vietnam \u2014 transit: rail",
+        "detail": "The Reunification Express runs from Hanoi to Ho Chi Minh City.",
+        "evidence_ids": [
+          "transit-5"
+        ]
+      }
+    ]
+  },
+  "review": {
+    "verdict": "concerns",
+    "model_verdict": "pass",
+    "degraded": false,
+    "automatic_findings": [
+      {
+        "severity": "warning",
+        "item_id": "i4",
+        "message": "Subject 'Vietnam \u2014 entry requirement' is repeated."
+      },
+      {
+        "severity": "warning",
+        "item_id": "i5",
+        "message": "Subject 'Vietnam \u2014 transit: rail' is repeated."
+      }
+    ],
+    "model_findings": [],
+    "findings": [
+      {
+        "severity": "warning",
+        "item_id": "i4",
+        "message": "Subject 'Vietnam \u2014 entry requirement' is repeated."
+      },
+      {
+        "severity": "warning",
+        "item_id": "i5",
+        "message": "Subject 'Vietnam \u2014 transit: rail' is repeated."
+      }
+    ],
+    "recommendations": [
+      "Clarify the repeated subject in the checklist to avoid confusion.",
+      "Consider adding a note to the repeated subject to highlight the duplicate entry.",
+      "Review the checklist for any other repeated subjects.",
+      "Verify the checklist for consistency and accuracy."
+    ]
+  },
+  "human_decision": {
+    "decision": "partial",
+    "notes": "Accepted i1, i3 and i4. Dropped i2: it leaves out the record's 'south stays hot and dry', so it would pack for the north only. Dropped i5: repeats the rail subject of i3 with no action to take. Also noted: Planner step s2 calls the south 'cool and dry', which the weather-5 record contradicts; no Worker item carried that error.",
+    "decided_by": "Alex Chen",
+    "decided_at": "2026-10-22T10:36:06.289Z",
+    "accepted_item_ids": [
+      "i1",
+      "i3",
+      "i4"
+    ],
+    "rejected_item_ids": [
+      "i2",
+      "i5"
+    ]
+  },
+  "final_output": {
+    "summary": "Pre-departure checklist for Vietnam based on the provided evidence.",
+    "items": [
+      {
+        "id": "i1",
+        "subject": "Vietnam \u2014 entry requirement",
+        "detail": "Carry a printed copy of the approval letter for the eVisa.",
+        "evidence_ids": [
+          "destination-3"
+        ]
+      },
+      {
+        "id": "i3",
+        "subject": "Vietnam \u2014 transit: rail",
+        "detail": "Book soft sleeper berths on the Reunification Express several days ahead.",
+        "evidence_ids": [
+          "transit-5"
+        ]
+      },
+      {
+        "id": "i4",
+        "subject": "Vietnam \u2014 entry requirement",
+        "detail": "Apply for a single or multiple entry eVisa online before departure.",
+        "evidence_ids": [
+          "destination-3"
+        ]
+      }
+    ]
+  },
+  "history": [
+    {
+      "stage": "planner",
+      "agent": "planner",
+      "prompt": "multi-agent-planner-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-22T10:01:01.528Z",
+      "finished_at": "2026-10-22T10:01:07.419Z",
+      "duration_ms": 5890,
+      "ok": true,
+      "output": {
+        "objective": "Create a pre-departure checklist for Vietnam based on the provided evidence.",
+        "steps": [
+          {
+            "id": "s1",
+            "description": "Gather required documents, including the approval letter for the eVisa."
+          },
+          {
+            "id": "s2",
+            "description": "Pack clothing suitable for both the cool and dry climate of the south and the cool and drizzly climate of the north."
+          },
+          {
+            "id": "s3",
+            "description": "Book a soft sleeper berth on the Reunification Express for the train journey from Hanoi to Ho Chi Minh City."
+          },
+          {
+            "id": "s4",
+            "description": "Check Smartraveller or the official source for any additional requirements or updates."
+          }
+        ],
+        "required_evidence_ids": [
+          "destination-3",
+          "weather-5",
+          "transit-5"
+        ],
+        "success_criteria": [
+          "The approval letter for the eVisa is present in the traveller's documents.",
+          "The traveller has packed clothing suitable for both climates.",
+          "The Reunification Express train journey has been booked.",
+          "The traveller has checked Smartraveller or the official source for any additional requirements."
+        ]
+      }
+    },
+    {
+      "stage": "worker",
+      "agent": "worker",
+      "prompt": "multi-agent-worker-v2.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-22T10:01:07.499Z",
+      "finished_at": "2026-10-22T10:01:12.507Z",
+      "duration_ms": 5007,
+      "ok": true,
+      "output": {
+        "summary": "Pre-departure checklist for Vietnam based on the provided evidence.",
+        "items": [
+          {
+            "id": "i1",
+            "subject": "Vietnam \u2014 entry requirement",
+            "detail": "Carry a printed copy of the approval letter for the eVisa.",
+            "evidence_ids": [
+              "destination-3"
+            ]
+          },
+          {
+            "id": "i2",
+            "subject": "Vietnam \u2014 weather: Winter (Dec-Feb)",
+            "detail": "Pack clothing suitable for both cool and drizzly climates.",
+            "evidence_ids": [
+              "weather-5"
+            ]
+          },
+          {
+            "id": "i3",
+            "subject": "Vietnam \u2014 transit: rail",
+            "detail": "Book soft sleeper berths on the Reunification Express several days ahead.",
+            "evidence_ids": [
+              "transit-5"
+            ]
+          },
+          {
+            "id": "i4",
+            "subject": "Vietnam \u2014 entry requirement",
+            "detail": "Apply for a single or multiple entry eVisa online before departure.",
+            "evidence_ids": [
+              "destination-3"
+            ]
+          },
+          {
+            "id": "i5",
+            "subject": "Vietnam \u2014 transit: rail",
+            "detail": "The Reunification Express runs from Hanoi to Ho Chi Minh City.",
+            "evidence_ids": [
+              "transit-5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "stage": "reviewer",
+      "agent": "reviewer",
+      "prompt": "multi-agent-reviewer-v1.txt",
+      "model": "llama3.2:3b",
+      "started_at": "2026-10-22T10:01:12.624Z",
+      "finished_at": "2026-10-22T10:01:15.662Z",
+      "duration_ms": 3038,
+      "ok": true,
+      "output": {
+        "verdict": "concerns",
+        "model_verdict": "pass",
+        "degraded": false,
+        "automatic_findings": [
+          {
+            "severity": "warning",
+            "item_id": "i4",
+            "message": "Subject 'Vietnam \u2014 entry requirement' is repeated."
+          },
+          {
+            "severity": "warning",
+            "item_id": "i5",
+            "message": "Subject 'Vietnam \u2014 transit: rail' is repeated."
+          }
+        ],
+        "model_findings": [],
+        "findings": [
+          {
+            "severity": "warning",
+            "item_id": "i4",
+            "message": "Subject 'Vietnam \u2014 entry requirement' is repeated."
+          },
+          {
+            "severity": "warning",
+            "item_id": "i5",
+            "message": "Subject 'Vietnam \u2014 transit: rail' is repeated."
+          }
+        ],
+        "recommendations": [
+          "Clarify the repeated subject in the checklist to avoid confusion.",
+          "Consider adding a note to the repeated subject to highlight the duplicate entry.",
+          "Review the checklist for any other repeated subjects.",
+          "Verify the checklist for consistency and accuracy."
+        ]
+      }
+    }
+  ],
+  "error": null
+}

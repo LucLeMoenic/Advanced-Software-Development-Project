@@ -1,0 +1,66 @@
+# Final audit state after all three Chunk 6 human decisions, 2026-10-22T11:18:57Z
+$ curl http://127.0.0.1:5600/audit/verify
+{"valid":true,"entries":50,"broken_at":null}
+
+$ python cli.py list
+wf-20261022T110825Z-db0bcb00  partially_accepted     student-5  Trip readiness review for Thailand. Write a pre-departure ch
+wf-20261022T100857Z-16996759  corrected              student-5  Trip readiness review for Indonesia. Write a pre-departure c
+wf-20261022T100101Z-f83e9cc6  partially_accepted     student-5  Trip readiness review for Vietnam. Write a pre-departure che
+wf-20261021T233233Z-96e03a60  partially_accepted     student-5  Trip readiness review for Japan. Write a pre-departure check
+wf-20261021T230750Z-6cded4a6  approved               student-5  Trip readiness review for Japan. Write a pre-departure check
+
+$ python cli.py audit
+#1   2026-10-21T23:07:50.584Z  wf-20261021T230750Z-6cded4a6  system    workflow_created  befc8ba3ceb5
+#2   2026-10-21T23:07:50.640Z  wf-20261021T230750Z-6cded4a6  planner   stage_started  9b39a7afb8f2
+#3   2026-10-21T23:08:05.156Z  wf-20261021T230750Z-6cded4a6  planner   stage_completed  6683bb6dc160
+#4   2026-10-21T23:08:05.196Z  wf-20261021T230750Z-6cded4a6  worker    stage_started  68a3ebd8a7d4
+#5   2026-10-21T23:08:10.464Z  wf-20261021T230750Z-6cded4a6  worker    stage_completed  1a473b87a03b
+#6   2026-10-21T23:08:10.510Z  wf-20261021T230750Z-6cded4a6  system    automatic_checks  dc12583bad48
+#7   2026-10-21T23:08:10.562Z  wf-20261021T230750Z-6cded4a6  reviewer  stage_started  fb5c1df07fdb
+#8   2026-10-21T23:08:18.104Z  wf-20261021T230750Z-6cded4a6  reviewer  stage_completed  73ecb256e936
+#9   2026-10-21T23:08:18.167Z  wf-20261021T230750Z-6cded4a6  system    awaiting_human_review  3819dfcefbdd
+#10  2026-10-21T23:32:33.195Z  wf-20261021T233233Z-96e03a60  system    workflow_created  41291fae9492
+#11  2026-10-21T23:32:33.211Z  wf-20261021T233233Z-96e03a60  planner   stage_started  25c3679d272b
+#12  2026-10-21T23:32:48.452Z  wf-20261021T233233Z-96e03a60  planner   stage_completed  8f1ffed35eb3
+#13  2026-10-21T23:32:48.493Z  wf-20261021T233233Z-96e03a60  worker    stage_started  0b73d0f3dbed
+#14  2026-10-21T23:32:53.654Z  wf-20261021T233233Z-96e03a60  worker    stage_completed  e413da854844
+#15  2026-10-21T23:32:53.688Z  wf-20261021T233233Z-96e03a60  system    automatic_checks  00aa680ec448
+#16  2026-10-21T23:32:53.722Z  wf-20261021T233233Z-96e03a60  reviewer  stage_started  bacb4c9aebe1
+#17  2026-10-21T23:32:59.701Z  wf-20261021T233233Z-96e03a60  reviewer  stage_completed  bfc5a492b695
+#18  2026-10-21T23:32:59.724Z  wf-20261021T233233Z-96e03a60  system    awaiting_human_review  47c9f5bfc96d
+#19  2026-10-21T23:35:13.011Z  wf-20261021T233233Z-96e03a60  human     decision_partial  e7b48b041063
+#20  2026-10-21T23:36:35.384Z  wf-20261021T230750Z-6cded4a6  human     decision_approve  297f12d16e55
+#21  2026-10-22T10:01:01.487Z  wf-20261022T100101Z-f83e9cc6  system    workflow_created  7d8fe5b71616
+#22  2026-10-22T10:01:01.525Z  wf-20261022T100101Z-f83e9cc6  planner   stage_started  aa65c7b81b5e
+#23  2026-10-22T10:01:07.451Z  wf-20261022T100101Z-f83e9cc6  planner   stage_completed  85a25c76e2d8
+#24  2026-10-22T10:01:07.498Z  wf-20261022T100101Z-f83e9cc6  worker    stage_started  9bf4b02ebbfe
+#25  2026-10-22T10:01:12.545Z  wf-20261022T100101Z-f83e9cc6  worker    stage_completed  3000dcbd24a7
+#26  2026-10-22T10:01:12.580Z  wf-20261022T100101Z-f83e9cc6  system    automatic_checks  588af56311c7
+#27  2026-10-22T10:01:12.622Z  wf-20261022T100101Z-f83e9cc6  reviewer  stage_started  778386080acd
+#28  2026-10-22T10:01:15.696Z  wf-20261022T100101Z-f83e9cc6  reviewer  stage_completed  6fe85fccc580
+#29  2026-10-22T10:01:15.738Z  wf-20261022T100101Z-f83e9cc6  system    awaiting_human_review  112b39fd8d4a
+#30  2026-10-22T10:08:57.514Z  wf-20261022T100857Z-16996759  system    workflow_created  f73aed0dc740
+#31  2026-10-22T10:08:57.555Z  wf-20261022T100857Z-16996759  planner   stage_started  8ad07023501f
+#32  2026-10-22T10:09:03.160Z  wf-20261022T100857Z-16996759  planner   stage_completed  8d767a9f9215
+#33  2026-10-22T10:09:03.205Z  wf-20261022T100857Z-16996759  worker    stage_started  1db5951e27d2
+#34  2026-10-22T10:09:09.045Z  wf-20261022T100857Z-16996759  worker    stage_completed  d39eeb599e03
+#35  2026-10-22T10:09:09.078Z  wf-20261022T100857Z-16996759  system    automatic_checks  4468a79f52c6
+#36  2026-10-22T10:09:09.114Z  wf-20261022T100857Z-16996759  reviewer  stage_started  7f9125657550
+#37  2026-10-22T10:09:14.500Z  wf-20261022T100857Z-16996759  reviewer  stage_completed  8d514012d7c1
+#38  2026-10-22T10:09:14.546Z  wf-20261022T100857Z-16996759  system    awaiting_human_review  b7cc67deb896
+#39  2026-10-22T10:36:06.294Z  wf-20261022T100101Z-f83e9cc6  human     decision_partial  4bab035c224b
+#40  2026-10-22T10:40:26.870Z  wf-20261022T100857Z-16996759  human     decision_correct  1e7041337566
+#41  2026-10-22T11:08:25.770Z  wf-20261022T110825Z-db0bcb00  system    workflow_created  fa16ba1e4130
+#42  2026-10-22T11:08:25.807Z  wf-20261022T110825Z-db0bcb00  planner   stage_started  aef7afbb8505
+#43  2026-10-22T11:08:38.637Z  wf-20261022T110825Z-db0bcb00  planner   stage_completed  b539e25e91cf
+#44  2026-10-22T11:08:38.679Z  wf-20261022T110825Z-db0bcb00  worker    stage_started  4c1c672db624
+#45  2026-10-22T11:08:44.134Z  wf-20261022T110825Z-db0bcb00  worker    stage_completed  a53d849a5526
+#46  2026-10-22T11:08:44.168Z  wf-20261022T110825Z-db0bcb00  system    automatic_checks  0a7dae9db178
+#47  2026-10-22T11:08:44.205Z  wf-20261022T110825Z-db0bcb00  reviewer  stage_started  d675ddf55d46
+#48  2026-10-22T11:08:47.333Z  wf-20261022T110825Z-db0bcb00  reviewer  stage_completed  d4823c94f52e
+#49  2026-10-22T11:08:47.378Z  wf-20261022T110825Z-db0bcb00  system    awaiting_human_review  b250aeb08185
+#50  2026-10-22T11:18:21.056Z  wf-20261022T110825Z-db0bcb00  human     decision_partial  ddade027a5ee
+
+# Offline re-verification of the committed copy with the server's own Store.verify()
+$ python -c "from store import Store; print(Store('<evidence>/workflow-data').verify())"
+{'valid': True, 'entries': 50, 'broken_at': None}

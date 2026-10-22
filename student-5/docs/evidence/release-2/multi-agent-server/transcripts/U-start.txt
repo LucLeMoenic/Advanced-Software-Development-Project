@@ -1,0 +1,14 @@
+# UI review (2a) through the Student 5 HTMX routes behind the shared gateway, 2026-10-22T10:08:57Z
+# Same requests the page sends (HX-Request header), sent from Git Bash by an AI coding assistant at Alex Chen's direction; no browser tool was available at that point.
+$ curl -X POST http://localhost:5100/logistics/ui/readiness-reviews -H 'HX-Request: true' -d destination_id=2
+
+<div class="readiness-status"
+     hx-get="/ui/readiness-reviews/wf-20261022T100857Z-16996759?destination_id=2&amp;seen=queued"
+     hx-trigger="every 2s"
+     hx-target="this"
+     hx-swap="outerHTML">
+  <p class="readiness-stage"><span class="readiness-pulse" aria-hidden="true"></span>Queued&hellip;</p>
+  
+  <p class="panel-hint">Planner, Worker and Reviewer run one after another on a local model, so a review usually takes one to three minutes. Workflow <code class="mcp-tool-name">wf-20261022T100857Z-16996759</code></p>
+</div>
+-> HTTP 200 in 1.108238s
