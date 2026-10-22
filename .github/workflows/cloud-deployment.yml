@@ -15,7 +15,7 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     if: github.ref == 'refs/heads/main'
-    environment: production
+    environment: prod
     env:
       CLOUD_HOST: ${{ vars.CLOUD_HOST }}
       CLOUD_USER: ${{ vars.CLOUD_USER }}
