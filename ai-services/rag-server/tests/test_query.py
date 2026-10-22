@@ -88,9 +88,12 @@ def test_trip_weather_context_is_separate_and_cannot_bypass_retrieval(client, mo
     assert client.post("/query", json={"feature": "student-2", "question": "Budget?", "tripContext": context}).status_code == 400
 
 
-def test_model_transport_includes_trip_weather_separately(monkeypatch):
+@pytest.mark.parametrize("slow", [False, True])
+def test_model_transport_includes_trip_weather_separately(monkeypatch, slow):
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", str(slow).lower())
     context = {"weather": {"status": "unavailable"}}
     def respond(request):
+        assert request.extensions["timeout"]["read"] == (180 if slow else 18)
         body = json.loads(request.content)
         prompt = json.loads(body["prompt"])
         assert prompt["tripContext"] == context
@@ -100,6 +103,24 @@ def test_model_transport_includes_trip_weather_separately(monkeypatch):
     client_type = httpx.AsyncClient
     monkeypatch.setattr(generation.httpx, "AsyncClient", lambda **kwargs: client_type(transport=httpx.MockTransport(respond), **kwargs))
     assert anyio.run(generation.generate, "Weather?", [], context) == generation.insufficient()
+
+
+@pytest.mark.parametrize("slow,expected", [(False, [25, 20]), (True, [190, 182])])
+def test_cloud_rag_outer_deadlines_allow_the_model_to_finish(client, monkeypatch, slow, expected):
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", str(slow).lower())
+    deadlines = []
+    original = anyio.fail_after
+    def deadline(seconds):
+        deadlines.append(seconds)
+        return original(seconds)
+    monkeypatch.setattr(anyio, "fail_after", deadline)
+    original_client = httpx.AsyncClient
+    transport = httpx.MockTransport(lambda request: httpx.Response(
+        200, json={"done": True, "response": '{"status":"insufficient","claims":[]}'}))
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **kwargs: original_client(transport=transport, **kwargs))
+    response = client.post("/query", json={"feature": "student-2", "question": "Is budget the total for the trip?"})
+    assert response.status_code == 200
+    assert deadlines == expected
 
 
 @pytest.mark.parametrize("payload", [

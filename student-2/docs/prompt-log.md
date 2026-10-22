@@ -2,6 +2,61 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Bounded CPU Cloud AI Deadlines
+
+**Request and evidence:** protected AI deployment at revision `4da432f` failed
+the itinerary generation smoke. EC2 logs from 22 October 22:17-22:18 UTC showed
+successful model warm-up in 8.56 seconds followed by inference cancellation
+after 20.02 seconds, matching the backend's fixed timeout. The user explicitly
+approved keeping the `m7i-flex.large` and extending bounded cloud-only deadlines
+across affected features/proxies. Created `LLM/Student_2_Cloud_AI_Deadlines`
+from current main; no AWS resources or running cloud services were changed.
+
+**Implementation:** cloud preparation enables `CLOUD_AI_SLOW_MODE` for all
+feature backends and shared RAG. Synchronous model requests allow 180 seconds;
+RAG retains nested bounds of 180/182/190/200 seconds. Existing retries,
+validation, fallback, database/tool deadlines and human approval rules remain
+unchanged. Student 2's cloud frontend allows 390-second previews and 230-second
+advice requests, with a separate AI image tag to preserve same-revision baseline
+rollback. Six inline Compose nginx configs preserve routing/security while
+allowing 400-second read/send inactivity timeouts. Public AI smoke uses 420
+seconds; baseline stays at 30. Local defaults are unchanged.
+
+Generation fallback now logs only exception class and deadline; smoke reports
+expected/actual mode and stop count and still deletes its fixture. No private
+prompt/output logging, fallback acceptance or automatic mutation retries were
+added. The .NET DI registrations resolve the new flag from effective service
+configuration; regression tests exposed and corrected early configuration
+capture. Updated the shared cloud runbook and risk register.
+
+**Validation:** 716 checks passed across the selected suites:
+
+- Cloud bundle/profile/auth and all-feature smoke contracts: 213 passed.
+- Student 2 backend: 266 passed, 11 Windows-skipped existing checks.
+- Shared RAG query/model/outer deadlines: 37 passed; 28 explicitly opt-in live
+  Ollama evaluations skipped (not claimed as real-model evidence).
+- Student 3 RAG/recommendation clients: 19 passed.
+- Student 5 backend/client wiring: 32 passed.
+- Student 1 .NET deadline/model/RAG selection: 81 passed; Student 4: 20 passed.
+  Both backend projects built successfully.
+- Student 2 frontend: 47 passed, including default/cloud browser timer
+  assertions; cloud production build passed.
+- Real Compose/nginx integration: 1 passed, checking all six inline configs,
+  materialized `$` variables, resolver substitution and retained rate limiting.
+  Isolated test containers/networks were removed.
+
+Full real baseline and AI runtime/build bundles also passed `docker compose
+config --quiet`; temporary generated bundles were removed. Ruff security rules
+and `git diff --check` passed. Missing local test dependencies were restored
+from the existing Student 3/5 manifests; no dependency manifests were changed.
+
+**Remaining acceptance:** no remote CI, AWS redeployment or real CPU inference
+was performed for this change. Merge and start a new `ai` deployment to measure
+the longer envelope. Longer waits do not fix invalid model output or establish
+concurrent-user capacity. Previously observed Student 1 ranking fallback and
+workflow-history smoke mismatch remain separate acceptance issues; this
+deadline-only change does not weaken their checks or claim all modes pass.
+
 ## 2026-10-23 - Automatic CI Before Cloud Deployment
 
 **Request:** remove the need to manually start missing student CI before

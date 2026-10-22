@@ -33,7 +33,8 @@ builder.Services.AddSingleton(new OllamaRankingSettings(applicationModel, rankin
 builder.Services.AddSingleton(new LiteApiSettings(liteApiKey));
 builder.Services.AddSingleton(new LookupExtractorSettings(applicationModel, lookupPrompt));
 builder.Services.AddSingleton(new McpSettings(new Uri(mcpServerUrl)));
-builder.Services.AddSingleton(new RagSettings(new Uri(ragServerUrl), TimeSpan.FromSeconds(30)));
+builder.Services.AddSingleton(services => new RagSettings(new Uri(ragServerUrl),
+    TimeSpan.FromSeconds(services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false) ? 200 : 30)));
 builder.Services
     .AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client =>
     {
@@ -41,21 +42,20 @@ builder.Services
         client.Timeout = TimeSpan.FromSeconds(3);
     });
 builder.Services
-    .AddHttpClient<IOllamaRankingClient, OllamaRankingClient>(client =>
+    .AddHttpClient<IOllamaRankingClient, OllamaRankingClient>((services, client) =>
     {
         client.BaseAddress = new Uri(ollamaUrl);
-        client.Timeout = TimeSpan.FromSeconds(12);
+        client.Timeout = TimeSpan.FromSeconds(services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false) ? 180 : 12);
     });
 builder.Services
-    .AddHttpClient<ILookupArgumentExtractor, OllamaLookupExtractor>(client =>
+    .AddHttpClient<ILookupArgumentExtractor, OllamaLookupExtractor>((services, client) =>
     {
         client.BaseAddress = new Uri(ollamaUrl);
-        // Allows for a cold model load; the nginx proxies in front allow 90 s.
-        client.Timeout = TimeSpan.FromSeconds(60);
+        client.Timeout = TimeSpan.FromSeconds(services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false) ? 180 : 60);
     });
 // The MCP client enforces its own 5-second deadline for the whole session.
 builder.Services.AddHttpClient<IMcpToolClient, McpToolClient>();
-// The RAG client enforces its own 30-second deadline and 16000-byte response limit.
+// The RAG client enforces its own deadline and 16000-byte response limit.
 builder.Services.AddHttpClient<IRagClient, RagClient>(client => client.Timeout = Timeout.InfiniteTimeSpan);
 builder.Services
     .AddHttpClient<ILiteApiClient, LiteApiClient>(client =>

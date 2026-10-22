@@ -18,7 +18,7 @@ The deploy script (`deploy-vm.sh`) assumes a Linux VM that already exists. Nothi
 
 | Requirement | Why |
 |---|---|
-| Docker with the Compose plugin; the deploy user can run `docker` | `deploy-vm.sh` loads images and runs `docker compose` |
+| Docker with Compose plugin 2.23.1 or newer; the deploy user can run `docker` | `deploy-vm.sh` loads images and runs `docker compose`; AI profiles use inline `configs.content` for nginx |
 | `python3` | `backup-data.sh` and `restore-data.sh` use SQLite's backup API |
 | `/opt/asd`, `/opt/asd/releases`, `/opt/asd/data` writable by the deploy user | `deploy-vm.sh` refuses to run otherwise |
 | A DNS name pointing at the VM's public IP | Caddy obtains the TLS certificate for it |
@@ -176,10 +176,41 @@ rollback target. Baseline redeployment/rollback removes orphaned AI containers
 and **returns to the unprotected, AI-off assessment profile**. Persistent models
 and app data are not removed. Copy the updated rollback script in section 1.
 
+### CPU-only AI request deadlines
+
+AI preparation automatically sets `CLOUD_AI_SLOW_MODE=true` on the backends
+and shared RAG server. The confirmed EC2 failure cancelled itinerary generation
+at 20.02 seconds, despite a successful 8.56-second model warm-up. The cloud
+profile now uses these bounded deadlines:
+
+| Layer | Cloud AI budget |
+|---|---|
+| Synchronous model call, all five features and RAG | 180 seconds per attempt; existing retries are unchanged |
+| Shared RAG generation / whole handler | 182 / 190 seconds |
+| Feature-to-RAG client | 200 seconds (Student 2 HTTP 198, whole call 200) |
+| Student 2 browser advice / edit preview | 230 / 390 seconds |
+| Shared gateway and all five frontend nginx proxies | 400-second read/send inactivity timeout |
+| Public AI smoke HTTP request | 420 seconds; baseline remains 30 seconds |
+
+Two sequential model attempts can consume 360 seconds. Cloud nginx settings
+are inline in the checksummed Compose bundle; original routing, rate limits
+and security headers remain intact. The Student 2 frontend uses build argument
+`VITE_CLOUD_AI_SLOW_MODE=true` and a distinct `<sha>-ai` image tag so switching
+profiles at the same revision cannot overwrite the baseline frontend image.
+Baseline/local deadlines, database/tool/write deadlines, human approvals and
+preview expiry do not change. Multi-Agent keeps its existing 180-second model
+deadline and 900-second smoke polling budget.
+
+Merge the changes and start a **new `ai` deployment**; re-running an old
+revision does not install these fixes. Slower requests still show loading and
+can be cancelled. Fallback is not accepted as successful AI generation: the
+smoke reports actual mode/stop count, and the backend logs the failure class
+and deadline without logging the prompt or model response.
+
 Benchmark sequential real requests on the target. Ollama permits one loaded
-model and one parallel request, but CPU inference can still exceed backend,
-gateway and UI deadlines. Model warm-up removes cold-start overhead, not this
-capacity limit. Longer smoke-client timeouts do not change backend deadlines.
+model and one parallel request, but CPU inference and queued/concurrent calls
+can still exceed these budgets. Model warm-up removes cold-start overhead, not
+this capacity limit. Longer deadlines do not fix invalid model output.
 Retain baseline, backup and rollback evidence; live model accuracy, CPU latency
 and concurrent-user capacity are not established by local regression tests.
 

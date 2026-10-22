@@ -9,7 +9,7 @@ import os
 import requests
 
 RAG_SERVER_URL = os.environ.get("RAG_SERVER_URL", "http://localhost:5500")
-REQUEST_TIMEOUT = 30  # the RAG server itself deadlines its /query handler at 25s
+REQUEST_TIMEOUT = 200 if os.environ.get("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 30
 FEATURE = "student-3"
 
 
