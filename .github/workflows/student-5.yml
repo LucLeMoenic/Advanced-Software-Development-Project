@@ -10,6 +10,7 @@ on:
       - "shared/vue-frontend/**"
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
+      - "scripts/test/junit_summary.py"
       - ".github/workflows/student-5.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -26,6 +27,7 @@ on:
       - "shared/vue-frontend/**"
       - "docker-compose.yml"
       - "scripts/test/student-5.ps1"
+      - "scripts/test/junit_summary.py"
       - ".github/workflows/student-5.yml"
       - "ai-services/mcp-server/requirements.txt"
       - "ai-services/mcp-server/tools/__init__.py"
@@ -60,6 +62,30 @@ jobs:
       - name: Test Student 5 services, MCP tools and RAG retrieval
         run: pwsh -NoProfile -File scripts/test/student-5.ps1
 
+      # Release 2 post-commit CI/CD endpoint testing (TL-NFR-11): the two endpoint
+      # functions of the Student 5 backend/API, with the database API mocked and
+      # every AI capability off as in the cloud baseline. The live container run
+      # of the same two endpoints follows after compose up. The env below documents
+      # the baseline; the tests' ai_off_client fixture also pins all four off.
+      - name: Post-commit endpoint tests (POST and PUT /api/destinations)
+        env:
+          AI_ENABLED: "false"
+          MCP_ENABLED: "false"
+          RAG_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
+        run: python -m pytest student-5/backend/tests/test_endpoints_cicd.py -v --junitxml=student-5/endpoint-tests-junit.xml
+
+      - name: Publish endpoint test report
+        if: ${{ always() && hashFiles('student-5/endpoint-tests-junit.xml') != '' }}
+        run: python scripts/test/junit_summary.py student-5/endpoint-tests-junit.xml "Student 5 post-commit endpoint tests (POST and PUT /api/destinations)"
+
+      - name: Upload endpoint test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-5-endpoint-test-results
+          path: student-5/endpoint-tests-junit.xml
+
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
@@ -67,6 +93,11 @@ jobs:
         run: bash scripts/ci/retry-transient.sh 3 20 docker compose build student5-database student5-backend student5-frontend
 
       - name: Start Student 5 services
+        env:
+          AI_ENABLED: "false"
+          MCP_ENABLED: "false"
+          RAG_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
         run: docker compose up --detach --no-deps --wait student5-database student5-backend student5-frontend
 
       - name: Smoke test Student 5 integration
@@ -76,15 +107,15 @@ jobs:
           curl --fail --silent http://localhost:5105/ > /dev/null
           curl --fail --silent http://localhost:5205/api/destinations | python -c "import json,sys; assert len(json.load(sys.stdin)) >= 12"
 
-          # MCP/RAG are integrated but disabled here: assert the documented
-          # fail-closed 503 bodies instead of calling servers CI does not run.
+          # AI-Mode, MCP and RAG are integrated but disabled here: assert the
+          # documented fail-closed 503 bodies instead of calling servers CI does not run.
           check_disabled() {
             curl --silent --write-out '\n%{http_code}' "$@" | python -c "
           import json, sys
           *body, status = sys.stdin.read().splitlines()
           assert status == '503', status
           error = json.loads('\n'.join(body))['error']
-          assert error in ('mcp_disabled', 'rag_disabled'), error
+          assert error in ('ai_disabled', 'mcp_disabled', 'rag_disabled'), error
           "
           }
           check_disabled http://localhost:5205/api/mcp/tools
@@ -92,9 +123,20 @@ jobs:
             -d '{"tool":"logistics.get_weather","arguments":{"destination_id":1}}'
           check_disabled -X POST http://localhost:5205/api/rag/ask -H 'Content-Type: application/json' \
             -d '{"question":"What is an eVisa?"}'
+          check_disabled -X POST http://localhost:5205/api/advisory -H 'Content-Type: application/json' \
+            -d '{"destination_id":1}'
           # Through the frontend proxy too, so the browser path is covered.
           check_disabled -X POST http://localhost:5105/api/rag/ask -H 'Content-Type: application/json' \
             -d '{"question":"What is an eVisa?"}'
+
+      # The same two endpoints over HTTP against the running containers, so the run
+      # proves the real backend -> database API -> SQLite path. Its row is deleted.
+      - name: Post-commit endpoint tests against running containers (POST and PUT /api/destinations)
+        run: python student-5/backend/tests/live_endpoint_check.py http://localhost:5205
+
+      - name: Show Student 5 container logs on failure
+        if: failure()
+        run: docker compose logs --no-color student5-database student5-backend student5-frontend
 
       - name: Stop Student 5 services
         if: always()

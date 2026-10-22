@@ -294,3 +294,49 @@ The reviewer confirmed that:
 I accepted the review. Validation after the fixes: database 26, backend 186, MCP
 logistics 34 and RAG student-5 retrieval 17 tests passed, and pre-commit passed.
 Live checks are in `prompt-log.md` (Release 2, Chunk 2).
+
+## Release 2 - Chunk 3 review: post-commit CI/CD endpoint tests (TL-NFR-11)
+
+Before committing, the working-tree diff was given to an independent AI code-review
+agent with read-only access. The diff covered `student-5.yml`,
+`backend/tests/test_endpoints_cicd.py` and `backend/tests/live_endpoint_check.py`.
+The reviewer compared it against `app.py`, `db_client.py`, `conftest.py`, the
+database's real validation in `database/app.py`, Students 1-3's endpoint tests and
+workflows, and the `student5-backend` compose block. It was asked to check:
+
+- workflow step order, `if:` conditions and path triggers;
+- whether the four flags reach the container, and whether Release 1 steps changed;
+- whether each test fails when its behaviour regresses;
+- live-check cleanup and exit codes on every failure path;
+- Python 3.11 compatibility and the Ruff `S` rules.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| The live check could leave its row behind if the create succeeded but the reply had no usable id (or was not JSON), because the cleanup only knew the id. | Minor | Fixed: `cleanup()` falls back to finding the row by its unique country. Verified live by discarding the id: the row was found and deleted. |
+| Only `OSError`/`ValueError` were caught, so an `HTTPException` or unexpected reply shape skipped the step-summary table (the run still failed). | Minor | Fixed: any exception is recorded as a failed check, so the summary is always written. Verified with an unreachable backend (exit 1, `FAIL` row). |
+| A failure in the new mocked-test step skips the later build, compose and smoke steps. | Minor | No change: this is the same as Student 3's workflow and the existing Release 1 test step. The report and artifact steps still run, and `continue-on-error` would let a failing job show green. |
+| "Container logs on failure" has nothing to show if the failure happened before compose up. | Minor | No change: harmless, the job has already failed. |
+| The step-level AI flags on the mocked step are inert, because `ai_off_client` pins all four. | Nit | Kept, because the requirement asks for the flags on the step. A workflow comment now says the fixture also pins them. |
+| A pipe character or a newline in exception text would break a summary table row. | Nit | Fixed: `cell()` escapes them. |
+| `scripts/ci/retry-transient.sh` is not a path trigger, and `endpoint-tests-junit.xml` is not git-ignored. | Nit | No change: both were already the case before this chunk and are the same for Students 1/3. The local XML was deleted before handover. |
+
+The reviewer confirmed:
+
+- the mocked 400/404 bodies match the database service's messages exactly;
+- the forwarded-request assertions catch a padded PUT body, a reshaped body and
+  form data being forwarded;
+- the 503 tests hit the `RequestException` path in `db_client.py`;
+- compose interpolates the step's four flags into `student5-backend`;
+- the report and artifact steps run after a failed test step;
+- the live check can never exit 0 having run nothing;
+- both files are Python 3.11-compatible and free of `S` violations.
+
+I accepted the review. Validation after the fixes:
+
+- database 26, backend 199, MCP logistics 34 and RAG student-5 retrieval 17 tests
+  passed;
+- live check 12/12 with all four flags `false`;
+- YAML and Compose config valid;
+- pre-commit passed.
+
+Details are in `prompt-log.md` (Release 2, Chunk 3).

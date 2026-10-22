@@ -1,0 +1,14 @@
+PASS  POST /api/destinations valid -> 201  status=201
+PASS  POST returns an id and the stored fields  
+PASS  POST missing visa_requirement -> 400 from the database  status=400
+PASS  Rejected POST stored nothing  before=13 after=13
+PASS  PUT /api/destinations/<id> valid -> 200  status=200
+PASS  PUT merges the change and keeps the country  
+PASS  GET after PUT returns the updated row  status=200
+PASS  PUT blank visa_requirement -> 400 from the database  status=400
+PASS  Rejected PUT changed nothing  
+PASS  PUT unknown id -> 404 from the database  status=404
+PASS  Cleanup DELETE -> 204  status=204
+PASS  Deleted destination is gone (404)  status=404
+
+12/12 checks passed

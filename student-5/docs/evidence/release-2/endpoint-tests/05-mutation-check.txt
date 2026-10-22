@@ -1,0 +1,26 @@
+## Mutation: POST forwards {} instead of no body for a non-JSON request
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_with_non_json_body_relays_database_400
+1 failed, 12 passed in 0.36s
+
+## Mutation: PUT pads the body with every column (breaks the partial merge)
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_forwards_only_supplied_fields_and_returns_200
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[non-string-country]
+3 failed, 10 passed in 0.34s
+
+## Mutation: Database 4xx replies masked as 502
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[empty-body]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[missing-visa-requirement]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_relays_database_400_for_invalid_input[blank-country]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_with_non_json_body_relays_database_400
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[blank-visa-requirement]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_relays_database_400_for_invalid_input[non-string-country]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_unknown_destination_relays_database_404
+7 failed, 6 passed in 0.43s
+
+## Mutation: Unreachable database reported as 500
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_create_destination_returns_503_when_database_is_down
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[connection-refused]
+FAILED student-5/backend/tests/test_endpoints_cicd.py::test_update_destination_returns_503_when_database_is_down[read-timeout]
+3 failed, 10 passed in 0.37s
+

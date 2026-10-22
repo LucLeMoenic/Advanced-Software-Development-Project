@@ -307,3 +307,75 @@ blueprint split (`rag_client.py` / `integrations.py`).
 | Binding check, live | Poll and decision for destination 2 return `404 review_not_found`; nothing posted |
 | `GET /audit/verify` | `{"valid": true, "entries": 9, "broken_at": null}` |
 | Human decision | Not yet recorded - left for me to make in the browser |
+
+### Chunk 3 - Post-commit CI/CD endpoint tests (TL-NFR-11), 22 October 2026
+
+**Why:** the Release 2 brief (marking criterion 4) requires `student-5.yml` to test
+two endpoint functions of the Student 5 backend/API after every push. Until now the
+workflow only ran the Release 1 suites and smoke checks.
+
+**Prompt (summary):** "Chunk 3 of my plan". Follow the Student 1/3 pattern
+(`test_endpoints_cicd.py`, `--junitxml`, `junit_summary.py`, `upload-artifact`) and
+Student 2's four AI flags set to `"false"`. For `POST /api/destinations` and
+`PUT /api/destinations/<id>`, test valid input (status, body, exact forwarded
+request), invalid input (database 400 relayed), not-found for PUT and database down
+(503). Add a live create -> update -> read -> delete check against the running
+containers with a unique country and guaranteed cleanup. Validate the YAML, run the
+same commands locally (AI off, then restore) and write the endpoint-testing report.
+
+**AI-written change:**
+
+- `backend/tests/test_endpoints_cicd.py` (new, 13 tests). It uses the existing
+  `ai_off_client` and `database_url` fixtures and `responses`. Each test asserts
+  exactly one forwarded request (method, URL, JSON body) plus the relayed status and
+  body. The 400/404 bodies are copied from `database/app.py`. Extra cases: a
+  non-JSON POST is forwarded as no body, and a non-integer PUT id is a backend `404`
+  with no database call.
+- `backend/tests/live_endpoint_check.py` (new, standard library, not collected by
+  pytest). It runs 12 checks over HTTP against the containers with a
+  `CI Endpoint Check <8 hex>` country, and writes a table to `$GITHUB_STEP_SUMMARY`.
+- `.github/workflows/student-5.yml`:
+  - a "Post-commit endpoint tests (POST and PUT /api/destinations)" step with the
+    four flags `"false"`, producing `student-5/endpoint-tests-junit.xml`;
+  - "Publish endpoint test report" (`junit_summary.py`) and "Upload endpoint test
+    results" (`student-5-endpoint-test-results`);
+  - the four flags on "Start Student 5 services";
+  - an `ai_disabled` advisory assertion in the smoke step;
+  - the live-check step, and container logs on failure;
+  - `scripts/test/junit_summary.py` added to the push/PR triggers.
+
+  The Release 1 steps are unchanged.
+- `scripts/test/student-5.ps1` was **not** changed. Students 1 and 3 keep their JUnit
+  runs in the workflow, not in their `.ps1`. The script's existing `pytest tests`
+  run in `backend/` already picks up the new file (backend 186 -> 199).
+- `docs/evidence/release-2/endpoint-testing-report.md` and `endpoint-tests/01`-`05`.
+
+**Corrections during the session:**
+
+- The first live-check draft returned the new id from the function that also ran the
+  later checks, so an exception part-way would have skipped the cleanup. The create
+  now happens in `main()` and everything after it is inside `try/finally`.
+- One scripted workflow edit failed on backslash escaping and wrote nothing. It was
+  redone with direct edits and the YAML was re-parsed.
+- After the independent review:
+  - the cleanup now finds the row by its unique country if the create reply had no
+    usable id;
+  - any exception, not just `OSError`/`ValueError`, is recorded so the step summary
+    is always written;
+  - `|` and newlines in summary cells are escaped;
+  - the workflow comment notes that the fixture also pins the flags.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Endpoint tests, workflow command (repo `.venv`, Python 3.13.2) | `13 passed in 0.32s`; `junit_summary.py`: **13 of 13 passed** |
+| Mutation check (4 deliberate bugs in `app.py`, then restored) | each caught: 1, 3, 7 and 3 failing tests |
+| Full Student 5 suites | database 26, backend 199 (186 + 13), MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Workflow YAML / Compose | `yaml.safe_load` OK (13 steps, push and PR paths identical); `docker compose config --quiet` OK |
+| Live stack, backend recreated with all four flags `false` (checked with `env` in the container) | smoke step run with `bash` passed, including `ai_disabled`; `live_endpoint_check.py` **12/12 checks passed**; 12 seed rows left, no `CI Endpoint Check` row |
+| Live check failure paths | unreachable backend: exit 1, one `FAIL` row in the summary; create reply with no usable id: row found by country and deleted |
+| Independent AI code review | 0 critical/important, 4 minor, 3 nits; 4 fixed, 3 kept - see `review-record.md` (Release 2 - Chunk 3) |
+| Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
+| Local stack restored | backend recreated from `.env` (`AI_ENABLED=true`, MCP/RAG `true`, Multi-Agent `false`) |
+| GitHub Actions run | Not yet run: needs the push. To be added to the endpoint-testing report. |
