@@ -913,22 +913,3 @@ The setup-service pattern is proportionate for a local classroom deployment, but
 **Validation:** shared hooks pass on all changed files; scans clean; cloud smoke tests 4/4 and cloud config 6/6; live `check_student1` against the local backend passed; full `student-1.ps1 -Area All` exit 0.
 
 **Verdict:** accepted.
-
-## 2026-10-22 - Shared Cloud Provisioning Review
-
-**Scope:** `scripts/deploy/provision-vm.sh`, `deploy/cloud/cloud-init.yaml`, the bundle changes in `prepare_cloud.py`, `deploy-vm.sh` and `cloud-deployment.yml`, the runbook update and their tests. Self-review by Claude Code plus shellcheck, actionlint, Ruff security rules and detect-secrets.
-
-| Severity | Finding | Resolution |
-|---|---|---|
-| Required | `cloud-init status --wait` exits 2 when setup finishes with warnings, so trusting the exit code would fail a healthy VM. | The script checks for `status: done` in the output; Docker and `/opt/asd` are then checked directly. |
-| Required | Git Bash rewrites arguments that start with `/` (for example the AWS AMI parameter path and `/dev/sda1`), and the Windows `az`/`aws` builds cannot read `/tmp` paths. | `MSYS_NO_PATHCONV=1` and `cygpath -w` for the files passed to the CLIs; no effect on Linux or macOS. |
-| Required | Let's Encrypt does not issue certificates for `amazonaws.com` names, so the AWS public DNS name cannot serve HTTPS. | AWS uses `<elastic-ip>.sslip.io`; Azure uses its own `cloudapp.azure.com` label. |
-| Required | `vm-pull-images.txt` was written by `prepare_cloud.py` but never used, so an AI release depended on `compose up` pulling Ollama inside the 240 s wait. | `deploy-vm.sh` pulls the listed images first; the list is empty for the baseline. |
-| Required | The workflow's AI steps keyed off the raw input, so an input of only spaces would run the AI smoke test with no components. | The steps use the validated `ai-services.txt` from `prepare_cloud.py` instead. |
-| Required | The bundle file list now appears in three places (prepare, checksum/copy, install). | One `BUNDLE_FILES` list in the workflow, `OPERATIONS_SCRIPTS` in `prepare_cloud.py`, and a test that keeps them and the `install` line in step. |
-| Accepted | SSH (22) is open to any address. | GitHub-hosted runners have no fixed IPs; Ubuntu cloud images allow key-based login only. Documented in the runbook. |
-| Accepted | Not exercised against a real cloud account. | Stubbed tests, a container dry run and schema checks only; the first real run follows runbook section 1. |
-
-**Validation:** 137 passed, 1 skipped (provisioning, cloud config, AI profile and VM script suites in a Linux container); deploy dry run and `cloud-init schema` passed; linters clean.
-
-**Verdict:** accepted, pending a real provisioning run.

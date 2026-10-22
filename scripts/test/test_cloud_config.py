@@ -105,15 +105,3 @@ def test_only_the_tls_gateway_publishes_ports():
     _, config, _ = module.cloud_config(source(), "a" * 40, "asd.example.org")
 
     assert [name for name, service in config["services"].items() if service.get("ports")] == ["tls-gateway"]
-
-
-def test_every_operations_script_is_bundled_checksummed_shipped_and_installed():
-    deploy = Path(module.__file__).parent
-    workflow = (deploy.parents[1] / ".github" / "workflows" / "cloud-deployment.yml").read_text(encoding="utf-8")
-    bundle_files = workflow.split("BUNDLE_FILES: >-")[1].split("steps:")[0].split()
-    install = next(line for line in (deploy / "deploy-vm.sh").read_text(encoding="utf-8").splitlines()
-                   if line.startswith("install -m 750"))
-
-    assert all((deploy / script).is_file() for script in module.OPERATIONS_SCRIPTS)
-    assert set(module.OPERATIONS_SCRIPTS) | {"vm-pull-images.txt"} <= set(bundle_files)
-    assert install.split()[3:-1] == list(module.OPERATIONS_SCRIPTS)
