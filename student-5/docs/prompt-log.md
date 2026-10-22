@@ -437,3 +437,73 @@ pre-commit report with captures.
 | Independent AI code review | 0 critical, 1 important, 3 minor, 2 nits; all addressed. See `review-record.md` (Release 2 - Chunk 4) |
 | Pre-commit hooks on the changed files | Ruff Passed; detect-secrets Passed; pip-audit Passed |
 | Real blocked `git commit` | Run by me after handover; recorded in `precommit/04-blocked-commit.txt` |
+
+### Chunk 5 - Cloud deployment smoke coverage, 22 October 2026
+
+**Why:** the Release 2 brief (marking criterion 7) requires the deployed application's
+frontend, backend/API, database and CRUD to work in the cloud with AI-Mode, MCP,
+RAG and Multi-Agent disabled. `cloud-deployment.yml` proves this with
+`scripts/deploy/smoke_cloud.py`. The existing Student 5 check (added in PR #130)
+was read-only, because it assumed Student 5 had no update or delete. It also
+accepted any `503` from the AI routes, including one from a backend that was down.
+
+**Prompt (summary):** "Chunk 5 of my plan". Read `cloud-deployment.yml`,
+`prepare_cloud.py`, `smoke_cloud.py` and Student 1's commit `cfcb7e6`. Add a Student 5
+check through the public gateway: create a uniquely named destination, read it back,
+update it, read the change, delete it and confirm it is gone, always cleaning up.
+Also assert that the advisory, MCP and RAG routes return their `503` disabled bodies.
+Add a mocked test covering the happy path, CRUD failure and AI unexpectedly enabled.
+Run the check against the local stack with the AI flags off, then restore them.
+Check whether the workflow needs a Student 5 change (describe it, don't make it).
+Write the cloud-deployment report section and a message for the cloud owner.
+
+**AI-written change:**
+
+- `scripts/deploy/smoke_cloud.py`: `check_student5` rewritten, and the Student 5
+  `PASS` line in `run()` updated. Nothing else in the shared file was changed.
+  - It keeps the seed checks (at least 10 destinations, weather and transit data
+    non-empty).
+  - It asserts `503` **and** the named error for `ai_disabled`, `mcp_disabled`,
+    `rag_disabled` and `multi_agent_disabled`, all before anything is written.
+  - Then it runs create -> read -> update -> read -> delete -> `404` on an
+    `R2 smoke <8 hex>` destination, with the delete in `finally`.
+  - Multi-Agent was added beyond the prompt, because the brief requires all four AI
+    services off in the baseline (TL-NFR-10).
+- `scripts/test/test_cloud_smoke_student5.py`: rewritten for the new behaviour, with
+  a stateful fake gateway like Student 1's. 18 tests:
+  - the happy path;
+  - seed and reference data;
+  - each AI route answering `200` (no row created);
+  - each AI route answering a `503` without its body;
+  - five failure points after the create (each must still delete the row);
+  - a deleted row that is still readable.
+- `docs/evidence/release-2/cloud-deployment-report.md` (new), with placeholders
+  for the real cloud run.
+- `cloud-deployment.yml` and `prepare_cloud.py` were **not** changed. No Student 5
+  change is needed; one stale step name is noted in the report for the owner.
+
+**Corrections during the session:**
+
+- The first mutation run for "no cleanup" and "no gone check" did not apply. The
+  anchor text also occurs in the Student 3/4 functions, so the uniqueness guard
+  refused the edit. The two "all passed" lines were therefore not evidence. Both
+  were re-run with anchors unique to `check_student5`, and both were caught.
+- After the independent review, the fake can now corrupt the created row, drop the
+  country on update, and answer `500` on the first readback or on the update. The
+  create readback, the "country kept" check and the `finally` cleanup are each
+  shown to matter (14 -> 18 tests).
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Student 5 smoke tests (repo `.venv`, Python 3.13.2) | `18 passed` |
+| All `scripts/test` | `229 passed, 58 skipped` (skipped: needs Linux symlink semantics) |
+| Mutation check on `check_student5` (5 mutations, file restored byte-for-byte) | no create readback: 1 failing; no country-kept check: 1; no disabled-body check: 4; no cleanup on failure: 5; no gone check: 2 |
+| Live local run: real `check_student5` via local gateway `http://localhost:5100`, backend recreated with all four flags `false` (checked with `env`) | 14/14 calls as expected, `PASS`, exit 0; four refusals in 6-21 ms; 12 destinations afterwards, no `R2 smoke` row |
+| Same check with flags restored (AI-Mode on) | Failed at its first AI call (`POST /advisory` hit the 30 s client timeout); no row created (still 12) |
+| Full Student 5 suites | database 26, backend 199, MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Independent AI code review | 0 bugs, 2 minor test-strength findings, both fixed. See `review-record.md` (Release 2 - Chunk 5) |
+| Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
+| Local stack restored | backend recreated from `.env` (`AI_ENABLED=true`, MCP/RAG `true`, Multi-Agent `false`) |
+| `cloud-deployment.yml` run | Not yet run: needs merge to `main` and the cloud owner to dispatch it. To be added to the cloud-deployment report. |
