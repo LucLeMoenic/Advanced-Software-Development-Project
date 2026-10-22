@@ -22,6 +22,20 @@ on:
       - "scripts/deploy/assert-cloud-ci.ps1"
       - "scripts/test/cloud-ci.ps1"
       - "scripts/test/test_cloud_config.py"
+      - "scripts/test/test_cloud_ai_profile.py"
+      - "scripts/test/test_cloud_smoke_*.py"
+      - "scripts/test/test_cloud_auth.py"
+      - "scripts/test/test_cloud_gateway.py"
+      - "scripts/test/conftest.py"
+      - "scripts/test/test_vm_scripts.py"
+      - "scripts/deploy/deploy-vm.sh"
+      - "scripts/deploy/pull-models-vm.sh"
+      - "scripts/deploy/smoke_cloud_ai.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/deploy/cloud_auth.py"
+      - "scripts/deploy/rollback-vm.sh"
+      - "deploy/cloud/**"
+      - ".github/workflows/cloud-deployment.yml"
       - ".env.example"
       - "scripts/deploy/start-release1.ps1"
       - "scripts/test/release1-launcher.ps1"
@@ -47,6 +61,20 @@ on:
       - "scripts/deploy/assert-cloud-ci.ps1"
       - "scripts/test/cloud-ci.ps1"
       - "scripts/test/test_cloud_config.py"
+      - "scripts/test/test_cloud_ai_profile.py"
+      - "scripts/test/test_cloud_smoke_*.py"
+      - "scripts/test/test_cloud_auth.py"
+      - "scripts/test/test_cloud_gateway.py"
+      - "scripts/test/conftest.py"
+      - "scripts/test/test_vm_scripts.py"
+      - "scripts/deploy/deploy-vm.sh"
+      - "scripts/deploy/pull-models-vm.sh"
+      - "scripts/deploy/smoke_cloud_ai.py"
+      - "scripts/deploy/smoke_cloud.py"
+      - "scripts/deploy/cloud_auth.py"
+      - "scripts/deploy/rollback-vm.sh"
+      - "deploy/cloud/**"
+      - ".github/workflows/cloud-deployment.yml"
       - ".env.example"
       - "scripts/deploy/start-release1.ps1"
       - "scripts/test/release1-launcher.ps1"
@@ -89,8 +117,19 @@ jobs:
       - name: Shared agentic-loop review modes
         run: dotnet test ai-services/agentic-loop/tests --logger "trx;LogFileName=loop.trx" --results-directory test-results
 
-      - name: Cloud baseline configuration tests
-        run: python -m pytest scripts/test/test_cloud_config.py -q --junitxml=test-results/cloud-config.xml
+      - name: Cloud baseline and AI preparation tests
+        run: >-
+          python -m pytest scripts/test/test_cloud_config.py scripts/test/test_cloud_ai_profile.py
+          scripts/test/test_cloud_auth.py scripts/test/test_cloud_smoke_*.py scripts/test/test_vm_scripts.py
+          -q --junitxml=test-results/cloud-config.xml
+
+      - name: Protected gateway TLS and authentication checks
+        env:
+          RUN_CLOUD_GATEWAY_TESTS: "1"
+        run: |
+          docker pull caddy:2.10.2-alpine
+          docker pull python:3.11-slim
+          python -m pytest scripts/test/test_cloud_gateway.py -q --junitxml=test-results/cloud-gateway.xml
 
       - name: Same-revision cloud CI gate tests
         run: pwsh -NoProfile -File scripts/test/cloud-ci.ps1

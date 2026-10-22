@@ -2,6 +2,15 @@ name: Cloud Deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "Deploy baseline, deploy password-protected AI, or prepare an AI bundle"
+        type: choice
+        default: baseline
+        options:
+          - baseline
+          - prepare-ai
+          - ai
 
 permissions:
   contents: read
@@ -20,6 +29,7 @@ jobs:
       CLOUD_HOST: ${{ vars.CLOUD_HOST }}
       CLOUD_USER: ${{ vars.CLOUD_USER }}
       CLOUD_DOMAIN: ${{ vars.CLOUD_DOMAIN }}
+      CLOUD_AI_SERVICES: ${{ (inputs.mode == 'prepare-ai' || inputs.mode == 'ai') && 'ai,mcp,rag,multi-agent' || '' }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -29,9 +39,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
+      - name: Require protected AI credentials
+        if: inputs.mode == 'ai'
+        env:
+          CLOUD_AUTH_USER: ${{ secrets.CLOUD_AUTH_USER }}
+          CLOUD_AUTH_PASSWORD: ${{ secrets.CLOUD_AUTH_PASSWORD }}
+        run: python scripts/deploy/cloud_auth.py check
       - name: Prepare and validate cloud configuration
         run: |
-          python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --output cloud-bundle
+          python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --ai-services "$CLOUD_AI_SERVICES" --output cloud-bundle
           docker compose -f cloud-bundle/compose.json config --quiet
       - name: Build immutable application images
         run: |
@@ -40,8 +56,32 @@ jobs:
           mapfile -t images < cloud-bundle/images.txt
           docker image save --output cloud-bundle/images.tar "${images[@]}"
           cd cloud-bundle
-          sha256sum compose.json Caddyfile revision.txt smoke_cloud.py accommodation.db deploy-vm.sh images.tar > SHA256SUMS
+          sha256sum compose.json Caddyfile revision.txt smoke_cloud.py smoke_cloud_ai.py cloud_auth.py \
+            accommodation.db deploy-vm.sh pull-models-vm.sh ai-services.txt vm-pull-images.txt images.tar > SHA256SUMS
+      - name: Package AI preparation without deployment
+        if: inputs.mode == 'prepare-ai'
+        run: |
+          tar -cf cloud-ai-bundle.tar -C cloud-bundle \
+            compose.json Caddyfile revision.txt smoke_cloud.py smoke_cloud_ai.py cloud_auth.py \
+            accommodation.db deploy-vm.sh pull-models-vm.sh ai-services.txt vm-pull-images.txt images.tar SHA256SUMS
+          echo "::notice::AI bundle prepared only. Gateway credentials are not included; no SSH connection or model download was attempted."
+      - name: Retain AI preparation bundle
+        if: inputs.mode == 'prepare-ai'
+        uses: actions/upload-artifact@v6
+        with:
+          name: cloud-ai-preparation-${{ github.sha }}
+          path: cloud-ai-bundle.tar
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+      - name: Prepare private gateway credentials
+        if: inputs.mode == 'ai'
+        env:
+          CLOUD_AUTH_USER: ${{ secrets.CLOUD_AUTH_USER }}
+          CLOUD_AUTH_PASSWORD: ${{ secrets.CLOUD_AUTH_PASSWORD }}
+        run: python scripts/deploy/cloud_auth.py prepare "$RUNNER_TEMP/gateway-auth.caddy"
       - name: Configure pinned SSH access
+        if: inputs.mode != 'prepare-ai'
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.CLOUD_KNOWN_HOSTS }}
@@ -53,25 +93,56 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
       - name: Deploy to the approved Azure or AWS Linux VM
+        if: inputs.mode != 'prepare-ai'
+        timeout-minutes: 40
+        env:
+          DEPLOY_MODE: ${{ inputs.mode }}
         run: |
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "mkdir -p asd-upload/$GITHUB_SHA"
-          scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,accommodation.db,deploy-vm.sh,images.tar,SHA256SUMS} "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "umask 077; mkdir -p asd-upload/$GITHUB_SHA"
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,smoke_cloud_ai.py,cloud_auth.py,accommodation.db,deploy-vm.sh,pull-models-vm.sh,ai-services.txt,vm-pull-images.txt,images.tar,SHA256SUMS} "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
+          if [[ "$DEPLOY_MODE" == ai ]]; then
+            scp -o BatchMode=yes -o StrictHostKeyChecking=yes "$RUNNER_TEMP/gateway-auth.caddy" "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/gateway-auth.caddy"
+          fi
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash asd-upload/$GITHUB_SHA/deploy-vm.sh $GITHUB_SHA"
-      - name: Verify public gateway and Student 1 and 2 CRUD
+      - name: Wait for public HTTPS readiness
+        if: inputs.mode != 'prepare-ai'
+        timeout-minutes: 5
+        env:
+          DEPLOY_MODE: ${{ inputs.mode }}
+          CLOUD_AUTH_USER: ${{ inputs.mode == 'ai' && secrets.CLOUD_AUTH_USER || '' }}
+          CLOUD_AUTH_PASSWORD: ${{ inputs.mode == 'ai' && secrets.CLOUD_AUTH_PASSWORD || '' }}
+        run: |
+          args=()
+          if [[ "$DEPLOY_MODE" == ai ]]; then args+=(--required); fi
+          python scripts/deploy/cloud_auth.py verify "https://$CLOUD_DOMAIN" "${args[@]}"
+      - name: Verify public gateway and Student 1 to 5 CRUD
+        if: inputs.mode != 'prepare-ai' && inputs.mode != 'ai'
         run: |
           set -o pipefail
           python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt
+      - name: Verify protected group CRUD and AI integrations
+        if: inputs.mode == 'ai'
+        timeout-minutes: 60
+        env:
+          CLOUD_AUTH_USER: ${{ secrets.CLOUD_AUTH_USER }}
+          CLOUD_AUTH_PASSWORD: ${{ secrets.CLOUD_AUTH_PASSWORD }}
+        run: |
+          set -o pipefail
+          python -u scripts/deploy/smoke_cloud_ai.py "https://$CLOUD_DOMAIN" \
+            --components "$CLOUD_AI_SERVICES" --all-features | tee cloud-bundle/cloud-smoke.txt
       - name: Retain deployment evidence
         if: ${{ always() && hashFiles('cloud-bundle/compose.json', 'cloud-bundle/revision.txt', 'cloud-bundle/SHA256SUMS', 'cloud-bundle/cloud-smoke.txt') != '' }}
         uses: actions/upload-artifact@v6
         with:
-          name: cloud-deployment-${{ github.sha }}
+          name: cloud-${{ inputs.mode || 'baseline' }}-evidence-${{ github.sha }}
           path: |
             cloud-bundle/compose.json
             cloud-bundle/revision.txt
             cloud-bundle/SHA256SUMS
             cloud-bundle/cloud-smoke.txt
+            cloud-bundle/ai-services.txt
+            cloud-bundle/vm-pull-images.txt
       - name: Remove runner credentials
         if: always()
         run: |
-          rm -f ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          rm -f ~/.ssh/id_ed25519 ~/.ssh/known_hosts "$RUNNER_TEMP/gateway-auth.caddy"

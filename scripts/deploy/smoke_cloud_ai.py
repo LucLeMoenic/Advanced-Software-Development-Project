@@ -1,4 +1,4 @@
-"""Verify the cloud AI components (bonus B1 to B4) through Student 3's application over the public HTTPS origin.
+"""Verify cloud AI components through the public HTTPS gateway.
 
     python scripts/deploy/smoke_cloud_ai.py https://<domain> --components ai,mcp,rag,multi-agent
 
@@ -9,22 +9,22 @@ it checks the application still reports it cleanly disabled:
   ai           B1  AI-Mode: /api/recommend answered by the model (not the deterministic fallback)
   mcp          B2  MCP: a tool call through the backend returns real catalogue data
   rag          B3  RAG: a grounded answer with citations from retrieved context
-  multi-agent  B4  Multi-Agent: a Planner, Worker, Reviewer workflow reaches human review and is approved
+  multi-agent  B4  Multi-Agent: a Planner, Worker, Reviewer workflow reaches human review (no automatic decision)
 
-Use the baseline smoke test (smoke_cloud.py) for a release prepared without AI. Standard library only.
+--all-features also requires gateway credentials and checks group CRUD and all supported integrations.
+Student 4 has no Multi-Agent integration. Use smoke_cloud.py for the AI-off baseline. Standard library only.
 """
 
 import argparse
-import json
 import sys
 import time
-from urllib.error import HTTPError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from urllib.error import URLError
+
+from cloud_auth import credentials, make_call
+from smoke_cloud import run as check_crud
 
 COMPONENTS = ("ai", "mcp", "rag", "multi-agent")
 API = "/attractions-api"
-CALL_TIMEOUT = 200  # seconds: a CPU-only 3B model can need over a minute per answer
 WORKFLOW_TIMEOUT = 900  # seconds for Planner, Worker and Reviewer together
 POLL_SECONDS = 5
 
@@ -35,28 +35,6 @@ def parse_components(value):
     if not items or unknown:
         raise ValueError(f"Choose from: {', '.join(COMPONENTS)}" + (f" (unknown: {', '.join(unknown)})" if unknown else ""))
     return frozenset(items)
-
-
-def make_call(base):
-    parsed = urlparse(base)
-    if parsed.scheme != "https" or not parsed.netloc or parsed.path not in ("", "/") or parsed.query or parsed.fragment:
-        raise ValueError("Provide the public HTTPS origin.")
-
-    def call(path, method="GET", body=None, expected=200):
-        request = Request(base.rstrip("/") + path, method=method,  # noqa: S310 - HTTPS origin validated above
-                          data=None if body is None else json.dumps(body).encode(),
-                          headers={"Content-Type": "application/json"})
-        try:
-            response = urlopen(request, timeout=CALL_TIMEOUT)  # noqa: S310 - HTTPS origin checked above
-        except HTTPError as exc:
-            response = exc
-        with response:
-            data = response.read(1048576)
-            if response.status != expected:
-                raise RuntimeError(f"{method} {path}: expected {expected}, received {response.status}")
-        return json.loads(data) if data and data.startswith((b"{", b"[")) else data
-
-    return call
 
 
 def check_capabilities(call, enabled):
@@ -94,11 +72,14 @@ def check_rag(call):
 
 
 def check_multi_agent(call, sleep=None, now=None):
+    started = call(f"{API}/agents/workflows", "POST", {"task": "Suggest a relaxed afternoon of food", "category": "restaurant"}, 202)
+    wait_for_review(call, f"{API}/agents/workflows/{started['id']}", sleep, now)
+
+
+def wait_for_review(call, path, sleep=None, now=None):
     # Resolved at call time, not bound as defaults, so a test (or a caller) can supply its own clock.
     sleep = sleep or time.sleep
     now = now or time.monotonic
-    started = call(f"{API}/agents/workflows", "POST", {"task": "Suggest a relaxed afternoon of food", "category": "restaurant"}, 202)
-    path = f"{API}/agents/workflows/{started['id']}"
     deadline = now() + WORKFLOW_TIMEOUT
     while True:
         record = call(path)
@@ -114,9 +95,64 @@ def check_multi_agent(call, sleep=None, now=None):
         raise RuntimeError("The workflow reached human review without a plan, a Worker output and a Reviewer verdict.")
     if [step.get("stage") for step in record.get("history", [])] != ["planner", "worker", "reviewer"]:
         raise RuntimeError("The workflow history does not show Planner, Worker and Reviewer in order.")
-    decided = call(f"{path}/decision", "POST", {"decision": "approve", "notes": "Cloud AI smoke test approval"})
-    if decided.get("status") != "approved" or not decided.get("final_output"):
-        raise RuntimeError("The human approval was not recorded with a final output.")
+    if record.get("human_decision") is not None:
+        raise RuntimeError("The smoke workflow already has a human decision; inspect the audit before continuing.")
+    print(f"MANUAL: review workflow {path} in the application; no human approval has been submitted.")
+
+
+def grounded(answer, feature):
+    if (answer.get("confidence") not in ("low", "medium", "high")
+            or not answer.get("citations") or not str(answer.get("answer", "")).strip()):
+        raise RuntimeError(f"{feature}: RAG did not return a grounded answer with citations.")
+
+
+def check_other_features(call, enabled):
+    searches = call("/accommodation/api/searches")
+    search_id = searches[0]["id"]
+    trip = call(f"/itinerary-api/trips/{call('/itinerary-api/trips')[0]['id']}")
+    journey = call("/budget-api/journeys")[0]["journeyLabel"]
+    destination = call("/logistics/api/destinations")[0]["id"]
+    if "ai" in enabled:
+        advisory = call("/logistics/api/advisory", "POST", {"destination_id": destination})
+        if not str(advisory.get("advisory", "")).strip() or advisory.get("model") != "llama3.2:3b":
+            raise RuntimeError("Student 5 did not return an advisory from the provisioned model.")
+    if "mcp" in enabled:
+        lookup = call("/accommodation/api/assistant", "POST", {"mode": "lookup", "question": f"Show saved search {search_id}"})
+        if lookup.get("tool") != "accommodation.get_search" or not lookup.get("result"):
+            raise RuntimeError("Student 1 catalogue lookup did not call the expected MCP tool.")
+        summary = call(f"/itinerary-api/trips/{trip['id']}/mcp-summary", "POST", {})
+        if summary.get("tool") != "itinerary.get_summary" or summary.get("summary", {}).get("tripId") != trip["id"]:
+            raise RuntimeError("Student 2 MCP summary did not match the selected trip.")
+        budget = call("/budget-api/budget-check", "POST", {"journeyLabel": journey})
+        if budget.get("tool") != "budget.get_summary" or budget.get("result", {}).get("ok") is not True:
+            raise RuntimeError("Student 4 MCP budget check failed.")
+        visa = call("/logistics/api/mcp/invoke", "POST",
+                    {"tool": "logistics.check_visa_requirement", "arguments": {"destination_id": destination}})
+        if visa.get("result", {}).get("ok") is not True:
+            raise RuntimeError("Student 5 MCP visa lookup failed.")
+    if "rag" in enabled:
+        for feature, path, body in (
+            ("Student 1", "/accommodation/api/assistant", {"mode": "guide", "question": "Is Tokyo safe for families?"}),
+            ("Student 2", "/itinerary-api/itinerary-advice", {"tripId": trip["id"], "question": "How should I pace activities and leave buffer time?"}),
+            ("Student 4", "/budget-api/budget-guidance", {"question": "What does warning mean for a category budget?"}),
+            ("Student 5", "/logistics/api/rag/ask", {"question": "What is the difference between visa on arrival and an eVisa?"}),
+        ):
+            grounded(call(path, "POST", body), feature)
+    if "multi-agent" in enabled:
+        started = call(f"/accommodation/api/searches/{search_id}/reviews", "POST", {}, 202)
+        wait_for_review(call, f"/accommodation/api/reviews/{started['id']}")
+        if not {"ai", "mcp"} <= set(enabled):
+            raise RuntimeError("Student 2 edit assessment requires AI and MCP as well as Multi-Agent.")
+        preview = call(f"/itinerary-api/trips/{trip['id']}/edit-preview", "POST",
+                       {"question": "Add a Coffee break to day 1"})
+        workflow_id = (preview.get("preview") or {}).get("workflowId")
+        if not workflow_id:
+            raise RuntimeError("Student 2 did not create a review for the natural-language edit preview.")
+        wait_for_review(call, f"/itinerary-api/trips/{trip['id']}/multi-agent-workflows/{workflow_id}")
+        started = call(f"/logistics/api/destinations/{destination}/readiness-reviews", "POST", {}, 202)
+        wait_for_review(call, f"/logistics/api/readiness-reviews/{started['id']}?destination_id={destination}")
+        print("INFO: Student 4 has no Multi-Agent integration; no unsupported capability is claimed.")
+    print("PASS: enabled AI integrations exercised through Students 1, 2, 4 and 5.")
 
 
 def check_disabled(call, enabled):
@@ -134,7 +170,7 @@ def check_disabled(call, enabled):
 CHECKS = (("mcp", check_mcp, "B2 MCP: a tool call through the application returned real catalogue data"),
           ("ai", check_ai_mode, "B1 AI-Mode: the model answered through the application"),
           ("rag", check_rag, "B3 RAG: a grounded answer with citations from retrieved context"),
-          ("multi-agent", check_multi_agent, "B4 Multi-Agent: Planner, Worker, Reviewer and human approval completed"))
+          ("multi-agent", check_multi_agent, "B4 Multi-Agent: Planner, Worker and Reviewer reached human review; decision pending"))
 
 
 def run(origin, enabled, call=None):
@@ -155,10 +191,19 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("origin", help="public HTTPS origin, e.g. https://example.org")
     parser.add_argument("--components", required=True, help="comma list matching the release: " + ", ".join(COMPONENTS))
+    parser.add_argument("--all-features", action="store_true", help="Verify protected group CRUD and every supported AI integration.")
     args = parser.parse_args(argv)
     try:
-        run(args.origin, parse_components(args.components))
-    except (RuntimeError, ValueError) as error:
+        enabled = parse_components(args.components)
+        if args.all_features:
+            credentials(required=True)
+            call = make_call(args.origin)
+            check_crud(args.origin, enabled=enabled, call=call)
+            run(args.origin, enabled, call=call)
+            check_other_features(call, enabled)
+        else:
+            run(args.origin, enabled)
+    except (RuntimeError, ValueError, URLError) as error:
         print(f"FAIL: {error}")
         return 1
     return 0

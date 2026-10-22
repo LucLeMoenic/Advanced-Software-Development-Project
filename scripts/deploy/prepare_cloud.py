@@ -66,6 +66,7 @@ CADDYFILE = """{{DOMAIN}} {
 	}
 
 	reverse_proxy shared-frontend:80 {
+		header_up -Authorization
 		# Overwrite any client-supplied value so the gateway's per-client rate limit cannot be dodged by forging it.
 		header_up X-Forwarded-For {remote_host}
 	}
@@ -73,9 +74,12 @@ CADDYFILE = """{{DOMAIN}} {
 """
 
 
-def caddyfile(domain):
+def caddyfile(domain, protected=False):
     """The hardened Caddyfile for the public TLS gateway (the only service with published ports)."""
-    return CADDYFILE.replace("{{DOMAIN}}", domain)
+    config = CADDYFILE.replace("{{DOMAIN}}", domain)
+    if protected:
+        config = config.replace("\tencode zstd gzip", "\timport /etc/caddy/gateway-auth.caddy\n\tencode zstd gzip")
+    return config
 
 
 def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
@@ -114,6 +118,10 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
             })
             if "ai" in ai and name == "student3-backend":
                 environment["OLLAMA_MODEL"] = CLOUD_MODEL
+            if "ai" in ai:
+                for setting in ("APPLICATION_MODEL", "STUDENT4_MODEL"):
+                    if setting in environment:
+                        environment[setting] = CLOUD_MODEL
             environment["LITEAPI_KEY"] = ""
         if service.get("volumes"):
             student = re.fullmatch(r"student([1-5])-(?:database|db-init)", name)
@@ -125,9 +133,8 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
         service.pop("ports", None)
         service.pop("extra_hosts", None)
         service["networks"] = ["private"]
-        if name == "ollama":
-            # The private network is internal (no outbound access), so Ollama could never download a model. Give it, and only
-            # it, a second non-internal network for pulling models. Nothing is published and no other service gets egress.
+        if name in ("ollama", "mcp-server"):
+            # Ollama downloads models; MCP's itinerary weather tool uses fixed public weather endpoints.
             service["networks"] = ["private", "egress"]
             config["networks"]["egress"] = {}
         if "build" in service:  # built from this repository like the application services
@@ -143,10 +150,15 @@ def cloud_config(source, sha, domain, ai=frozenset(), ai_source=None):
         "volumes": ["./Caddyfile:/etc/caddy/Caddyfile:ro", "tls-data:/data", "tls-config:/config"],
         "depends_on": {"shared-frontend": {"condition": "service_healthy"}},
     }
+    if ai:
+        config["services"]["tls-gateway"]["volumes"].append({
+            "type": "bind", "source": "./gateway-auth.caddy", "target": "/etc/caddy/gateway-auth.caddy",
+            "read_only": True, "bind": {"create_host_path": False},
+        })
     build = copy.deepcopy(config)
     for service in config["services"].values():
         service.pop("build", None)
-    return build, config, caddyfile(domain)
+    return build, config, caddyfile(domain, protected=bool(ai))
 
 
 def split_images(config, build, ai):
@@ -192,7 +204,7 @@ def main():
     (args.output / "vm-pull-images.txt").write_text("".join(f"{image}\n" for image in vm_pulled), encoding="utf-8")
     (args.output / "ai-services.txt").write_text(",".join(sorted(ai)) + "\n", encoding="utf-8")
     shutil.copyfile(ROOT / "student-1/database/storage/accommodation.db", args.output / "accommodation.db")
-    for filename in ("deploy-vm.sh", "smoke_cloud.py"):
+    for filename in ("deploy-vm.sh", "pull-models-vm.sh", "smoke_cloud.py", "smoke_cloud_ai.py", "cloud_auth.py"):
         shutil.copyfile(Path(__file__).with_name(filename), args.output / filename)
     mode = f"cloud AI components enabled: {', '.join(sorted(ai))}" if ai else "AI disabled"
     print(f"Prepared {len(config['services'])} cloud services ({mode}); no resources were provisioned.")

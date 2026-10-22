@@ -1,38 +1,18 @@
-"""Verify the public gateway and Student 1 to 5 CRUD and AI-off checks without native AI dependencies."""
+"""Verify gateway pages and group CRUD against the selected cloud capability profile."""
 
 import argparse
-import json
 import uuid
 from datetime import date, timedelta
-from urllib.error import HTTPError
-from urllib.parse import urlparse
-from urllib.request import Request, urlopen
+from cloud_auth import make_call
 
 
-def run(base):
-    parsed = urlparse(base)
-    if parsed.scheme != "https" or not parsed.netloc or parsed.path not in ("", "/") or parsed.query or parsed.fragment:
-        raise ValueError("Provide the public HTTPS origin.")
-
-    def call(path, method="GET", body=None, expected=200):
-        request = Request(base.rstrip("/") + path, method=method,  # noqa: S310 - HTTPS origin validated above
-                          data=None if body is None else json.dumps(body).encode(),
-                          headers={"Content-Type": "application/json"})
-        try:
-            response = urlopen(request, timeout=30)  # noqa: S310 - HTTPS origin checked above
-        except HTTPError as exc:
-            response = exc
-        with response:
-            data = response.read(1048576)
-            if response.status != expected:
-                raise RuntimeError(f"{method} {path}: expected {expected}, received {response.status}")
-        return json.loads(data) if data and data.startswith((b"{", b"[")) else data
-
+def run(base, enabled=frozenset(), call=None):
+    call = call or make_call(base, timeout=200 if enabled else 30)
     for route in ("/", "/accommodation/", "/itinerary/", "/attractions/", "/budget/", "/logistics/"):
         call(route)
     modes = call("/itinerary-api/capabilities")
-    if modes != {"aiEnabled": False, "mcpEnabled": False, "ragEnabled": False, "multiAgentEnabled": False}:
-        raise RuntimeError("The cloud baseline must disable every Student 2 AI capability.")
+    if modes != capabilities(enabled):
+        raise RuntimeError("Student 2 capabilities do not match the selected cloud profile.")
     baseline = call("/itinerary-api/trips")
     if len(baseline) < 10:
         raise RuntimeError("At least ten demonstration trips are required.")
@@ -41,8 +21,8 @@ def run(base):
     trip = call("/itinerary-api/trips", "POST", criteria, 201)
     path = f"/itinerary-api/trips/{trip['id']}"
     try:
-        if trip.get("generationMode") != "fallback" or len(trip.get("stops", [])) != 4:
-            raise RuntimeError("Disabled AI must still create a complete deterministic itinerary.")
+        if trip.get("generationMode") != ("ai" if "ai" in enabled else "fallback") or len(trip.get("stops", [])) != 4:
+            raise RuntimeError("Trip generation did not match the selected AI mode or required stop count.")
         call(path, "PUT", {**criteria, "budget": 1200})
         saved = call(path)
         if saved["budget"] != 1200 or saved["stops"] != trip["stops"]:
@@ -51,69 +31,75 @@ def run(base):
         stop_path = f"/itinerary-api/stops/{stop['id']}"
         call(stop_path, "PUT", {"day": 2, "activity": "Updated cloud smoke stop", "notes": "Synthetic fixture"})
         call(stop_path, "DELETE", expected=204)
-        for endpoint in ("/edit-preview", "/edit-operation-preview", "/edit-confirm"):
-            call(path + endpoint, "POST", {}, 503)
-        call(path + "/multi-agent-workflows/wf-20261020T080000Z-0123abcd", expected=503)
-        call("/itinerary-api/itinerary-advice", "POST", {"question": "Budget?"}, 503)
+        if not {"ai", "mcp"} <= set(enabled):
+            for endpoint in ("/edit-preview", "/edit-operation-preview", "/edit-confirm"):
+                call(path + endpoint, "POST", {}, 503)
+        if "multi-agent" not in enabled:
+            call(path + "/multi-agent-workflows/wf-20261020T080000Z-0123abcd", expected=503)
+        if "rag" not in enabled:
+            call("/itinerary-api/itinerary-advice", "POST", {"question": "Budget?"}, 503)
     finally:
         call(path, "DELETE", expected=204)
     call(path, expected=404)
-    print("PASS: six gateway pages; four AI modes disabled; deterministic create; trip/stop CRUD.")
-    check_student1(call)
-    print("PASS: Student 1 AI modes disabled; cached-catalogue search create, rename and delete.")
-    check_student3(call)
-    print("PASS: Student 3 AI modes disabled; deterministic recommendation; attraction and review CRUD.")
-    check_student4(call)
-    print("PASS: Student 4 AI modes disabled; deterministic advice; budget and expense CRUD.")
-    check_student5(call)
-    print("PASS: Student 5 AI modes disabled; reference data served; destination CRUD.")
-    print("Persistence across redeploy, other features' CRUD and rollback require separate evidence.")
+    print("PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.")
+    for number, check in ((1, check_student1), (3, check_student3), (4, check_student4), (5, check_student5)):
+        check(call, enabled)
+        print(f"PASS: Student {number} cloud profile and CRUD checks.")
+    print("Persistence across redeploy and rollback require separate evidence.")
 
 
-def check_student1(call):
-    """Student 1 through the gateway: every AI mode off, and saved-search CRUD on the cached catalogue."""
+def capabilities(enabled):
+    return {flag: component in enabled for flag, component in
+            (("aiEnabled", "ai"), ("mcpEnabled", "mcp"), ("ragEnabled", "rag"), ("multiAgentEnabled", "multi-agent"))}
+
+
+def check_student1(call, enabled=frozenset()):
+    """Check Student 1's selected capability/ranking mode and saved-search CRUD."""
     api = "/accommodation/api"
     modes = call(f"{api}/capabilities")
-    if modes != {"aiRanking": False, "lookup": False, "guide": False, "multiAgent": False}:
+    if modes != dict(zip(("aiRanking", "lookup", "guide", "multiAgent"), capabilities(enabled).values())):
         raise RuntimeError("The cloud baseline must disable every Student 1 AI capability.")
     if len(call(f"{api}/searches")) < 10:
         raise RuntimeError("At least ten demonstration accommodation searches are required.")
     check_in = date.today() + timedelta(days=30)
     criteria = {"destination": "Tokyo", "checkIn": check_in.isoformat(),
                 "checkOut": (check_in + timedelta(days=2)).isoformat(), "guests": 1,
-                "minimumPrice": 0, "maximumPrice": 100000, "preferences": "", "useAi": False}
+                "minimumPrice": 0, "maximumPrice": 100000, "preferences": "", "useAi": "ai" in enabled}
     search = call(f"{api}/searches", "POST", criteria, 201)
     path = f"{api}/searches/{search['id']}"
     try:
-        if search.get("rankingMode") != "programmatic" or not search.get("results"):
-            raise RuntimeError("Disabled AI must still rank the cached Tokyo catalogue.")
+        if search.get("rankingMode") != ("ai" if "ai" in enabled else "programmatic") or not search.get("results"):
+            raise RuntimeError("AI ranking failed." if "ai" in enabled else "Disabled AI must still rank the cached Tokyo catalogue.")
         title = f"R2 smoke {uuid.uuid4().hex[:8]}"
         call(path, "PATCH", {"title": title})
         saved = call(path)
         if saved["title"] != title or saved["results"] != search["results"]:
             raise RuntimeError("Rename/readback did not preserve the saved search.")
-        call(f"{api}/searches", "POST", {**criteria, "useAi": True}, 503)
-        call(f"{path}/reviews", "POST", {}, 503)
+        if "ai" not in enabled:
+            call(f"{api}/searches", "POST", {**criteria, "useAi": True}, 503)
+        if "multi-agent" not in enabled:
+            call(f"{path}/reviews", "POST", {}, 503)
     finally:
         call(path, "DELETE", expected=204)
     call(path, expected=404)
 
 
-def check_student3(call):
-    """Student 3 through the gateway: every AI capability off, and attraction and review CRUD."""
+def check_student3(call, enabled=frozenset()):
+    """Check Student 3's selected capability/recommendation mode and attraction/review CRUD."""
     api = "/attractions-api"
     modes = call(f"{api}/capabilities")
-    if modes != {"aiEnabled": False, "mcpEnabled": False, "ragEnabled": False, "multiAgentEnabled": False}:
+    if modes != capabilities(enabled):
         raise RuntimeError("The cloud baseline must disable every Student 3 AI capability.")
     if len(call(f"{api}/attractions")) < 10:
         raise RuntimeError("At least ten demonstration attractions are required.")
     recommendation = call(f"{api}/recommend", "POST", {"interest": "street art"})
-    if recommendation.get("source") != "fallback" or not recommendation.get("recommendation"):
-        raise RuntimeError("Disabled AI must still return a deterministic recommendation.")
-    for endpoint, body in ((f"{api}/mcp/invoke", {"tool": "attractions.search", "arguments": {}}),
-                           (f"{api}/rag/ask", {"question": "Is Chin Chin busy?"}),
-                           (f"{api}/agents/workflows", {"task": "Plan a relaxed day"})):
-        call(endpoint, "POST", body, 503)
+    if recommendation.get("source") not in (("ai", "ai_retry") if "ai" in enabled else ("fallback",)) or not recommendation.get("recommendation"):
+        raise RuntimeError("AI recommendation failed." if "ai" in enabled else "Disabled AI must still return a deterministic recommendation.")
+    for component, endpoint, body in (("mcp", f"{api}/mcp/invoke", {"tool": "attractions.search", "arguments": {}}),
+                                     ("rag", f"{api}/rag/ask", {"question": "Is Chin Chin busy?"}),
+                                     ("multi-agent", f"{api}/agents/workflows", {"task": "Plan a relaxed day"})):
+        if component not in enabled:
+            call(endpoint, "POST", body, 503)
     name = f"R2 smoke {uuid.uuid4().hex[:8]}"
     fields = {"name": name, "category": "activity", "description": "Synthetic fixture", "rating": 4}
     attraction = call(f"{api}/attractions", "POST", fields, 201)
@@ -132,21 +118,22 @@ def check_student3(call):
     call(path, expected=404)
 
 
-def check_student4(call):
-    """Student 4 through the gateway: every AI capability off, deterministic advice, and budget/expense CRUD."""
+def check_student4(call, enabled=frozenset()):
+    """Check Student 4's supported capability/advice mode and budget/expense CRUD."""
     api = "/budget-api"
     modes = call(f"{api}/capabilities")
-    if modes != {"aiEnabled": False, "mcpEnabled": False, "ragEnabled": False}:
+    if modes != {key: value for key, value in capabilities(enabled).items() if key != "multiAgentEnabled"}:
         raise RuntimeError("The cloud baseline must disable every Student 4 AI capability.")
     if len(call(f"{api}/budgets")) < 10:
         raise RuntimeError("At least ten demonstration budgets are required.")
     journeys = call(f"{api}/journeys")
     advice = call(f"{api}/insights", "POST", {"journeyLabel": journeys[0]["journeyLabel"]})
-    if advice.get("source") != "fallback" or not advice.get("suggestions"):
-        raise RuntimeError("Disabled AI must still return deterministic budget advice.")
-    for endpoint, body in ((f"{api}/budget-guidance", {"question": "How should I split my budget?"}),
-                           (f"{api}/budget-check", {})):
-        call(endpoint, "POST", body, 503)
+    if advice.get("source") not in (("ai", "ai_retry") if "ai" in enabled else ("fallback",)) or not advice.get("suggestions"):
+        raise RuntimeError("AI budget advice failed." if "ai" in enabled else "Disabled AI must still return deterministic budget advice.")
+    for component, endpoint, body in (("rag", f"{api}/budget-guidance", {"question": "How should I split my budget?"}),
+                                     ("mcp", f"{api}/budget-check", {})):
+        if component not in enabled:
+            call(endpoint, "POST", body, 503)
     label = f"R2 smoke {uuid.uuid4().hex[:8]}"
     fields = {"journeyLabel": label, "category": "food", "limitAmountMinor": 20000, "baseCurrency": "AUD",
               "startDate": "2026-09-01", "endDate": "2026-09-07"}
@@ -177,12 +164,12 @@ def check_student4(call):
     call(budget_path, expected=404)
 
 
-def check_student5(call):
-    """Student 5 through the gateway: every AI route off, reference data served, and destination CRUD.
+def check_student5(call, enabled=frozenset()):
+    """Check Student 5's disabled routes, reference data and destination CRUD.
 
     The 503 bodies are checked as well as the status, because a backend that is down also answers 503
     through the gateway; only the named error proves the switch is off. The AI routes are checked before
-    anything is created, so an enabled deployment fails without writing a row.
+    anything is created. Enabled routes are exercised by the separate AI smoke checks.
     """
     api = "/logistics/api"
     destinations = call(f"{api}/destinations")
@@ -196,6 +183,8 @@ def check_student5(call):
                                      (f"{api}/mcp/tools", "GET", None, "mcp_disabled"),
                                      (f"{api}/rag/ask", "POST", {"question": "What is a visa on arrival?"}, "rag_disabled"),
                                      (f"{api}/destinations/{seeded}/readiness-reviews", "POST", {}, "multi_agent_disabled")):
+        if code.removesuffix("_disabled").replace("_", "-") in enabled:
+            continue
         refusal = call(path, method, body, 503)
         if not isinstance(refusal, dict) or refusal.get("error") != code:
             raise RuntimeError(f"{method} {path}: expected the {code} body.")

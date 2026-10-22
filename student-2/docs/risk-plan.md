@@ -22,6 +22,24 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
 
+## Protected Cloud AI - 22 October 2026
+
+- The approved optional AI deployment gates every browser/API route behind
+  HTTPS Basic Auth, strips credentials before forwarding and retains only a
+  private bcrypt snippet on the VM. Real isolated Caddy tests verify anonymous
+  and incorrect-password rejection and credential stripping. This is shared
+  demo access, not per-user record or human-decision authorization (P=3, I=5).
+- The `m7i-flex.large` target has 2 vCPU/8 GiB and no measured AI capacity.
+  Provisioning verifies and warms one shared model; backend timeouts, schema
+  failures, grounding and concurrency still require live evidence (P=4, I=4).
+  The deployment smoke rejects fallback and stops agents at human review.
+- Failed provisioning or smoke may leave changed containers, even if a previous
+  release link is retained. Inspect and explicitly roll back; do not assume an
+  atomic deployment (P=3, I=4). Baseline rollback disables AI and removes the
+  password gate; older AI rollback restores the older password hash.
+- See the [cloud runbook](../../docs/release-2/cloud-validation-runbook.md) for
+  credentials, activation, rollback and remaining AWS acceptance checks.
+
 ## Release 2 Inline Edit Assessment - 21 October 2026
 
 - Bind assessment acceptance to the exact signed preview token and full saved-trip

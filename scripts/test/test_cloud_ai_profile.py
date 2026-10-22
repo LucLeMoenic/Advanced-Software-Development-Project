@@ -1,8 +1,10 @@
 """Offline tests for the cloud AI profile in scripts/deploy/prepare_cloud.py (bonus B1 to B4)."""
 
 import importlib.util
+import json
 import shutil
 import subprocess  # noqa: S404 - fixed argv, no shell
+import sys
 from pathlib import Path
 
 import pytest
@@ -124,6 +126,17 @@ def test_student_3_uses_the_single_cloud_model_only_when_ai_mode_is_on():
     assert make("ai")[1]["services"]["student3-backend"]["environment"]["OLLAMA_MODEL"] == module.CLOUD_MODEL == "llama3.2:3b"
 
 
+def test_enabled_ai_uses_the_provisioned_model_even_if_local_tags_differ():
+    app = source()
+    for number in (1, 2, 5):
+        app["services"][f"student{number}-backend"]["environment"]["APPLICATION_MODEL"] = "local-only:7b"
+    app["services"]["student4-backend"]["environment"]["STUDENT4_MODEL"] = "local-only:7b"
+    _, config, _ = module.cloud_config(app, SHA, DOMAIN, {"ai"}, ai_source())
+    for number in (1, 2, 5):
+        assert config["services"][f"student{number}-backend"]["environment"]["APPLICATION_MODEL"] == module.CLOUD_MODEL
+    assert config["services"]["student4-backend"]["environment"]["STUDENT4_MODEL"] == module.CLOUD_MODEL
+
+
 def test_the_sandbox_api_key_stays_blank_with_every_ai_component_enabled():
     _, config, _ = make("ai,mcp,rag,multi-agent")
 
@@ -141,20 +154,20 @@ def test_ai_services_never_publish_a_port_even_if_their_definition_does():
     assert config["networks"]["private"]["internal"] is True
 
 
-def test_only_ollama_has_outbound_access_so_it_can_pull_models_and_nothing_else_does():
+def test_only_ollama_and_mcp_have_outbound_access_for_models_and_weather():
     _, config, _ = make("ai,mcp,rag,multi-agent")
 
     assert config["services"]["ollama"]["networks"] == ["private", "egress"]
+    assert config["services"]["mcp-server"]["networks"] == ["private", "egress"]
     assert "internal" not in config["networks"]["egress"]  # a normal bridge: outbound works, nothing is published
     for name, service in config["services"].items():
-        if name not in ("ollama", "tls-gateway"):
+        if name not in ("ollama", "mcp-server", "tls-gateway"):
             assert service["networks"] == ["private"], name
-    assert [n for n, s in config["services"].items() if "egress" in s["networks"]] == ["ollama"]
+    assert {n for n, s in config["services"].items() if "egress" in s["networks"]} == {"ollama", "mcp-server"}
 
 
-def test_without_ollama_there_is_no_egress_network_at_all():
-    for components in ("", "mcp"):
-        assert "egress" not in make(components)[1]["networks"]
+def test_baseline_has_no_egress_network():
+    assert "egress" not in make("")[1]["networks"]
 
 
 def test_the_egress_network_exists_whenever_ollama_does():
@@ -206,11 +219,17 @@ def test_rag_and_multi_agent_wait_for_a_healthy_ollama_and_it_is_always_included
         assert config["services"][f"{component}-server" if component == "rag" else "multi-agent-server"]["depends_on"]["ollama"]["condition"] == "service_healthy"
 
 
-def test_the_gateway_and_caddyfile_are_unchanged_by_the_ai_profile():
+def test_ai_gateway_requires_private_auth_without_putting_credentials_in_the_bundle():
     _, base_config, base_caddy = make("")
     _, ai_config, ai_caddy = make("ai,mcp,rag,multi-agent")
 
-    assert ai_caddy == base_caddy and ai_config["services"]["tls-gateway"] == base_config["services"]["tls-gateway"]
+    assert "gateway-auth.caddy" not in base_caddy
+    assert "import /etc/caddy/gateway-auth.caddy" in ai_caddy
+    assert "header_up -Authorization" in ai_caddy
+    mount = ai_config["services"]["tls-gateway"]["volumes"][-1]
+    assert mount["source"] == "./gateway-auth.caddy" and mount["read_only"]
+    assert mount["bind"]["create_host_path"] is False
+    assert base_config["services"]["tls-gateway"]["ports"] == ai_config["services"]["tls-gateway"]["ports"]
 
 
 # -- refusing to produce a half-defined bundle --------------------------------------------------------------------------------
@@ -255,3 +274,58 @@ def test_the_real_ai_compose_file_is_valid_defines_all_four_services_and_publish
     assert not any(s.get("ports") for s in services.values())
     assert services["ollama"]["image"] == "ollama/ollama:0.34.3"
     assert services["mcp-server"]["environment"]["MCP_ALLOWED_HOSTS"] == "mcp-server:*"
+
+
+@pytest.mark.parametrize("components", ["", "ai,mcp,rag,multi-agent"])
+def test_preparation_ships_model_provisioning_metadata_and_both_smoke_scripts(tmp_path, monkeypatch, components):
+    output = tmp_path / "bundle"
+    calls = []
+
+    def compose(argv, **kwargs):
+        calls.append(argv)
+        return subprocess.CompletedProcess(argv, 0, json.dumps(ai_source() if "-f" in argv else source()))
+
+    monkeypatch.setattr(module.shutil, "which", lambda name: "docker")
+    monkeypatch.setattr(module.subprocess, "run", compose)
+    monkeypatch.setattr(sys, "argv", ["prepare_cloud.py", "--sha", SHA, "--domain", DOMAIN,
+                                    "--ai-services", components, "--output", str(output)])
+    module.main()
+
+    assert len(calls) == (2 if components else 1)
+    assert (output / "ai-services.txt").read_text().strip() == ",".join(sorted(module.parse_ai_services(components)))
+    assert (output / "vm-pull-images.txt").read_text().splitlines() == (["ollama/ollama:0.34.3"] if components else [])
+    assert "ollama/ollama:0.34.3" not in (output / "images.txt").read_text()
+    for filename in ("deploy-vm.sh", "pull-models-vm.sh", "smoke_cloud.py", "smoke_cloud_ai.py", "cloud_auth.py"):
+        assert (output / filename).read_bytes() == (ROOT / "scripts" / "deploy" / filename).read_bytes()
+
+
+def test_ai_preparation_workflow_never_connects_to_or_tests_the_public_vm():
+    text = (ROOT / ".github" / "workflows" / "cloud-deployment.yml").read_text()
+    assert "default: baseline" in text
+    assert "          - prepare-ai" in text
+    assert "          - ai\n" in text
+    assert "--ai-services \"$CLOUD_AI_SERVICES\"" in text
+    steps = text.split("      - name: ")
+    for name in ("Configure pinned SSH access", "Deploy to the approved Azure or AWS Linux VM",
+                 "Wait for public HTTPS readiness"):
+        step = next(step for step in steps if step.startswith(name + "\n"))
+        assert "        if: inputs.mode != 'prepare-ai'\n" in step, name
+    package = next(step for step in steps if step.startswith("Package AI preparation without deployment\n"))
+    assert "if: inputs.mode == 'prepare-ai'" in package
+    assert "tar -cf cloud-ai-bundle.tar" in package
+    assert "gateway-auth.caddy" not in package
+    ai_smoke = next(step for step in steps if step.startswith("Verify protected group CRUD and AI integrations\n"))
+    assert "if: inputs.mode == 'ai'" in ai_smoke
+    assert "--all-features" in ai_smoke
+    for name in ("Require protected AI credentials", "Prepare private gateway credentials"):
+        step = next(step for step in steps if step.startswith(name + "\n"))
+        assert "if: inputs.mode == 'ai'" in step
+        assert "secrets.CLOUD_AUTH_USER" in step and "secrets.CLOUD_AUTH_PASSWORD" in step
+    evidence = next(step for step in steps if step.startswith("Retain deployment evidence\n"))
+    assert "gateway-auth.caddy" not in evidence and "CLOUD_AUTH_PASSWORD" not in evidence
+    readiness = next(step for step in steps if step.startswith("Wait for public HTTPS readiness\n"))
+    assert "--required" in readiness and 'cloud_auth.py verify' in readiness
+    build = next(step for step in steps if step.startswith("Build immutable application images\n"))
+    deploy = next(step for step in steps if step.startswith("Deploy to the approved Azure or AWS Linux VM\n"))
+    for filename in ("smoke_cloud_ai.py", "pull-models-vm.sh", "ai-services.txt", "vm-pull-images.txt"):
+        assert filename in build and filename in deploy and filename in package
