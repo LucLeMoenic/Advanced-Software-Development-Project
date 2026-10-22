@@ -63,3 +63,16 @@ both models returned a generic plan, "no proposed change", and an ACCEPT verdict
 repeated limits already stated in the evidence, and one plan named files that do not exist. The human Adapt notes,
 not the model output, carry the findings. Each run takes about 9 minutes on this CPU host. `qwen2.5-coder:7b` (the
 default implementer) is not installed here, so `qwen2.5:3b` was used, as in Release 0.
+
+
+## Release 2: local deployment and cloud AI tooling (AI-assisted)
+
+- **Cloud AI profile (B1 to B4).** The assistant wrote `deploy/cloud/`, the `--ai-services` option and `smoke_cloud_ai.py`. The first
+  real model pull failed because Ollama sat on an `internal: true` network with no DNS, so only Ollama was given an extra outbound
+  network (tested: no other service may have it). A first live smoke also timed out: the model took 352 s to load cold on CPU, and a
+  later MCP call failed its 5 s deadline while Ollama was still busy with an abandoned request. Both are timing limits of this
+  host, now stated in the report, not code defects.
+- **Local system test (Chunk 9).** `system_test_local.py` was written by the assistant and run live. Its first live run failed once on
+  a RAG model deadline (502); the fix is a single logged retry, not a longer deadline, so a real second failure still fails. The 32
+  offline tests and 11 injected mutations (cleanup, retry scope, status codes, origin check) were reviewed and all mutants are killed.
+- The human review decision for the showcase remains mine; the script's approval is labelled as an automated test decision.
