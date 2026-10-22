@@ -2,6 +2,105 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-22 - Chunked Commit Preparation
+
+**Request:** create a new branch and commit all current changes in chunks.
+Created `LLM/Student_2_Release_2_Readiness_Evidence`. Deployment commit
+`e0ed9da` contains runtime, dependency and gateway-CI changes; its actual
+Ruff, detect-secrets and pip-audit commit hooks passed.
+Before the separate evidence/documentation commit, all 95 loop tests passed,
+source/context/prompt hashes matched, both model records remained pending human
+finalisation, and endpoint XML recorded seven tests with no failures or errors.
+The captured reports retain their original revision/branch and execution-time
+limitations; committing them does not turn historical CI into current CI,
+finalise a human decision or establish cloud acceptance. No push was requested.
+The raw scanner transcript retains its trailing blank line to preserve the
+reviewed SHA-256. Final whitespace validation permits only that file's blank
+EOF; all other staged whitespace checks remain unchanged.
+
+## 2026-10-22 - Release 2 Loop Evidence Capture
+
+**Request:** proceed with the remaining agentic-loop evidence work.
+
+**Work:** preserved the existing uncommitted deployment preparation. Captured
+source hashes, current local test/scan output, verified baseline CI steps and
+cloud workflow metadata under [Release 2 evidence](evidence/release-2/).
+Used an isolated Python environment after the repository venv lacked pytest.
+The default Ollama endpoint was unavailable and port 11435 was refused;
+a task-owned native instance on loopback 55115 served the existing local models.
+No models were downloaded, application data changed, cloud resources provisioned,
+source code edited, commits pushed or human decisions invented.
+
+**Validation:** backend 257 passed/11 opt-in live skips; named endpoint subset
+7 passed; database 39 passed; shared loop 95 passed. Scoped Ruff security,
+detect-secrets and both Student 2 pip-audit scans passed without advisory
+exceptions. The installed-hook check and manual hook invocation are not evidence
+of hooks firing during a commit. Remote CI run 39694482270 succeeded for base
+revision `7798bc8`, not the uncommitted deployment changes.
+
+**Live reviews:** `qwen2.5:3b` implementer and `llama3.2:3b` reviewer completed
+Testing and Multi-Agent reviews, leaving both records pending human finalisation.
+The independent [review record](review-record.md) documents their inaccurate
+suggestions and remaining evidence gaps. Two cloud-review attempts, including
+reversed model roles, failed strict output validation; retained both transcripts,
+did not weaken the contract and did not manufacture a cloud-review record.
+Read-only inspection found that green cloud run 39506483909 only executed
+`Deploy placeholder`. Real cloud deployment, integrated live/human evidence,
+new pushed CI, complete group review coverage and report/showcase remain open.
+
+**Evidence integrity:** verified both records' context/prompt hashes against disk
+and all captured source hashes, with human decisions still null. The evidence
+secret scan initially flagged 29 commit IDs and SHA-256 digests. Verified every
+finding against those exact values and added audited non-secret entries to the
+existing baseline without changing prior entries or adding broad exclusions.
+The hook requires the modified baseline to be staged; validation uses a temporary
+Git index rather than staging any files in the user's index. The evidence scan
+then passed. Final loop tests remained 95/95 and whitespace validation passed.
+
+## 2026-10-22 - Student 2 Deployment Preparation
+
+**Request:** get Student 2's implementation ready for deployment.
+
+**Scope and changes:** prepared the Release 2 AI-disabled cloud baseline, without
+provisioning cloud resources or changing another student's feature. Created
+`LLM/Student_2_Deployment_Readiness`. Replaced Flask development serving with
+pinned, single-process threaded Waitress in backend/database, preserving `PORT`
+and the process-local signed-preview contract. Updated Flask/requests to the
+fixed versions already identified by the audit policy and removed only Student
+2's accepted exceptions. CI now starts the shared gateway and runs the existing
+CRUD/disabled-mode smoke through it; the script also checks overview/decision
+guards and replaces the database container to prove storage survives replacement.
+Cloud smoke edits now trigger Student 2 CI. Updated deployment docs and stale
+ownership/previous-CI status without claiming live AI or cloud acceptance.
+
+**Validation:** backend 257 passed/11 existing opt-in live skips; database 39
+passed; frontend 45 passed plus production build; cloud configuration 6 passed.
+Built backend/database/frontend/shared-gateway images and started an isolated
+cloud-derived stack on loopback 55102 with its own named data volume and all AI
+disabled. Real gateway smoke passed deterministic create, trip/stop CRUD,
+regeneration, disabled modes and exact saved-state comparison after database
+container replacement. Both Python services reported Waitress over HTTP.
+Ruff security and detect-secrets passed; pip-audit found no known vulnerabilities
+in either updated requirement set, with no Student 2 exceptions. The first
+combined hook run could not find Python via the Windows Store alias; rerunning
+with the existing test venv on PATH passed all three hooks.
+
+**Commit preparation recheck:** backend 257 passed/11 opt-in live skips,
+database 39 passed and cloud configuration 6 passed. The smoke script parsed
+without PowerShell errors and `docker compose config --quiet` passed.
+
+**Browser and cleanup:** the actual gateway UI created a four-stop fallback
+itinerary, saved a budget change, showed disabled Edit/Advice controls and
+confirmed deletion. API readback verified 404 and ten original seeded trips.
+Used DOM-driven interactions after the hidden browser's click-stability wait
+stalled; no claim of keyboard/responsive acceptance. Removed the disposable
+stack, named volume and generated cloud/test bundle; existing app data was
+untouched.
+
+**Limits:** local baseline readiness is not a real Azure/AWS deployment, new
+remote CI result, whole-group certification or enabled-AI acceptance. The prior
+natural-language editor timeout remains a separate local-AI issue.
+
 ## 2026-10-21 - CI Disabled-Mode Smoke Fix
 
 Student 2 CI run `39572296667` failed because the PowerShell smoke script still

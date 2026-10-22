@@ -19,6 +19,7 @@ on:
       - "scripts/security/**"
       - "scripts/deploy/start-multi-agent.ps1"
       - "scripts/deploy/prepare_cloud.py"
+      - "scripts/deploy/smoke_cloud.py"
       - "scripts/deploy/assert-cloud-ci.ps1"
       - "scripts/test/cloud-ci.ps1"
       - "scripts/test/test_cloud_config.py"
@@ -44,6 +45,7 @@ on:
       - "scripts/security/**"
       - "scripts/deploy/start-multi-agent.ps1"
       - "scripts/deploy/prepare_cloud.py"
+      - "scripts/deploy/smoke_cloud.py"
       - "scripts/deploy/assert-cloud-ci.ps1"
       - "scripts/test/cloud-ci.ps1"
       - "scripts/test/test_cloud_config.py"
@@ -117,23 +119,25 @@ jobs:
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
           MULTI_AGENT_ENABLED: "false"
-        run: docker compose up --detach --no-deps --wait student2-database student2-backend student2-frontend
+        run: docker compose up --detach --no-deps --wait student2-database student2-backend student2-frontend shared-frontend
 
       - name: Smoke test Student 2 integration
         run: |
           curl --fail --silent http://localhost:5102/health
           curl --fail --silent http://localhost:5202/health
           curl --fail --silent http://localhost:5302/health
+          curl --fail --silent http://localhost:5100/health
+          curl --fail --silent http://localhost:5100/itinerary/
           curl --fail --silent http://localhost:5202/api/trips | python -c "import json,sys; trips=json.load(sys.stdin); assert len(trips) >= 10"
           curl --fail --silent http://localhost:5202/api/capabilities | python -c "import json,sys; assert json.load(sys.stdin) == {'aiEnabled': False, 'mcpEnabled': False, 'ragEnabled': False, 'multiAgentEnabled': False}"
 
-      - name: Verify disabled modes, CRUD and restart persistence
+      - name: Verify gateway CRUD, disabled modes and container-replacement persistence
         env:
           AI_ENABLED: "false"
           MCP_ENABLED: "false"
           RAG_ENABLED: "false"
           MULTI_AGENT_ENABLED: "false"
-        run: pwsh -NoProfile -File scripts/test/student-2.ps1 -Smoke
+        run: pwsh -NoProfile -File scripts/test/student-2.ps1 -Smoke -ApiBaseUrl http://localhost:5100/itinerary-api
 
       - name: Stop Student 2 services
         if: always()

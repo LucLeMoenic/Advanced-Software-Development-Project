@@ -1,0 +1,79 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+[PLAN]
+Goal:
+Review the accuracy of the proposed blocked report, not whether the application is releasable.
+
+Requirements:
+- Review the supplied evidence using review-cloud-v1.txt.
+- Propose report findings and corrective actions, not source edits.
+- Missing or failed evidence must remain explicit; only a human can make the release decision.
+
+Selected files:
+- review-cloud-v1.txt
+- review-input-20261022.txt
+- cloud-workflow-runs-20261022.json
+- cloud-run-detail-20261022.json
+
+Steps:
+1. Review the accuracy of the proposed blocked report.
+2. Propose report findings and corrective actions.
+3. Validate the evidence and ensure only a human can make the release decision.
+
+Risks:
+- Missing or failed evidence may remain explicit.
+- Human decision and interpretation are required.
+
+Validation:
+- Review the accuracy of the proposed blocked report.
+- Propose report findings and corrective actions.
+- Validate the evidence and ensure only a human can make the release decision.
+
+[ACT]
+Proposed change:
+The proposed blocked report is accurate and complete. However, the current cloud deployment evidence is missing and failed. The report findings and corrective actions are as follows:
+
+- The cloud deployment evidence is missing and failed.
+- The current cloud validation implementation is not deployed.
+- The human release decision must remain explicit.
+
+Unresolved:
+- The cloud deployment evidence is missing and failed.
+- The human release decision must remain explicit.
+
+```
+[OBSERVE] Reviewer model assessing proposal.
+```text
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: REQUIRED
+  - Concrete evidence: The existing cloud deployment evidence is missing and failed. The latest cloud-labelled run (39506483909) executed a placeholder, not a real deployment.
+  - Failure mode: The proposed blocked report is inaccurate because it does not reflect the actual state of the cloud deployment. The current cloud validation implementation is not deployed, and the human release decision must remain explicit.
+  - Required correction: Provide the missing and failed cloud deployment evidence, including the actual deployment artifact, public application CRUD results, and a public application persistence result. Ensure these are provided by the human release decision.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+```
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+```text
+[OBSERVE]
+Verdict: REVISE
+
+Findings:
+- Severity: REQUIRED
+  - Concrete evidence: The cloud deployment evidence is missing and failed.
+  - Failure mode: The current cloud validation implementation is not deployed, and there is no approved cloud target, actual deployment artifact, public application CRUD result, or human release decision.
+  - Required correction: Provide the missing cloud deployment evidence, including the actual deployment artifact, public application CRUD result, and a human release decision.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+```
+error: REVISE and REJECT findings require severity, evidence, and required correction.

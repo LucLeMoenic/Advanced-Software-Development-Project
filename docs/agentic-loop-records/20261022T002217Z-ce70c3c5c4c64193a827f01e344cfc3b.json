@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-22T00:22:17.4852025+00:00",
+  "task": "Review Student 2 testing evidence for Release 2. Produce a corrected evidence-readiness report and bounded next actions, not code. Preserve the distinction between current local results and baseline remote CI, all 11 skipped live checks, scoped manual hooks versus actual commit execution, and incomplete group coverage. Do not approve the release or invent human decisions. A model ACCEPT only accepts the report proposal.\n\nReview the supplied evidence using review-testing-v1.txt. Propose report findings and corrective actions, not source edits. Missing or failed evidence must remain explicit; only a human can make the release decision.",
+  "contextFiles": [
+    "student-2/docs/evidence/release-2/review-input-20261022.txt",
+    "student-2/docs/evidence/release-2/validation-provenance-20261022.json",
+    "student-2/docs/evidence/release-2/endpoint-tests-20261022.txt",
+    "student-2/docs/evidence/release-2/security-scans-20261022.txt",
+    "student-2/docs/evidence/release-2/ci-baseline-20261022.json",
+    "student-2/docs/evidence/release-2/backend-tests-20261022.txt",
+    "student-2/docs/evidence/release-2/database-tests-20261022.txt",
+    "student-2/docs/evidence/release-2/loop-tests-20261022.txt",
+    "ai-services/agentic-loop/prompts/review-testing-v1.txt"
+  ],
+  "models": {
+    "implementer": "qwen2.5:3b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "C:\\git\\GitHub\\Uni\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\implementer.md",
+    "reviewer": "C:\\git\\GitHub\\Uni\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\reviewer.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "shared-reviewer-v1"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "student-2/docs/evidence/release-2/review-input-20261022.txt": "455789130B8200ADC12F52A10133DFAFD0D35A469E84126DFAAAC800F34A4D25",
+      "student-2/docs/evidence/release-2/validation-provenance-20261022.json": "678508B0B0D3554A50FC6617B836DA8586EC56E1F4B67BF87694040FC3E0BA3A",
+      "student-2/docs/evidence/release-2/endpoint-tests-20261022.txt": "1D54AE7274E5300C123907A1C4186B20347FA3EF37F2F13DE2FDA26547AD1EDF",
+      "student-2/docs/evidence/release-2/security-scans-20261022.txt": "F913BF840E45739FBF34B79926ED7A16B50BE5D1E22895DF60B6D03E7671259B",
+      "student-2/docs/evidence/release-2/ci-baseline-20261022.json": "8962AFAC098C17EA1F7D4A22DF1334EE06C1F7C32AC96D256934760B54FCA5D7",
+      "student-2/docs/evidence/release-2/backend-tests-20261022.txt": "54A185FFBDF3AFB354896FDF8E6B81AEE4EE7DC709297678D14F18EB90BC41EF",
+      "student-2/docs/evidence/release-2/database-tests-20261022.txt": "3F120144D079D6A31814B447CF43FAAF4501357300EDB36AD1EE33AAD0FA6BC8",
+      "student-2/docs/evidence/release-2/loop-tests-20261022.txt": "E841F165A4F097D56977F6686C7AB1C5AB6DEB71B4ACC91CA93E67F54F4818B1",
+      "ai-services/agentic-loop/prompts/review-testing-v1.txt": "0CC7387129E7AEE7F199046FCC5E513A168BBA8A8C8B9EAC88295D765FCC2B7F"
+    },
+    "implementerPromptSha256": "84A995BA031FB6D4DCCCBC8EFAFE98213B4404F7BF454D537E7860AF1315C50A",
+    "reviewerPromptSha256": "8EA3F061D1CABF54442D2F3F65C53F714C1E97C5F74144E2CA823915C7BC218B"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.40.6",
+  "preTest": {
+    "command": "review-testing",
+    "result": "Reviewing supplied context files, not executing tests or deployment. Validate their provenance and results before human finalisation."
+  },
+  "planAct": "[PLAN]\nGoal:\nThe goal is to produce a corrected evidence-readiness report for Release 2, identifying any missing or conflicting evidence and recommending any necessary corrective actions.\n\nRequirements:\n- Ensure all required endpoint functions are covered by the backend tests.\n- Verify the presence of installed commit hooks.\n- Confirm the successful execution of the commit.\n- Validate the remote CI run for the base commit.\n- Identify any missing or conflicting evidence.\n- Ensure the release is not approved until all required evidence is present and verified.\n\nFiles:\n- \u0060student-2/docs/evidence/release-2/review-input-20261022.txt\u0060\n- \u0060student-2/docs/evidence/release-2/validation-provenance-20261022.json\u0060\n- \u0060student-2/docs/evidence/release-2/endpoint-tests-20261022.txt\u0060\n- \u0060student-2/docs/evidence/release-2/security-scans-20261022.txt\u0060\n- \u0060student-2/docs/evidence/release-2/ci-baseline-20261022.json\u0060\n- \u0060ai-services/agentic-loop/prompts/review-testing-v1.txt\u0060\n\nSteps:\n1. Review the evidence-readiness report and the provided evidence files to identify any missing or conflicting evidence.\n2. Check the installed commit hooks to ensure they were installed and executed during the commit.\n3. Verify the remote CI run for the base commit to confirm the successful execution of the commit.\n4. Identify any missing or conflicting evidence and recommend corrective actions.\n5. Produce a corrected evidence-readiness report with the identified issues and recommended actions.\n\nRisks:\n- Missing or conflicting evidence could lead to a failed release.\n- Incorrectly identified issues could result in unnecessary corrective actions.\n- Incomplete or incorrect recommendations could delay the release or cause issues.\n\nValidation:\n- The report should be reviewed by a human to ensure all issues are correctly identified and recommendations are appropriate.\n- The remote CI run should be verified to confirm the successful execution of the commit.\n\n[ACT]\nProposed change:\n- Add a recommendation to check the installed commit hooks and ensure they were executed during the commit.\n- Add a recommendation to verify the remote CI run for the base commit to confirm the successful execution of the commit.\n- Add a recommendation to identify any missing or conflicting evidence and recommend corrective actions.\n- Ensure the report does not invent any human decisions or modify files outside the supplied context.\n\nUnresolved:\n- The report should be reviewed by a human to ensure all issues are correctly identified and recommendations are appropriate.\n- The remote CI run should be verified to confirm the successful execution of the commit.",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n  - The report does not explicitly mention the need to check the installed commit hooks and ensure they were executed during the commit.\n  - The report does not verify the remote CI run for the base commit to confirm the successful execution of the commit.\n  - The report does not identify any missing or conflicting evidence and recommend corrective actions.\n\nValidation gaps:\n- None\n\nScope check:\nThe proposal stays within the requested change.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": null,
+  "humanNotes": null,
+  "postTest": null,
+  "finalisedAt": null,
+  "validationMode": "testing"
+}

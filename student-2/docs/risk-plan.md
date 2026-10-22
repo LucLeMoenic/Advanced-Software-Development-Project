@@ -22,6 +22,18 @@ Scores use probability and impact from 1 to 5; score is `P x I`.
 
 Review this register before AI, schema, Compose, CI, or public API changes and after any failed evidence run.
 
+## Deployment Preparation - 22 October 2026
+
+- Replaced Flask's development server with single-process, threaded Waitress
+  for both Python services. Do not scale the database to independent application
+  processes without changing its process-local preview-signing contract.
+- Updated Flask/requests pins and removed Student 2's accepted audit exceptions.
+  Both runtime dependency sets passed pip-audit without known findings.
+- A disposable, AI-disabled Student 2 stack passed real shared-gateway CRUD and
+  database container-replacement persistence. This reduces IT-R01/IT-R12 for
+  Student 2's cloud baseline; it does not certify full-group or public-cloud
+  deployment, or resolve the separate live natural-language timeout.
+
 ## Release 2 Inline Edit Assessment - 21 October 2026
 
 - Bind assessment acceptance to the exact signed preview token and full saved-trip

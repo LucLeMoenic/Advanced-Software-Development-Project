@@ -1,0 +1,18 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.7.0 -- C:\Users\Luc.LeMoenic\.copilot\session-state\f847c99d-eefe-4ce1-af1e-c4e9ebdb88bb\files\release2-validation-venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\git\GitHub\Uni\Advanced-Software-Development-Project
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.5
+collecting ... collected 7 items
+
+tests\test_release2_endpoints.py::test_create_endpoint_persists_complete_disabled_ai_itinerary PASSED [ 14%]
+tests\test_release2_endpoints.py::test_create_endpoint_rejects_invalid_input_without_write PASSED [ 28%]
+tests\test_release2_endpoints.py::test_update_endpoint_persists_changes_and_preserves_stops PASSED [ 42%]
+tests\test_release2_endpoints.py::test_update_endpoint_invalid_and_missing_records PASSED [ 57%]
+tests\test_release2_endpoints.py::test_cloud_smoke_uses_current_disabled_routes_and_cleans_up PASSED [ 71%]
+tests\test_release2_endpoints.py::test_endpoint_dependency_outage_is_explicit[post-/api/trips] PASSED [ 85%]
+tests\test_release2_endpoints.py::test_endpoint_dependency_outage_is_explicit[put-/api/trips/1] PASSED [100%]
+
+- generated xml file: C:\git\GitHub\Uni\Advanced-Software-Development-Project\student-2\docs\evidence\release-2\endpoint-tests-20261022.xml -
+============================== 7 passed in 3.63s ==============================

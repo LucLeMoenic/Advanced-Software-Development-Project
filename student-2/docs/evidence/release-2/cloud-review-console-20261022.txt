@@ -1,0 +1,88 @@
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+[PLAN]
+Goal:
+The goal is to review the supplied evidence and identify any gaps or missing information regarding the cloud deployment of Release 2 for Student 2. The review should ensure that the required checks are in place and that the cloud deployment is ready for a human decision.
+
+Requirements:
+- The evidence must be reviewed for completeness and correctness.
+- The cloud deployment must be validated for public frontend and core CRUD, private backend/database boundaries, persistent storage across redeploy, backup/restore and rollback.
+- The AI-Mode, MCP, RAG, and Multi-Agent services must be disabled without outbound calls or dependencies in the baseline.
+- The review should distinguish configuration/source inspection from a successful cloud execution.
+- The review should flag any missing URLs, revisions, workflow runs, logs, or live checks.
+- The review should not infer cloud success from a placeholder or mocked tests.
+- Failed declared checks should block acceptance.
+- The review should provide evidence-based recommendations for the human release decision.
+
+Files:
+- `review-cloud-v1.txt`: The review prompt for the cloud deployment report.
+- `cloud-workflow-runs-20261022.json`: The JSON file containing the run details for the cloud deployment.
+- `cloud-run-detail-20261022.json`: The JSON file containing the details of the cloud deployment workflow run.
+- `cloud-validation-runbook.md`: The runbook for the cloud deployment and validation process.
+
+Steps:
+1. Review the `review-cloud-v1.txt` file to understand the review prompt and the requirements.
+2. Verify the provenance of the `cloud-workflow-runs-20261022.json` and `cloud-run-detail-20261022.json` files.
+3. Analyze the `cloud-validation-runbook.md` to understand the cloud deployment and validation process.
+4. Check for any missing URLs, revisions, workflow runs, logs, or live checks.
+5. Ensure that the AI-Mode, MCP, RAG, and Multi-Agent services are disabled without outbound calls or dependencies in the baseline.
+6. Flag any issues and provide recommendations for the human release decision.
+
+Risks:
+- Missing or incomplete evidence may lead to a premature release.
+- Incorrect configuration or execution may result in a failed deployment.
+- Incomplete or misleading information may cause confusion or errors during the human review process.
+
+Validation:
+- The `review-cloud-v1.txt` file should be reviewed for completeness and correctness.
+- The `cloud-workflow-runs-20261022.json` and `cloud-run-detail-20261022.json` files should be verified for provenance and correctness.
+- The `cloud-validation-runbook.md` should be reviewed for completeness and correctness.
+- Any missing URLs, revisions, workflow runs, logs, or live checks should be flagged and addressed.
+- The AI-Mode, MCP, RAG, and Multi-Agent services should be verified as disabled without outbound calls or dependencies in the baseline.
+- Recommendations for the human release decision should be provided based on the review findings.
+
+[ACT]
+Proposed change:
+No proposed change is needed. The task is to review the supplied evidence and identify any gaps or missing information. The proposed change is to produce a concrete blocked-readiness report based on the findings.
+
+Unresolved:
+- The `cloud-workflow-runs-20261022.json` and `cloud-run-detail-20261022.json` files need to be verified for provenance and correctness.
+- The `cloud-validation-runbook.md` should be reviewed for completeness and correctness.
+- Any missing URLs, revisions, workflow runs, logs, or live checks should be flagged and addressed.
+- The AI-Mode, MCP, RAG, and Multi-Agent services should be verified as disabled without outbound calls or dependencies in the baseline.
+- Recommendations for the human release decision should be provided based on the review findings.
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+- Evidence: The cloud deployment is not verified for public frontend and core CRUD, private backend/database boundaries, persistent storage across redeploy, backup/restore and rollback.
+- Failure mode: The cloud deployment may not work as expected, leading to a failed deployment.
+- Required correction: Verify the cloud deployment for the required checks and provide a concrete blocked-readiness report.
+
+Validation gaps:
+- Severity: SUGGESTION
+- Evidence: The AI-Mode, MCP, RAG, and Multi-Agent services are not explicitly verified as disabled without outbound calls or dependencies in the baseline.
+- Failure mode: The AI-Mode, MCP, RAG, and Multi-Agent services may not be disabled correctly, leading to unintended behavior.
+- Required correction: Verify the AI-Mode, MCP, RAG, and Multi-Agent services as disabled without outbound calls or dependencies in the baseline.
+
+Scope check:
+The proposal stays within the requested change.
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: BLOCKING
+
+Findings:
+- Severity: REQUIRED - The cloud deployment is missing a real cloud deployment artifact, public application CRUD result, cloud persistence result, and human release decision.
+- Severity: SUGGESTION - The cloud deployment is missing a final human release decision, which is a required check.
+- Severity: SUGGESTION - The cloud deployment is missing a record of the run inventory and local tests, which are required for a complete review.
+- Severity: SUGGESTION - The cloud deployment is missing a record of the exact preview binding, non-degraded agent outputs, and audit verification, which are required for a complete review.
+- Severity: SUGGESTION - The cloud deployment is missing a record of the integrated container/frontend execution, which is required for a complete review.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+error: Reviewer output must contain exactly one valid Verdict line.

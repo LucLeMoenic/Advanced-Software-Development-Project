@@ -46,7 +46,7 @@ if ($Smoke) {
         "Smoke checks require AI_ENABLED, MCP_ENABLED, RAG_ENABLED and MULTI_AGENT_ENABLED=false; no trips were changed."
     $baseline = @(Invoke-SmokeRequest GET "/trips")
     Assert-Smoke ($baseline.Count -ge 10) "Expected at least ten saved trips."
-    foreach ($path in @("/trips/$($baseline[0].id)/mcp-summary", "/trips/$($baseline[0].id)/review", "/trips/$($baseline[0].id)/edit-preview", "/trips/$($baseline[0].id)/edit-operation-preview", "/trips/$($baseline[0].id)/edit-confirm", "/itinerary-advice")) {
+    foreach ($path in @("/trips/$($baseline[0].id)/mcp-summary", "/trips/$($baseline[0].id)/mcp-overview", "/trips/$($baseline[0].id)/review", "/trips/$($baseline[0].id)/edit-preview", "/trips/$($baseline[0].id)/edit-operation-preview", "/trips/$($baseline[0].id)/edit-confirm", "/trips/$($baseline[0].id)/multi-agent-workflows/wf-20261020T080000Z-0123abcd/decision", "/itinerary-advice")) {
         $disabled = Invoke-SmokeRequest POST $path @{} 503
         Assert-Smoke ($disabled.error.code -eq "mode_disabled") "$path did not report mode_disabled."
     }
@@ -82,17 +82,16 @@ if ($Smoke) {
         Assert-Smoke ($regeneratedTrip.generationMode -eq "fallback" -and $regeneratedTrip.stops.Count -eq 4) "Whole-trip regeneration failed."
 
         $beforeRestart = Invoke-SmokeRequest GET "/trips/$tripId"
-        Invoke-Checked "docker" ($composeArguments + @("restart", "student2-database")) "Database restart failed."
-        Invoke-Checked "docker" ($composeArguments + @("up", "--detach", "--no-deps", "--wait", "student2-database")) "Database did not become healthy."
+        Invoke-Checked "docker" ($composeArguments + @("up", "--detach", "--no-deps", "--force-recreate", "--wait", "student2-database")) "Database replacement did not become healthy."
         $afterRestart = Invoke-SmokeRequest GET "/trips/$tripId"
         Assert-Smoke (($beforeRestart | ConvertTo-Json -Depth 10 -Compress) -eq ($afterRestart | ConvertTo-Json -Depth 10 -Compress)) `
-            "Saved itinerary changed after database restart."
+            "Saved itinerary changed after database container replacement."
         Invoke-SmokeRequest DELETE "/trips/$tripId" $null 204
         Invoke-SmokeRequest GET "/trips/$tripId" $null 404 | Out-Null
         $tripId = $null
         $remaining = @(Invoke-SmokeRequest GET "/trips")
         Assert-Smoke ($remaining.Count -eq $baseline.Count) "Smoke checks changed the saved-trip count."
-        Write-Host "Student 2 smoke checks passed: disabled modes, fallback, trip/stop CRUD, regeneration and restart persistence."
+        Write-Host "Student 2 smoke checks passed: disabled modes, fallback, trip/stop CRUD, regeneration and container-replacement persistence."
     }
     finally {
         try {

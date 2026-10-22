@@ -43,6 +43,12 @@ Open the feature through the unified application at `http://localhost:5100/itine
 
 These direct host ports are retained for service diagnostics and are not the normal browser route.
 
+The backend and database run under Waitress, not Flask's development server.
+Each service uses one process with threaded requests; keep the database service
+single-process because signed edit-preview keys are generated per application
+instance. Replacing that container preserves SQLite data but invalidates pending
+previews, which must be requested again.
+
 ## APIs
 
 - Trips: `GET/POST /api/trips`, `GET/PUT/DELETE /api/trips/{id}`
@@ -69,4 +75,4 @@ docker compose build student2-database student2-backend student2-frontend
 
 For frontend development, use Node 22.12+ and run `npm ci --prefix student-2/frontend`, then `npm run dev --prefix student-2/frontend`. Vite prints the local URL and proxies `/itinerary-api/` to the backend at `http://localhost:5202`. The backend and database must be running for saved trips and CRUD; native AI services are needed only for their enabled features. Production assets are bundled locally with relative URLs so the shared `/itinerary/` route and diagnostic frontend root both work.
 
-CI installs Node 22 and Python 3.11 dependencies, runs the Vue component Vitest suite, production frontend build, and both pytest suites, validates Compose, builds all Student 2 plus shared frontend images, and smoke-tests the three Student 2 services without requiring a live model.
+CI installs Node 22 and Python 3.11 dependencies, runs the Vue component Vitest suite, production frontend build, and both pytest suites, validates Compose, and builds all Student 2 plus shared frontend images. With all AI modes disabled, it smoke-tests CRUD and regeneration through the shared gateway and verifies saved data survives database container replacement.

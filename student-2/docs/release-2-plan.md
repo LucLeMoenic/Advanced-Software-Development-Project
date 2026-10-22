@@ -47,10 +47,10 @@ agent runtime, autonomous editing or external travel provider.
    pushed CI, cloud CRUD and finalised report reviews. Supply the group report
    and showcase contribution.
 
-Students 1, 3 and 5 must implement and test their own AI-off guards. Their
-application/test changes are excluded from this contribution at the user's
-request. Setting cloud environment flags alone does not implement those guards;
-group cloud acceptance depends on the owners delivering them.
+Students 1, 3 and 5 own their AI-off guards; their implementations have since
+merged. Their application/test changes remain excluded from this contribution.
+Group cloud acceptance still requires the integrated deployment checks, not
+merely setting environment flags or relying on individual feature tests.
 
 ## Acceptance, not assumptions
 
