@@ -1,0 +1,47 @@
+# Terminal 3 (ai-services/multi-agent-server), 2026-10-22T10:36:05Z. Human decision by Alex Chen.
+$ python cli.py decide wf-20261022T100101Z-f83e9cc6 --decision partial --accept i1,i3,i4 --decided-by "Alex Chen" --notes "Accepted i1, i3 and i4. Dropped i2: it leaves out the record's 'south stays hot and dry', so it would pack for the north only. Dropped i5: repeats the rail subject of i3 with no action to take. Also noted: Planner step s2 calls the south 'cool and dry', which the weather-5 record contradicts; no Worker item carried that error."
+Decision recorded: partially_accepted
+exit=0
+
+$ python cli.py show wf-20261022T100101Z-f83e9cc6
+
+=== Workflow wf-20261022T100101Z-f83e9cc6  (student-5)  status: partially_accepted ===
+Task: Trip readiness review for Vietnam. Write a pre-departure checklist from the supplied records only: the entry requirement and documents to prepare, what to pack for each recorded season, and how to get around with each recorded transit option. One item per record. Where a record is missing or a rule must be confirmed, say to check Smartraveller or the official source.
+
+PLANNER  objective: Create a pre-departure checklist for Vietnam based on the provided evidence.
+  s1. Gather required documents, including the approval letter for the eVisa.
+  s2. Pack clothing suitable for both the cool and dry climate of the south and the cool and drizzly climate of the north.
+  s3. Book a soft sleeper berth on the Reunification Express for the train journey from Hanoi to Ho Chi Minh City.
+  s4. Check Smartraveller or the official source for any additional requirements or updates.
+  requires evidence: destination-3, weather-5, transit-5
+
+WORKER   Pre-departure checklist for Vietnam based on the provided evidence.
+  [i1] Vietnam — entry requirement: Carry a printed copy of the approval letter for the eVisa.  (evidence: destination-3)
+  [i2] Vietnam — weather: Winter (Dec-Feb): Pack clothing suitable for both cool and drizzly climates.  (evidence: weather-5)
+  [i3] Vietnam — transit: rail: Book soft sleeper berths on the Reunification Express several days ahead.  (evidence: transit-5)
+  [i4] Vietnam — entry requirement: Apply for a single or multiple entry eVisa online before departure.  (evidence: destination-3)
+  [i5] Vietnam — transit: rail: The Reunification Express runs from Hanoi to Ho Chi Minh City.  (evidence: transit-5)
+
+REVIEWER verdict: CONCERNS (model said pass)
+  - warning  i4   Subject 'Vietnam — entry requirement' is repeated.
+  - warning  i5   Subject 'Vietnam — transit: rail' is repeated.
+  * Clarify the repeated subject in the checklist to avoid confusion.
+  * Consider adding a note to the repeated subject to highlight the duplicate entry.
+  * Review the checklist for any other repeated subjects.
+  * Verify the checklist for consistency and accuracy.
+
+HUMAN    partial by Alex Chen: Accepted i1, i3 and i4. Dropped i2: it leaves out the record's 'south stays hot and dry', so it would pack for the north only. Dropped i5: repeats the rail subject of i3 with no action to take. Also noted: Planner step s2 calls the south 'cool and dry', which the weather-5 record contradicts; no Worker item carried that error.
+
+$ python cli.py audit wf-20261022T100101Z-f83e9cc6
+#21  2026-10-22T10:01:01.487Z  wf-20261022T100101Z-f83e9cc6  system    workflow_created  7d8fe5b71616
+#22  2026-10-22T10:01:01.525Z  wf-20261022T100101Z-f83e9cc6  planner   stage_started  aa65c7b81b5e
+#23  2026-10-22T10:01:07.451Z  wf-20261022T100101Z-f83e9cc6  planner   stage_completed  85a25c76e2d8
+#24  2026-10-22T10:01:07.498Z  wf-20261022T100101Z-f83e9cc6  worker    stage_started  9bf4b02ebbfe
+#25  2026-10-22T10:01:12.545Z  wf-20261022T100101Z-f83e9cc6  worker    stage_completed  3000dcbd24a7
+#26  2026-10-22T10:01:12.580Z  wf-20261022T100101Z-f83e9cc6  system    automatic_checks  588af56311c7
+#27  2026-10-22T10:01:12.622Z  wf-20261022T100101Z-f83e9cc6  reviewer  stage_started  778386080acd
+#28  2026-10-22T10:01:15.696Z  wf-20261022T100101Z-f83e9cc6  reviewer  stage_completed  6fe85fccc580
+#29  2026-10-22T10:01:15.738Z  wf-20261022T100101Z-f83e9cc6  system    awaiting_human_review  112b39fd8d4a
+#39  2026-10-22T10:36:06.294Z  wf-20261022T100101Z-f83e9cc6  human     decision_partial  4bab035c224b
+$ python cli.py verify
+{"valid": true, "entries": 39, "broken_at": null}

@@ -1,0 +1,6 @@
+PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+PASS: Student 1 cloud profile and CRUD checks.
+PASS: Student 3 cloud profile and CRUD checks.
+PASS: Student 4 cloud profile and CRUD checks.
+PASS: Student 5 cloud profile and CRUD checks.
+Persistence across redeploy and rollback require separate evidence.

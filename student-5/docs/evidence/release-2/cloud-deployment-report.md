@@ -108,17 +108,52 @@ Results:
 
 This is local evidence only. It does not show the cloud deployment.
 
-## Cloud run (to be completed after merge)
+## Cloud run
+
+Filled in on 22 October 2026 (Chunk 6) from `gh run view`, the run's artifact and a
+read-only check of the public URL. Evidence files are in [`cloud/`](cloud/).
 
 | Item | Value |
 |---|---|
-| `cloud-deployment.yml` run | _TODO: run link_ |
-| Deployed revision | _TODO: commit SHA from `revision.txt`_ |
-| Public URL | _TODO: `https://<CLOUD_DOMAIN>/logistics/`_ |
-| Smoke output | _TODO: Student 5 PASS line from `cloud-smoke.txt` in the `cloud-deployment-<sha>` artifact_ |
-| Screenshot: Student 5 page on the public URL | _TODO: `cloud/01-logistics-page.png`_ |
-| Screenshot: advisory panel showing "AI disabled" | _TODO: `cloud/02-advisory-disabled.png`_ |
-| Screenshot: workflow run with the smoke step green | _TODO: `cloud/03-workflow-run.png`_ |
+| `cloud-deployment.yml` run | [39741981906](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39741981906), `workflow_dispatch` on `main`, 2026-10-22 07:39 UTC, **success** (5 min 21 s) |
+| Deployed revision | `851bdd7f4a7bc455e751b020c05a977608989e3a` (`revision.txt` in the artifact matches the run's head SHA) |
+| CI gate | Step "Require all CI for the deployed revision" (`assert-cloud-ci.ps1 -Sha $GITHUB_SHA`): success |
+| AI services | `prepare_cloud.py`: "Prepared 18 cloud services (AI disabled)". `ai-services.txt` is empty. The deployed `student5-backend` environment has `AI_ENABLED`, `MCP_ENABLED`, `RAG_ENABLED` and `MULTI_AGENT_ENABLED` all `false`, and every AI URL set to `http://127.0.0.1:9` (`cloud/02-cloud-run-39741981906-excerpt.txt`) |
+| Smoke output | Step "Verify public gateway and Student 1 to 5 CRUD": success. `cloud-smoke.txt` from the artifact `cloud-baseline-evidence-851bdd7…`: `PASS: Student 5 cloud profile and CRUD checks.` (all five students `PASS`; `cloud/03-cloud-smoke.txt`) |
+| Public URL | `https://asd-epic-assignment.duckdns.org/logistics/` (`CLOUD_DOMAIN` is a repository variable and is printed in the run log) |
+| Live read-only check, 2026-10-22 10:12 UTC | `cloud/04-public-url-readonly-check.txt`: page `200`, 12 destinations, weather and transit `200`, then `ai_disabled`, `mcp_disabled`, `rag_disabled` and `multi_agent_disabled`, each `503` in 0.14-0.22 s. Nothing was written. |
+| Screenshot: Student 5 page on the public URL | `cloud/05-public-logistics-page.jpg`: the page loaded with Japan selected in the trip form. The results row is squeezed to a sliver here (see the layout defect below); Japan's weather and entry records are visible in `06` and `07` |
+| Screenshot: advisory panel showing "AI disabled" | `cloud/06-advisory-disabled.jpg`: "AI advisories are switched off for this deployment (AI-Mode is disabled)." |
+| Screenshot: readiness review disabled | `cloud/07-multi-agent-disabled.jpg`: "Trip readiness reviews are switched off for this deployment (Multi-Agent is disabled)." |
+| Screenshot: workflow run | `cloud/08-workflow-run-summary.jpg` (Success, `851bdd7`, `main`, one artifact) and `cloud/09-workflow-smoke-step.jpg` (the CI gate and the smoke step green, with all five `PASS` lines) |
+
+Limits, stated as found:
+
+- **The deployed revision is one commit behind `main`.** `457b247` (PR #144) followed
+  `851bdd7` and changes no Student 5 file (`git diff --name-only 851bdd7 457b247`).
+  Four later dispatches failed within about 20 s, before any deploy step, so the
+  public URL still serves `851bdd7`. 39743453917 (`851bdd7`), 39744896831 and
+  39745249227 (`457b247`) stopped at "Require all CI for the deployed revision".
+  39747268117 (`457b247`) stopped at "Require protected AI credentials" with
+  `Set CLOUD_AUTH_USER ...`, an attempt at the optional protected-AI (bonus)
+  deployment. These belong to the cloud workflow owner. The run list, failed steps and error
+  lines are in `cloud/10-later-cloud-dispatches.txt`.
+- **Persistence and rollback are not shown here.** `cloud-smoke.txt` itself says
+  "Persistence across redeploy and rollback require separate evidence". That belongs
+  to the cloud workflow owner.
+- **The page screenshots also show a layout defect.** On a short viewport (about 790 px
+  high) the results row of the Student 5 page gets about 57 px, as in `05`. Collapsing the
+  trip form, as in `06`, raises it to about 200 px, and the advisory still scrolls inside a
+  small box. This is recorded in `known-issues.md`; it is not a cloud problem, and it
+  happens locally too.
+- **The screenshots are page captures without the browser's address bar.** The public URL
+  is shown by the read-only check (`cloud/04`). The "switched off for this deployment"
+  notices in `06` and `07` appear only where the AI flags are off, which locally they are not.
+- **Erratum in `cloud/02-cloud-run-39741981906-excerpt.txt`.** Its header line says "Secrets
+  (host, domain, credentials) are masked as *** by GitHub". That is wrong for the host and the
+  domain: `CLOUD_HOST`, `CLOUD_USER` and `CLOUD_DOMAIN` are repository variables and are
+  printed in clear in the run log. Credentials (`GH_TOKEN`, the SSH key, known hosts) are
+  masked. The file is left unchanged because the `review-cloud` record stores its hash.
 
 ## Workflow dependencies (owner: cloud workflow owner)
 

@@ -1,0 +1,15 @@
+## AI-Mode advisory (Student 5 -> native Ollama, llama3.2:3b)
+$ curl -sS -X POST http://localhost:5100/logistics/api/advisory -H 'Content-Type: application/json' -d '{"destination_id": 3, "month": "December", "interests": "street food and history"}'
+# sent 2026-10-22T10:00:19Z
+HTTP 200 in 3.390301s
+{
+  "advisory": "Dear Traveller,\n\nPacking\n- - Pack for both cool and drizzly winters in the north and hot and dry summers in the south\n- - Bring layers for comfort and flexibility\n- - Comfortable shoes for walking and exploring historical sites\n- - Reusable water bottle to stay hydrated\n\nDocuments\n- Apply for a Single or multiple entry eVisa online before your departure.\n- Carry a printed copy of the approval letter with you.\n\nTransit\n- Book your soft sleeper berths on the Reunification Express train in advance, several days ahead of your journey.\n\nBefore you leave, confirm entry requirements with Smartraveller to ensure a smooth trip.",
+  "destination": {
+    "country": "Vietnam",
+    "id": 3,
+    "notes": "Single and multiple entry eVisa applied for online before departure. Carry a printed copy of the approval letter.",
+    "visa_requirement": "eVisa"
+  },
+  "model": "llama3.2:3b"
+}
+

@@ -1,0 +1,10 @@
+# Host used for the local run, 2026-10-22T11:19:55Z
+$ ollama --version
+ollama version is 0.40.8
+$ nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv
+name, memory.total [MiB], driver_version
+NVIDIA RTX 2000 Ada Generation Laptop GPU, 8188 MiB, 596.71
+$ docker version --format '{{.Server.Version}}'
+29.8.2
+$ dotnet --version
+10.0.400

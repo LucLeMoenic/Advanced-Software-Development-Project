@@ -441,3 +441,75 @@ I accepted the review. Validation after the fixes:
 - pre-commit passed.
 
 Details are in `prompt-log.md` (Release 2, Chunk 5).
+
+## Release 2 - Chunk 6 review: local deployment, Multi-Agent and agentic-loop evidence
+
+Two kinds of review took place in this chunk.
+
+### Agentic-loop report reviews (the brief's three Release 2 modes)
+
+| Mode | Record | Reviewer verdict | Human decision (Alex Chen) | Why |
+|---|---|---|---|---|
+| `review-testing` | `docs/agentic-loop-records/20261022T102258Z-4f0d8097f2ce49c7b53f587589c6b9cc.json` | ACCEPT, 1 suggestion | `rejected` | The finding (database pytest floor 8.0) misread the report's "before" row. Both pins are `>=9.0.3,<10.0`, and pip-audit passed as the post-test. |
+| `review-cloud` | `docs/agentic-loop-records/20261022T102407Z-ab4cb094c4db4950a1e18263432f55d2.json` | ACCEPT, 1 suggestion | `changed` | The missing-screenshots finding was valid and was applied (`cloud/05`-`09`). Persistence/rollback evidence remains open, and the deployed `851bdd7` is one commit behind `main`. Both were already stated in the report; the loop did not raise them. |
+| `review-multi-agent` | `docs/agentic-loop-records/20261022T105130Z-7addf2c373e943898b24ab42ee3dbff4.json` | ACCEPT, 1 suggestion | `changed` | The finding ("the 3B Reviewer adds little") is true but out of Student 5's scope. It also copied a sentence of the report that the independent review later showed was wrong. The report was corrected afterwards. |
+
+Settings: `qwen2.5-coder:7b` implementer, `llama3.2:3b` reviewer, Ollama 0.40.8, temperature 0.
+
+The Student 5 reviewer prompt (`prompt-library/reviewer-llama32-v2.md`) failed twice in
+`review-testing`. The model copied its Example 2 finding under an ACCEPT verdict, so no record
+was written. The three records therefore use the shared `reviewer.md`. `review-multi-agent`
+failed twice with malformed findings before a reduced-context run produced a valid record.
+
+Records cannot be re-finalised. The cloud and multi-agent notes say gaps were "added by the
+human" when the reports already stated them. That correction is listed as an erratum in
+`evidence/release-2/loop/finalise-terminal.txt`. An AI coding assistant ran the loop and the
+`finalise` commands after Alex approved each decision and its notes. Full detail is in
+`evidence/release-2/loop/README.md`.
+
+### Independent AI review of the chunk's evidence
+
+Scope:
+
+- every changed and new file (`git status`, `git diff`), checked against the raw evidence:
+  workflow JSON, audit log, transcripts, loop records, CI/cloud logs and screenshots;
+- `.secrets.baseline`;
+- attribution wording, and whether the human decisions are represented honestly;
+- gaps against the brief.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| The multi-terminal logs were `*.log`, which `.gitignore` excludes, so the cited evidence would never be committed | Important | Fixed: renamed to `.txt`; references updated |
+| The Multi-Agent report said the automatic checks raised the Japan verdicts to `concerns`; it was the model's own warning | Important | Fixed in the report |
+| The report said no check caught the missing Smartraveller instruction; the Indonesia Reviewer did recommend it | Important | Fixed in the report |
+| The cloud and multi-agent finalise notes say gaps were "added by the human" that were already in the reports | Important | Erratum (records are immutable); README and this entry reworded |
+| Who typed and clicked was not shown; the finalise commands were missing from the transcript | Important | Fixed: "Who did what" in the reports, commands added to `finalise-terminal.txt`, `U-start.txt` header reworded |
+| No fully clicked-through UI run and no screenshot of the agents working | Important | Fixed: Thailand review run entirely in Chrome (`screenshots/04`-`08`), decided `partial` by Alex Chen |
+| Claims without a saved file (38-entry check, failed dispatches, other CI runs, GPU) | Minor | Fixed: `cloud/10`, `endpoint-tests/11`, `local/09`; the 38-entry check is labelled as not saved |
+| `cloud/02` header says the host and domain are masked | Minor | Erratum in the cloud report (file kept for its recorded hash) |
+| Screenshot 05 description and the viewport figures were inconsistent | Minor | Fixed in all three docs |
+| No local CRUD evidence; no Chunk 6 log entries | Minor | Fixed: `local/08` CRUD through the gateway; this entry and `prompt-log.md` |
+| Nits: decision storage wording, the 16 s timing, the `U-poll.txt` header, the attempt-2 wording | Nit | All fixed |
+
+The reviewer confirmed:
+
+- the `.secrets.baseline` diff is additions only, and every entry is a SHA-256 digest (matching
+  a fresh scan);
+- no credentials appear in the new files;
+- no AI brand or attribution strings appear;
+- the stage timings, run ids, SHAs, counts and hashes in the reports are correct.
+
+Not fixed, and stated as limits:
+
+- terminals 1 and 2 ran as background processes, so there is no screenshot of visible windows;
+- `reject` was not used on a real review;
+- the cloud persistence/rollback evidence belongs to the cloud workflow owner.
+
+I accepted the review. Validation after the fixes:
+
+- final `GET /audit/verify` valid with 50 entries, and the committed copy re-verified offline;
+- only the three documented reports differ from their recorded loop hashes;
+- database 26, backend 199, MCP logistics 34 and RAG student-5 retrieval 17 tests passed;
+- pre-commit passed (detect-secrets Passed; Ruff and pip-audit had no files to check).
+
+Details are in `prompt-log.md` (Release 2, Chunk 6).

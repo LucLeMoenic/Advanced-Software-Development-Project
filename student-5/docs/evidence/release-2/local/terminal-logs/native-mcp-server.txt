@@ -1,0 +1,32 @@
+# Native MCP server started by start-release1.ps1 (Start-Process, output redirected). stdout then stderr, unmodified; no timestamps.
+# Copied 2026-10-22T10:24:43Z from %TEMP%\asd-release1$n.log and mcp.err.log
+## stdout
+INFO:     127.0.0.1:59381 - "GET /mcp HTTP/1.1" 406 Not Acceptable
+INFO:     127.0.0.1:51860 - "GET /mcp HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:51873 - "GET /mcp HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:51883 - "GET /mcp HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:51895 - "GET /mcp HTTP/1.1" 400 Bad Request
+INFO:     127.0.0.1:51912 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51914 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51913 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:51915 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51917 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51918 - "DELETE /mcp HTTP/1.1" 200 OK
+## stderr
+INFO:     Started server process [15900]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5400 (Press CTRL+C to quit)
+Created new transport with session ID: ae8fe208691a44aaa07b5809d14a8827
+Terminating session: ae8fe208691a44aaa07b5809d14a8827
+Created new transport with session ID: be6e6bb5df9441fb9d117b7d0b52e813
+Terminating session: be6e6bb5df9441fb9d117b7d0b52e813
+Created new transport with session ID: 5f8e22f14e424052a05df21e807be83f
+Terminating session: 5f8e22f14e424052a05df21e807be83f
+Created new transport with session ID: 3c80eb5e0dc3490988184f3490706a52
+Terminating session: 3c80eb5e0dc3490988184f3490706a52
+Created new transport with session ID: 8d22e841ebe54ea1a3a82049b11f29c5
+Terminating session: 8d22e841ebe54ea1a3a82049b11f29c5
+Created new transport with session ID: a175380823984147b70561e1dfa0efbe
+Terminating session: a175380823984147b70561e1dfa0efbe

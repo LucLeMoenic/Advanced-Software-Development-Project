@@ -507,3 +507,122 @@ Write the cloud-deployment report section and a message for the cloud owner.
 | Pre-commit hooks on the changed files | Ruff security rules Passed; detect-secrets Passed; pip-audit Skipped (no requirements changed) |
 | Local stack restored | backend recreated from `.env` (`AI_ENABLED=true`, MCP/RAG `true`, Multi-Agent `false`) |
 | `cloud-deployment.yml` run | Not yet run: needs merge to `main` and the cloud owner to dispatch it. To be added to the cloud-deployment report. |
+
+### Chunk 6 - Local deployment, Multi-Agent workflow and agentic-loop review evidence, 22 October 2026
+
+**Why:** the Release 2 brief requires real evidence of the integrated local run with the
+native Multi-Agent Server (multi-terminal logs), a completed Planner -> Worker -> Reviewer ->
+Human Review workflow from both the UI and the terminal with audit verification, and the
+three agentic-loop review modes with their review logs. Chunks 2-5 had built and tested the
+pieces; none of this had been run end to end with real decisions.
+
+**Prompt (summary):** "Chunk 6 of my plan". Start Ollama, MCP and RAG with
+`start-release1.ps1` and the Multi-Agent Server with `start-multi-agent.ps1`, without piping
+either. Bring the stack up with `MULTI_AGENT_ENABLED=true`. Capture health checks, an advisory,
+an MCP call and a RAG answer through `:5100/logistics/`. Run one readiness review from the UI
+and one from `cli.py` with Student 5 evidence. Copy the workflow and audit records and capture
+`GET /audit/verify`. Run `review-multi-agent`, `review-testing` and `review-cloud` with
+`qwen2.5-coder:7b` / `llama3.2:3b` and my reviewer prompt, then `finalise` each. Write the
+Multi-Agent and local deployment reports, modelled on Student 3's. Never fabricate output, and
+leave the human decisions to me. Later: take the screenshots in Chrome and finish the chunk end
+to end.
+
+**AI-assisted work (no application code changed):**
+
+- **Local run:**
+  - The launcher ran unpiped. Its transcript is `local/01`. MCP, RAG, Multi-Agent and Compose
+    logs are in `local/terminal-logs/`.
+  - Health checks for the four native services and the Student 5 containers (`local/02`).
+  - Advisory, MCP and RAG calls through the gateway (`local/03`-`05`).
+  - Local CRUD through the gateway (`local/08`) and host information (`local/09`).
+  - Chrome screenshots of the integrated page (`local/06`-`07`).
+- **Multi-Agent:**
+  - A terminal run with an evidence file built by the backend's own `build_evidence()`
+    (Vietnam).
+  - A UI review started over HTTP and decided in Chrome (Indonesia).
+  - A review run fully in Chrome (Thailand).
+  - Five workflow records and the 50-entry audit log copied to
+    `multi-agent-server/workflow-data/`, with transcripts and 8 screenshots.
+- **Loop:**
+  - Three records, the failed attempts, the finalise transcript and the record copies are in
+    `loop/`.
+  - The records are in `docs/agentic-loop-records/20261022T10{2258,2407,5130}Z-*.json`.
+- **Reports:**
+  - New: `multi-agent-server-report.md` and `local-deployment-report.md`.
+  - Placeholders filled with the real runs:
+    - `endpoint-testing-report.md`: runs 39697590918 and 39698558980, the JUnit artifact,
+      and CI screenshots.
+    - `cloud-deployment-report.md`: run 39741981906 at `851bdd7`, the artifact, a read-only
+      check of the public URL, and 5 screenshots.
+  - These were needed before `review-testing` and `review-cloud`, whose criteria reject
+    placeholders.
+- **Other:**
+  - `known-issues.md`: new Release 2 section.
+  - `.secrets.baseline`: 87 SHA-256 digests in the new loop records and audit log, added as
+    audited false positives, following the existing records' precedent. Additions only.
+
+**Human decisions (Alex Chen):** an AI coding assistant prepared a recommendation for each
+decision. Alex approved each one before it was entered by the assistant (the CLI, Chrome form
+and `finalise` commands):
+
+- Vietnam `partial`, keeping i1, i3 and i4;
+- Indonesia `correct`, all five items rewritten as actions;
+- Thailand `partial`, keeping i1-i4;
+- `review-testing` `rejected` (false-positive finding);
+- `review-cloud` `changed`;
+- `review-multi-agent` `changed`, by a rule Alex set in advance: `kept` / `changed` /
+  `rejected` depending on whether the findings are correct.
+
+**Corrections during the session:**
+
+- The first health capture labelled MCP "406 = up". The server answered `400 Missing session
+  ID`, which is also a valid transport-up reply. The capture also had a broken pipe in it, so
+  it was re-run.
+- The first cloud draft claimed the domain was a hidden secret, then "five commits" behind
+  main, and that all later dispatches failed at the protected-AI step. All three claims were
+  wrong. It is a repository variable. The deployed revision is one commit behind. Three
+  dispatches failed at the CI gate and one at the protected-AI step.
+- The local report gave the wrong Ollama version (0.34; it is 0.40.8) and container count (16;
+  it is 17).
+- It also claimed, unchecked, that two output defects were "not new in Release 2". That claim
+  was removed.
+- Hash check: comparing lowercase digests with the loop's uppercase `Convert.ToHexString`
+  output first made every file look changed.
+- `.secrets.baseline`: the first regeneration re-sorted it (361 deletions). It was redone as
+  additions only, with forward-slash filenames like the existing entries.
+- A Thailand review was first refused with `multi_agent_disabled`. The backend had just been
+  restored from `.env`, so the refusal was correct. The backend was recreated with the flag on
+  before the real run.
+- After the independent review:
+  - the multi-terminal logs were renamed from `.log` to `.txt`, because `.gitignore` excludes
+    `*.log`;
+  - the report wrongly said the automatic checks raised the Japan verdicts; the model's own
+    warning did. This was corrected;
+  - the report missed that the Indonesia Reviewer did recommend Smartraveller. This was added;
+  - claims with no saved file now have one: `cloud/10`, `endpoint-tests/11`, `local/09`;
+  - the screenshot 05 description and the viewport wording were fixed;
+  - an erratum was added for the `cloud/02` header;
+  - "Who did what" sections were added;
+  - the finalise commands were added to their transcript, with errata for notes that cannot be
+    re-finalised;
+  - the fully browser-driven Thailand run and the local CRUD check were added.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Native services | Ollama `200` (0.40.8, `llama3.2:3b` loaded), MCP `400` transport up, RAG `ok`, Multi-Agent `ok` |
+| Student 5 containers | frontend, backend, database and gateway `healthy`; backend env shows all four flags `true` |
+| Launcher exit code | `1`, from its own Student 2 probe (an exact-dict comparison fails once `multiAgentEnabled` is present); all services were up. Shared script, not changed |
+| Advisory / MCP / RAG through `:5100/logistics/` | `200` in 3.4 s (`llama3.2:3b`) / `200` in 0.38 s (`ok: true`) / `200` in 2.7 s (2 citations, low confidence) |
+| Local CRUD through the gateway | `201`, `200`, `200`, `200`, `204`, `404`; 12 destinations before and after |
+| Multi-Agent runs | Vietnam (terminal) 14 s, Indonesia 17 s, Thailand (browser) 22 s to `awaiting_human_review` |
+| `GET /audit/verify` (final) | `{"valid": true, "entries": 50, "broken_at": null}`; committed copy re-verified offline: same |
+| `review-testing` | 2 failed attempts with `reviewer-llama32-v2.md` (example echoed, no record); record `20261022T102258Z-4f0d8097...` with the shared prompt, ACCEPT, finalised `rejected` |
+| `review-cloud` | record `20261022T102407Z-ab4cb094...`, ACCEPT, finalised `changed` |
+| `review-multi-agent` | 2 malformed attempts (no record); record `20261022T105130Z-7addf2c3...` with reduced context, ACCEPT, finalised `changed` |
+| Evidence hashes | 3 reviewed reports edited after review (documented); all other reviewed files match |
+| Full Student 5 suites | database 26, backend 199, MCP logistics 34, RAG student-5 retrieval 17 passed |
+| Independent AI review | 6 important, 4 minor and 4 nit findings; all acted on. Terminals 1-2 running in the background stays a stated limit. See `review-record.md` (Release 2 - Chunk 6) |
+| Pre-commit hooks on the changed files | Ruff security rules Skipped (no Python files); detect-secrets Passed; pip-audit Skipped (no requirements changed) |
+| Local stack afterwards | `student5-backend` left with `MULTI_AGENT_ENABLED=true` (shell override) for further runs; `.env` unchanged |

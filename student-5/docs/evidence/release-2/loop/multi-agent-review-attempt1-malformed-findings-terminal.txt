@@ -1,0 +1,75 @@
+# Terminal 4 (repo root), 2026-10-22T10:47:06Z. IMPLEMENTER_MODEL=qwen2.5-coder:7b REVIEWER_MODEL=llama3.2:3b OLLAMA_URL=http://127.0.0.1:11434
+# Reviewer prompt: shared default ai-services/agentic-loop/prompts/reviewer.md (see testing-review attempts 1-2)
+$ dotnet run --project ai-services/agentic-loop -- review-multi-agent --task "Review Student 5 (Travel Logistics & Advisory) Release 2 Multi-Agent workflow evidence: the multi-agent report covering two Chunk 2 UI workflows and two Chunk 6 workflows (one from the Student 5 UI, decided as a correction; one from the terminal with cli.py, decided as a partial acceptance), the terminal run and decision transcripts and the audit-chain verification. Check roles, evidence boundaries, human decisions and audit verification, and recommend report corrections." --context student-5/docs/evidence/release-2/multi-agent-server-report.md --context student-5/docs/evidence/release-2/multi-agent-server/transcripts/T-run.txt --context student-5/docs/evidence/release-2/multi-agent-server/transcripts/T-decide-audit-verify.txt --context student-5/docs/evidence/release-2/multi-agent-server/transcripts/audit-verify-final.txt --context student-5/docs/evidence/release-2/multi-agent-server/transcripts/U-start.txt
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal: Review the Student 5 (Travel Logistics & Advisory) Release 2 Multi-Agent workflow evidence and recommend corrections.
+Requirements:
+- Verify the roles and evidence boundaries.
+- Ensure human decisions and audit verification are accurate.
+- Identify any missing or failed evidence.
+- Propose corrective actions without modifying source files.
+Files:
+- student-5/docs/evidence/release-2/multi-agent-server-report.md
+- student-5/docs/evidence/release-2/multi-agent-server/transcripts/T-run.txt
+- student-5/docs/evidence/release-2/multi-agent-server/transcripts/T-decide-audit-verify.txt
+- student-5/docs/evidence/release-2/multi-agent-server/transcripts/audit-verify-final.txt
+- ai-services/agentic-loop/prompts/review-multi-agent-v1.txt
+Steps:
+1. Review the multi-agent report for roles and evidence boundaries.
+2. Check the human decisions and audit verification.
+3. Identify any missing or failed evidence.
+4. Propose corrective actions.
+Risks:
+- Incorrectly identifying or missing evidence.
+- Proposing changes that do not address the root cause.
+Validation:
+- Manually verify the proposed corrections.
+- Ensure the audit verification is valid.
+- Confirm that the human decisions are accurate.
+
+[ACT]
+Proposed change:
+1. Review the multi-agent report for roles and evidence boundaries.
+2. Check the human decisions and audit verification.
+3. Identify any missing or failed evidence.
+4. Propose corrective actions.
+
+Unresolved:
+- Manually verify the proposed corrections.
+- Ensure the audit verification is valid.
+- Confirm that the human decisions are accurate.
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: ACCEPT
+
+Findings:
+- Severity: SUGGESTION
+  - The 3B Reviewer adds little to the review process, as it restates the items as `info` findings or repeats the automatic warnings. The deterministic checks and the human decision are the controls that caught real problems.
+- Severity: SUGGESTION
+  - Schema validity is not truth. Citing the right evidence id did not stop the Planner's "cool and dry" error, or `i2` dropping half its record. Only the human review caught them.
+- Severity: SUGGESTION
+  - The UI review was started from the terminal, then decided in Chrome. The start and poll requests are the page's own HTMX requests, sent from Git Bash. Later, the page had no control to reopen an existing review, so the page's own `htmx.ajax` issued the same poll request into the panel. The decision was then entered and submitted by clicking. There is no screenshot of the agents running, because that review finished within 17 s, before the first poll.
+- Severity: SUGGESTION
+  - The Chunk 2 decisions have weak attribution. `6cded4a6` was approved through `cli.py` with its default `decided_by: terminal-reviewer` and no notes. On `96e03a60` the reason ("The reviewer raises a valid warning for item 2") was typed into **Decided by**, and **Notes** is empty. Both are kept unchanged. The Chunk 6 decisions name Alex Chen and give reasons. A clearer label for the field is noted in `known-issues.md`.
+- Severity: SUGGESTION
+  - The Multi-Agent Server was restarted once, between the runs and the decisions (see the local deployment report). Both waiting records survived, and the chain stayed valid.
+- Severity: SUGGESTION
+  - Single model, one workflow at a time, file-backed. This is local evidence only: Multi-Agent is disabled in the cloud baseline (`cloud/07-multi-agent-disabled.jpg`).
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: ACCEPT
+
+Findings:
+- Severity: SUGGESTION - The 3B Reviewer adds little. On every run it restated the items as `info` findings or repeated the automatic warnings. It said `pass` on all four runs, and the automatic checks raised three of them to `concerns`. The deterministic checks and the human decision are the controls that caught real problems.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+error: Reviewer findings must use a valid Severity field or state - None.
+exit=1

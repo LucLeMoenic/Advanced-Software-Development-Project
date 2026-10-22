@@ -1,0 +1,1252 @@
+# Terminal 1: pwsh -NoProfile -File scripts/deploy/start-release1.ps1
+# Shell env set first: MULTI_AGENT_ENABLED=true, MULTI_AGENT_SERVER_URL=http://host.docker.internal:5600
+# Captured unmodified from the launcher's console output, 2026-10-22. Exit code: 1 (see the end).
+
+Docker engine is not running. Restarting Docker Desktop and clearing stale sockets...
+  Moved stale sockets out of C:\Users\Alex.Chen\AppData\Local\Docker\run
+  Moved stale sockets out of C:\Users\Alex.Chen\AppData\Local\docker-secrets-engine
+Docker engine is running.
+Starting native services (not containerised)...
+  Ollama is already running.
+  llama3.2:3b is loaded.
+
+[notice] A new release of pip is available: 24.3.1 -> 26.2.2
+[notice] To update, run: C:\Users\Alex.Chen\source\repos\venv-mcp\Scripts\python.exe -m pip install --upgrade pip
+
+[notice] A new release of pip is available: 24.3.1 -> 26.2.2
+[notice] To update, run: C:\Users\Alex.Chen\source\repos\venv-rag\Scripts\python.exe -m pip install --upgrade pip
+  MCP server is ready at http://127.0.0.1:5400/mcp
+  RAG server is ready at http://127.0.0.1:5500/health
+Starting all Docker Compose services with MCP and RAG enabled (first build takes a few minutes)...
+ Image advanced-software-development-project-student3-frontend Building 
+ Image advanced-software-development-project-student2-backend Building 
+ Image advanced-software-development-project-student5-frontend Building 
+ Image advanced-software-development-project-student5-database Building 
+ Image advanced-software-development-project-student4-backend Building 
+ Image advanced-software-development-project-student2-frontend Building 
+ Image advanced-software-development-project-student1-backend Building 
+ Image advanced-software-development-project-student4-frontend Building 
+ Image advanced-software-development-project-student3-db-init Building 
+ Image advanced-software-development-project-student2-database Building 
+ Image advanced-software-development-project-student3-backend Building 
+ Image advanced-software-development-project-student4-database Building 
+ Image advanced-software-development-project-student3-database Building 
+ Image advanced-software-development-project-student5-backend Building 
+ Image advanced-software-development-project-student1-database Building 
+ Image advanced-software-development-project-shared-frontend Building 
+ Image advanced-software-development-project-student1-frontend Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 11.25kB done
+#1 DONE 0.0s
+
+#2 [student3-db-init internal] load build definition from Dockerfile
+#2 transferring dockerfile: 30B
+#2 ...
+
+#3 [student4-backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 557B 0.1s done
+#3 DONE 0.2s
+
+#2 [student3-db-init internal] load build definition from Dockerfile
+#2 transferring dockerfile: 266B 0.1s done
+#2 DONE 0.2s
+
+#4 [student4-database internal] load build definition from Dockerfile
+#4 transferring dockerfile: 579B 0.1s done
+#4 DONE 0.2s
+
+#5 [student5-frontend internal] load build definition from Dockerfile
+#5 transferring dockerfile: 524B 0.1s done
+#5 DONE 0.3s
+
+#6 [student1-frontend internal] load build definition from Dockerfile
+#6 transferring dockerfile: 288B 0.1s done
+#6 DONE 0.3s
+
+#7 [student2-backend internal] load build definition from Dockerfile
+#7 transferring dockerfile: 1.27kB 0.1s done
+#7 DONE 0.3s
+
+#8 [student5-database internal] load build definition from Dockerfile
+#8 transferring dockerfile: 816B 0.1s done
+#8 DONE 0.3s
+
+#9 [student3-backend internal] load build definition from Dockerfile
+#9 transferring dockerfile: 226B 0.1s done
+#9 DONE 0.3s
+
+#10 [student2-backend internal] load metadata for docker.io/library/python:3.11-slim
+#10 DONE 0.2s
+
+#11 [student5-backend internal] load build definition from Dockerfile
+#11 transferring dockerfile: 1.06kB 0.0s done
+#11 DONE 0.4s
+
+#12 [student1-backend internal] load build definition from Dockerfile
+#12 transferring dockerfile: 584B 0.1s done
+#12 DONE 0.4s
+
+#13 [shared-frontend internal] load build definition from Dockerfile
+#13 transferring dockerfile: 444B 0.1s done
+#13 DONE 0.4s
+
+#14 [student2-frontend internal] load build definition from Dockerfile
+#14 transferring dockerfile: 435B 0.1s done
+#14 DONE 0.4s
+
+#15 [student5-backend internal] load .dockerignore
+#15 DONE 0.0s
+
+#16 [student3-db-init internal] load .dockerignore
+#16 DONE 0.0s
+
+#17 [student5-database internal] load .dockerignore
+#17 DONE 0.0s
+
+#18 [student2-database internal] load build definition from Dockerfile
+#18 transferring dockerfile: 373B 0.1s done
+#18 DONE 0.4s
+
+#19 [shared-frontend internal] load metadata for docker.io/library/nginx:stable-alpine
+#19 ...
+
+#20 [student3-frontend internal] load build definition from Dockerfile
+#20 transferring dockerfile: 215B 0.0s done
+#20 DONE 0.5s
+
+#21 [student4-frontend internal] load build definition from Dockerfile
+#21 transferring dockerfile: 420B 0.1s done
+#21 DONE 0.5s
+
+#22 [student1-database internal] load build definition from Dockerfile
+#22 transferring dockerfile: 609B 0.1s done
+#22 DONE 0.5s
+
+#23 [student2-backend 1/7] FROM docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d
+#23 resolve docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d 0.1s done
+#23 DONE 0.1s
+
+#10 [student2-database internal] load metadata for docker.io/library/python:3.11-slim
+#10 DONE 0.3s
+
+#16 [student3-database internal] load .dockerignore
+#16 transferring context: 2B done
+#16 DONE 0.1s
+
+#24 [student3-backend internal] load .dockerignore
+#24 transferring context: 2B done
+#24 DONE 0.1s
+
+#17 [student5-database internal] load .dockerignore
+#17 transferring context: 2B done
+#17 DONE 0.2s
+
+#25 [student2-backend internal] load build context
+#25 transferring context: 712B 0.0s done
+#25 DONE 0.1s
+
+#15 [student5-backend internal] load .dockerignore
+#15 transferring context: 2B done
+#15 DONE 0.2s
+
+#23 [student5-backend 1/7] FROM docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d
+#23 resolve docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d 0.1s done
+#23 DONE 0.1s
+
+#26 [student2-backend 5/7] COPY student-2/backend/app.py student-2/backend/ai_clients.py student-2/backend/itinerary_review.py student-2/backend/multi_agent.py ./
+#26 CACHED
+
+#27 [student2-backend 2/7] WORKDIR /app
+#27 CACHED
+
+#28 [student2-backend 6/7] COPY student-2/backend/prompts ./prompts
+#28 CACHED
+
+#29 [student2-backend 3/7] COPY student-2/backend/requirements.txt .
+#29 CACHED
+
+#30 [student2-backend 4/7] RUN pip install --no-cache-dir -r requirements.txt
+#30 CACHED
+
+#31 [student2-backend 7/7] COPY ai-services/agentic-loop/prompts/itinerary-review-v1.txt ai-services/agentic-loop/prompts/itinerary-edit-v1.txt ./prompts/
+#31 CACHED
+
+#32 [student3-database internal] load build context
+#32 ...
+
+#23 [student2-database 1/7] FROM docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d
+#23 resolve docker.io/library/python:3.11-slim@sha256:3c1dfceb3f1267d4d378e7883cddf35c58757bab98d70bba30b6e02e808fa21d 0.1s done
+#23 DONE 0.1s
+
+#33 [student2-database internal] load .dockerignore
+#33 transferring context: 2B done
+#33 DONE 0.1s
+
+#34 [student5-database internal] load build context
+#34 transferring context: 746B 0.1s done
+#34 DONE 0.1s
+
+#35 [student3-backend internal] load build context
+#35 transferring context: 36.29kB 0.1s done
+#35 DONE 0.2s
+
+#32 [student3-database internal] load build context
+#32 transferring context: 29.01kB 0.1s done
+#32 DONE 0.2s
+
+#36 [student5-backend internal] load build context
+#36 transferring context: 2.31kB 0.0s done
+#36 DONE 0.2s
+
+#37 [student2-database internal] load build context
+#37 transferring context: 37.42kB 0.0s done
+#37 DONE 0.1s
+
+#38 [student2-backend] exporting to image
+#38 exporting layers done
+#38 exporting manifest sha256:59c051d07b48d359b578b54d94060999a31d4eee79a151b89d62230950ea8fb1 done
+#38 exporting config sha256:49ba722fb4370577578b1efd7404c8fc9371f9899bc78331f3eddeb41c6cda61 done
+#38 exporting attestation manifest sha256:86dee0463a79c712ffc352eaaf209a1fe8df8530b825aa24b89d8e823691809e 0.1s done
+#38 exporting manifest list sha256:a620ed43de82bd716b8b27736730c1a8eb1db87141a0461e6487a862fe22abef 0.0s done
+#38 naming to docker.io/library/advanced-software-development-project-student2-backend:latest 0.0s done
+#38 unpacking to docker.io/library/advanced-software-development-project-student2-backend:latest 0.0s done
+#38 DONE 0.3s
+
+#39 [student1-database internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#39 ...
+
+#40 [student5-database 3/7] COPY requirements.txt .
+#40 CACHED
+
+#41 [student5-database 5/7] COPY app.py schema.sql seed.sql ./
+#41 CACHED
+
+#42 [student5-database 4/7] RUN pip install --no-cache-dir -r requirements.txt
+#42 CACHED
+
+#43 [student5-database 6/7] COPY tests ./tests
+#43 CACHED
+
+#44 [student5-database 7/7] RUN mkdir -p /data
+#44 CACHED
+
+#27 [student3-backend 2/7] WORKDIR /app
+#27 CACHED
+
+#45 [student3-backend 3/5] COPY requirements.txt .
+#45 CACHED
+
+#46 [student3-backend 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#46 CACHED
+
+#47 [student5-backend 5/7] COPY app.py db_client.py ollama_client.py advisory.py ui.py integrations.py mcp_client.py rag_client.py      multi_agent_client.py readiness.py ./
+#47 CACHED
+
+#48 [student5-backend 6/7] COPY templates ./templates
+#48 CACHED
+
+#49 [student5-backend 4/7] RUN pip install --no-cache-dir -r requirements.txt
+#49 CACHED
+
+#50 [student5-backend 3/7] COPY requirements.txt .
+#50 CACHED
+
+#51 [student3-db-init 3/5] COPY requirements.txt .
+#51 CACHED
+
+#52 [student3-db-init 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#52 CACHED
+
+#27 [student3-db-init 2/7] WORKDIR /app
+#27 CACHED
+
+#53 [student2-database 4/5] RUN pip install --no-cache-dir -r requirements.txt
+#53 CACHED
+
+#54 [student2-database 3/5] COPY requirements.txt .
+#54 CACHED
+
+#55 [student3-backend 5/5] COPY . .
+#55 CACHED
+
+#39 [student1-database internal] load metadata for mcr.microsoft.com/dotnet/sdk:8.0
+#39 DONE 1.0s
+
+#56 [student2-database 5/5] COPY app.py .
+#56 CACHED
+
+#57 [student1-database internal] load metadata for mcr.microsoft.com/dotnet/aspnet:8.0
+#57 DONE 1.0s
+
+#58 [student3-db-init 5/5] COPY . .
+#58 CACHED
+
+#59 [student5-backend 7/7] COPY tests ./tests
+#59 CACHED
+
+#60 [student5-backend] exporting to image
+#60 exporting layers 0.0s done
+#60 exporting manifest sha256:ffdd132408f776ec31edf9894cd889138d22cecf0bca4c1af0d742e980640c9d
+#60 ...
+
+#61 [student4-database internal] load .dockerignore
+#61 transferring context: 64B 0.0s done
+#61 DONE 0.1s
+
+#62 [student1-backend internal] load .dockerignore
+#62 transferring context: 57B 0.0s done
+#62 DONE 0.2s
+
+#63 [student4-database internal] load build context
+#63 DONE 0.0s
+
+#64 [student1-database internal] load .dockerignore
+#64 transferring context: 83B 0.0s done
+#64 DONE 0.2s
+
+#60 [student5-backend] exporting to image
+#60 exporting manifest sha256:ffdd132408f776ec31edf9894cd889138d22cecf0bca4c1af0d742e980640c9d 0.1s done
+#60 exporting config sha256:dbeda7d6a94b2c3d2108c9db1c5463a77eb86d764d2e75d9c2b3256542c661ff
+#60 ...
+
+#65 [student1-backend internal] load build context
+#65 DONE 0.0s
+
+#66 [student4-backend internal] load .dockerignore
+#66 transferring context: 55B 0.0s done
+#66 DONE 0.2s
+
+#67 [student1-database internal] load build context
+#67 DONE 0.0s
+
+#68 [student4-backend internal] load build context
+#68 DONE 0.0s
+
+#60 [student5-backend] exporting to image
+#60 exporting config sha256:dbeda7d6a94b2c3d2108c9db1c5463a77eb86d764d2e75d9c2b3256542c661ff 0.1s done
+#60 exporting attestation manifest sha256:36b53d2bcf8889cf93966d02e17df7c242beda9a6e460cb0a71513944b84848c
+#60 ...
+
+#69 [auth] library/node:pull token for registry-1.docker.io
+#69 DONE 0.0s
+
+#70 [auth] library/nginx:pull token for registry-1.docker.io
+#70 DONE 0.0s
+
+#71 [student2-database] exporting to image
+#71 exporting layers 0.0s done
+#71 exporting manifest sha256:672e2a22e2ab7c67f307e5049ad18230f131cd40adcb46e5d29aee3f40d6e028 0.0s done
+#71 exporting config sha256:e908f53f0556f2b00dd8cee0016c0bfab11a5dcd16d6288b4f1a19038b2357d9 0.1s done
+#71 exporting attestation manifest sha256:998f9ff1dcc2dbc77363d9ff27fe966dc83605007ac36dbfafd085bf444279ce 0.3s done
+#71 exporting manifest list sha256:451f8b2b9931ae7cfcf32b55190d1bbb767968d930988564b73c3adca35f858d
+#71 ...
+
+#72 [student1-database stage-1 1/4] FROM mcr.microsoft.com/dotnet/aspnet:8.0@sha256:74a1d7c07211a7e8a2e35ff3c70ed8e4e1d6451a1ff7cf7bdf526f9eafa23023
+#72 resolve mcr.microsoft.com/dotnet/aspnet:8.0@sha256:74a1d7c07211a7e8a2e35ff3c70ed8e4e1d6451a1ff7cf7bdf526f9eafa23023 0.7s done
+#72 DONE 0.8s
+
+#71 [student2-database] exporting to image
+#71 exporting manifest list sha256:451f8b2b9931ae7cfcf32b55190d1bbb767968d930988564b73c3adca35f858d 0.3s done
+#71 naming to docker.io/library/advanced-software-development-project-student2-database:latest
+#71 ...
+
+#73 [student4-backend build 1/6] FROM mcr.microsoft.com/dotnet/sdk:8.0@sha256:738f72aff955d5c5690e06b6fc8ecd1b90ead564099a257ac528ff720b8da85f
+#73 resolve mcr.microsoft.com/dotnet/sdk:8.0@sha256:738f72aff955d5c5690e06b6fc8ecd1b90ead564099a257ac528ff720b8da85f 0.8s done
+#73 DONE 0.9s
+
+#68 [student4-backend internal] load build context
+#68 ...
+
+#74 [student5-database] exporting to image
+#74 exporting layers done
+#74 exporting manifest sha256:481976d31797af9c8737ee2a1410a628715458e00e8935ef9f6a7129e2e3f22b 0.0s done
+#74 exporting config sha256:cf9b3ebaecebc4a4fe0ace413322b300fe819f2a5be4e60833c6b53c1efd7222 done
+#74 exporting attestation manifest sha256:a5789cf92c784bee9f44ab44932d32c7820647d3e97a6d73bc1eaeca2430cb28 0.4s done
+#74 exporting manifest list sha256:8e73abacaacb0664a601b24bbaf1b4a3fc0c50211304341a5839acbe8b75639e 0.3s done
+#74 naming to docker.io/library/advanced-software-development-project-student5-database:latest 0.1s done
+#74 unpacking to docker.io/library/advanced-software-development-project-student5-database:latest 0.1s done
+#74 DONE 1.3s
+
+#71 [student2-database] exporting to image
+#71 naming to docker.io/library/advanced-software-development-project-student2-database:latest 0.1s done
+#71 unpacking to docker.io/library/advanced-software-development-project-student2-database:latest 0.1s done
+#71 DONE 1.3s
+
+#75 [student3-database] exporting to image
+#75 exporting layers done
+#75 exporting manifest sha256:edb74936fd504a0e16cdd74f9f171e1796828036e15c49fce17347961b7e6a8b 0.0s done
+#75 exporting config sha256:e48669c618eb5ec88311cf5fc2ceea818f9a9fa5a123cc4fec8dba03bb1db100 0.1s done
+#75 exporting attestation manifest sha256:0b1e00b9952f6f388e62ee2eaeb2516775b9125922133a3a8faf87fbd187a909 0.4s done
+#75 exporting manifest list sha256:9fce687fb9f64ed89a7986dd6291fd2bbff6126b3f8a5dc1e1f348cabd27fef6 0.2s done
+#75 naming to docker.io/library/advanced-software-development-project-student3-database:latest 0.0s done
+#75 unpacking to docker.io/library/advanced-software-development-project-student3-database:latest 0.1s done
+#75 DONE 1.3s
+
+#63 [student4-database internal] load build context
+#63 transferring context: 42.65kB 0.2s done
+#63 DONE 0.3s
+
+#76 [student3-backend] exporting to image
+#76 exporting layers 0.0s done
+#76 exporting manifest sha256:b268b570d7f1f5a145f5549c4ac51ff376d72427cdde9aa211171abca3161c4d 0.0s done
+#76 exporting config sha256:d6e22e71f1a5776ba461828a4acb1546caec7522ac911d5e4c1bafe874aa4d28 0.1s done
+#76 exporting attestation manifest sha256:8c24c38510ab7a7705bb2c8543eb1855053f5eed98d34796a18c128612245ae8 0.4s done
+#76 exporting manifest list sha256:d16eb0c29f9b7b58388c7c928a4adaba163c5f4c0d2cdfe74119e553d24da40f 0.2s done
+#76 naming to docker.io/library/advanced-software-development-project-student3-backend:latest 0.1s done
+#76 unpacking to docker.io/library/advanced-software-development-project-student3-backend:latest 0.1s done
+#76 DONE 1.3s
+
+#60 [student5-backend] exporting to image
+#60 exporting attestation manifest sha256:36b53d2bcf8889cf93966d02e17df7c242beda9a6e460cb0a71513944b84848c 0.4s done
+#60 exporting manifest list sha256:96386a8168c52260ab0f4b4553fc560bb65396315afe7dd39c031af610350409 0.2s done
+#60 naming to docker.io/library/advanced-software-development-project-student5-backend:latest 0.1s done
+#60 unpacking to docker.io/library/advanced-software-development-project-student5-backend:latest 0.1s done
+#60 DONE 1.3s
+
+#77 [student3-db-init] exporting to image
+#77 exporting layers done
+#77 exporting manifest sha256:95237cfce47fc246587df5861bf13e56cb940db843f826a8dcb56fa28b6faddb 0.1s done
+#77 exporting config sha256:62e56aff8eeb42be3a2ee879b7182b5f6f7b678383e8adf254ec6923866a6339 0.1s done
+#77 exporting attestation manifest sha256:221ef3473f50f36e3ea12e62c8ee6b69a6303048957857048058e07321242c24 0.4s done
+#77 exporting manifest list sha256:06ba9935c09ce49616c3445b093ffc7adebd8194e56ee04ab3142f3eee35329b 0.2s done
+#77 naming to docker.io/library/advanced-software-development-project-student3-db-init:latest 0.0s done
+#77 unpacking to docker.io/library/advanced-software-development-project-student3-db-init:latest 0.1s done
+#77 DONE 1.3s
+
+#68 [student4-backend internal] load build context
+#68 ...
+
+#78 [student4-database build 3/6] COPY Database.csproj ./
+#78 CACHED
+
+#79 [student4-database build 5/6] COPY . ./
+#79 CACHED
+
+#80 [student4-database build 6/6] RUN dotnet publish Database.csproj --configuration Release --output /app/publish --no-restore
+#80 CACHED
+
+#81 [student4-database stage-1 2/4] WORKDIR /app
+#81 CACHED
+
+#82 [student4-database build 2/6] WORKDIR /src
+#82 CACHED
+
+#83 [student4-database build 4/6] RUN dotnet restore
+#83 CACHED
+
+#84 [student4-database stage-1 3/4] RUN apt-get update 	&& apt-get install --yes --no-install-recommends curl 	&& rm -rf /var/lib/apt/lists/* 	&& mkdir /data
+#84 CACHED
+
+#85 [student4-database stage-1 4/4] COPY --from=build /app/publish ./
+#85 CACHED
+
+#68 [student4-backend internal] load build context
+#68 transferring context: 82.29kB 0.5s done
+#68 DONE 0.5s
+
+#81 [student4-backend stage-1 2/4] WORKDIR /app
+#81 CACHED
+
+#86 [student4-backend build 5/6] COPY . ./
+#86 CACHED
+
+#82 [student4-backend build 2/6] WORKDIR /src
+#82 CACHED
+
+#87 [student4-backend build 4/6] RUN dotnet restore
+#87 CACHED
+
+#88 [student4-backend build 3/6] COPY Backend.csproj ./
+#88 CACHED
+
+#89 [student4-backend stage-1 3/4] RUN apt-get update 	&& apt-get install --yes --no-install-recommends curl 	&& rm -rf /var/lib/apt/lists/*
+#89 CACHED
+
+#90 [student4-backend build 6/6] RUN dotnet publish Backend.csproj --configuration Release --output /app/publish --no-restore
+#90 CACHED
+
+#91 [student4-backend stage-1 4/4] COPY --from=build /app/publish ./
+#91 CACHED
+
+#65 [student1-backend internal] load build context
+#65 transferring context: 125.51kB 0.5s done
+#65 DONE 0.7s
+
+#67 [student1-database internal] load build context
+#67 transferring context: 231.07kB 0.6s done
+#67 DONE 0.7s
+
+#92 [student4-backend] exporting to image
+#92 ...
+
+#82 [student1-database build 2/6] WORKDIR /src
+#82 CACHED
+
+#93 [student1-database stage-1 3/4] RUN apt-get update     && apt-get install --yes --no-install-recommends curl     && rm -rf /var/lib/apt/lists/*     && mkdir /data
+#93 CACHED
+
+#94 [student1-database build 4/6] RUN dotnet restore
+#94 CACHED
+
+#95 [student1-database build 6/6] RUN dotnet publish Database.csproj     --configuration Release     --output /app/publish     --no-restore
+#95 CACHED
+
+#81 [student1-database stage-1 2/4] WORKDIR /app
+#81 CACHED
+
+#96 [student1-database build 5/6] COPY . ./
+#96 CACHED
+
+#97 [student1-database build 3/6] COPY Database.csproj ./
+#97 CACHED
+
+#98 [student1-database stage-1 4/4] COPY --from=build /app/publish ./
+#98 CACHED
+
+#92 [student4-backend] exporting to image
+#92 exporting layers done
+#92 exporting manifest sha256:3ebe9b8f2077a8c4986c6ed0d682c3282c05952d90eb5a0f585bb61b59202890
+#92 ...
+
+#99 [student1-backend stage-1 3/4] RUN apt-get update     && apt-get install --yes --no-install-recommends curl     && rm -rf /var/lib/apt/lists/*
+#99 CACHED
+
+#81 [student1-backend stage-1 2/4] WORKDIR /app
+#81 CACHED
+
+#100 [student1-backend build 3/6] COPY Backend.csproj ./
+#100 CACHED
+
+#101 [student1-backend build 5/6] COPY . ./
+#101 CACHED
+
+#82 [student1-backend build 2/6] WORKDIR /src
+#82 CACHED
+
+#102 [student1-backend build 4/6] RUN dotnet restore
+#102 CACHED
+
+#103 [student1-backend build 6/6] RUN dotnet publish Backend.csproj     --configuration Release     --output /app/publish     --no-restore
+#103 CACHED
+
+#104 [student1-backend stage-1 4/4] COPY --from=build /app/publish ./
+#104 CACHED
+
+#92 [student4-backend] exporting to image
+#92 exporting manifest sha256:3ebe9b8f2077a8c4986c6ed0d682c3282c05952d90eb5a0f585bb61b59202890 0.2s done
+#92 exporting config sha256:2a3756cb3dcb18a10f2600a2347f6500d230005499e6ba662dc44d1393a5c8df
+#92 exporting config sha256:2a3756cb3dcb18a10f2600a2347f6500d230005499e6ba662dc44d1393a5c8df 0.1s done
+#92 ...
+
+#105 [shared-frontend internal] load metadata for docker.io/library/node:18-alpine
+#105 DONE 3.1s
+
+#92 [student4-backend] exporting to image
+#92 exporting attestation manifest sha256:71c67ae04cdea87b446417399ae03e4f4cf38d8114f8fd0fab907c5c9355452b
+#92 ...
+
+#106 [student3-frontend internal] load metadata for docker.io/library/nginx:1.27-alpine
+#106 DONE 3.4s
+
+#107 [student3-frontend internal] load .dockerignore
+#107 transferring context: 2B done
+#107 DONE 0.0s
+
+#108 [student3-frontend internal] load build context
+#108 transferring context: 72.69kB 0.1s done
+#108 DONE 0.1s
+
+#92 [student4-backend] exporting to image
+#92 exporting attestation manifest sha256:71c67ae04cdea87b446417399ae03e4f4cf38d8114f8fd0fab907c5c9355452b 0.4s done
+#92 exporting manifest list sha256:9219887567ce1ed7e10c23ce46252851f4e477bb9b6f29da691b7bdfce2f8d51
+#92 ...
+
+#109 [student2-frontend internal] load metadata for docker.io/library/node:22-alpine
+#109 DONE 3.7s
+
+#110 [student1-frontend internal] load .dockerignore
+#110 transferring context: 76B 0.0s done
+#110 DONE 0.1s
+
+#111 [student4-frontend internal] load .dockerignore
+#111 transferring context: 65B 0.0s done
+#111 DONE 0.1s
+
+#92 [student4-backend] exporting to image
+#92 exporting manifest list sha256:9219887567ce1ed7e10c23ce46252851f4e477bb9b6f29da691b7bdfce2f8d51 0.2s done
+#92 naming to docker.io/library/advanced-software-development-project-student4-backend:latest
+#92 ...
+
+#112 [student1-frontend internal] load build context
+#112 DONE 0.0s
+
+#113 [student4-frontend internal] load build context
+#113 DONE 0.0s
+
+#92 [student4-backend] exporting to image
+#92 naming to docker.io/library/advanced-software-development-project-student4-backend:latest 0.1s done
+#92 unpacking to docker.io/library/advanced-software-development-project-student4-backend:latest
+#92 ...
+
+#114 [student4-database] exporting to image
+#114 exporting layers done
+#114 exporting manifest sha256:0a4eb9f41f43ceb30f0cf2b14e08078526d8329e2d9acdfc1ee0cfb57bcca553 0.1s done
+#114 exporting config sha256:ef747f8aca76d0c55f401bdf5949cd319f56b0b6b78f24803ef7352d50f4da84 0.1s done
+#114 exporting attestation manifest sha256:3a7a0c9bf77742ce2ac3cc825f30bb851ae795848e70d6ce14fb286ee2cfeb13 0.3s done
+#114 exporting manifest list sha256:73ca7005dbf6044a3efc693707ce27b906d899768659a3399db260a1c97a84bc 0.2s done
+#114 naming to docker.io/library/advanced-software-development-project-student4-database:latest 0.1s done
+#114 unpacking to docker.io/library/advanced-software-development-project-student4-database:latest 0.2s done
+#114 DONE 1.4s
+
+#92 [student4-backend] exporting to image
+#92 unpacking to docker.io/library/advanced-software-development-project-student4-backend:latest 0.1s done
+#92 DONE 1.4s
+
+#115 [student3-frontend 1/3] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+#115 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.5s done
+#115 DONE 0.6s
+
+#113 [student4-frontend internal] load build context
+#113 transferring context: 252B 0.0s done
+#113 DONE 0.1s
+
+#116 [student3-frontend 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#116 CACHED
+
+#117 [student3-frontend 3/3] COPY index.html style.css app.js /usr/share/nginx/html/
+#117 CACHED
+
+#118 [student1-database] exporting to image
+#118 exporting layers done
+#118 exporting manifest sha256:d3bbda0fdb5fac6004fb13b20624271dac5251d49977d33fca1879606ca0e895 0.1s done
+#118 exporting config sha256:6eb7d22536f0baa9040c18b5b781bc3a6782c3fce49caadce4d109baa7f3f45c 0.1s done
+#118 exporting attestation manifest sha256:7de4b62c6fd1700833a10dfd98606cbcfa751121b876dfd8bed86b5a29df27c3 0.3s done
+#118 exporting manifest list sha256:62fd7f657f3342a552f748ae0cec5801b6c26cbf7569c3ca5ec76e284db94708 0.2s done
+#118 naming to docker.io/library/advanced-software-development-project-student1-database:latest 0.0s done
+#118 unpacking to docker.io/library/advanced-software-development-project-student1-database:latest 0.2s done
+#118 DONE 1.3s
+
+#119 [student5-database] resolving provenance for metadata file
+#119 ...
+
+#120 [student1-backend] exporting to image
+#120 exporting layers done
+#120 exporting manifest sha256:6f85cdb72fd6e587d27de819531d85d8106429dc97ca24c4e77cf439137d85ea 0.1s done
+#120 exporting config sha256:5aa9ebea657f2b83e62c5d7745010c17fc432478ad10e029e0bf60df26c36397 0.1s done
+#120 exporting attestation manifest sha256:d3db9f913e4cd2e1ccc3e3fbb969a09c5c915ef18e45e46f9337a2491765d57e 0.3s done
+#120 exporting manifest list sha256:874e493a6ada4a34e5f27eed36604c17318d1ab7b5fe9db1b55a986b41f41eed 0.1s done
+#120 naming to docker.io/library/advanced-software-development-project-student1-backend:latest 0.1s done
+#120 unpacking to docker.io/library/advanced-software-development-project-student1-backend:latest 0.2s done
+#120 DONE 1.2s
+
+#112 [student1-frontend internal] load build context
+#112 transferring context: 238.12kB 0.3s done
+#112 DONE 0.3s
+
+#121 [student3-frontend] exporting to image
+#121 exporting layers done
+#121 exporting manifest sha256:db6444ebdf4fd7e0fe0d01939b65bf5059bb59faf20657c5765a56ebd717a4a9 0.1s done
+#121 exporting config sha256:2c89cc2ad75b5437640a532dbc88d891eab7e74d13ed156fcbc5293ffe40ad0d 0.1s done
+#121 ...
+
+#122 [student5-frontend internal] load metadata for docker.io/library/nginx:alpine
+#122 DONE 4.8s
+
+#123 [student5-frontend internal] load .dockerignore
+#123 transferring context: 2B done
+#123 DONE 0.0s
+
+#124 [student2-frontend internal] load .dockerignore
+#124 transferring context: 65B 0.0s done
+#124 DONE 0.1s
+
+#121 [student3-frontend] exporting to image
+#121 exporting attestation manifest sha256:fb6937bf978786d9673f9125af17a8317673c516849f053eb6757279bd0fd93d
+#121 ...
+
+#125 [student2-frontend build 1/6] FROM docker.io/library/node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914
+#125 resolve docker.io/library/node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 0.5s done
+#125 DONE 1.0s
+
+#19 [shared-frontend internal] load metadata for docker.io/library/nginx:stable-alpine
+#19 DONE 4.8s
+
+#126 [student5-frontend internal] load build context
+#126 transferring context: 67.53kB 0.1s done
+#126 DONE 0.2s
+
+#127 [shared-frontend internal] load .dockerignore
+#127 transferring context: 2B 0.0s done
+#127 DONE 0.1s
+
+#128 [student2-frontend internal] load build context
+#128 transferring context: 160.41kB 0.2s done
+#128 DONE 0.2s
+
+#129 [shared-frontend internal] load build context
+#129 transferring context: 450B 0.0s done
+#129 DONE 0.1s
+
+#121 [student3-frontend] exporting to image
+#121 exporting attestation manifest sha256:fb6937bf978786d9673f9125af17a8317673c516849f053eb6757279bd0fd93d 0.2s done
+#121 exporting manifest list sha256:ca0ed9d607f0214b14d1300bc20e80308b1d926154f8719983a05d077fc2d809 0.1s done
+#121 naming to docker.io/library/advanced-software-development-project-student3-frontend:latest 0.1s done
+#121 unpacking to docker.io/library/advanced-software-development-project-student3-frontend:latest
+#121 unpacking to docker.io/library/advanced-software-development-project-student3-frontend:latest 0.1s done
+#121 DONE 1.1s
+
+#130 [student1-frontend build 2/6] WORKDIR /app
+#130 DONE 0.4s
+
+#131 [student5-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 resolve docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d 0.3s done
+#131 ...
+
+#132 [shared-frontend build 1/6] FROM docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e
+#132 resolve docker.io/library/node:18-alpine@sha256:8d6421d663b4c28fd3ebc498332f249011d118945588d0a35cb9bc4b8ca09d9e 0.3s done
+#132 DONE 0.4s
+
+#133 [student1-backend] resolving provenance for metadata file
+#133 ...
+
+#134 [student1-frontend build 3/6] COPY package*.json ./
+#134 DONE 0.7s
+
+#135 [student2-frontend build 3/6] COPY package.json package-lock.json ./
+#135 DONE 0.8s
+
+#136 [student5-backend] resolving provenance for metadata file
+#136 ...
+
+#137 [student4-frontend build 3/7] COPY package.json package-lock.json* ./
+#137 DONE 0.9s
+
+#138 [student3-database] resolving provenance for metadata file
+#138 ...
+
+#139 [student2-backend] resolving provenance for metadata file
+#139 DONE 2.7s
+
+#140 [student3-db-init] resolving provenance for metadata file
+#140 ...
+
+#141 [shared-frontend build 5/6] COPY . ./
+#141 CACHED
+
+#142 [shared-frontend build 3/6] COPY package*.json ./
+#142 CACHED
+
+#143 [shared-frontend build 4/6] RUN npm ci --silent
+#143 CACHED
+
+#144 [shared-frontend build 2/6] WORKDIR /app
+#144 CACHED
+
+#145 [shared-frontend build 6/6] RUN npm run build
+#145 CACHED
+
+#146 [student1-database] resolving provenance for metadata file
+#146 ...
+
+#147 [student2-database] resolving provenance for metadata file
+#147 DONE 2.9s
+
+#133 [student1-backend] resolving provenance for metadata file
+#133 DONE 2.4s
+
+#119 [student5-database] resolving provenance for metadata file
+#119 DONE 3.9s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 ...
+
+#138 [student3-database] resolving provenance for metadata file
+#138 DONE 2.0s
+
+#140 [student3-db-init] resolving provenance for metadata file
+#140 DONE 1.5s
+
+#136 [student5-backend] resolving provenance for metadata file
+#136 DONE 2.3s
+
+#148 [student3-backend] resolving provenance for metadata file
+#148 DONE 1.7s
+
+#131 [student5-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 0B / 20.53MB 0.2s
+#131 sha256:9b0f7dfe35b2711a17f60dadd6d4035dc0cdee152538cc5c0987029e94679548 0B / 1.40kB 0.2s
+#131 sha256:2ec5fb117ffa9a78b15fb6a78745ffc569c8da0aee9f36ace4cd67a44b1fef79 0B / 1.21kB 0.2s
+#131 sha256:26185d08a3ec318dd85a6c9f2172e714ec13cececd7f33c533b40b1689f9fedb 0B / 404B 0.2s
+#131 ...
+
+#146 [student1-database] resolving provenance for metadata file
+#146 DONE 1.2s
+
+#149 [student4-backend] resolving provenance for metadata file
+#149 DONE 2.1s
+
+#150 [student4-database] resolving provenance for metadata file
+#150 DONE 0.9s
+
+#151 [student3-frontend] resolving provenance for metadata file
+#151 DONE 0.4s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:9b0f7dfe35b2711a17f60dadd6d4035dc0cdee152538cc5c0987029e94679548 1.40kB / 1.40kB 0.6s done
+#131 sha256:2ec5fb117ffa9a78b15fb6a78745ffc569c8da0aee9f36ace4cd67a44b1fef79 1.21kB / 1.21kB 0.8s done
+#131 sha256:7cc330898115ce55acccb0cc1e7dd091df4410c8c5f3c540710ee0ac689f5fcb 0B / 964B 0.2s
+#131 sha256:2ec5fb117ffa9a78b15fb6a78745ffc569c8da0aee9f36ace4cd67a44b1fef79 1.21kB / 1.21kB 0.8s done
+#131 sha256:26185d08a3ec318dd85a6c9f2172e714ec13cececd7f33c533b40b1689f9fedb 404B / 404B 0.8s done
+#131 sha256:657023555a2a19dc6036468198bb350d2c7feaac7f2d0a3901b4dd3cb25e40c5 0B / 629B 0.2s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 1.05MB / 20.53MB 1.1s
+#131 sha256:7cc330898115ce55acccb0cc1e7dd091df4410c8c5f3c540710ee0ac689f5fcb 964B / 964B 0.4s done
+#131 sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6 0B / 1.94MB 0.2s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 2.10MB / 20.53MB 1.2s
+#131 sha256:657023555a2a19dc6036468198bb350d2c7feaac7f2d0a3901b4dd3cb25e40c5 629B / 629B 0.4s done
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 3.15MB / 20.53MB 1.4s
+#131 sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6 1.05MB / 1.94MB 0.8s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 4.19MB / 20.53MB 1.7s
+#131 sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6 1.94MB / 1.94MB 0.9s done
+#131 sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6 1.94MB / 1.94MB 0.9s done
+#131 extracting sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6
+#131 ...
+
+#152 [student4-frontend build 4/7] RUN npm ci --omit=dev --no-audit --no-fund
+#152 4.098 
+#152 4.098 added 1 package in 2s
+#152 4.100 npm notice
+#152 4.100 npm notice New major version of npm available! 10.9.9 -> 12.2.1
+#152 4.100 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#152 4.100 npm notice To update run: npm install -g npm@12.2.1
+#152 4.100 npm notice
+#152 DONE 4.2s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 5.24MB / 20.53MB 2.1s
+#131 extracting sha256:12b85cff06fd7d383d36a9c96503fe049c9d4bf3dfda5cbb9ffa6ae99b9c07a6 0.3s done
+#131 extracting sha256:657023555a2a19dc6036468198bb350d2c7feaac7f2d0a3901b4dd3cb25e40c5
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 6.29MB / 20.53MB 2.3s
+#131 extracting sha256:657023555a2a19dc6036468198bb350d2c7feaac7f2d0a3901b4dd3cb25e40c5 0.1s done
+#131 extracting sha256:7cc330898115ce55acccb0cc1e7dd091df4410c8c5f3c540710ee0ac689f5fcb
+#131 extracting sha256:7cc330898115ce55acccb0cc1e7dd091df4410c8c5f3c540710ee0ac689f5fcb 0.1s done
+#131 extracting sha256:26185d08a3ec318dd85a6c9f2172e714ec13cececd7f33c533b40b1689f9fedb
+#131 ...
+
+#153 [student4-frontend build 5/7] COPY index.html style.css app.js ./
+#153 DONE 0.3s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 7.34MB / 20.53MB 2.6s
+#131 extracting sha256:26185d08a3ec318dd85a6c9f2172e714ec13cececd7f33c533b40b1689f9fedb 0.1s done
+#131 extracting sha256:2ec5fb117ffa9a78b15fb6a78745ffc569c8da0aee9f36ace4cd67a44b1fef79
+#131 extracting sha256:2ec5fb117ffa9a78b15fb6a78745ffc569c8da0aee9f36ace4cd67a44b1fef79 0.1s done
+#131 extracting sha256:9b0f7dfe35b2711a17f60dadd6d4035dc0cdee152538cc5c0987029e94679548
+#131 ...
+
+#154 [student4-frontend build 6/7] COPY scripts ./scripts
+#154 DONE 0.3s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 extracting sha256:9b0f7dfe35b2711a17f60dadd6d4035dc0cdee152538cc5c0987029e94679548 0.1s done
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 8.39MB / 20.53MB 3.3s
+#131 ...
+
+#155 [student4-frontend build 7/7] RUN npm run build
+#155 1.117 
+#155 1.117 > build
+#155 1.117 > node scripts/build.mjs
+#155 1.117 
+#155 DONE 1.4s
+
+#156 [student4-frontend stage-1 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#156 CACHED
+
+#157 [student4-frontend stage-1 3/3] COPY --from=build /app/dist /usr/share/nginx/html
+#157 CACHED
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 9.44MB / 20.53MB 4.2s
+#131 ...
+
+#158 [student4-frontend] exporting to image
+#158 exporting layers done
+#158 exporting manifest sha256:c57b21d9d44840bcf3ce694304cef35a8f99c6ce2aa22c9568bf31994b5975ed done
+#158 exporting config sha256:eb26973a8a06654ba25f0e61f93ae9b8850d2583796880a915891f1e98b5bc83 done
+#158 exporting attestation manifest sha256:c7606e5ce65958c615a9267bbea007e55a77467f8998728c14b0510994919a62 0.0s done
+#158 exporting manifest list sha256:640d852a8608223e9426538ca129ae16260c48ec99e04c7aa2ad28166e067549 0.0s done
+#158 naming to docker.io/library/advanced-software-development-project-student4-frontend:latest done
+#158 unpacking to docker.io/library/advanced-software-development-project-student4-frontend:latest 0.0s done
+#158 DONE 0.2s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 ...
+
+#159 [student4-frontend] resolving provenance for metadata file
+#159 DONE 0.0s
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 10.49MB / 20.53MB 5.3s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 11.53MB / 20.53MB 5.6s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 12.58MB / 20.53MB 6.0s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 13.63MB / 20.53MB 6.2s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 14.68MB / 20.53MB 6.5s
+#131 ...
+
+#160 [shared-frontend stage-1 1/3] FROM docker.io/library/nginx:stable-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
+#160 resolve docker.io/library/nginx:stable-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576 0.3s done
+#160 sha256:5b8cb54cfa408030aaa43d7bffa9141e0ae6f8a479df13c7aa152100cca358fb 13.63MB / 20.31MB 5.6s
+#160 sha256:bb658a2541968d2b90a8ee165ad08b7f71055c7f7832bdff98e2de2d8b90cf14 1.40kB / 1.40kB 0.6s done
+#160 sha256:81b64ae234ef95f3cfc19b7f6c45a511eccbefa6148889ee33ed43c6c3f39939 1.21kB / 1.21kB 0.4s done
+#160 sha256:e125989d16f03d1e00b60afdd9abe46ed1437ed63b73926d036a5537f6be770a 403B / 403B 0.4s done
+#160 sha256:885725a63a7cf1d4d5aac105944b35ece2b69a8c2cc6f7040f04727b7b8a63d2 964B / 964B 0.4s done
+#160 sha256:f19a2d3b695178ba0e57d473535f74f5d934f45e191de8334e730f83d2c62704 627B / 627B 0.5s done
+#160 sha256:9f0afb44f10e826253b342c0265e188067c2f0a30c782a52e329928a763adc60 1.88MB / 1.88MB 1.5s done
+#160 extracting sha256:9f0afb44f10e826253b342c0265e188067c2f0a30c782a52e329928a763adc60 0.2s done
+#160 extracting sha256:f19a2d3b695178ba0e57d473535f74f5d934f45e191de8334e730f83d2c62704 0.1s done
+#160 extracting sha256:885725a63a7cf1d4d5aac105944b35ece2b69a8c2cc6f7040f04727b7b8a63d2 0.1s done
+#160 extracting sha256:e125989d16f03d1e00b60afdd9abe46ed1437ed63b73926d036a5537f6be770a 0.0s done
+#160 extracting sha256:81b64ae234ef95f3cfc19b7f6c45a511eccbefa6148889ee33ed43c6c3f39939 0.0s done
+#160 extracting sha256:bb658a2541968d2b90a8ee165ad08b7f71055c7f7832bdff98e2de2d8b90cf14 0.0s done
+#160 sha256:5b8cb54cfa408030aaa43d7bffa9141e0ae6f8a479df13c7aa152100cca358fb 14.68MB / 20.31MB 5.7s
+#160 ...
+
+#131 [student2-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 15.73MB / 20.53MB 6.9s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 17.83MB / 20.53MB 7.1s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 19.92MB / 20.53MB 7.2s
+#131 sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 20.53MB / 20.53MB 7.2s done
+#131 extracting sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919
+#131 ...
+
+#161 [student2-frontend build 4/6] RUN npm ci
+#161 ...
+
+#162 [student1-frontend build 4/6] RUN npm ci
+#162 ...
+
+#131 [student5-frontend 1/4] FROM docker.io/library/nginx:alpine@sha256:060849a174666c53439dc7cecbf8f67e225c7cbfb1a44ca97915d9a172a81e6d
+#131 extracting sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 0.8s done
+#131 extracting sha256:b9b388a21ecfde6ac80505f23f527146a2129dfb104e79b029bbd00d4cc1a919 0.8s done
+#131 DONE 11.5s
+
+#163 [student2-frontend stage-1 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#163 ...
+
+#160 [shared-frontend stage-1 1/3] FROM docker.io/library/nginx:stable-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
+#160 sha256:5b8cb54cfa408030aaa43d7bffa9141e0ae6f8a479df13c7aa152100cca358fb 20.31MB / 20.31MB 6.3s done
+#160 extracting sha256:5b8cb54cfa408030aaa43d7bffa9141e0ae6f8a479df13c7aa152100cca358fb 0.9s done
+#160 DONE 11.7s
+
+#163 [student2-frontend stage-1 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#163 DONE 0.5s
+
+#164 [shared-frontend stage-1 2/3] COPY --from=build /app/dist /usr/share/nginx/html
+#164 DONE 0.2s
+
+#165 [student5-frontend 2/4] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#165 DONE 0.5s
+
+#166 [student5-frontend 3/4] COPY index.html /usr/share/nginx/html/index.html
+#166 DONE 0.1s
+
+#167 [shared-frontend stage-1 3/3] COPY nginx.conf /etc/nginx/templates/default.conf.template
+#167 DONE 0.1s
+
+#168 [student5-frontend 4/4] COPY style.css /usr/share/nginx/html/style.css
+#168 DONE 0.1s
+
+#169 [shared-frontend] exporting to image
+#169 exporting layers 0.7s done
+#169 exporting manifest sha256:856ed8fef207394f121829d89571e07633a77cbf98db3f92667717875d6ec959 0.1s done
+#169 exporting config sha256:69911143d54af3df52d03ca6587768be34bdc15cc00752b9ceab3b8670fc34a5 0.1s done
+#169 ...
+
+#162 [student1-frontend build 4/6] RUN npm ci
+#162 11.81 
+#162 11.81 added 134 packages, and audited 135 packages in 10s
+#162 11.81 
+#162 11.81 30 packages are looking for funding
+#162 11.81   run `npm fund` for details
+#162 11.82 
+#162 11.82 2 moderate severity vulnerabilities
+#162 11.82 
+#162 11.82 To address all issues, run:
+#162 11.82   npm audit fix
+#162 11.82 
+#162 11.82 Run `npm audit` for details.
+#162 11.82 npm notice
+#162 11.82 npm notice New major version of npm available! 10.9.9 -> 12.2.1
+#162 11.82 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#162 11.82 npm notice To update run: npm install -g npm@12.2.1
+#162 11.82 npm notice
+#162 DONE 11.9s
+
+#169 [shared-frontend] exporting to image
+#169 exporting attestation manifest sha256:8b702220dc96aab70315577ed156f0714bfe7bdeeeb8481bcd69bd32ec8dcc53 0.1s done
+#169 exporting manifest list sha256:87a3a76d83b702ee7601bb8a6ad6b1f5faf7c99c7d84b5acca14b7fb8b63ca9d
+#169 exporting manifest list sha256:87a3a76d83b702ee7601bb8a6ad6b1f5faf7c99c7d84b5acca14b7fb8b63ca9d 0.1s done
+#169 naming to docker.io/library/advanced-software-development-project-shared-frontend:latest 0.0s done
+#169 unpacking to docker.io/library/advanced-software-development-project-shared-frontend:latest
+#169 ...
+
+#170 [student1-frontend build 5/6] COPY . ./
+#170 DONE 0.2s
+
+#171 [student5-frontend] exporting to image
+#171 exporting layers 0.8s done
+#171 exporting manifest sha256:771748c0e0985292a9f4d87e7ab9e2ac5d0a28ec80b5b0b57f98f6c821ff7251 0.1s done
+#171 exporting config sha256:d85792a4ee69d0eb7f99ae4d40b2215d2a09ab886f4073bbeb1157704eaa3e1b 0.1s done
+#171 exporting attestation manifest sha256:21a86272556d1c938d64fb8076c5369dafbd038a07df9b0907dd26ab6f6ef469 0.1s done
+#171 exporting manifest list sha256:7637a818012ac43c89c11dd97ba690756e14093586c667793b86f307026fffb3 0.0s done
+#171 naming to docker.io/library/advanced-software-development-project-student5-frontend:latest done
+#171 unpacking to docker.io/library/advanced-software-development-project-student5-frontend:latest
+#171 ...
+
+#169 [shared-frontend] exporting to image
+#169 unpacking to docker.io/library/advanced-software-development-project-shared-frontend:latest 1.6s done
+#169 DONE 2.9s
+
+#171 [student5-frontend] exporting to image
+#171 unpacking to docker.io/library/advanced-software-development-project-student5-frontend:latest 1.6s done
+#171 DONE 3.0s
+
+#172 [student1-frontend build 6/6] RUN npm run build
+#172 0.588 
+#172 0.588 > accommodation-recommender-frontend@0.0.0 build
+#172 0.588 > vue-tsc -b && vite build
+#172 0.588 
+#172 ...
+
+#173 [shared-frontend] resolving provenance for metadata file
+#173 DONE 0.2s
+
+#174 [student5-frontend] resolving provenance for metadata file
+#174 DONE 0.0s
+
+#161 [student2-frontend build 4/6] RUN npm ci
+#161 14.47 
+#161 14.47 added 102 packages, and audited 103 packages in 13s
+#161 14.47 
+#161 14.47 23 packages are looking for funding
+#161 14.47   run `npm fund` for details
+#161 14.52 
+#161 14.52 5 vulnerabilities (2 moderate, 3 high)
+#161 14.52 
+#161 14.52 To address all issues, run:
+#161 14.52   npm audit fix
+#161 14.52 
+#161 14.52 Run `npm audit` for details.
+#161 14.53 npm notice
+#161 14.53 npm notice New major version of npm available! 10.9.9 -> 12.2.1
+#161 14.53 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+#161 14.53 npm notice To update run: npm install -g npm@12.2.1
+#161 14.53 npm notice
+#161 DONE 14.7s
+
+#172 [student1-frontend build 6/6] RUN npm run build
+#172 ...
+
+#175 [student2-frontend build 5/6] COPY . .
+#175 DONE 0.2s
+
+#176 [student2-frontend build 6/6] RUN npm run build
+#176 0.548 
+#176 0.548 > build
+#176 0.548 > vite build
+#176 0.548 
+#176 1.259 vite v7.3.6 building client environment for production...
+#176 1.372 transforming...
+#176 4.834 ✓ 1878 modules transformed.
+#176 5.011 rendering chunks...
+#176 5.028 computing gzip size...
+#176 5.042 dist/index.html                   0.48 kB │ gzip:  0.31 kB
+#176 5.042 dist/assets/index-CQwHbTKk.css   18.32 kB │ gzip:  4.36 kB
+#176 5.042 dist/assets/index-CCaHYWW5.js   119.65 kB │ gzip: 43.36 kB
+#176 5.044 ✓ built in 3.74s
+#176 DONE 5.2s
+
+#172 [student1-frontend build 6/6] RUN npm run build
+#172 7.925 vite v8.3.4 building client environment for production...
+#172 ...
+
+#177 [student2-frontend stage-1 3/3] COPY --from=build /app/dist /usr/share/nginx/html/
+#177 DONE 0.1s
+
+#172 [student1-frontend build 6/6] RUN npm run build
+#172 8.037 transforming...
+#172 8.705 ✓ 23 modules transformed.
+#172 8.776 rendering chunks...
+#172 ...
+
+#178 [student2-frontend] exporting to image
+#178 exporting layers 0.3s done
+#178 exporting manifest sha256:e7e6f4c7f5007a2eab6f7a128189b81b7a3cfc7d2577d3321d2bd1d804a21a77 0.0s done
+#178 exporting config sha256:3b4b790f1d401ce31265ae3f672a2c222e2bfe5b4a28107e120ae971ce408303 0.0s done
+#178 exporting attestation manifest sha256:cef856ce016dbe61685505a65c83baf817deb5e49c65007d468973ab1f7fd78d 0.1s done
+#178 exporting manifest list sha256:18b2055f635801b99f27944ccb0b8e473df6f59d3072b5871e1a9883b5abc41d 0.0s done
+#178 naming to docker.io/library/advanced-software-development-project-student2-frontend:latest done
+#178 unpacking to docker.io/library/advanced-software-development-project-student2-frontend:latest 0.1s done
+#178 DONE 0.7s
+
+#172 [student1-frontend build 6/6] RUN npm run build
+#172 8.823 computing gzip size...
+#172 8.826 dist/index.html                   0.59 kB │ gzip:  0.34 kB
+#172 8.826 dist/assets/index-BzTozlhi.css   17.79 kB │ gzip:  4.35 kB
+#172 8.826 dist/assets/index-D-X-r_kA.js   103.37 kB │ gzip: 36.54 kB
+#172 8.826 
+#172 8.827 ✓ built in 900ms
+#172 DONE 9.0s
+
+#179 [student1-frontend stage-1 2/3] COPY nginx.conf /etc/nginx/conf.d/default.conf
+#179 CACHED
+
+#180 [student1-frontend stage-1 3/3] COPY --from=build /app/dist /usr/share/nginx/html
+#180 CACHED
+
+#181 [student1-frontend] exporting to image
+#181 exporting layers done
+#181 exporting manifest sha256:dbe67d08698da50661508dc77baa07ffc67cabf6a7f833103adb359592abb09b done
+#181 exporting config sha256:7f4a6e7aabb0c49c958bae7b6384c566aabb1afc1f3cb51ac1dd32ff043b077f 0.0s done
+#181 exporting attestation manifest sha256:e7237a980cd18ea3abf32dccd6d9fd7c584677c7df27315cf50de663d4d0638b 0.1s done
+#181 exporting manifest list sha256:6a573ebdce2180c120423fc696d5a44344180b949b7d1ae808b9720fad65190e
+#181 exporting manifest list sha256:6a573ebdce2180c120423fc696d5a44344180b949b7d1ae808b9720fad65190e 0.0s done
+#181 naming to docker.io/library/advanced-software-development-project-student1-frontend:latest 0.0s done
+#181 unpacking to docker.io/library/advanced-software-development-project-student1-frontend:latest 0.0s done
+#181 DONE 0.3s
+
+#182 [student2-frontend] resolving provenance for metadata file
+#182 DONE 0.0s
+
+#183 [student1-frontend] resolving provenance for metadata file
+#183 DONE 0.0s
+ Image advanced-software-development-project-student5-frontend Built 
+ Image advanced-software-development-project-student4-database Built 
+ Image advanced-software-development-project-student3-database Built 
+ Image advanced-software-development-project-student2-database Built 
+ Image advanced-software-development-project-student1-backend Built 
+ Image advanced-software-development-project-student4-frontend Built 
+ Image advanced-software-development-project-student2-backend Built 
+ Image advanced-software-development-project-student2-frontend Built 
+ Image advanced-software-development-project-student3-backend Built 
+ Image advanced-software-development-project-student5-database Built 
+ Image advanced-software-development-project-student5-backend Built 
+ Image advanced-software-development-project-student4-backend Built 
+ Image advanced-software-development-project-student3-frontend Built 
+ Image advanced-software-development-project-shared-frontend Built 
+ Image advanced-software-development-project-student1-database Built 
+ Image advanced-software-development-project-student1-frontend Built 
+ Image advanced-software-development-project-student3-db-init Built 
+ Container advanced-software-development-project-student4-frontend-1 Running 
+ Container advanced-software-development-project-student2-database-1 Running 
+ Container advanced-software-development-project-student4-database-1 Running 
+ Container advanced-software-development-project-student4-backend-1 Running 
+ Container advanced-software-development-project-student1-frontend-1 Running 
+ Container advanced-software-development-project-student1-database-1 Running 
+ Container advanced-software-development-project-student5-database-1 Running 
+ Container advanced-software-development-project-student3-frontend-1 Running 
+ Container advanced-software-development-project-student3-database-1 Running 
+ Container advanced-software-development-project-student2-backend-1 Recreate 
+ Container advanced-software-development-project-student3-backend-1 Recreate 
+ Container advanced-software-development-project-student1-backend-1 Recreate 
+ Container advanced-software-development-project-student5-backend-1 Recreate 
+ Container advanced-software-development-project-student1-backend-1 Recreated 
+ Container advanced-software-development-project-student5-backend-1 Recreated 
+ Container advanced-software-development-project-student5-frontend-1 Recreate 
+ Container advanced-software-development-project-student2-backend-1 Recreated 
+ Container advanced-software-development-project-student2-frontend-1 Recreate 
+ Container advanced-software-development-project-student3-backend-1 Recreated 
+ Container advanced-software-development-project-student5-frontend-1 Recreated 
+ Container advanced-software-development-project-student2-frontend-1 Recreated 
+ Container advanced-software-development-project-shared-frontend-1 Recreate 
+ Container advanced-software-development-project-shared-frontend-1 Recreated 
+ Container advanced-software-development-project-student1-database-1 Waiting 
+ Container advanced-software-development-project-student4-database-1 Waiting 
+ Container advanced-software-development-project-student2-database-1 Waiting 
+ Container advanced-software-development-project-student5-database-1 Waiting 
+ Container advanced-software-development-project-student3-db-init-1 Starting 
+ Container advanced-software-development-project-student3-db-init-1 Started 
+ Container advanced-software-development-project-student3-db-init-1 Waiting 
+ Container advanced-software-development-project-student2-database-1 Healthy 
+ Container advanced-software-development-project-student2-backend-1 Starting 
+ Container advanced-software-development-project-student5-database-1 Healthy 
+ Container advanced-software-development-project-student5-backend-1 Starting 
+ Container advanced-software-development-project-student1-database-1 Healthy 
+ Container advanced-software-development-project-student1-backend-1 Starting 
+ Container advanced-software-development-project-student4-database-1 Healthy 
+ Container advanced-software-development-project-student4-backend-1 Waiting 
+ Container advanced-software-development-project-student3-db-init-1 Exited 
+ Container advanced-software-development-project-student3-database-1 Waiting 
+ Container advanced-software-development-project-student2-backend-1 Started 
+ Container advanced-software-development-project-student2-backend-1 Waiting 
+ Container advanced-software-development-project-student4-backend-1 Healthy 
+ Container advanced-software-development-project-student5-backend-1 Started 
+ Container advanced-software-development-project-student5-backend-1 Waiting 
+ Container advanced-software-development-project-student3-database-1 Healthy 
+ Container advanced-software-development-project-student3-backend-1 Starting 
+ Container advanced-software-development-project-student1-backend-1 Started 
+ Container advanced-software-development-project-student1-backend-1 Waiting 
+ Container advanced-software-development-project-student3-backend-1 Started 
+ Container advanced-software-development-project-student3-backend-1 Waiting 
+ Container advanced-software-development-project-student5-backend-1 Healthy 
+ Container advanced-software-development-project-student5-frontend-1 Starting 
+ Container advanced-software-development-project-student5-frontend-1 Started 
+ Container advanced-software-development-project-student2-backend-1 Healthy 
+ Container advanced-software-development-project-student2-frontend-1 Starting 
+ Container advanced-software-development-project-student2-frontend-1 Started 
+ Container advanced-software-development-project-student1-backend-1 Healthy 
+ Container advanced-software-development-project-student3-backend-1 Healthy 
+ Container advanced-software-development-project-student4-frontend-1 Waiting 
+ Container advanced-software-development-project-student5-frontend-1 Waiting 
+ Container advanced-software-development-project-student1-frontend-1 Waiting 
+ Container advanced-software-development-project-student2-frontend-1 Waiting 
+ Container advanced-software-development-project-student3-frontend-1 Waiting 
+ Container advanced-software-development-project-student1-frontend-1 Healthy 
+ Container advanced-software-development-project-student4-frontend-1 Healthy 
+ Container advanced-software-development-project-student3-frontend-1 Healthy 
+ Container advanced-software-development-project-student5-frontend-1 Healthy 
+ Container advanced-software-development-project-student2-frontend-1 Healthy 
+ Container advanced-software-development-project-shared-frontend-1 Starting 
+ Container advanced-software-development-project-shared-frontend-1 Started 
+ Container advanced-software-development-project-student5-backend-1 Waiting 
+ Container advanced-software-development-project-student3-backend-1 Waiting 
+ Container advanced-software-development-project-student3-database-1 Waiting 
+ Container advanced-software-development-project-student1-backend-1 Waiting 
+ Container advanced-software-development-project-student2-database-1 Waiting 
+ Container advanced-software-development-project-student4-database-1 Waiting 
+ Container advanced-software-development-project-student3-db-init-1 Waiting 
+ Container advanced-software-development-project-student3-frontend-1 Waiting 
+ Container advanced-software-development-project-student2-frontend-1 Waiting 
+ Container advanced-software-development-project-student1-frontend-1 Waiting 
+ Container advanced-software-development-project-student4-frontend-1 Waiting 
+ Container advanced-software-development-project-student5-database-1 Waiting 
+ Container advanced-software-development-project-student5-frontend-1 Waiting 
+ Container advanced-software-development-project-student2-backend-1 Waiting 
+ Container advanced-software-development-project-student1-database-1 Waiting 
+ Container advanced-software-development-project-student4-backend-1 Waiting 
+ Container advanced-software-development-project-shared-frontend-1 Waiting 
+ Container advanced-software-development-project-student1-backend-1 Healthy 
+ Container advanced-software-development-project-student2-database-1 Healthy 
+ Container advanced-software-development-project-student5-database-1 Healthy 
+ Container advanced-software-development-project-student2-backend-1 Healthy 
+ Container advanced-software-development-project-student5-backend-1 Healthy 
+ Container advanced-software-development-project-student4-backend-1 Healthy 
+ Container advanced-software-development-project-student1-frontend-1 Healthy 
+ Container advanced-software-development-project-student3-database-1 Healthy 
+ Container advanced-software-development-project-student3-db-init-1 Exited 
+ Container advanced-software-development-project-student1-database-1 Healthy 
+ Container advanced-software-development-project-student3-backend-1 Healthy 
+ Container advanced-software-development-project-student3-frontend-1 Healthy 
+ Container advanced-software-development-project-student4-database-1 Healthy 
+ Container advanced-software-development-project-student4-frontend-1 Healthy 
+ Container advanced-software-development-project-student5-frontend-1 Healthy 
+ Container advanced-software-development-project-student2-frontend-1 Healthy 
+ Container advanced-software-development-project-shared-frontend-1 Healthy 
+Traceback (most recent call last):
+  File "<string>", line 6, in <module>
+AssertionError
+Exception: C:\Users\Alex.Chen\source\repos\Advanced-Software-Development-Project\scripts\deploy\start-release1.ps1:218
+Line |
+ 218 |  … DE -ne 0) { throw "Student 2 native-service validation failed. Check  …
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Student 2 native-service validation failed. Check NativeHost and trusted-host network access. No firewall rules
+     | were changed.

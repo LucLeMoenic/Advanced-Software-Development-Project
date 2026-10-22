@@ -1,0 +1,34 @@
+# cloud-deployment.yml runs after the successful baseline run, 2026-10-22T11:19:19Z (gh CLI)
+$ gh run list --workflow cloud-deployment.yml -L 6
+39747268117	457b247	workflow_dispatch	failure	2026-10-22T08:22:39Z
+39745249227	457b247	workflow_dispatch	failure	2026-10-22T08:06:07Z
+39744896831	457b247	workflow_dispatch	failure	2026-10-22T08:03:17Z
+39743453917	851bdd7	workflow_dispatch	failure	2026-10-22T07:51:26Z
+39741981906	851bdd7	workflow_dispatch	success	2026-10-22T07:39:13Z
+39735811024	ac8909f	workflow_dispatch	failure	2026-10-22T06:44:09Z
+
+## run 39743453917: failed step(s)
+  Require all CI for the deployed revision
+2026-10-22T07:51:40.7634019Z ##[error]Process completed with exit code 1.
+
+## run 39744896831: failed step(s)
+  Require all CI for the deployed revision
+2026-10-22T08:03:35.5164507Z ##[error]Process completed with exit code 1.
+
+## run 39745249227: failed step(s)
+  Require all CI for the deployed revision
+2026-10-22T08:06:18.3310142Z ##[error]Process completed with exit code 1.
+
+## run 39747268117: failed step(s)
+  Require protected AI credentials
+2026-10-22T08:22:50.7403748Z     raise ValueError("Set CLOUD_AUTH_USER to 1-64 letters, digits, dots, underscores or hyphens.")
+2026-10-22T08:22:50.7404212Z ValueError: Set CLOUD_AUTH_USER to 1-64 letters, digits, dots, underscores or hyphens.
+2026-10-22T08:22:50.7454852Z ##[error]Process completed with exit code 1.
+
+## files changed between the deployed revision and main
+$ git diff --name-only 851bdd7 457b247
+docs/release-2/cloud-validation-runbook.md
+scripts/deploy/assert-cloud-ci.ps1
+scripts/test/cloud-ci.ps1
+student-2/backend/tests/test_release2_endpoints.py
+student-2/docs/prompt-log.md

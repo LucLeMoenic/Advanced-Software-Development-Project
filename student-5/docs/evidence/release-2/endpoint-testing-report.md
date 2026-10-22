@@ -68,35 +68,41 @@ test files are under `student-5/**`, which was already a trigger.
 | Workflow YAML | Parses with `yaml.safe_load` (13 steps; push and PR path lists identical); `docker compose config --quiet` passes |
 | Whole Student 5 suites | database 26, backend 199 (186 existing + 13 new), MCP logistics 34, RAG student-5 retrieval 17 passed |
 
-## GitHub Actions run (to be completed after push)
+## GitHub Actions runs
 
-> Fill in after the first push of this branch, and again for the merge to `main`.
+Filled in on 22 October 2026 (Chunk 6) from `gh run view`. Both runs are `push`
+events on `student-5.yml`.
 
-| Item | Value |
-|---|---|
-| Branch / commit | `AC/student5-r2-endpoint-ci` @ `<sha>` |
-| Run URL | `<https://github.com/<org>/<repo>/actions/runs/<id>>` |
-| Run result | `<success / failure>` |
-| Step "Post-commit endpoint tests (POST and PUT /api/destinations)" | `<success>`, `<13 passed in N s>` |
-| Step "Post-commit endpoint tests against running containers (POST and PUT /api/destinations)" | `<success>`, `<12/12 checks passed>` |
-| Artifact `student-5-endpoint-test-results` | `<present, size>` |
-| Merge to `main` run | `<run URL, result>` |
+| Item | Branch push | Merge to `main` (PR #133) |
+|---|---|---|
+| Commit | `AC/student5-r2-endpoint-ci` @ `afb34bb5384e7f85726372133dea8edbeab0736a` | `main` @ `e523738c19c76821eb3e5ce576e430c3451007d1` |
+| Run | [39697590918](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39697590918) | [39698558980](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39698558980) |
+| Run result | success | success |
+| Step "Post-commit endpoint tests (POST and PUT /api/destinations)" | success, `13 passed in 0.16s` | success, `13 passed in 0.16s`; step `env:` shows all four AI flags `false` |
+| Step "Post-commit endpoint tests against running containers (POST and PUT /api/destinations)" | success, `12/12 checks passed` | success, `12/12 checks passed` |
+| Artifact `student-5-endpoint-test-results` | present, 643 bytes | present, 641 bytes; its `endpoint-tests-junit.xml` is saved as `endpoint-tests/10-ci-endpoint-tests-junit.xml` (13 tests, 0 failures, 0 errors, 0 skipped) |
 
-Screenshots to add under `endpoint-tests/` (names suggested):
+The same steps were still green on the latest `main` (`457b247`, run
+[39746832461](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39746832461),
+`workflow_dispatch`: `13 passed in 0.23s`, `12/12 checks passed`, artifact 642 bytes). The
+branch-run and latest-run figures are captured in `endpoint-tests/11-other-ci-runs.txt`.
 
-- `06-ci-run-overview.png`: the run page with the green check, commit sha and the
-  **Artifacts** section showing `student-5-endpoint-test-results`.
-- `07-ci-job-summary.png`: the job **Summary**, showing both tables: "Student 5
-  post-commit endpoint tests (POST and PUT /api/destinations)" with **13 of 13
-  passed**, and "Student 5 live endpoint check" with every row `pass`.
-- `08-ci-endpoint-step-log.png`: the expanded "Post-commit endpoint tests (POST and
-  PUT /api/destinations)" step, showing the `env:` block with the four flags
-  `false` and the `13 passed` line.
-- `09-ci-live-check-step-log.png`: the expanded live-check step, ending
-  `12/12 checks passed`.
+Run logs: `endpoint-tests/06-ci-run-39698558980-full-log.txt` (the whole job log, ANSI
+codes removed) and `endpoint-tests/07-ci-run-39698558980-excerpt.txt` (the step list,
+AI flags, test results and JUnit summary; this is the file the agentic-loop Testing
+Report Review reads).
 
-Also save the downloaded artifact's `endpoint-tests-junit.xml` as
-`endpoint-tests/10-ci-endpoint-tests-junit.xml`.
+Screenshots of run 39698558980 (taken 22 October 2026, Chunk 6):
+
+- `endpoint-tests/08-ci-run-overview.jpg`: the run page, triggered by a push of
+  `e523738` to `main`, status Success, one artifact, and the start of the job summary.
+- `endpoint-tests/09-ci-job-summary.jpg`: the job summary, with "Student 5 post-commit
+  endpoint tests (POST and PUT /api/destinations)" at **13 of 13 passed** and the
+  "Student 5 live endpoint check" table, every row `pass`.
+
+The step logs (the `env:` block with the four flags `false`, `13 passed`, and
+`12/12 checks passed`) are in `07-ci-run-39698558980-excerpt.txt` as text rather
+than as screenshots.
 
 ## Findings recorded, not hidden
 

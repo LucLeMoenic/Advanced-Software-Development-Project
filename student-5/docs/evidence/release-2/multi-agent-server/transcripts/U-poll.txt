@@ -1,0 +1,263 @@
+# Poll request in the same form as hx-trigger="every 2s" sends it (same URL, seen= carried forward). The loop started about 17 s after the review was queued, so its first poll already received the finished review: one request, no 204s.
+10:09:15Z GET /ui/readiness-reviews/wf-20261022T100857Z-16996759?destination_id=2&seen=queued -> 200
+# final fragment (no further polling):
+
+
+
+<section class="readiness-review">
+  <p class="mcp-provenance">Coordinated by the shared Multi-Agent Server &middot; <code class="mcp-tool-name">wf-20261022T100857Z-16996759</code> &middot; model llama3.2:3b</p>
+  <p class="readiness-outcome">
+    <span class="confidence-badge readiness-state">awaiting human review</span>
+    
+    <span class="confidence-badge verdict-pass">Reviewer: pass</span>
+    
+  </p>
+
+  
+
+  
+  <h3 class="readiness-heading">Planner &middot; plan</h3>
+  <p class="readiness-objective">Plan a pre-departure checklist for Indonesia based on the provided evidence.</p>
+  <ol class="readiness-steps">
+    
+    <li class="readiness-step">Gather and verify the visa requirement and entry notes.</li>
+    
+    <li class="readiness-step">Determine the necessary documents to prepare for entry, including passport requirements.</li>
+    
+    <li class="readiness-step">Pack accordingly for each season: Wet (Nov-Mar) and Dry (Apr-Oct).</li>
+    
+    <li class="readiness-step">Research and plan the best transit options: rideshare and ferry.</li>
+    
+  </ol>
+  <p class="readiness-meta">Evidence required:
+    <span class="readiness-cite">Indonesia — entry requirement</span><span class="readiness-cite">Indonesia — weather: Wet (Nov-Mar)</span><span class="readiness-cite">Indonesia — weather: Dry (Apr-Oct)</span><span class="readiness-cite">Indonesia — transit: rideshare</span><span class="readiness-cite">Indonesia — transit: ferry</span></p>
+  <ul class="readiness-criteria">
+    
+    <li class="readiness-criterion">The checklist includes the necessary documents to prepare for entry.</li>
+    
+    <li class="readiness-criterion">The checklist includes information on packing for each season.</li>
+    
+    <li class="readiness-criterion">The checklist includes information on the best transit options.</li>
+    
+    <li class="readiness-criterion">The checklist includes a note to check Smartraveller or the official source for any missing information.</li>
+    
+  </ul>
+  
+
+  
+  <form class="readiness-decision"
+        hx-post="/ui/readiness-reviews/wf-20261022T100857Z-16996759/decision"
+        hx-target="closest .readiness-review"
+        hx-swap="outerHTML"
+        hx-indicator="#readiness-loading"
+        hx-disabled-elt="find button">
+    <input type="hidden" name="destination_id" value="2">
+  
+
+  
+  <h3 class="readiness-heading">Worker &middot; checklist</h3>
+  <p class="readiness-summary">A pre-departure checklist for Indonesia based on the provided evidence.</p>
+  
+  <details class="readiness-edit">
+    <summary>Correct the summary</summary>
+    <textarea class="readiness-textarea" name="summary" maxlength="400" aria-label="Corrected summary">A pre-departure checklist for Indonesia based on the provided evidence.</textarea>
+  </details>
+  
+  <ol class="readiness-items">
+    
+    <li class="readiness-item">
+      
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="i1" checked>
+        <span class="readiness-subject">Indonesia — entry requirement</span>
+      </label>
+      
+      <code class="citation-id">i1</code>
+      <p class="readiness-detail">Visa on arrival is issued at major airports including Bali (DPS). Passport must have at least six months validity remaining.</p>
+      <p class="readiness-meta">Based on: <span class="readiness-cite">Indonesia — entry requirement</span></p>
+      
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-i1" maxlength="400" aria-label="Corrected text for Indonesia — entry requirement">Visa on arrival is issued at major airports including Bali (DPS). Passport must have at least six months validity remaining.</textarea>
+      </details>
+      
+    </li>
+    
+    <li class="readiness-item">
+      
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="i2" checked>
+        <span class="readiness-subject">Indonesia — weather: Wet (Nov-Mar)</span>
+      </label>
+      
+      <code class="citation-id">i2</code>
+      <p class="readiness-detail">Daily afternoon downpours and high humidity in Bali. Island ferry services are frequently cancelled.</p>
+      <p class="readiness-meta">Based on: <span class="readiness-cite">Indonesia — weather: Wet (Nov-Mar)</span></p>
+      
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-i2" maxlength="400" aria-label="Corrected text for Indonesia — weather: Wet (Nov-Mar)">Daily afternoon downpours and high humidity in Bali. Island ferry services are frequently cancelled.</textarea>
+      </details>
+      
+    </li>
+    
+    <li class="readiness-item">
+      
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="i3" checked>
+        <span class="readiness-subject">Indonesia — weather: Dry (Apr-Oct)</span>
+      </label>
+      
+      <code class="citation-id">i3</code>
+      <p class="readiness-detail">Best diving visibility and reliable sunshine. Book accommodation early for the July to August peak.</p>
+      <p class="readiness-meta">Based on: <span class="readiness-cite">Indonesia — weather: Dry (Apr-Oct)</span></p>
+      
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-i3" maxlength="400" aria-label="Corrected text for Indonesia — weather: Dry (Apr-Oct)">Best diving visibility and reliable sunshine. Book accommodation early for the July to August peak.</textarea>
+      </details>
+      
+    </li>
+    
+    <li class="readiness-item">
+      
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="i4" checked>
+        <span class="readiness-subject">Indonesia — transit: rideshare</span>
+      </label>
+      
+      <code class="citation-id">i4</code>
+      <p class="readiness-detail">Grab and Gojek are widely used in Jakarta and Bali, with designated rideshare pickup zones at the airports.</p>
+      <p class="readiness-meta">Based on: <span class="readiness-cite">Indonesia — transit: rideshare</span></p>
+      
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-i4" maxlength="400" aria-label="Corrected text for Indonesia — transit: rideshare">Grab and Gojek are widely used in Jakarta and Bali, with designated rideshare pickup zones at the airports.</textarea>
+      </details>
+      
+    </li>
+    
+    <li class="readiness-item">
+      
+      <label class="readiness-keep">
+        <input type="checkbox" name="accepted_item_ids" value="i5" checked>
+        <span class="readiness-subject">Indonesia — transit: ferry</span>
+      </label>
+      
+      <code class="citation-id">i5</code>
+      <p class="readiness-detail">Fast boats link Bali to the Gili Islands and Nusa Penida, but sailings are cancelled in rough weather.</p>
+      <p class="readiness-meta">Based on: <span class="readiness-cite">Indonesia — transit: ferry</span></p>
+      
+      <details class="readiness-edit">
+        <summary>Correct this item</summary>
+        <textarea class="readiness-textarea" name="detail-i5" maxlength="400" aria-label="Corrected text for Indonesia — transit: ferry">Fast boats link Bali to the Gili Islands and Nusa Penida, but sailings are cancelled in rough weather.</textarea>
+      </details>
+      
+    </li>
+    
+  </ol>
+  
+
+  
+  <h3 class="readiness-heading">Reviewer &middot; risks and recommendations</h3>
+  
+  
+  <ul class="readiness-findings">
+    
+    <li class="readiness-finding finding-info">
+      <span class="finding-severity">info</span>
+      <code class="citation-id">i1</code>
+      Visa on arrival is issued at major airports including Bali (DPS). Passport must have at least six months validity remaining.
+    </li>
+    
+    <li class="readiness-finding finding-info">
+      <span class="finding-severity">info</span>
+      <code class="citation-id">i2</code>
+      Daily afternoon downpours and high humidity in Bali. Island ferry services are frequently cancelled.
+    </li>
+    
+    <li class="readiness-finding finding-info">
+      <span class="finding-severity">info</span>
+      <code class="citation-id">i3</code>
+      Best diving visibility and reliable sunshine. Book accommodation early for the July to August peak.
+    </li>
+    
+    <li class="readiness-finding finding-info">
+      <span class="finding-severity">info</span>
+      <code class="citation-id">i4</code>
+      Grab and Gojek are widely used in Jakarta and Bali, with designated rideshare pickup zones at the airports.
+    </li>
+    
+    <li class="readiness-finding finding-info">
+      <span class="finding-severity">info</span>
+      <code class="citation-id">i5</code>
+      Fast boats link Bali to the Gili Islands and Nusa Penida, but sailings are cancelled in rough weather.
+    </li>
+    
+  </ul>
+  
+  
+  <ul class="readiness-recommendations">
+    
+    <li class="readiness-recommendation">Check Smartraveller for the most up-to-date visa requirement information.</li>
+    
+    <li class="readiness-recommendation">Consider purchasing travel insurance that covers trip cancellations due to weather-related issues.</li>
+    
+    <li class="readiness-recommendation">Book accommodation early for the July to August peak to ensure availability.</li>
+    
+    <li class="readiness-recommendation">Verify the ferry schedule before making travel plans.</li>
+    
+  </ul>
+  
+  
+
+  
+    <h3 class="readiness-heading">Human review &middot; your decision</h3>
+    
+    <fieldset class="readiness-choices">
+      <legend class="readiness-legend">Decision</legend>
+      
+      <label class="readiness-choice">
+        <input type="radio" name="decision" value="approve" required>
+        <span class="readiness-choice-label">Approve</span>
+        <span class="readiness-choice-hint">Accept the checklist as written.</span>
+      </label>
+      
+      <label class="readiness-choice">
+        <input type="radio" name="decision" value="correct" required>
+        <span class="readiness-choice-label">Correct</span>
+        <span class="readiness-choice-hint">Accept it with the text you changed under each item.</span>
+      </label>
+      
+      <label class="readiness-choice">
+        <input type="radio" name="decision" value="partial" required>
+        <span class="readiness-choice-label">Partially accept</span>
+        <span class="readiness-choice-hint">Keep only the ticked items.</span>
+      </label>
+      
+      <label class="readiness-choice">
+        <input type="radio" name="decision" value="reject" required>
+        <span class="readiness-choice-label">Reject</span>
+        <span class="readiness-choice-hint">Discard the checklist. Notes are required.</span>
+      </label>
+      
+    </fieldset>
+    <div class="readiness-fields">
+      <label class="field-group">
+        <span class="readiness-field-label">Decided by</span>
+        <input name="decided_by" type="text" required maxlength="60"
+               autocomplete="name" value="">
+      </label>
+      <label class="field-group readiness-notes">
+        <span class="readiness-field-label">Notes (required to reject)</span>
+        <textarea class="readiness-textarea" name="notes" maxlength="1000"></textarea>
+      </label>
+    </div>
+    <button class="primary-button" type="submit">Record decision</button>
+  </form>
+  
+
+  
+
+  <p class="visa-disclaimer">Generated by a local model from stored sample data. Confirm entry requirements with Smartraveller and the destination government before booking.</p>
+</section>
