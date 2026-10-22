@@ -14,7 +14,7 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 concurrency:
   group: cloud-production
@@ -35,16 +35,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
-      - name: Require all CI for the deployed revision
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
       - name: Require protected AI credentials
         if: inputs.mode == 'ai'
         env:
           CLOUD_AUTH_USER: ${{ secrets.CLOUD_AUTH_USER }}
           CLOUD_AUTH_PASSWORD: ${{ secrets.CLOUD_AUTH_PASSWORD }}
         run: python scripts/deploy/cloud_auth.py check
+      - name: Run missing CI and require success for the deployed revision
+        timeout-minutes: 65
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA" -RunMissing
       - name: Prepare and validate cloud configuration
         run: |
           python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --ai-services "$CLOUD_AI_SERVICES" --output cloud-bundle
