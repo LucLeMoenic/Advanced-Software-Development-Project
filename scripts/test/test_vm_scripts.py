@@ -33,6 +33,8 @@ def vm(tmp_path):
     stub.write_text('#!/usr/bin/env bash\necho "$*" >> "$STUB_LOG"\n'
                     'if [[ "$1" == "ps" ]]; then [[ -z "${STUB_NO_CONTAINERS:-}" ]] && echo abc123; exit 0; fi\n'
                     'if [[ "$1" == "inspect" ]]; then cat "${STUB_ENV_FILE:-/dev/null}"; exit 0; fi\n'
+                    'if [[ "$*" == *" ps --services"* ]]; then printf "%s" "${STUB_SERVICES:-}"; exit 0; fi\n'
+                    'if [[ "$*" == *"ollama list"* ]]; then cat "${STUB_OLLAMA_LIST:-/dev/null}"; exit 0; fi\n'
                     '[[ -n "${STUB_FAIL_ON:-}" && "$*" == *"$STUB_FAIL_ON"* ]] && exit 1\nexit 0\n')
     stub.chmod(stub.stat().st_mode | stat.S_IEXEC)
     log = tmp_path / "docker.log"
@@ -508,3 +510,75 @@ def test_the_audit_changes_nothing(vm):
     vm.run("audit-data-security.sh", env_extra={"STUB_ENV_FILE": str(vm.root.parent / "container-env.txt")})
 
     assert sorted((str(p.relative_to(vm.root)), mode(p)) for p in vm.root.rglob("*")) == before
+
+
+# -- model pull for the cloud AI profile -------------------------------------------------------------------------------
+
+LISTING = "NAME ID SIZE MODIFIED\nllama3.2:3b abc123 2.0 GB now\nqwen2.5:3b def456 1.9 GB now\n"
+
+
+def pulling(vm, *models, services="ollama\nstudent3-backend\n", listing=LISTING, fail_on=""):
+    release = vm.release(NEW)
+    vm.activate(release)
+    listing_file = vm.root.parent / "ollama-list.txt"
+    listing_file.write_text(listing)
+    return vm.run("pull-models-vm.sh", *models, fail_on=fail_on,
+                  env_extra={"STUB_SERVICES": services, "STUB_OLLAMA_LIST": str(listing_file)})
+
+
+def test_the_default_model_is_pulled_and_then_verified_in_the_listing(vm):
+    result = pulling(vm)
+
+    assert result.returncode == 0, result.stderr
+    calls = vm.docker_calls()
+    assert any(c.endswith("exec -T ollama ollama pull llama3.2:3b") for c in calls)
+    assert calls.index(next(c for c in calls if "ollama pull" in c)) < calls.index(next(c for c in calls if "ollama list" in c))
+    assert "ready in the ollama container" in result.stdout
+
+
+def test_several_models_are_each_pulled(vm):
+    result = pulling(vm, "llama3.2:3b", "qwen2.5:3b")
+
+    assert result.returncode == 0, result.stderr
+    pulls = [c for c in vm.docker_calls() if "ollama pull" in c]
+    assert len(pulls) == 2 and pulls[0].endswith("llama3.2:3b") and pulls[1].endswith("qwen2.5:3b")
+
+
+@pytest.mark.parametrize("name", ["llama3; rm -rf /", "../etc/passwd", "a b", "$(whoami)", "-rf", "UPPER:3b", "model:", "x\ny"])
+def test_unsafe_model_names_are_refused_before_any_docker_command(vm, name):
+    result = pulling(vm, name)
+
+    assert result.returncode != 0 and "invalid model name" in result.stderr
+    assert vm.docker_calls() == []
+
+
+def test_the_pull_refuses_when_there_is_no_current_release(vm):
+    result = vm.run("pull-models-vm.sh")
+
+    assert result.returncode != 0 and "no current release" in result.stderr
+    assert vm.docker_calls() == []
+
+
+def test_the_pull_refuses_when_ollama_is_not_running_and_explains_why(vm):
+    result = pulling(vm, services="student3-backend\n")
+
+    assert result.returncode != 0 and "ollama service is not running" in result.stderr
+    assert not any("ollama pull" in c for c in vm.docker_calls())
+
+
+def test_a_failed_pull_fails_the_script_and_names_the_model(vm):
+    result = pulling(vm, "llama3.2:3b", fail_on="ollama pull")
+
+    assert result.returncode != 0 and "pulling llama3.2:3b failed" in result.stderr
+
+
+def test_a_pull_that_exits_zero_but_leaves_the_model_unlisted_is_not_trusted(vm):
+    result = pulling(vm, "llama3.2:3b", listing="NAME ID SIZE MODIFIED\n")
+
+    assert result.returncode != 0 and "not listed by ollama after the pull" in result.stderr
+
+
+def test_a_model_name_that_only_prefixes_a_listed_one_does_not_count_as_listed(vm):
+    result = pulling(vm, "llama3.2", listing="NAME ID SIZE MODIFIED\nllama3.2:3b abc 2 GB now\n")
+
+    assert result.returncode != 0 and "not listed" in result.stderr
