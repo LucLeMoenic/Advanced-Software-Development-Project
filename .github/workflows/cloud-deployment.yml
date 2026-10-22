@@ -2,6 +2,11 @@ name: Cloud Deployment
 
 on:
   workflow_dispatch:
+    inputs:
+      ai_services:
+        description: "Cloud AI bonus components to enable (comma list of ai, mcp, rag, multi-agent). Leave empty for the required AI-off baseline."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -20,6 +25,10 @@ jobs:
       CLOUD_HOST: ${{ vars.CLOUD_HOST }}
       CLOUD_USER: ${{ vars.CLOUD_USER }}
       CLOUD_DOMAIN: ${{ vars.CLOUD_DOMAIN }}
+      AI_SERVICES: ${{ inputs.ai_services }}  # validated by prepare_cloud.py; passed through env, never interpolated into a script
+      BUNDLE_FILES: >-
+        compose.json Caddyfile revision.txt smoke_cloud.py accommodation.db deploy-vm.sh vm-pull-images.txt
+        rollback-vm.sh backup-data.sh restore-data.sh audit-data-security.sh pull-models-vm.sh images.tar
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -30,9 +39,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: pwsh -NoProfile -File scripts/deploy/assert-cloud-ci.ps1 -Sha "$GITHUB_SHA"
       - name: Prepare and validate cloud configuration
+        id: prepare
         run: |
-          python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --output cloud-bundle
+          python scripts/deploy/prepare_cloud.py --sha "$GITHUB_SHA" --domain "$CLOUD_DOMAIN" --ai-services "$AI_SERVICES" --output cloud-bundle
           docker compose -f cloud-bundle/compose.json config --quiet
+          echo "ai=$(cat cloud-bundle/ai-services.txt)" >> "$GITHUB_OUTPUT"
       - name: Build immutable application images
         run: |
           docker compose -f cloud-bundle/compose-build.json build
@@ -40,7 +51,8 @@ jobs:
           mapfile -t images < cloud-bundle/images.txt
           docker image save --output cloud-bundle/images.tar "${images[@]}"
           cd cloud-bundle
-          sha256sum compose.json Caddyfile revision.txt smoke_cloud.py accommodation.db deploy-vm.sh images.tar > SHA256SUMS
+          read -ra files <<< "$BUNDLE_FILES"
+          sha256sum "${files[@]}" > SHA256SUMS
       - name: Configure pinned SSH access
         env:
           SSH_KEY: ${{ secrets.CLOUD_SSH_KEY }}
@@ -55,12 +67,28 @@ jobs:
       - name: Deploy to the approved Azure or AWS Linux VM
         run: |
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "mkdir -p asd-upload/$GITHUB_SHA"
-          scp -o BatchMode=yes -o StrictHostKeyChecking=yes cloud-bundle/{compose.json,Caddyfile,revision.txt,smoke_cloud.py,accommodation.db,deploy-vm.sh,images.tar,SHA256SUMS} "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
+          files=()
+          for file in $BUNDLE_FILES SHA256SUMS; do files+=("cloud-bundle/$file"); done
+          scp -o BatchMode=yes -o StrictHostKeyChecking=yes "${files[@]}" "$CLOUD_USER@$CLOUD_HOST:asd-upload/$GITHUB_SHA/"
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash asd-upload/$GITHUB_SHA/deploy-vm.sh $GITHUB_SHA"
-      - name: Verify public gateway and Student 1 and 2 CRUD
+      - name: Pull the cloud AI model
+        if: steps.prepare.outputs.ai != ''
+        run: |
+          # Only Ollama needs a model; an MCP-only release has no ollama service.
+          if [[ ",$(cat cloud-bundle/ai-services.txt)," =~ ,(ai|rag|multi-agent), ]]; then
+            ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$CLOUD_USER@$CLOUD_HOST" "bash /opt/asd/bin/pull-models-vm.sh"
+          fi
+      - name: Verify public gateway and CRUD (AI-off baseline)
+        if: steps.prepare.outputs.ai == ''
         run: |
           set -o pipefail
           python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt
+      - name: Verify the enabled cloud AI components
+        if: steps.prepare.outputs.ai != ''
+        run: |
+          set -o pipefail
+          python scripts/deploy/smoke_cloud_ai.py "https://$CLOUD_DOMAIN" --components "$(cat cloud-bundle/ai-services.txt)" \
+            | tee cloud-bundle/cloud-smoke.txt
       - name: Retain deployment evidence
         if: always()
         uses: actions/upload-artifact@v4

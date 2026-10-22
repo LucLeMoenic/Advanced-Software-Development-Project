@@ -1,0 +1,18 @@
+#cloud-config
+# First-boot setup for the Azure or AWS Ubuntu 24.04 VM, shared by provision-azure.sh and provision-aws.sh.
+#
+# It gives the VM exactly what runbook section 1 asks for: Docker with the Compose plugin, python3 for the backup scripts, and
+# /opt/asd owned by the deploy user. __DEPLOY_USER__ is replaced by the provisioning script before the file is sent to the cloud.
+# Ports are opened by the provider's firewall (network security group / security group), not here.
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - python3
+  - sqlite3
+
+runcmd:
+  - systemctl enable --now docker
+  - usermod -aG docker __DEPLOY_USER__
+  # 750: the deploy scripts need write access; other local accounts must not read the application data (bonus B6)
+  - install -d -m 750 -o __DEPLOY_USER__ -g __DEPLOY_USER__ /opt/asd /opt/asd/releases /opt/asd/data /opt/asd/backups /opt/asd/bin
