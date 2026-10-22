@@ -4,11 +4,13 @@ How to deploy the integrated application to the group's Azure or AWS Linux VM, p
 the rubric and the `review-cloud` loop mode need. Everything here follows the scripts in `scripts/deploy/` and
 `.github/workflows/cloud-deployment.yml`; nothing is assumed beyond them.
 
-**Status (22 October 2026):** the AI-off baseline has reached the public HTTPS
-gateway. Its initial smoke run failed during TLS startup; later page probes
-passed, not a complete cloud acceptance run. Protected AI activation is now
-implemented and locally tested, but has **not been deployed or model-tested on
-AWS**. Collect real deployment evidence using the procedure below.
+**Status (22 October 2026):** AI-off baseline run `39741981906` passed public
+CRUD checks. However, it preceded the CI-gate correction and deployed without
+all six successful CI checks; its green status is not complete acceptance
+evidence. The corrected gate rejects absent, pending or failed checks, including
+the final workflow. Protected AI activation is implemented and locally tested,
+but has **not been deployed or model-tested on AWS**. Collect real deployment
+evidence using the procedure below.
 
 ## 1. One-time VM setup (needs the platform decision and a VM)
 

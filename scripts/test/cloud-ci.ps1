@@ -13,6 +13,7 @@ $script:runs = @("Student 1 CI", "Student 2 CI", "Student 3 CI", "Student 4 CI",
     @{ name=$_; head_sha=$sha; head_branch="main"; event="push"; run_number=1; run_attempt=1;
        status="completed"; conclusion="success"; html_url="https://example.invalid/run" }
 }
+$passingRuns = @($script:runs | ForEach-Object { $_.Clone() })
 function gh {
     $global:LASTEXITCODE = 0
     $env:ASD_TEST_RUNS
@@ -49,5 +50,19 @@ try { & $gate -Sha $sha } catch {
     }
 }
 if (-not $blocked) { throw "Missing CI was treated as successful." }
+foreach ($scenario in @("missing-all", "pending-all", "failed-all", "missing-last", "failed-last")) {
+    $candidates = @($passingRuns | ForEach-Object { $_.Clone() })
+    switch ($scenario) {
+        "missing-all" { $candidates = @() }
+        "pending-all" { $candidates | ForEach-Object { $_.status = "in_progress"; $_.conclusion = $null } }
+        "failed-all" { $candidates | ForEach-Object { $_.conclusion = "failure" } }
+        "missing-last" { $candidates = $candidates[0..4] }
+        "failed-last" { $candidates[-1].conclusion = "failure" }
+    }
+    $env:ASD_TEST_RUNS = ConvertTo-Json -InputObject @(@{ workflow_runs=$candidates }) -Depth 5
+    $blocked = $false
+    try { & $gate -Sha $sha } catch { $blocked = $true }
+    if (-not $blocked) { throw "Gate accepted $scenario without all six successful checks." }
+}
 Remove-Item Env:ASD_TEST_RUNS
-Write-Host "PASS: all six workflows support manual runs; cloud gate accepts exact-revision push/manual success, rejects mismatches and failed retries, and reports all missing checks."
+Write-Host "PASS: all six workflows support manual runs; cloud gate accepts exact-revision push/manual success, rejects mismatches, retries, absent/pending/failed runs and a missing/failed final check, and reports all missing checks."

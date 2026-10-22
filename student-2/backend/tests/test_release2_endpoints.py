@@ -76,6 +76,9 @@ def test_update_endpoint_invalid_and_missing_records(client):
 
 def test_cloud_smoke_uses_current_disabled_routes_and_cleans_up(client, monkeypatch):
     path = Path(__file__).resolve().parents[3] / "scripts" / "deploy" / "smoke_cloud.py"
+    monkeypatch.syspath_prepend(str(path.parent))
+    monkeypatch.delenv("CLOUD_AUTH_USER", raising=False)
+    monkeypatch.delenv("CLOUD_AUTH_PASSWORD", raising=False)
     spec = importlib.util.spec_from_file_location("smoke_cloud", path)
     smoke = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(smoke)
@@ -89,7 +92,7 @@ def test_cloud_smoke_uses_current_disabled_routes_and_cleans_up(client, monkeypa
             return addinfourl(BytesIO(response.data), {}, request.full_url, response.status_code)
         return addinfourl(BytesIO(b"<html>Gateway fixture</html>"), {}, request.full_url, 200)
 
-    monkeypatch.setattr(smoke, "urlopen", gateway)
+    monkeypatch.setattr("cloud_auth.build_opener", lambda *handlers: Mock(open=gateway))
     student1_check = Mock()
     monkeypatch.setattr(smoke, "check_student1", student1_check)
     student3_check = Mock()  # Student 3's section has its own tests (scripts/test/test_cloud_smoke_student3.py)

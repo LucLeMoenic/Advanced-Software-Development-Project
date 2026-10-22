@@ -2,6 +2,39 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-22 - Cloud CI Follow-up
+
+**Failure:** Student 2 CI run `39741948048` failed in the backend endpoint
+suite: its dynamic cloud-smoke import could not resolve the newly shared
+`cloud_auth` helper. The fixture also still mocked the removed `urlopen`
+symbol. The earlier cloud-only test run missed this caller.
+
+**Fix:** reproduce the CLI script's sibling-module import path in that fixture,
+clear optional gateway credentials for the AI-off test and mock the shared
+HTTP opener while retaining real backend/database CRUD and cleanup checks.
+No application runtime change was needed.
+
+**Related deployment-gate defect:** baseline deployment `39741981906` passed
+while CI was incomplete. The accumulated-failure check was incorrectly inside
+the workflow loop, so all-pending/all-missing runs or a failed final workflow
+could be accepted. Moved the failure check after all six workflows and added
+regressions for all missing/pending/failed runs and a missing/failed final
+workflow. Both defects were reproduced before fixing them.
+
+**Validation:** backend suite passed with 257 tests and 11 skipped on Windows
+and in an isolated Linux/Python 3.11 container matching CI's interpreter.
+The cloud authentication/smoke suites passed 143 tests; expanded PowerShell
+CI-gate regressions and Ruff security lint passed. The repaired gate was also
+run read-only against actual main revision `851bdd7`: it correctly rejected
+Student 2's failure and missing Student 4/5 runs. Restored missing backend
+dependencies from the existing manifest; no dependency files changed.
+
+**Delivery:** repair branch `LLM/Student_2_Cloud_CI_Followup` starts from current
+`origin/main`. No deployment, push or remote CI rerun was triggered. After
+merging, require all six green checks on the new main revision before selecting
+the protected `ai` deployment mode; an old green deployment is not proof of
+passing CI.
+
 ## 2026-10-22 - Protected Cloud AI Activation
 
 **Request and approval:** make the supported AI modes deployable end to end.
