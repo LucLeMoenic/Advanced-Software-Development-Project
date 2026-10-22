@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: github.ref == 'refs/heads/main'
     environment: production
     env:
@@ -21,8 +21,8 @@ jobs:
       CLOUD_USER: ${{ vars.CLOUD_USER }}
       CLOUD_DOMAIN: ${{ vars.CLOUD_DOMAIN }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.11"
       - name: Require all CI for the deployed revision
@@ -62,8 +62,8 @@ jobs:
           set -o pipefail
           python scripts/deploy/smoke_cloud.py "https://$CLOUD_DOMAIN" | tee cloud-bundle/cloud-smoke.txt
       - name: Retain deployment evidence
-        if: always()
-        uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('cloud-bundle/compose.json', 'cloud-bundle/revision.txt', 'cloud-bundle/SHA256SUMS', 'cloud-bundle/cloud-smoke.txt') != '' }}
+        uses: actions/upload-artifact@v6
         with:
           name: cloud-deployment-${{ github.sha }}
           path: |

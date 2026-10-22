@@ -2,6 +2,38 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-22 - Cloud Deployment CI Recovery
+
+**Request:** fix the failed cloud deployment, pull current main, then create a
+branch and commit only the cloud fix.
+
+**Diagnosis:** run 39733038109 stopped at the exact-revision CI gate because
+Student 4 and Student 5 had no runs for that revision. Cloud host/user/domain
+variables were also empty; no AWS connection was attempted.
+
+**Changes:** enabled manual runs for Student 1 and Student 5 so all six required
+checks can run despite path filters. The gate reports every blocked workflow and
+explains same-revision recovery without accepting missing, failed or stale CI.
+Pinned the deployment runner to Ubuntu 24.04, selected verified Node.js 24
+action releases, skipped evidence upload when no files exist, and updated the
+shared cloud runbook.
+
+**Validation before commit:** after fast-forwarding main to `a102846` and
+creating `LLM/Student_2_Cloud_CI_Recovery`, the cloud CI PowerShell regression
+suite passed. It covers manual success, invalid event/revision/branch/status/
+result rejection, a failed latest retry, and reporting both missing checks.
+All seven workflow YAML files parsed and deployment safeguard assertions passed.
+The selected action runtimes were verified against published action metadata.
+PyYAML was installed only in the existing local venv after a missing-parser
+failure; no application dependency manifests changed.
+
+**Limits:** GitHub returned HTTP 403 for production settings administration;
+an administrator must configure the cloud variables and SSH secrets. No cloud
+resources were provisioned and no deployment success is claimed. Earlier
+Student 2 documentation was kept in the named pre-update stash at the user's
+request rather than included in this branch. After merge, run missing CI on the
+current main revision before deploying.
+
 ## 2026-10-21 - CI Disabled-Mode Smoke Fix
 
 Student 2 CI run `39572296667` failed because the PowerShell smoke script still

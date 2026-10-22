@@ -41,6 +41,22 @@ scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/r
 The workflow only runs from `main`, and `assert-cloud-ci.ps1` requires all six CI workflows to have succeeded for the exact
 commit being deployed.
 
+Path filters can legitimately skip student CI on a new `main` revision. All six
+required workflows support **Run workflow**: manually run any missing checks on
+`main`, wait for success, then run Cloud Deployment for that same revision. If
+`main` advances, check all six results again for the new revision. Do not bypass
+the gate or use a successful run from an older commit. A gate failure lists every
+missing, incomplete or unsuccessful workflow.
+
+Set the three `CLOUD_*` values as Actions **variables**, not secrets; only the SSH
+key and known-hosts entry belong in **secrets**. Empty variables in a deployment
+log mean the workflow cannot see the required settings. Configuring the
+`production` environment requires repository administration access.
+
+The deployment runner is pinned to Ubuntu 24.04 and its checkout, Python setup
+and artifact actions use Node.js 24. Evidence upload is skipped if deployment
+fails before producing any evidence files.
+
 ## 3. Deploy
 
 Actions, then **Cloud Deployment**, then **Run workflow** on `main`. The workflow: checks the six CI runs for the commit, runs
