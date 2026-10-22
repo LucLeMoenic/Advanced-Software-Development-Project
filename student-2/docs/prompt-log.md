@@ -2,6 +2,85 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Automatic CI Before Cloud Deployment
+
+**Request:** remove the need to manually start missing student CI before
+deployment. Created `LLM/Student_2_Automatic_Deployment_CI` from current
+`origin/main` (`e146338`), preserving the existing local deployment log and
+modified runtime database.
+
+**Implementation:** extended the existing gate with opt-in `-RunMissing`.
+The deployment dispatches missing workflows, reuses same-SHA successes and
+waits for queued/running CI for up to one hour. Delayed GitHub run registration
+does not cause duplicate dispatches. Failed/cancelled/skipped CI stops the
+deployment without automatic retries. Main-revision checks before polling and
+each dispatch reject stale deployments; different-revision results never count.
+The default script invocation remains read-only and immediate.
+
+The deployment uses its built-in token with `actions: write`; no new user secret
+is required. Existing student/integration workflows already support manual
+dispatch, so no other feature workflows were changed. Protected-AI credential
+validation now precedes expensive CI. Updated the shared deployment runbook.
+
+**Validation:** existing strict gate regressions plus 16 automatic orchestration
+cases pass with mocked GitHub and time, covering dispatch deduplication,
+pending-to-success, failed retries, API/dispatch errors, timeout and main moving
+before/during dispatch or waiting. The initial test harness exposed CRLF matching
+and cross-script mock scoping issues; both were corrected before the passing run.
+All 69 cloud configuration/profile regressions passed. Parsed workflow checks
+confirm token permissions, the 65-minute step bound, credential-check order and
+the gate preceding bundle preparation. No remote CI or AWS deployment was
+triggered by validation; live token-policy/dispatch execution remains a
+post-merge check.
+
+## 2026-10-22 - Local Deployment with Native AI
+
+**Request:** deploy the current branch locally. Rebuilt the integrated
+application images with native Podman because this installation has no Docker
+Buildx, then recreated the app through Compose without removing data volumes.
+All six gateway pages return 200 at `http://localhost:5100`; enabled capability
+flags match each implemented feature. Saved itinerary JSON matched exactly
+before and after redeployment.
+
+**Native services:** started persistent Ollama, MCP, RAG and Multi-Agent
+processes on the host's private WSL-facing interface. Restored the shared
+requirements in the documented sibling `venv-mcp` environment, reused by the
+three Python services. Reused installed `llama3.2:3b` and verified real GPU-backed
+inference; no model download was needed.
+
+Windows reserves TCP 11434 in an excluded range, so this local deployment uses
+11440 instead. The user explicitly approved separate firewall rules for Ollama
+11440 and Multi-Agent 5600. Each rule is limited to the current Podman VM's
+address, the private host address and the actual service executable; existing
+firewall policy and port reservations were not disabled or removed.
+
+The host-specific Compose override is retained in this session's files, not
+committed into the shared application. It enables the supported modes and
+routes all model consumers to one native model. Student 5's frontend assumed
+Docker DNS `127.0.0.11`, which does not exist in Podman. A local-only mounted
+nginx template uses the same native resolver-discovery mechanism already used
+by the shared gateway; gateway destination CRUD then passed. No Student 5
+source or repository Compose file was changed.
+
+**Real validation:** Student 2 generation and trip/stop CRUD, Student 3/4 AI
+and CRUD, Student 5 CRUD/advisory, MCP calls and cited RAG answers passed.
+Student 2's natural-language edit preview and Student 3/5 agent flows reached
+human review. No itinerary edit or human decision was submitted. Native
+services were also reached from an application container. The itinerary page
+loaded in the browser.
+
+**Remaining issues, not hidden as successes:** Student 1 ranking returned a
+model-response validation fallback despite HTTP 200 from Ollama. Its review
+did complete Planner/Worker/Reviewer successfully at the native service, but
+the feature adapter omits history, so the current strict all-feature smoke
+rejects that response. These are feature/acceptance-contract issues, not
+disabled local services. Do not claim a fully green all-feature smoke.
+All four native services are left running; their private interface and VM-only
+firewall rules may need updating if WSL addresses change. AWS was not changed.
+Final checks report all 16 application containers healthy. Runtime SQLite writes
+also marked the tracked Student 1 accommodation database modified; it was left
+uncommitted and was not reverted or replaced, to preserve the live local data.
+
 ## 2026-10-22 - Cloud CI Follow-up
 
 **Failure:** Student 2 CI run `39741948048` failed in the backend endpoint
