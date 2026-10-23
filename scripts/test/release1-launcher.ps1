@@ -1,5 +1,7 @@
 [CmdletBinding()]
-param()
+param(
+    [string]$Python = "python"
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -8,6 +10,39 @@ $errors = $null
 $path = Join-Path $PSScriptRoot "../deploy/start-release1.ps1"
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors)
 if ($errors.Count) { throw ($errors | Out-String) }
+
+$probeNode = $ast.Find({ param($node)
+    $node -is [System.Management.Automation.Language.StringConstantExpressionAst] -and
+        $node.Value.StartsWith("import os, requests")
+}, $true)
+if (-not $probeNode) { throw "Missing launcher native-service probe." }
+$capabilityTests = @'
+import ast
+import sys
+
+tree = ast.parse(sys.argv[1])
+check = next(node for node in tree.body if isinstance(node, ast.Assert)
+             and any(isinstance(value, ast.Name) and value.id == 'capabilities' for value in ast.walk(node)))
+code = compile(ast.fix_missing_locations(ast.Module(body=[check], type_ignores=[])), '<launcher-capabilities>', 'exec')
+required = ('aiEnabled', 'mcpEnabled', 'ragEnabled')
+enabled = dict.fromkeys(required, True)
+for payload in (enabled, dict(enabled, multiAgentEnabled=False), dict(enabled, multiAgentEnabled=True)):
+    exec(code, {'capabilities': payload})
+invalid = [None, [], False]
+for name in required:
+    invalid.append({key: value for key, value in enabled.items() if key != name})
+    for value in (False, None, 'true', 1):
+        invalid.append(dict(enabled, **{name: value}))
+for payload in invalid:
+    try:
+        exec(code, {'capabilities': payload})
+    except AssertionError:
+        continue
+    raise AssertionError(f'Invalid required capabilities accepted: {payload}')
+print('Launcher capabilities: legacy and Release 2 payloads accepted; missing, disabled and non-boolean modes rejected.')
+'@
+& $Python -c $capabilityTests $probeNode.Value
+if ($LASTEXITCODE -ne 0) { throw "Launcher capability regression failed." }
 
 foreach ($name in @("Set-NativeConfiguration", "Get-VenvPython", "Test-Url")) {
     $definition = $ast.Find({ param($node)

@@ -199,7 +199,8 @@ from ai_clients import McpClient, validate_summary
 backend = 'http://127.0.0.1:8080/api'
 response = requests.get(backend + '/capabilities', timeout=5)
 response.raise_for_status()
-assert response.json() == dict(aiEnabled=True, mcpEnabled=True, ragEnabled=True)
+capabilities = response.json()
+assert isinstance(capabilities, dict) and all(capabilities.get(name) is True for name in ('aiEnabled', 'mcpEnabled', 'ragEnabled')), f'Required AI/MCP/RAG capabilities are not enabled: {capabilities}'
 response = requests.get(os.environ['RAG_SERVER_URL'] + '/health', timeout=5)
 response.raise_for_status()
 assert response.json()['status'] == 'ok'

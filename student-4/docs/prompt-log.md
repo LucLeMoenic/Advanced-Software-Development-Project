@@ -1,5 +1,19 @@
 # Student 4 AI Prompt Log
 
+## 2026-10-23 - Accept Extended Launcher Capabilities
+
+- **Evidence:** all containers started, but the launcher rejected Student 2's
+  capability payload containing the three enabled Release 1 flags plus
+  `multiAgentEnabled: false`. The obsolete exact dictionary equality failed
+  before native connectivity checks ran; this was not a firewall failure.
+- **Fix:** require the three documented flags to be literal true while allowing
+  additional capability fields. Invalid responses now include the actual modes.
+  No Student 2 application code or native network policy was changed.
+- **Validation:** the exact updated probe passed against the running stack,
+  including RAG health, configured Ollama model and a real read-only MCP call.
+  Existing isolated launcher tests passed with added legacy/extended payloads
+  and missing, disabled and non-boolean flag rejection; editor diagnostics clean.
+
 ## 2026-10-23 - Fix CI Smoke-Check Broken Pipe
 
 - **Evidence:** run `39877159623` passed application/shared tests, endpoint TRX
