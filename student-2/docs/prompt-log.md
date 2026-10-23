@@ -2,6 +2,28 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Removing an Undeclared CI Test Dependency
+
+**Evidence:** Student 2 run `39892789360` and Student 3 run `39892789228`
+both failed the new cloud agent deadline test with `ModuleNotFoundError:
+No module named 'yaml'`. PyYAML was available locally but was not declared
+in either CI environment; the earlier local passing run missed this.
+
+**Fix:** combine the deadline assertions with the existing real Compose
+validation, using `docker compose config --format json` and Python's standard
+JSON parser. Read the named smoke step with the existing workflow-text test
+pattern. Retain service/private-port checks, the generated 360-second setting,
+both nested budget inequalities and AI-off baseline checks. No dependency,
+application setting, CI bypass or feature implementation was added.
+
+**Validation:** 114 profile/smoke tests passed with `sys.modules["yaml"] = None`
+to make any remaining YAML import fail, including the real Compose check.
+The broader CI selection exposed eight unrelated Windows/WSL path failures
+in the unchanged Bash retry-wrapper tests; Linux VM-script tests were skipped
+by their existing platform guard. The failed GitHub runs had passed those
+tests on Linux. The refreshed GitHub runs must establish complete CI status;
+this local check is not a claim that every CI job has passed.
+
 ## 2026-10-23 - Retaining the Bounded Cloud Agent Timeout
 
 **Decision:** after testing compact agent outputs, the user chose to stop that
