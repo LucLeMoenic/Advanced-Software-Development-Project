@@ -1,5 +1,11 @@
 # Budget & Expense Tracker Requirements
 
+**Current checkpoint - 2026-10-23:** Release 2 is implemented in the uncommitted
+workspace. R0/R1 tables below retain their historical release scope and evidence;
+current R2 acceptance IDs follow at the end. Use the
+[runbook](release-2-runbook.md) and
+[dated evidence](evidence/release-2/validation-2026-10-23.md) for current limits.
+
 ## Functional Requirements
 
 | ID | Requirement | Acceptance criterion |
@@ -87,3 +93,24 @@ R1-01 through R1-06 have implementation evidence; integrated live and CI evidenc
 is distinguished in the state column and runbook. Fresh loop records are not
 finalised: Liam's human decisions are absent. No group-wide completion, grade, or
 release sign-off is implied.
+
+## Release 2 Acceptance
+
+These IDs scope Student 4 behavior and evidence; they do not award marks or
+replace the integrated-group requirements in the
+[Release 2 brief](../../docs/Project_Specifications/Release_2_brief.md).
+
+| ID | Acceptance criterion | Current evidence or remaining gate |
+|---|---|---|
+| R2-01 | Preview replaces all existing category-aggregate limits exactly once; positive safe-integer amounts and total; deterministic planned/actual/remaining/percentage/status before and after. Actuals and saved data remain unchanged. | 74 focused calculator tests, included in 322 backend tests; recorded live EUR 3750 -> 3850 planned, EUR 4126.85 actual unchanged. |
+| R2-02 | `POST /api/what-if/preview` accepts `{journeyLabel,limits}` and returns `{original,proposed,snapshotHash}` without requiring AI. Reject zero, incomplete, duplicate, unsafe or malformed proposals. | Implemented and covered by backend/frontend tests; real gateway preview captured. |
+| R2-03 | `POST /api/what-if/workflows` requires the same complete proposal plus `snapshotHash`; return 202 `{id,status,token,preview,workflow}`. Poll and decide via `/api/what-if/workflows/{id}` and `/decision`, with `X-WhatIf-Token`. | Real native Planner/Worker/Reviewer reached `awaiting_human_review`; no real human completion yet. |
+| R2-04 | Require explicit `approve`, `correct`, `partial` or `reject`, actual human name of 1-60 characters and notes <=1000. Reject needs nonblank notes; partial selects existing item IDs; correction changes commentary, never financial numbers. | All four paths covered with fake dependencies. A genuine human decision/name/notes and history remain pending. Name is self-declared, not authentication. |
+| R2-05 | Protect workflow/preview binding for two hours; ephemeral backend restart invalidates tokens. Reject invalid tokens with 403 and stale snapshots with 409. Bound requests, responses, deadlines and retry behavior; do not automatically duplicate start/decision POSTs. | Implemented and tested; runbook documents recovery, Stop polling and Retry status. |
+| R2-06 | Strict `MULTI_AGENT_ENABLED` defaults false and is surfaced as `multiAgentEnabled` in capabilities. Compose maps `STUDENT4_MULTI_AGENT_ENABLED` (default false) and shared `MULTI_AGENT_SERVER_URL`. | Source-confirmed; local demo explicitly true. Disabled review is 503 while preview/core CRUD remain available. |
+| R2-07 | Retain Student 4 R0/R1 behavior, native Ollama/MCP/RAG/shared loop, database ownership and existing shared Multi-Agent Server. Add no schema, runtime dependency, financial-write or cross-student data path. | Local Ollama/Multi-Agent exercised. MCP/RAG currently false; retained behavior is not fresh live acceptance. |
+| R2-08 | Show before/after preview, native workflow stages/findings and explicit human-review controls; safe text rendering, validation, stop/retry and no page overflow at 1280/768/320px. | 79 frontend tests/build and real gateway preview captures. Awaiting-human browser evidence needs main-session confirmation. |
+| R2-09 | Run local pre-commit security checks and report skipped scans accurately; retain no new runtime dependencies. | Installed hook: Ruff security/detect-secrets passed; pip-audit skipped (no changed requirements). .NET transitive vulnerability check reported none. |
+| R2-10 | Assigned CI explicitly tests preview and workflow-start endpoint functions and uploads TRX results after publication. | Filter/upload implemented; local backend passed. No new post-push remote CI run yet. |
+| R2-11 | Demonstrate the complete integrated local application and integrated cloud baseline with all four AI modes off, working frontend/backend/database/CRUD and preview. | Four-container local subset only; cloud tooling tests 35 Student 4/210 related passed. Full-group/live-cloud/workflow evidence remains pending. |
+| R2-12 | Reuse `review-multi-agent`, `review-testing`, `review-cloud`; retain real outputs, validation logs and human Adapt finalisation after actual post-tests. | Runnable commands documented; no new mode records/finalisation claimed. Group report/video/Q&A and release sign-off remain separate gates. |

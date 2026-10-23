@@ -1,5 +1,10 @@
 # Budget & Expense Tracker Risk Plan
 
+**Current scope - 2026-10-23:** the authorised implemented Release 2 What-If
+planner extends the historical R0/R1 scope. In particular, R-12's older
+multi-agent/cloud exclusion is not a prohibition on this authorised R2 work.
+The R2 controls below supplement the retained historical register.
+
 Scale: likelihood and impact are 1 (low) to 5 (high). Score is their product.
 
 | ID | Risk | L | I | Score | Preventive control | Trigger and response | Owner |
@@ -29,3 +34,20 @@ OBSERVE result.
 | R1-02 | MCP introduces duplicate financial rules, writes, or recursive dashboard calls. | Keep `budget.get_summary` read-only and route it through a fixed callback to the existing MCP-free deterministic dashboard; add no database or money-calculation path. | Recorded integrated callback matched dashboard totals and left data unchanged; combined main-merge regression checks are separate. |
 | R1-03 | RAG guidance is mistaken for live budget facts or selects irrelevant/unsupported passages. | Keep RAG separate from saved spending data; Student 4 accepts only retrieved passage IDs and renders exact source text; validate known IDs, markers, score/confidence, and exact insufficient-context abstention. | Recorded direct and integrated cases returned exact cited text and abstention. Passage relevance remains model-dependent; human loop finalisation and broader hold-out review remain open. |
 | R1-04 | Native MCP/RAG/Ollama dependencies are unavailable during local or CI validation. | Preserve explicit mode flags; test disabled behavior without calls and record live connectivity separately from offline evidence. | Student4-prefixed Compose flags default MCP/RAG off; live host connectivity was recorded, not guaranteed on a changed showcase machine. |
+
+## Release 2 Risks - 2026-10-23
+
+| ID | Verified risk or evidence gap | Control and current limit | Owner |
+|---|---|---|---|
+| R2-01 | Proposed limits or model commentary could be mistaken for saved financial changes. | Complete category aggregates, safe-integer validation and deterministic calculation; no financial writes for preview or any decision. Live saved budget/expense responses were byte-identical. | Liam |
+| R2-02 | Source data can change after preview; protected handles expire or become invalid after backend restart. | Snapshot check at start/decision returns 409; two-hour ephemeral token binds workflow/preview, invalid tokens return 403. Refresh preview/start deliberately; never apply an old decision to changed data. | Liam |
+| R2-03 | A timeout can occur after a workflow start or decision has applied. | Bounded 16 KiB request/256 KiB response and 10-second dependency deadline; poll known ID/token first. If start returned no ID, inspect shared history before another POST. Stop polling does not cancel work. | Liam |
+| R2-04 | Reviewer concerns or valid multiline prose were previously hidden/rejected. | Main-session fixes allow bounded CR/LF/tab commentary and readable structurally valid flagged native records; corrected output remains strictly validated. Expanded backend suite passed 322 tests; human judgement is still required. | Liam |
+| R2-05 | A named decision could be misrepresented as authenticated approval. | Actual self-declared name <=60 and notes <=1000; reject requires notes, partial selects existing items, correction is commentary only. Protected tokens are not user authentication; keep native service trusted-local and tokens out of evidence. | Liam |
+| R2-06 | Windows denied port 5600, and a relative Python path fails after helper directory change. | Resolve interpreter to an absolute path before startup; recorded native service uses 127.0.0.1:15600 and container host URL. No public bind or firewall change is implied. | Liam |
+| R2-07 | Four healthy containers and historical R1 evidence do not prove complete local/cloud integration. | Label the subset; current MCP/RAG modes are false. Coordinate full-group/native R1 replay separately. Required cloud baseline has all four AI modes false; no live cloud, credentials or provisioning evidence yet. | Liam and team |
+| R2-08 | Unit fakes, model findings, local tests and configured CI can be mistaken for human acceptance or post-push evidence. | Real workflow still has null human decision; new report-review modes, remote CI/TRX, live deployment and showcase remain pending. Preserve provenance in the dated evidence record. | Liam and team |
+| R2-09 | The submission date conflicts across source documents while release gates remain open. | Follow the specific R2 brief: 25 October 2026, 11:59 PM AEST, not the general specification's historical 18 October date. Prioritise genuine human decision, CI, group/cloud evidence and report/video; do not fabricate sign-off to close gaps. | Liam and team |
+
+Current results and outstanding gates: [validation](evidence/release-2/validation-2026-10-23.md).
+Operational recovery and human demo: [runbook](release-2-runbook.md).

@@ -102,6 +102,7 @@ Dashboard calculations and CRUD continue to use deterministic backend logic.
 - [Release 0 checklist](docs/release-0-checklist.md)
 - [Browser checklist](docs/frontend-browser-checklist.md)
 - [Release 1 validation runbook](docs/release-1-runbook.md)
+- [Release 2 What-If planner and demonstration](docs/release-2-runbook.md)
 - [Prompt log](docs/prompt-log.md)
 - [Review record](docs/review-record.md)
 - [Contribution log](docs/contribution-log.md)

@@ -1,5 +1,51 @@
 # Student 4 Review Record
 
+## 2026-10-23 - Final Live and Report-Review Reconciliation
+
+The final backend suite passed 322 tests; the explicit two-function CI selection
+passed five local cases. Real Chromium/native-agent replay reached human review
+at 320/768/1280px without page overflow, JavaScript errors or financial writes.
+The local all-four-AI-off rehearsal preserved preview and rejected workflow
+start with 503; agent mode was restored. See the [dated evidence](evidence/release-2/validation-2026-10-23.md).
+
+Live model commentary was not fully accurate. Added exact currency-major-unit
+display evidence and a no-recalculation instruction; retained both raw runs.
+Human correction/rejection remains essential, and neither run is a model-quality
+pass. The three report-review modes executed but their model ACCEPT verdicts
+underweight missing evidence, especially cloud deployment. All three records
+remain unfinalised with null human decisions/post-tests. No human approval,
+remote CI or live cloud acceptance is inferred.
+
+Closing source review confirmed both earlier runtime blockers resolved. Final
+source/evidence security hooks passed after auditing only the fifteen public
+integrity fingerprints in the three new report records into the existing secret
+baseline. Detector rules were unchanged; temporary staging was undone. Model
+inaccuracy and unauthenticated trusted-local attribution remain documented limits.
+
+## 2026-10-23 - Release 2 Documentation Reconciliation
+
+**Scope:** Student 4 What-If documentation only, current API/client/UI, mode/CI
+configuration and native-startup/shared-loop command contracts. Main-session
+validation and two independent code-review outcomes were supplied, not rerun or
+independently repeated here. Prior release records remain historical.
+
+| Finding | Resolution or remaining gate |
+|---|---|
+| Context excluded R2 and the plan still described calculator-only work. | Prepend a current uncommitted-workspace checkpoint and R2 acceptance IDs; retain old records and explicitly supersede their scope/status. |
+| Multiline commentary and hidden native Reviewer-flagged subject mismatch. | Main-session fixes admit bounded CR/LF/tab prose and readable structurally valid flagged workflows; corrected output remains strict. Supplied post-fix backend result: 322 passed. |
+| Workflow completion could be confused with financial application or human acceptance. | Document preview-only behavior for all four choices, self-declared name/notes, protected token and stale 409 checks. Real workflow is still awaiting human review with `human_decision=null`. |
+| Healthy subset, local tests and configured CI/cloud tooling could overstate release completion. | Label four-container scope, fake-dependency decision tests, current MCP/RAG false, unpushed CI and unrun live cloud; separate remaining group and human evidence. |
+| Native startup and report commands needed an executable handoff. | Resolve Python before helper directory change; use native port 15600 and container host URL. Reuse the three existing review modes with actual evidence; mark new records unrun and finalise only after genuine human review/post-tests. |
+
+**Documentation validation:** focused editor diagnostics reported no errors for
+the edited/new documentation. No terminal, service, test, deployment, delegation,
+commit, push or human finalisation was performed by this pass. Awaiting-human
+browser evidence still needs main-session confirmation; no such capture is
+linked or claimed. This is not release approval or a grade assessment.
+
+Evidence and unresolved gates: [validation](evidence/release-2/validation-2026-10-23.md).
+Human demo and recovery: [runbook](release-2-runbook.md).
+
 ## 2026-10-02 - Integrated Release 1 Evidence Re-review
 
 **Scope:** Latest integrated Student 4 live-validation evidence, extractive RAG

@@ -1,5 +1,46 @@
 # Student 4 AI Prompt Log
+
+## 2026-10-23 - Live What-If Evidence Adaptation
+
+- **Observe:** real agents completed, but commentary confused minor-unit money
+  and currencies; the reviewer also made questionable grounding claims.
+- **Act:** supplied exact backend-formatted currency amounts alongside bound
+  integer evidence and prohibited recalculation. Preserved both captured runs.
+- **Validate:** 186 focused planner and 322 full backend cases passed; final real
+  Chromium replay reached human review, with unchanged saved records, no page
+  errors and no overflow at 320/768/1280px. The model still needs factual review.
+- **Review:** ran all three existing report-review modes with distinct local
+  models. Records are linked in the [validation record](evidence/release-2/validation-2026-10-23.md);
+  all remain unfinalised. Their ACCEPT verdicts are not release approval.
+- **Human gate:** genuine decisions, post-push CI, live cloud and final showcase
+  evidence remain open. No commit, push or human finalisation was performed.
+- **Final security:** source/evidence Ruff and detect-secrets passed after only
+  fifteen public review-record integrity hashes were audited into the existing
+  baseline. No detector policy was weakened; temporary staging was restored.
+
 ## Current Entry
+
+### 2026-10-23: Release 2 Documentation Follow-up Only
+
+- **Plan:** document the implemented Student 4 preview-only What-If planner and
+  reproducible demo within the nine authorised documentation paths; preserve
+  earlier release entries and do not delegate or run terminal commands.
+- **Act:** prepended current context/delivery/contribution/review checkpoints,
+  added R2 acceptance IDs and risks, and created the runbook and dated evidence
+  record. Checked current API/UI, mode, startup and shared-loop CLI names in
+  source; left application, shared/private context and raw assessments untouched.
+- **Observe:** main-session supplied results are recorded as such: backend 322
+  (including calculator 74), frontend 79/build, cloud tooling 35 Student 4/210
+  related, four healthy containers, native workflow awaiting human review,
+  three responsive preview captures, and security outcomes. These were not
+  rerun in this pass; focused editor diagnostics on the documentation passed.
+- **Adapt:** retain null real human decision and pending awaiting-human browser
+  confirmation, remote CI, full-group/R1 replay, live cloud, report-review mode
+  runs/finalisation and showcase. No human identity, approval, commit or push
+  was fabricated. Commands in the runbook are instructions, not execution logs.
+
+Details: [runbook](release-2-runbook.md),
+[validation](evidence/release-2/validation-2026-10-23.md).
 
 ### 2026-10-02: Resolve Main Integration Conflicts
 

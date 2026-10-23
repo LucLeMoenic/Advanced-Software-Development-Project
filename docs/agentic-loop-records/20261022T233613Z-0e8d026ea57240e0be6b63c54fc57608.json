@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-22T23:36:13.4406584+00:00",
+  "task": "Review Student 4 cloud readiness; no live deployment exists for this workspace and missing cloud evidence must remain a blocker.\n\nReview the supplied evidence using review-cloud-v1.txt. Propose report findings and corrective actions, not source edits. Missing or failed evidence must remain explicit; only a human can make the release decision.",
+  "contextFiles": [
+    "student-4/docs/evidence/release-2/validation-2026-10-23.md",
+    "student-4/docs/release-2-runbook.md",
+    "ai-services/agentic-loop/prompts/review-cloud-v1.txt"
+  ],
+  "models": {
+    "implementer": "qwen2.5-coder:7b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "C:\\Users\\Liam.Zelmanowski\\ASD\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\implementer.md",
+    "reviewer": "C:\\Users\\Liam.Zelmanowski\\ASD\\Advanced-Software-Development-Project\\ai-services\\agentic-loop\\prompts\\reviewer.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "shared-reviewer-v1"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "student-4/docs/evidence/release-2/validation-2026-10-23.md": "8E5A256D89B61181A7E7F44D4A93007FB0511F242C0F2053D37A7DDD316A79AF",
+      "student-4/docs/release-2-runbook.md": "C1CFAE269B5A0F50E27A80E49FF854847C82D53F9DBE944C82F9BD8ACA45D647",
+      "ai-services/agentic-loop/prompts/review-cloud-v1.txt": "317ADFCE8C6FBD7AC3DA7DD135C592B3323FA3058F67D2B5FC765C0E43DF40B7"
+    },
+    "implementerPromptSha256": "84A995BA031FB6D4DCCCBC8EFAFE98213B4404F7BF454D537E7860AF1315C50A",
+    "reviewerPromptSha256": "8EA3F061D1CABF54442D2F3F65C53F714C1E97C5F74144E2CA823915C7BC218B"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.40.8",
+  "preTest": {
+    "command": "review-cloud",
+    "result": "Reviewing supplied context files, not executing tests or deployment. Validate their provenance and results before human finalisation."
+  },
+  "planAct": "\u0060\u0060\u0060text\n[PLAN]\nGoal: Review Student 4 cloud readiness and ensure all required evidence is present.\nRequirements:\n- Verify cloud baseline readiness.\n- Ensure missing live deployment and workflow evidence are identified.\n- Flag any missing URLs, revisions, workflow runs, logs, or live checks.\n- Recommend bounded release actions based on evidence.\nFiles:\n- student-4/docs/evidence/release-2/validation-2026-10-23.md\n- student-4/docs/release-2-runbook.md\n- ai-services/agentic-loop/prompts/review-cloud-v1.txt\nSteps:\n1. Review the validation report for missing cloud evidence.\n2. Check for any missing URLs, revisions, workflow runs, logs, or live checks.\n3. Recommend bounded release actions based on the evidence.\nRisks:\n- Missing or incorrect cloud evidence could lead to an incorrect release decision.\n- Failing to identify required cloud checks could result in a non-compliant deployment.\nValidation:\n- Review the validation report for completeness.\n- Ensure all required cloud evidence is present.\n- Verify the absence of any missing URLs, revisions, workflow runs, logs, or live checks.\n\n[ACT]\nProposed change:\nNo changes required. This is a review task and no code changes are needed.\n\nUnresolved:\n- Review the validation report for missing cloud evidence.\n- Identify any missing URLs, revisions, workflow runs, logs, or live checks.\n- Recommend bounded release actions based on the evidence.\n\u0060\u0060\u0060",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n  - Concrete evidence: The validation report contains some missing cloud evidence, but it is not clear if this is a blocker or not.\n  - Failure mode: If the missing evidence is not addressed, it could lead to an incorrect release decision.\n  - Required correction: Review the validation report and ensure that all required cloud evidence is present.\n\nValidation gaps:\n- None\n\nScope check:\nThe proposal stays within the requested change.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": null,
+  "humanNotes": null,
+  "postTest": null,
+  "finalisedAt": null,
+  "validationMode": "cloud"
+}

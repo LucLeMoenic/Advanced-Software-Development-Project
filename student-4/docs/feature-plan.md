@@ -1,5 +1,33 @@
 # Budget & Expense Tracker Feature Plan
 
+## Current Release 2 Delivery - 2026-10-23
+
+Implemented in the uncommitted workspace: deterministic What-If preview,
+preview/start/poll/decision APIs, static frontend, protected workflow binding and
+integration with the existing native shared Planner/Worker/Reviewer service.
+All four explicit human decision paths are implemented; no decision writes
+financial data. No schema change or new runtime dependency was added.
+
+This supersedes the calculator-only status and deferred endpoints/UI/CI/cloud
+items in the earlier **Release 2 Spec** checkpoint below, not its calculation
+contract or historical 74-test result. Current acceptance IDs are
+[R2-01 through R2-12](requirements.md#release-2-acceptance).
+
+Recorded validation: 322 backend tests (including the 74 calculator tests),
+79 frontend tests/build, 35 Student 4 cloud tests and 210 related cloud-suite
+tests; Compose config, four images and the four-container subset passed.
+The real gateway/native workflow reached `awaiting_human_review` with concerns,
+`degraded=false`, and no human decision. Preview captures at 1280/768/320px have
+no horizontal page overflow.
+
+Next evidence gates: genuine human decision/history and confirmed awaiting-human
+browser capture; fresh full-group/R1 replay; post-push CI; live integrated cloud;
+three report-review mode runs and human finalisation; group report/video/Q&A.
+No release grade, final approval, commit or push is claimed. Use the
+[runbook](release-2-runbook.md) and
+[evidence record](evidence/release-2/validation-2026-10-23.md); earlier delivery
+stages and release checkpoints below are retained as history.
+
 ## High-Level Design
 
 Implement three independently containerised Student 4 services behind the
@@ -136,3 +164,123 @@ limitations are in the [Release 1 runbook](release-1-runbook.md) and
 
 Two independent functional/rubric reviews found no current Student 4 functional
 blocker. No grade, group-wide completion, PR approval, or human loop decision is implied.
+
+## Release 2 Spec: Preview-Only What-If Budget Planner
+
+**Task:** Student 4 Release 2, first grounded calculator slice only.
+**Date:** 2026-10-23.
+**Status:** READY. Calculator slice implemented and focused tests passed;
+endpoints, frontend and multi-agent integration are not implemented by this slice.
+
+### Executive Summary
+
+Preview a complete replacement set of category limits against an existing
+dashboard, preserving actual spending and returning fresh dashboard/category
+records. Money and classifications remain deterministic and reuse the existing
+percentage/status helpers. No AI call, persistence, database schema change,
+autonomous write or new dependency is introduced.
+
+### Context & Assumptions
+
+- This bounded R2 authorisation extends the historical R0/R1-only scope. The
+  [Release 2 brief](../../docs/Project_Specifications/Release_2_brief.md) governs
+  R2; existing [requirements](requirements.md) and [risks](risk-plan.md) still
+  govern money precision, database ownership and model isolation.
+- Input is the complete existing category set once each, not a partial patch.
+  Trim and invariant lowercase establish identity; only the six existing
+  supported categories are allowed, with 1-6 source/proposal entries.
+- Every proposed limit is an integer minor-unit amount in
+  `1..9_007_199_254_740_991`; the proposed total has the same upper bound.
+- Source planned amounts must be positive, actuals nonnegative, all monetary
+  magnitudes JavaScript-safe, remaining equal planned minus actual, and category
+  planned/actual sums equal dashboard totals. Negative remaining is valid.
+- Preserve journey, currency, category labels/order, dashboard actual and every
+  category actual. Do not modify the source, its category collection or proposals.
+- Next backend slice will supply preview/start/poll/decision endpoints using the
+  existing shared Multi-Agent Server and built-in protected handle. That work,
+  human workflow decisions, UI, CI/cloud and full R2 acceptance remain deferred.
+  Complete-set input is chosen to avoid ambiguous merge/default semantics.
+- No delegation, branches, commits or pushes. Documentation/evidence for this
+  four-file task is consolidated here; other feature logs remain untouched.
+
+### File-by-File Changes
+
+**Contract group:** [Contracts.cs](../backend/Api/Contracts.cs), modified.
+Add `public sealed record WhatIfLimit(string? Category, long LimitAmountMinor)`.
+Reuse `DashboardResponse`; no endpoint binding or response wrapper yet.
+
+**Calculation group:** [DashboardCalculator.cs](../backend/Services/DashboardCalculator.cs),
+modified. Add `public static DashboardResponse CalculateWhatIf(DashboardResponse original, IReadOnlyList<WhatIfLimit> proposed)`.
+Use `ArgumentException` with `ParamName = "proposed"` and a clear message for
+invalid proposals; use existing `DashboardDataException` for invalid source data.
+Reuse `Validation.Categories`, `Percentage` and `Status` without changing `Calculate`.
+
+    if source/null categories/count/money/category identity is invalid:
+        throw DashboardDataException
+    if source category sums do not match source totals:
+        throw DashboardDataException
+    if proposal is null, empty, over six or not the source category count:
+        throw ArgumentException
+    for each proposal:
+        normalize category; reject null entry/name, unknown/missing identity,
+            duplicate identity and nonpositive/unsafe amount
+        if amount exceeds safe maximum minus accumulated proposed total:
+            throw ArgumentException before addition
+    build fresh category records in source order with new planned/remaining,
+        existing actual and reused Percentage/Status results
+    return fresh dashboard with proposed total and unchanged actual
+
+Source amounts/count are bounded before sums (at most six safe integers, below
+`long.MaxValue`); subtraction uses bounded nonnegative operands. Existing helpers
+use decimal percentage arithmetic, with status based on the unrounded ratio.
+
+**Test group:** [CalculationTests.cs](../backend/tests/CalculationTests.cs), modified.
+Preserve all three baseline tests; add focused xUnit facts/theories using existing
+fixtures and naming. **Spec/evidence group:** this existing feature plan, appended
+only. No other files are in scope.
+
+### Edge Cases
+
+| Scenario | Expected Behaviour |
+|---|---|
+| Shuffled, padded/mixed-case complete proposal | Match by normalized identity; preserve source labels/order and actuals. |
+| Null list/entry/name, empty/whitespace, missing, duplicate, unknown or absent supported category, over six | `ArgumentException`; no partial result or mutation. |
+| Zero, negative, above-safe or `long` extreme limit; safe individual limits with unsafe total | `ArgumentException` before unsafe arithmetic. |
+| Null/empty/duplicate/unsupported source categories; unsafe/inconsistent source money or totals | `DashboardDataException`, not overflow or null-reference exceptions. |
+| Zero spend; maximum-safe proposed total/actual; negative remaining | Exact minor units and fresh result; never change source actuals. |
+| 79.99%, 80%, 100%, above 100%; below-80 ratio rounding to 80% | Within, warning, warning, overspent; last case stays within. |
+
+### Test Plan & Observed Evidence
+
+All cases are in `CalculationTests` in the linked test file above:
+- `WhatIfChangesExactLimitsWithoutMutatingSourceOrProposal`: food/transport limits
+  6000/12000, unchanged actuals 8000/3000, total 18000/11000/7000 and 61.11%;
+  fresh dashboard, collection and category records; source/proposal snapshots equal.
+- `WhatIfSupportsAllSixExistingCategoriesWithDifferentLimits`: reversed normalized
+  input, distinct limits 1-6, zero spending, exact total 21 and within-budget statuses.
+- `WhatIfUsesExactThresholdsBeforePercentageRounding`: 0, 79.99, 80, 100, 100.01%
+  plus 79.9999% displayed as 80%; exact remaining, percentages and classifications.
+- `WhatIfRejectsInvalidOrIncompleteCategorySets` and
+  `WhatIfRejectsNonpositiveOrUnsafeLimits`: invalid input rows above; correct
+  exception type, parameter name and meaningful messages.
+- `WhatIfRejectsProposedTotalAboveSafeIntegerLimit`,
+  `WhatIfAcceptsProposedTotalAtSafeIntegerLimit` and
+  `WhatIfKeepsMaximumSafeActualAndNegativeRemainingExact`: safe boundary and
+  boundary-plus-one totals; maximum actual preserved under limits 1 and maximum.
+- `WhatIfRejectsUnsafeOrInconsistentSourceData`: invalid category structures,
+  all three monetary fields at dashboard/category level including `long` extremes,
+  invalid signs/remaining, mismatched totals and unsafe aggregate sums.
+
+Immediate post-implementation command:
+`dotnet test student-4/backend/tests/Backend.Tests.csproj --filter FullyQualifiedName~CalculationTests`.
+Observed: **74 total, 74 passed, 0 failed, 0 skipped**; test duration 2.2s,
+build succeeded in 7.7s. This is scoped local calculator evidence, not endpoint,
+full-suite, live AI, UI, CI/cloud or release sign-off evidence. Pipeline research
+delegation was skipped because scope was supplied; specification, implementation
+and bounded review are local. Unavailable `cw-testing`/`test-affected` skills are
+replaced by existing xUnit conventions and the exact scoped gate above.
+
+### Blockers
+
+| # | Question | Why It Blocks | Owner |
+|---|---|---|---|
