@@ -70,6 +70,28 @@ public sealed class MultiAgentClientTests
     }
 
     [Fact]
+    public async Task GetPreservesStageHistoryWithoutExposingRawModelOutput()
+    {
+        var client = CreateClient(new StubHandler(_ => Json(HttpStatusCode.OK, RecordJson("awaiting_human_review", """
+            "history":[
+              {"stage":"planner","ok":true,"output":{"private":"not for public output"}},
+              {"stage":"worker","ok":true,"output":{"private":"not for public output"}},
+              {"stage":"reviewer","ok":false,"degraded":true,"error":{"raw_output":"rejected model text"}}
+            ]
+            """))));
+
+        var record = await client.GetAsync(WorkflowId, CancellationToken.None);
+        var publicJson = JsonSerializer.Serialize(record, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        using var body = JsonDocument.Parse(publicJson);
+        Assert.Equal(["planner", "worker", "reviewer"],
+            body.RootElement.GetProperty("history").EnumerateArray().Select(stage => stage.GetProperty("stage").GetString()));
+        Assert.Equal([true, true, false], record.History!.Select(stage => stage.Ok));
+        Assert.DoesNotContain("not for public output", publicJson);
+        Assert.DoesNotContain("rejected model text", publicJson);
+        Assert.DoesNotContain("raw_output", publicJson);
+    }
+
+    [Fact]
     public async Task GetTreatsAnotherFeaturesWorkflowAsNotFound()
     {
         var client = CreateClient(new StubHandler(_ => Json(

@@ -204,7 +204,7 @@ def test_a_workflow_that_never_finishes_times_out_without_any_real_waiting():
     clock = iter(range(0, 100000, 400))  # a fake clock that jumps 400 seconds per reading
     slept = []
 
-    with pytest.raises(RuntimeError, match="still 'working' after 900 seconds"):
+    with pytest.raises(RuntimeError, match="still 'working' after 2220 seconds"):
         module.check_multi_agent(FakeGateway(ALL, stuck=True), sleep=slept.append, now=lambda: next(clock))
 
     assert slept and set(slept) == {module.POLL_SECONDS}  # it did wait between polls, but only on the fake sleep
@@ -232,6 +232,30 @@ def test_history_must_show_all_three_agents_in_order():
 def test_a_workflow_with_an_existing_human_decision_is_not_reported_as_pending():
     with pytest.raises(RuntimeError, match="already has a human decision"):
         run(FakeGateway(ALL, human_decision={"decision": "approve"}))
+
+def test_accommodation_camel_case_human_decision_is_not_reported_as_pending():
+    record = {"status": "awaiting_human_review", "plan": {"objective": "demo"},
+              "work": {"items": []}, "review": {"verdict": "pass"},
+              "history": [{"stage": role} for role in ("planner", "worker", "reviewer")],
+              "humanDecision": {"decision": "approve"}}
+    with pytest.raises(RuntimeError, match="already has a human decision"):
+        module.wait_for_review(lambda path: record, f"/accommodation/api/reviews/{WORKFLOW}")
+
+
+def test_cloud_workflow_can_finish_after_the_old_polling_deadline(capsys):
+    clock = iter([0, 1000])
+    gateway = FakeGateway(ALL, polls_until_ready=2)
+    module.check_multi_agent(gateway, sleep=lambda seconds: None, now=lambda: next(clock))
+    assert gateway.polls == 2
+    assert f"CHECK: waiting for workflow {API}/agents/workflows/{WORKFLOW}" in capsys.readouterr().out
+
+
+def test_workflow_failure_identifies_the_feature_route(capsys):
+    path = f"/accommodation/api/reviews/{WORKFLOW}"
+    with pytest.raises(RuntimeError, match=path):
+        module.wait_for_review(lambda path: {"status": "failed", "error": {
+            "stage": "working", "code": "dependency_timeout", "message": "timed out"}}, path)
+    assert path in capsys.readouterr().out
 
 
 # -- disabled components -------------------------------------------------------------------------------------------------------------

@@ -70,6 +70,7 @@ services:
     environment:
       OLLAMA_URL: http://ollama:11434
       MULTI_AGENT_MODEL: llama3.2:3b
+      MULTI_AGENT_TIMEOUT: "360"
       MULTI_AGENT_DATA_DIR: /data
     volumes:
       - multi-agent-data:/data

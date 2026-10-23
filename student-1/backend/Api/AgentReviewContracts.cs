@@ -1,7 +1,7 @@
 namespace Accommodation.Backend.Api;
 
 // Shapes shared with the Multi-Agent Server (see ai-services/multi-agent-server/README.md).
-// Fields the frontend does not need, such as stage history and raw model output, are not mapped.
+// Stage metadata supports cloud evidence checks; raw model output is not mapped.
 
 public sealed record EvidenceEntry(string Id, string Title, string Text);
 
@@ -28,7 +28,10 @@ public sealed record WorkflowRecord(
     WorkflowReview? Review,
     HumanDecision? HumanDecision,
     WorkerOutput? FinalOutput,
-    WorkflowError? Error);
+    WorkflowError? Error,
+    IReadOnlyList<WorkflowStage>? History = null);
+
+public sealed record WorkflowStage(string? Stage, bool? Ok);
 
 public sealed record WorkflowPlan(
     string Objective,

@@ -25,7 +25,7 @@ from smoke_cloud import run as check_crud
 
 COMPONENTS = ("ai", "mcp", "rag", "multi-agent")
 API = "/attractions-api"
-WORKFLOW_TIMEOUT = 900  # seconds for Planner, Worker and Reviewer together
+WORKFLOW_TIMEOUT = 2220  # three stages, each with up to two 360-second calls, plus polling overhead
 POLL_SECONDS = 5
 
 
@@ -81,21 +81,22 @@ def wait_for_review(call, path, sleep=None, now=None):
     sleep = sleep or time.sleep
     now = now or time.monotonic
     deadline = now() + WORKFLOW_TIMEOUT
+    print(f"CHECK: waiting for workflow {path} (up to {WORKFLOW_TIMEOUT} seconds).", flush=True)
     while True:
         record = call(path)
         if record["status"] in ("awaiting_human_review", "failed"):
             break
         if now() > deadline:
-            raise RuntimeError(f"The workflow was still '{record['status']}' after {WORKFLOW_TIMEOUT} seconds.")
+            raise RuntimeError(f"The workflow {path} was still '{record['status']}' after {WORKFLOW_TIMEOUT} seconds.")
         sleep(POLL_SECONDS)
     if record["status"] == "failed":
         error = record.get("error") or {}
-        raise RuntimeError(f"The workflow failed at {error.get('stage')}: {error.get('code')} ({error.get('message')}).")
+        raise RuntimeError(f"The workflow failed at {error.get('stage')}: {error.get('code')} ({error.get('message')}); path: {path}.")
     if not (record.get("plan") and record.get("work") and record.get("review")):
         raise RuntimeError("The workflow reached human review without a plan, a Worker output and a Reviewer verdict.")
     if [step.get("stage") for step in record.get("history", [])] != ["planner", "worker", "reviewer"]:
         raise RuntimeError("The workflow history does not show Planner, Worker and Reviewer in order.")
-    if record.get("human_decision") is not None:
+    if record.get("human_decision") is not None or record.get("humanDecision") is not None:
         raise RuntimeError("The smoke workflow already has a human decision; inspect the audit before continuing.")
     print(f"MANUAL: review workflow {path} in the application; no human approval has been submitted.")
 

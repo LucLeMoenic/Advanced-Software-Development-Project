@@ -172,7 +172,13 @@ public sealed class AgentReviewEndpointsTests
     [Fact]
     public async Task GetReturnsTheRecordInCamelCase()
     {
-        var multiAgent = new FakeMultiAgentClient { Record = Record("awaiting_human_review") };
+        var multiAgent = new FakeMultiAgentClient
+        {
+            Record = Record("awaiting_human_review") with
+            {
+                History = [new("planner", true), new("worker", true), new("reviewer", true)]
+            }
+        };
         using var factory = CreateFactory(new FakeDatabaseApiClient(), multiAgent);
         using var client = factory.CreateClient();
 
@@ -180,6 +186,10 @@ public sealed class AgentReviewEndpointsTests
 
         Assert.Equal("awaiting_human_review", body.GetProperty("status").GetString());
         Assert.Equal("stay-9", body.GetProperty("work").GetProperty("items")[0].GetProperty("evidenceIds")[0].GetString());
+        Assert.Equal(["planner", "worker", "reviewer"],
+            body.GetProperty("history").EnumerateArray().Select(stage => stage.GetProperty("stage").GetString()));
+        Assert.True(body.TryGetProperty("humanDecision", out var decision));
+        Assert.Equal(JsonValueKind.Null, decision.ValueKind);
     }
 
     [Fact]

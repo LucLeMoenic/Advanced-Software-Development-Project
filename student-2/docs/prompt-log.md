@@ -2,6 +2,99 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Removing an Undeclared CI Test Dependency
+
+**Evidence:** Student 2 run `39892789360` and Student 3 run `39892789228`
+both failed the new cloud agent deadline test with `ModuleNotFoundError:
+No module named 'yaml'`. PyYAML was available locally but was not declared
+in either CI environment; the earlier local passing run missed this.
+
+**Fix:** combine the deadline assertions with the existing real Compose
+validation, using `docker compose config --format json` and Python's standard
+JSON parser. Read the named smoke step with the existing workflow-text test
+pattern. Retain service/private-port checks, the generated 360-second setting,
+both nested budget inequalities and AI-off baseline checks. No dependency,
+application setting, CI bypass or feature implementation was added.
+
+**Validation:** 114 profile/smoke tests passed with `sys.modules["yaml"] = None`
+to make any remaining YAML import fail, including the real Compose check.
+The broader CI selection exposed eight unrelated Windows/WSL path failures
+in the unchanged Bash retry-wrapper tests; Linux VM-script tests were skipped
+by their existing platform guard. The failed GitHub runs had passed those
+tests on Linux. The refreshed GitHub runs must establish complete CI status;
+this local check is not a claim that every CI job has passed.
+
+## 2026-10-23 - Retaining the Bounded Cloud Agent Timeout
+
+**Decision:** after testing compact agent outputs, the user chose to stop that
+optimisation and retain the longer cloud deadline. Removed only the uncommitted
+experiment; kept the already-pushed fix on
+`LLM/Student_2_Cloud_Multi_Agent_Fix`: 360 seconds per cloud model call, a
+2220-second workflow polling budget and a 210-minute overall AI smoke cap.
+Native defaults remain 180 seconds. Existing prompts, output contracts,
+human approval and signed-preview expiry are unchanged. The accommodation
+stage-history fix and workflow-route diagnostics remain included.
+
+**Experiment evidence:** with user-authorised SSH access, isolated temporary
+code and workflow records were tested against the actual EC2 Ollama service.
+The compact Attractions case reached human review in 244.54 seconds (stage
+times 74.14/112.87/57.52 seconds, one attempt each, non-degraded review), versus
+290.31 seconds recorded by the earlier production workflow. The same failed
+accommodation case, with nine evidence entries, still timed out at the Worker:
+Planner 107.89 seconds, Worker 180.11 seconds. Thus the experiment did not
+establish a reliable fix under the original deadline. A further prompt revision
+and the captured itinerary/logistics cases were not benchmarked before the
+user changed direction; no all-feature benchmark success is claimed.
+
+The benchmark did not replace running services, save edits, submit human
+decisions or write production workflow records. Temporary remote records/code
+were cleaned up by the benchmark context manager. No longer-timeout deployment
+has been performed by this follow-up; merge and deploy the branch to activate
+the existing fix. The 210-minute limit is a maximum, not an expected duration.
+
+## 2026-10-23 - Cloud Multi-Agent Worker Deadline and Evidence Contract
+
+**Request and evidence:** cloud run `39873301495` at `1d4bd7c` passed all five
+feature CRUD checks and the attractions AI/MCP/RAG/Multi-Agent checks, then
+failed the accommodation workflow's Worker with `dependency_timeout`.
+Inspection of the retained deployment artifact confirmed no
+`MULTI_AGENT_TIMEOUT` override: the shared client still used its native
+180-second default. Created fresh branch `LLM/Student_2_Cloud_Multi_Agent_Fix`
+from latest main rather than reusing either merged follow-up branch.
+
+**Implementation:** reuse the existing environment setting to give cloud
+Multi-Agent calls 360 seconds; native defaults and synchronous feature/RAG
+deadlines remain unchanged. Set the cloud smoke polling budget to 2220 seconds
+for three stages with at most two calls each, plus overhead. The all-feature
+smoke step has a 210-minute cap for four sequential workflows and the other
+checks. These are upper limits, not expected duration or measured capacity.
+Print each workflow route before waiting and include it in failure messages.
+
+Also resolved the known next acceptance blocker on the same accommodation
+workflow: its typed API record now maps only stage-history `stage`/`ok`
+metadata, never raw model outputs. The smoke still requires ordered
+Planner/Worker/Reviewer history and checks both native snake_case and
+accommodation camelCase human-decision fields. No automatic approval,
+validation weakening, model/token change, extra retry or preview-expiry
+extension was introduced. A slow itinerary assessment may require a fresh
+signed preview before saving; this limitation is documented in the runbook.
+
+**Validation:** shared Multi-Agent suite: 71 passed, including default/cloud
+transport deadlines, explicit timeout failure, workflow retries and human
+decisions. Accommodation client/API selection: 37 passed, including actual
+HTTP stage-history output and exclusion of rejected/private model text.
+Cloud config/profile/smoke selection: 137 passed, including a workflow that
+finishes after the former 900-second limit, bounded failure, generated timeout
+wiring, nested CI budgets and camelCase human-decision rejection. Corrected a
+new test's assumption that every workflow step has a name before its passing
+run. Real bundle generation and Compose validation confirmed the private
+service receives the 360-second setting without publishing ports.
+
+No cloud service, model or stored workflow was changed by this work. No real
+inference was run for this timeout/configuration fix; the next AWS smoke is
+still required to establish that the CPU finishes within the larger budget.
+Further model validation errors or capacity failures must remain visible.
+
 ## 2026-10-23 - Bounded CPU Cloud AI Deadlines
 
 **Request and evidence:** protected AI deployment at revision `4da432f` failed
