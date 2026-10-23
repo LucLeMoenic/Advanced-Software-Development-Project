@@ -2,6 +2,34 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Retaining the Bounded Cloud Agent Timeout
+
+**Decision:** after testing compact agent outputs, the user chose to stop that
+optimisation and retain the longer cloud deadline. Removed only the uncommitted
+experiment; kept the already-pushed fix on
+`LLM/Student_2_Cloud_Multi_Agent_Fix`: 360 seconds per cloud model call, a
+2220-second workflow polling budget and a 210-minute overall AI smoke cap.
+Native defaults remain 180 seconds. Existing prompts, output contracts,
+human approval and signed-preview expiry are unchanged. The accommodation
+stage-history fix and workflow-route diagnostics remain included.
+
+**Experiment evidence:** with user-authorised SSH access, isolated temporary
+code and workflow records were tested against the actual EC2 Ollama service.
+The compact Attractions case reached human review in 244.54 seconds (stage
+times 74.14/112.87/57.52 seconds, one attempt each, non-degraded review), versus
+290.31 seconds recorded by the earlier production workflow. The same failed
+accommodation case, with nine evidence entries, still timed out at the Worker:
+Planner 107.89 seconds, Worker 180.11 seconds. Thus the experiment did not
+establish a reliable fix under the original deadline. A further prompt revision
+and the captured itinerary/logistics cases were not benchmarked before the
+user changed direction; no all-feature benchmark success is claimed.
+
+The benchmark did not replace running services, save edits, submit human
+decisions or write production workflow records. Temporary remote records/code
+were cleaned up by the benchmark context manager. No longer-timeout deployment
+has been performed by this follow-up; merge and deploy the branch to activate
+the existing fix. The 210-minute limit is a maximum, not an expected duration.
+
 ## 2026-10-23 - Cloud Multi-Agent Worker Deadline and Evidence Contract
 
 **Request and evidence:** cloud run `39873301495` at `1d4bd7c` passed all five
