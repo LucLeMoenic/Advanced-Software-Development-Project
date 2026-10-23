@@ -119,10 +119,10 @@ def check_student3(call, enabled=frozenset()):
 
 
 def check_student4(call, enabled=frozenset()):
-    """Check Student 4's supported capability/advice mode and budget/expense CRUD."""
+    """Check Student 4's capability/advice mode, read-only preview and budget/expense CRUD."""
     api = "/budget-api"
     modes = call(f"{api}/capabilities")
-    if modes != {key: value for key, value in capabilities(enabled).items() if key != "multiAgentEnabled"}:
+    if modes != capabilities(enabled):
         raise RuntimeError("The cloud baseline must disable every Student 4 AI capability.")
     if len(call(f"{api}/budgets")) < 10:
         raise RuntimeError("At least ten demonstration budgets are required.")
@@ -131,7 +131,8 @@ def check_student4(call, enabled=frozenset()):
     if advice.get("source") not in (("ai", "ai_retry") if "ai" in enabled else ("fallback",)) or not advice.get("suggestions"):
         raise RuntimeError("AI budget advice failed." if "ai" in enabled else "Disabled AI must still return deterministic budget advice.")
     for component, endpoint, body in (("rag", f"{api}/budget-guidance", {"question": "How should I split my budget?"}),
-                                     ("mcp", f"{api}/budget-check", {})):
+                                     ("mcp", f"{api}/budget-check", {}),
+                                     ("multi-agent", f"{api}/what-if/workflows", {})):
         if component not in enabled:
             call(endpoint, "POST", body, 503)
     label = f"R2 smoke {uuid.uuid4().hex[:8]}"
@@ -155,6 +156,26 @@ def check_student4(call, enabled=frozenset()):
         updated = call(expense_path)
         if updated["originalAmountMinor"] != 1800 or updated["convertedAmountMinor"] != 1800:
             raise RuntimeError("Expense update/readback did not recompute the conversion.")
+        proposal = {"journeyLabel": label, "limits": [{"category": "food", "limitAmountMinor": 30000}]}
+        preview = call(f"{api}/what-if/preview", "POST", proposal)
+        for name, limit in (("original", 25000), ("proposed", 30000)):
+            summary = preview.get(name, {})
+            amounts = {"plannedAmountMinor": limit, "actualAmountMinor": 1800, "remainingAmountMinor": limit - 1800}
+            if (summary.get("journeyLabel") != label or summary.get("baseCurrency") != "AUD"
+                    or any(summary.get(key) != value for key, value in amounts.items())):
+                raise RuntimeError(f"What-if {name} totals did not match the temporary budget and expense.")
+            categories = summary.get("categories", [])
+            if (len(categories) != 1 or categories[0].get("category") != "food"
+                    or any(categories[0].get(key) != value for key, value in amounts.items())):
+                raise RuntimeError(f"What-if {name} category financials did not match the temporary budget and expense.")
+        snapshot_hash = preview.get("snapshotHash")
+        if (not isinstance(snapshot_hash, str) or len(snapshot_hash) != 64
+                or any(character not in "0123456789abcdef" for character in snapshot_hash)):
+            raise RuntimeError("What-if preview must include a valid snapshot hash.")
+        if call(f"{api}/what-if/preview", "POST", proposal) != preview:
+            raise RuntimeError("What-if preview must be deterministic for an unchanged snapshot.")
+        if (call(budget_path), call(expense_path)) != (saved, updated):
+            raise RuntimeError("What-if preview must not mutate the saved budget or expense.")
     finally:
         if expense_path:
             call(expense_path, "DELETE", expected=204)
