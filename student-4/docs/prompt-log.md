@@ -1,5 +1,20 @@
 # Student 4 AI Prompt Log
 
+## 2026-10-23 - Fix CI Smoke-Check Broken Pipe
+
+- **Evidence:** run `39877159623` passed application/shared tests, endpoint TRX
+  upload, image builds and container health. Only the final page-title pipeline
+  failed with curl exit 23 under Bash `pipefail`.
+- **Cause and fix:** `grep --quiet` exits on its first match while curl may still
+  be writing the larger page. Replaced it with fixed-string grep redirected to
+  `/dev/null`, which reads the complete response without hiding HTTP failures.
+- **Validation:** Linux regression against the real gateway passed (exit 0);
+  missing title failed (exit 1); a real API 404 retained curl exit 22. A large
+  response reproduced the old pipeline's exit 23 and the fixed pipeline's exit 0.
+  The original short response did not reproduce the race on this local host.
+- **Scope:** no app, dependency or security-policy change. npm vulnerability and
+  deprecation warnings in the supplied log are separate, unresolved observations.
+
 ## 2026-10-23 - Resolve PR 149 Main-Branch Conflict
 
 - **Scope:** merge `origin/main` at `1d4bd7c` into

@@ -119,7 +119,7 @@ jobs:
           curl --fail --silent http://localhost:5304/api/data/expenses | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
           curl --fail --silent 'http://localhost:5204/api/dashboard?journeyLabel=Sydney%20Weekender' | python3 -c "import json,sys; value=json.load(sys.stdin); assert len(value['categories']) >= 1"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
-            --retry-all-errors http://localhost:5100/budget/ | grep --quiet 'Budget &amp; Expense Tracker'
+            --retry-all-errors http://localhost:5100/budget/ | grep --fixed-strings 'Budget &amp; Expense Tracker' > /dev/null
 
       - name: Stop services
         if: always()
