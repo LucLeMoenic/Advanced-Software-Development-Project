@@ -3,6 +3,7 @@ const state = {
   journeys: [], budgets: [], expenses: [], dashboard: null, currencies: [], rate: null, selectedJourney: "",
   capabilities: null, budgetCheckVersion: 0, budgetCheckController: null,
   guidanceVersion: 0, guidanceController: null,
+  journeyVersion: 0, journeyController: null,
 };
 
 const elements = {
@@ -24,14 +25,32 @@ const elements = {
 let confirmResolve = null;
 let restoreFocus = null;
 
+const planner = {
+  form: document.querySelector("#what-if-form"), limits: document.querySelector("#what-if-limits"),
+  inputs: document.querySelector("#what-if-inputs"), status: document.querySelector("#what-if-status"),
+  preview: document.querySelector("#what-if-preview"), previewButton: document.querySelector("#preview-what-if"),
+  start: document.querySelector("#start-what-if"), workflow: document.querySelector("#what-if-workflow"),
+  record: document.querySelector("#what-if-record"), stop: document.querySelector("#stop-what-if"),
+  retry: document.querySelector("#retry-what-if"), decisionForm: document.querySelector("#what-if-decision-form"),
+  decisionFields: document.querySelector("#what-if-decision-fields"), decision: document.querySelector("#what-if-decision"),
+  name: document.querySelector("#what-if-name"), notes: document.querySelector("#what-if-notes"),
+  partial: document.querySelector("#what-if-partial"), corrections: document.querySelector("#what-if-corrections"),
+  submit: document.querySelector("#submit-what-if-decision"),
+};
+const whatIf = { version: 0, controller: null, timer: null, preview: null, proposal: null, handle: null, record: null, startedAt: 0, paused: false, uncertain: false, startUncertain: false };
+
 async function api(path, options = {}) {
   const response = await fetch(`${apiBase}${path}`, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
   if (response.status === 204) return null;
   let body;
   try { body = await response.json(); } catch { throw new Error("The service returned an unreadable response."); }
   if (!response.ok) {
-    const firstField = Object.values(body.error?.fields || {}).flat()[0];
-    throw new Error(firstField || body.error?.message || "The request could not be completed.");
+    const firstField = Object.values(body?.error?.fields || {}).find(Array.isArray)?.[0];
+    const error = new Error(firstField || body?.error?.message || "The request could not be completed.");
+    error.code = body?.error?.code;
+    error.fields = body?.error?.fields;
+    error.status = response.status;
+    throw error;
   }
   return body;
 }
@@ -118,6 +137,10 @@ function majorToMinor(value) {
 function minorToMajor(value) { return (value / 100).toFixed(2); }
 
 async function loadApplication(preferredJourney = state.selectedJourney) {
+  const version = ++state.journeyVersion;
+  state.journeyController?.abort();
+  const controller = new AbortController();
+  state.journeyController = controller;
   invalidateBudgetCheck("Budget check cleared while budget data refreshes.");
   elements.budgetCheckButton.disabled = true;
   setStatus("Loading budget data...");
@@ -130,8 +153,9 @@ async function loadApplication(preferredJourney = state.selectedJourney) {
   document.querySelector("#add-budget").disabled = true;
   try {
     const [journeys, currencyData, capabilities] = await Promise.all([
-      api("/journeys"), api("/currencies"), api("/capabilities").catch(() => null),
+      api("/journeys", { signal: controller.signal }), api("/currencies", { signal: controller.signal }), api("/capabilities", { signal: controller.signal }).catch(() => null),
     ]);
+    if (version !== state.journeyVersion) return;
     state.capabilities = capabilities && typeof capabilities.mcpEnabled === "boolean" && typeof capabilities.ragEnabled === "boolean"
       ? capabilities : null;
     state.journeys = journeys;
@@ -147,14 +171,20 @@ async function loadApplication(preferredJourney = state.selectedJourney) {
       setStatus("No journeys are available. Add a budget to begin.");
       return;
     }
-    await loadJourney();
+    return loadJourney();
   } catch (error) {
+    if (controller.signal.aborted || version !== state.journeyVersion) return;
     setStatus(error.message, "error");
     throw error;
   }
 }
 
 async function loadJourney() {
+  const version = ++state.journeyVersion;
+  state.journeyController?.abort();
+  const controller = new AbortController();
+  state.journeyController = controller;
+  const journeyLabel = state.selectedJourney;
   invalidateBudgetCheck("Budget check cleared while the selected journey loads.");
   setStatus("Loading selected journey...");
   elements.budgetCheckButton.disabled = true;
@@ -163,14 +193,16 @@ async function loadJourney() {
   const label = encodeURIComponent(state.selectedJourney);
   try {
     const [dashboard, budgets, expenses] = await Promise.all([
-      api(`/dashboard?journeyLabel=${label}`), api(`/budgets?journeyLabel=${label}`), api(`/expenses?journeyLabel=${label}`),
+      api(`/dashboard?journeyLabel=${label}`, { signal: controller.signal }), api(`/budgets?journeyLabel=${label}`, { signal: controller.signal }), api(`/expenses?journeyLabel=${label}`, { signal: controller.signal }),
     ]);
+    if (version !== state.journeyVersion || journeyLabel !== state.selectedJourney) return;
     state.dashboard = dashboard;
     state.budgets = budgets;
     state.expenses = expenses;
     renderDashboard();
     renderBudgets();
     renderExpenses();
+    renderWhatIfInputs();
     resetAdvice();
     elements.budgetCheckButton.disabled = state.capabilities?.mcpEnabled !== true;
     setToolStatus(elements.budgetCheckStatus, state.capabilities?.mcpEnabled === true ? "Ready for the selected journey." : "Budget check is disabled by the current runtime mode.", state.capabilities?.mcpEnabled === true ? "empty" : "disabled");
@@ -181,6 +213,7 @@ async function loadJourney() {
     setToolStatus(elements.budgetCheckStatus, checkMessage, state.capabilities?.mcpEnabled === true ? "empty" : "disabled");
     setStatus(`${state.selectedJourney} is up to date.`);
   } catch (error) {
+    if (controller.signal.aborted || version !== state.journeyVersion) return;
     setToolStatus(elements.budgetCheckStatus, error.message, "error", false, true);
     elements.budgetCheckButton.disabled = true;
     setStatus(error.message, "error");
@@ -210,6 +243,7 @@ function populateCurrencies() {
 
 function clearWorkspace() {
   state.dashboard = null; state.budgets = []; state.expenses = [];
+  renderWhatIfInputs();
   for (const id of ["total-planned", "total-actual", "total-remaining", "total-percentage"]) document.querySelector(`#${id}`).textContent = "—";
   elements.budgetRows.replaceChildren(); elements.expenseRows.replaceChildren(); elements.notices.replaceChildren();
   elements.budgetEmpty.hidden = false; elements.expenseEmpty.hidden = false;
@@ -218,6 +252,7 @@ function clearWorkspace() {
 }
 
 function invalidateBudgetCheck(message = "Run a new check to see current totals.") {
+  invalidateWhatIf("Journey data changed; request a fresh preview.");
   state.budgetCheckVersion++;
   state.budgetCheckController?.abort();
   state.budgetCheckController = null;
@@ -275,6 +310,501 @@ function validateBudgetCheck(payload, requestedJourney) {
   }
   return summary;
 }
+
+function whatIfAmount(value) {
+  const match = String(value).trim().match(/^(\d{1,16})(?:\.(\d{1,2}))?$/);
+  if (!match) throw new Error("Enter a positive amount with at most two decimal places.");
+  const minor = BigInt(match[1]) * 100n + BigInt((match[2] || "").padEnd(2, "0"));
+  if (minor <= 0n || minor > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error("Amount must be between 0.01 and 90071992547409.91.");
+  return Number(minor);
+}
+
+function exactMajor(minor) {
+  const amount = BigInt(minor);
+  return `${amount / 100n}.${(amount % 100n).toString().padStart(2, "0")}`;
+}
+
+function validateWhatIfSummary(summary, journey) {
+  return validateBudgetCheck({ tool: "budget.get_summary", result: { ok: true, summary } }, journey);
+}
+
+function updateWhatIfControls() {
+  planner.previewButton.disabled = planner.limits.disabled || Boolean(whatIf.controller) || Boolean(whatIf.handle) || whatIf.startUncertain;
+  planner.start.disabled = state.capabilities?.multiAgentEnabled !== true || !whatIf.preview || Boolean(whatIf.controller) || Boolean(whatIf.handle) || whatIf.startUncertain;
+  planner.decisionFields.disabled = Boolean(whatIf.controller) || whatIf.uncertain;
+  planner.submit.disabled = planner.decisionFields.disabled || whatIf.record?.status !== "awaiting_human_review";
+  planner.retry.disabled = Boolean(whatIf.controller) || state.capabilities?.multiAgentEnabled !== true;
+}
+
+function invalidateWhatIf(message = "Limits changed; request a fresh preview.") {
+  whatIf.version++;
+  whatIf.controller?.abort();
+  clearTimeout(whatIf.timer);
+  Object.assign(whatIf, { controller: null, timer: null, preview: null, proposal: null, handle: null, record: null, startedAt: 0, paused: false, uncertain: false, startUncertain: false });
+  planner.preview.hidden = true;
+  planner.preview.replaceChildren();
+  planner.workflow.hidden = true;
+  planner.record.replaceChildren();
+  planner.stop.hidden = true;
+  planner.retry.hidden = true;
+  planner.decisionForm.hidden = true;
+  planner.decisionForm.reset();
+  planner.partial.replaceChildren();
+  planner.corrections.replaceChildren();
+  setToolStatus(planner.status, message, "stale");
+  updateWhatIfControls();
+}
+
+function renderWhatIfInputs() {
+  planner.inputs.replaceChildren();
+  planner.limits.disabled = true;
+  document.querySelector("#what-if-currency").textContent = "";
+  if (!state.dashboard || !state.selectedJourney) {
+    setToolStatus(planner.status, "Select a loaded journey to preview limits.", "disabled");
+  } else {
+    try {
+      const summary = validateWhatIfSummary(state.dashboard, state.selectedJourney);
+      document.querySelector("#what-if-currency").textContent = `(${summary.baseCurrency})`;
+      for (const category of summary.categories) {
+        const label = make("label", title(category.category));
+        const input = make("input");
+        input.id = `what-if-limit-${category.category}`;
+        input.dataset.category = category.category;
+        input.inputMode = "decimal";
+        input.required = true;
+        input.value = exactMajor(category.plannedAmountMinor);
+        label.append(input);
+        planner.inputs.append(label);
+      }
+      planner.limits.disabled = false;
+      setToolStatus(planner.status, state.capabilities?.multiAgentEnabled === true ? "Ready for a preview." : "Ready for a preview. Agent review is disabled.", "empty");
+    } catch (error) {
+      setToolStatus(planner.status, `Preview unavailable: ${error.message}`, "error");
+    }
+  }
+  updateWhatIfControls();
+}
+
+function readWhatIfProposal() {
+  const limits = [...planner.inputs.querySelectorAll("input")].map((input) => {
+    try { return { category: input.dataset.category, limitAmountMinor: whatIfAmount(input.value) }; }
+    catch (error) { input.focus(); throw error; }
+  });
+  if (limits.reduce((sum, limit) => sum + BigInt(limit.limitAmountMinor), 0n) > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error("The total proposed limit exceeds 90071992547409.91.");
+  }
+  return { journeyLabel: state.selectedJourney, limits };
+}
+
+function validateWhatIfPreview(payload, proposal) {
+  const original = validateWhatIfSummary(payload?.original, proposal.journeyLabel);
+  const proposed = validateWhatIfSummary(payload?.proposed, proposal.journeyLabel);
+  if (typeof payload.snapshotHash !== "string" || !/^[a-f0-9]{64}$/.test(payload.snapshotHash)
+    || original.baseCurrency !== proposed.baseCurrency || original.baseCurrency !== state.dashboard?.baseCurrency
+    || original.actualAmountMinor !== proposed.actualAmountMinor
+    || original.categories.length !== proposal.limits.length || proposed.categories.length !== proposal.limits.length
+    || state.dashboard.categories.length !== proposal.limits.length) throw new Error("The preview does not match this proposal.");
+  for (const limit of proposal.limits) {
+    const before = original.categories.find((category) => category.category === limit.category);
+    const after = proposed.categories.find((category) => category.category === limit.category);
+    if (!before || !after || !state.dashboard.categories.some((category) => category.category === limit.category)
+      || after.plannedAmountMinor !== limit.limitAmountMinor || before.actualAmountMinor !== after.actualAmountMinor) {
+      throw new Error("The preview changed category identity, limits or actual spending.");
+    }
+  }
+  return payload;
+}
+
+function renderWhatIfPreview(preview) {
+  const { original, proposed } = preview;
+  const delta = Number(BigInt(proposed.plannedAmountMinor) - BigInt(original.plannedAmountMinor));
+  const deltaText = make("p", `Total limit change: ${delta > 0 ? "+" : ""}${formatExactMoney(delta, original.baseCurrency)}`, "what-if-delta");
+  const wrap = make("div", null, "table-wrap what-if-comparison");
+  wrap.tabIndex = 0;
+  wrap.setAttribute("role", "region");
+  wrap.setAttribute("aria-label", "Original and proposed category comparison");
+  const table = make("table");
+  table.append(make("caption", `${original.journeyLabel} / ${original.baseCurrency}`));
+  const head = make("thead");
+  const groups = make("tr");
+  const categoryHeading = make("th", "Category");
+  categoryHeading.rowSpan = 2;
+  categoryHeading.scope = "col";
+  groups.append(categoryHeading);
+  for (const label of ["Original", "Proposed"]) {
+    const group = make("th", label);
+    group.colSpan = 4;
+    group.scope = "colgroup";
+    groups.append(group);
+  }
+  const columns = make("tr");
+  for (const label of ["Planned", "Actual", "Remaining", "Status", "Planned", "Actual", "Remaining", "Status"]) {
+    const heading = make("th", label); heading.scope = "col"; columns.append(heading);
+  }
+  head.append(groups, columns);
+  const rows = make("tbody");
+  function comparisonRow(label, before, after) {
+    const row = make("tr");
+    const heading = make("th", label); heading.scope = "row"; row.append(heading);
+    for (const value of [before, after]) {
+      for (const field of ["plannedAmountMinor", "actualAmountMinor", "remainingAmountMinor"]) row.append(cell(field, formatExactMoney(value[field], original.baseCurrency), "numeric"));
+      const status = make("td");
+      status.append(make("span", value.status ? value.status.replaceAll("_", " ") : "Total", value.status ? `status-label ${value.status}` : ""));
+      row.append(status);
+    }
+    return row;
+  }
+  for (const before of original.categories) rows.append(comparisonRow(title(before.category), before, proposed.categories.find((category) => category.category === before.category)));
+  const foot = make("tfoot"); foot.append(comparisonRow("Total", original, proposed));
+  table.append(head, rows, foot); wrap.append(table);
+  planner.preview.replaceChildren(deltaText, wrap);
+  planner.preview.hidden = false;
+}
+
+async function previewWhatIf(event) {
+  event.preventDefault();
+  if (planner.previewButton.disabled || whatIf.controller) return;
+  let proposal;
+  try { proposal = readWhatIfProposal(); }
+  catch (error) { setToolStatus(planner.status, error.message, "error"); return; }
+  invalidateWhatIf();
+  const version = whatIf.version;
+  const controller = new AbortController(); whatIf.controller = controller;
+  updateWhatIfControls();
+  setToolStatus(planner.status, "Calculating preview...", "loading", true);
+  try {
+    const payload = await api("/what-if/preview", { method: "POST", body: JSON.stringify(proposal), signal: controller.signal });
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    whatIf.preview = validateWhatIfPreview(payload, proposal);
+    whatIf.proposal = proposal;
+    renderWhatIfPreview(whatIf.preview);
+    setToolStatus(planner.status, state.capabilities?.multiAgentEnabled === true ? "Preview ready. No saved budgets changed." : "Preview ready. Agent review is disabled. No saved budgets changed.", "success");
+  } catch (error) {
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    setToolStatus(planner.status, error.message, "error", false, true);
+  } finally {
+    if (version === whatIf.version) { whatIf.controller = null; updateWhatIfControls(); }
+  }
+}
+
+planner.form.addEventListener("submit", previewWhatIf);
+planner.inputs.addEventListener("input", () => invalidateWhatIf());
+
+const workflowStatuses = ["queued", "planning", "working", "reviewing", "awaiting_human_review", "approved", "corrected", "partially_accepted", "rejected", "failed"];
+const activeWorkflowStatuses = workflowStatuses.slice(0, 4);
+const pollingWindow = 20 * 60 * 1000;
+
+function validWhatIfHandle(id, token) {
+  return typeof id === "string" && /^wf-\d{8}T\d{6}Z-[a-f0-9]{8}$/.test(id)
+    && typeof token === "string" && token.length > 0 && token.length <= 4096;
+}
+
+function requireWhatIf(condition) {
+  if (!condition) throw new Error("The agent service returned an invalid workflow. Retry status.");
+}
+
+function workflowText(value, maximum) {
+  return typeof value === "string" && value.trim().length > 0 && value.length <= maximum;
+}
+
+function validateWhatIfWork(work, evidenceIds) {
+  requireWhatIf(workflowText(work?.summary, 400) && Array.isArray(work.items) && work.items.length >= 1 && work.items.length <= 8);
+  const ids = new Set();
+  for (const item of work.items) {
+    requireWhatIf(typeof item?.id === "string" && /^i\d{1,2}$/.test(item.id) && !ids.has(item.id)
+      && workflowText(item.subject, 120) && workflowText(item.detail, 400)
+      && Array.isArray(item.evidence_ids) && item.evidence_ids.length >= 1 && item.evidence_ids.length <= 3
+      && item.evidence_ids.every((id) => evidenceIds.includes(id)));
+    ids.add(item.id);
+  }
+}
+
+function validateWhatIfWorkflow(payload) {
+  requireWhatIf(payload?.id === whatIf.handle?.id && workflowStatuses.includes(payload.status));
+  validateWhatIfPreview(payload.preview, whatIf.proposal);
+  requireWhatIf(payload.preview.snapshotHash === whatIf.preview.snapshotHash);
+  const record = payload.workflow;
+  requireWhatIf(record?.id === payload.id && record.feature === "student-4" && record.status === payload.status
+    && Array.isArray(record.history) && record.history.length <= 20
+    && Array.isArray(record.evidence) && record.evidence.length >= 2 && record.evidence.length <= 7);
+  const evidenceIds = record.evidence.map((entry) => entry?.id);
+  requireWhatIf(new Set(evidenceIds).size === evidenceIds.length);
+  for (const entry of record.evidence) requireWhatIf(workflowText(entry.id, 60) && workflowText(entry.title, 120) && workflowText(entry.text, 800));
+  if (record.plan != null) {
+    requireWhatIf(workflowText(record.plan.objective, 300) && Array.isArray(record.plan.steps) && record.plan.steps.length >= 1 && record.plan.steps.length <= 6
+      && record.plan.steps.every((step) => workflowText(step?.id, 3) && workflowText(step.description, 200))
+      && Array.isArray(record.plan.required_evidence_ids) && record.plan.required_evidence_ids.every((id) => evidenceIds.includes(id))
+      && Array.isArray(record.plan.success_criteria) && record.plan.success_criteria.every((value) => workflowText(value, 300)));
+  }
+  if (record.work != null) validateWhatIfWork(record.work, evidenceIds);
+  if (record.review != null) {
+    requireWhatIf(["pass", "concerns", "fail"].includes(record.review.verdict) && typeof record.review.degraded === "boolean"
+      && Array.isArray(record.review.findings) && record.review.findings.length <= 32
+      && Array.isArray(record.review.recommendations) && record.review.recommendations.length <= 5
+      && record.review.recommendations.every((value) => workflowText(value, 300)));
+    for (const finding of record.review.findings) requireWhatIf(["info", "warning", "blocking"].includes(finding?.severity)
+      && workflowText(finding.message, 300) && (finding.item_id === null || record.work?.items.some((item) => item.id === finding.item_id)));
+    requireWhatIf(!record.review.degraded || record.review.verdict !== "pass");
+  }
+  for (const entry of record.history) requireWhatIf(workflowText(entry?.stage, 40) && typeof entry.ok === "boolean");
+  if (["working", "reviewing", "awaiting_human_review", "approved", "corrected", "partially_accepted", "rejected"].includes(record.status)) requireWhatIf(record.plan);
+  if (["reviewing", "awaiting_human_review", "approved", "corrected", "partially_accepted", "rejected"].includes(record.status)) requireWhatIf(record.work);
+  if (["awaiting_human_review", "approved", "corrected", "partially_accepted", "rejected"].includes(record.status)) requireWhatIf(record.review);
+  if (["approved", "corrected", "partially_accepted", "rejected"].includes(record.status)) {
+    requireWhatIf(workflowText(record.human_decision?.decided_by, 60) && typeof record.human_decision.notes === "string"
+      && record.human_decision.notes.length <= 1000
+      && ({ approve: "approved", correct: "corrected", partial: "partially_accepted", reject: "rejected" })[record.human_decision.decision] === record.status);
+    if (record.status !== "rejected") validateWhatIfWork(record.final_output, evidenceIds);
+  }
+  if (record.status === "failed") requireWhatIf(workflowText(record.error?.message, 2000));
+  return record;
+}
+
+function appendWhatIfList(container, heading, values, ordered = false) {
+  container.append(make("h3", heading));
+  const list = make(ordered ? "ol" : "ul");
+  for (const value of values) list.append(make("li", value));
+  container.append(list);
+}
+
+function appendWhatIfWork(container, work, heading) {
+  container.append(make("h3", heading), make("p", work.summary));
+  const list = make("ul");
+  for (const item of work.items) {
+    const node = make("li");
+    node.append(make("strong", `${item.id}: ${item.subject}`), make("p", item.detail), make("code", item.evidence_ids.join(", ")));
+    list.append(node);
+  }
+  container.append(list);
+}
+
+function renderWhatIfDecision() {
+  planner.decisionForm.hidden = whatIf.record?.status !== "awaiting_human_review";
+  if (!planner.decisionForm.hidden && !planner.corrections.children.length) {
+    const summaryLabel = make("label", "Corrected summary", "full-field");
+    const summary = make("textarea"); summary.id = "what-if-corrected-summary"; summary.maxLength = 400; summary.rows = 2; summary.value = whatIf.record.work.summary;
+    summaryLabel.append(summary); planner.corrections.append(summaryLabel);
+    planner.partial.append(make("h3", "Accept items"));
+    for (const item of whatIf.record.work.items) {
+      const label = make("label");
+      const checkbox = make("input"); checkbox.type = "checkbox"; checkbox.value = item.id;
+      label.append(checkbox, make("span", `${item.id}: ${item.subject}`)); planner.partial.append(label);
+      const detailLabel = make("label", `${item.id}: ${item.subject}`, "full-field");
+      const detail = make("textarea"); detail.maxLength = 400; detail.rows = 2; detail.dataset.itemId = item.id; detail.value = item.detail;
+      detailLabel.append(detail); planner.corrections.append(detailLabel);
+    }
+  }
+  planner.partial.hidden = planner.decision.value !== "partial";
+  planner.corrections.hidden = planner.decision.value !== "correct";
+  planner.notes.required = planner.decision.value === "reject";
+  updateWhatIfControls();
+}
+
+function renderWhatIfWorkflow() {
+  const record = whatIf.record;
+  planner.workflow.hidden = false;
+  planner.record.replaceChildren(make("p", `Workflow ${whatIf.handle.id} / ${record ? record.status.replaceAll("_", " ") : "Status unknown"}`, "tool-identity"));
+  if (!record) return;
+  if (record.history.length) appendWhatIfList(planner.record, "Stage history", record.history.map((entry) => {
+    const timing = entry.finished_at || entry.at || "";
+    return `${entry.stage}: ${entry.ok ? "complete" : "failed"}${timing ? ` / ${timing}` : ""}${entry.model ? ` / ${entry.model}` : ""}${entry.error?.message ? ` / ${entry.error.message}` : ""}`;
+  }), true);
+  if (record.plan) {
+    planner.record.append(make("h3", "Plan"), make("p", record.plan.objective));
+    appendWhatIfList(planner.record, "Steps", record.plan.steps.map((step) => `${step.id}: ${step.description}`), true);
+    appendWhatIfList(planner.record, "Success criteria", record.plan.success_criteria);
+    planner.record.append(make("p", `Required evidence: ${record.plan.required_evidence_ids.join(", ")}`));
+  }
+  if (record.work) appendWhatIfWork(planner.record, record.work, "Worker");
+  if (record.review) {
+    planner.record.append(make("h3", `Reviewer: ${record.review.verdict}${record.review.degraded ? " / degraded" : ""}`));
+    appendWhatIfList(planner.record, "Findings", record.review.findings.length ? record.review.findings.map((finding) => `${finding.severity}${finding.item_id ? ` / ${finding.item_id}` : ""}: ${finding.message}`) : ["No findings."]);
+    appendWhatIfList(planner.record, "Recommendations", record.review.recommendations.length ? record.review.recommendations : ["No recommendations."]);
+  }
+  const evidence = make("details", null, "raw-details");
+  evidence.append(make("summary", "Supplied evidence"));
+  for (const entry of record.evidence) evidence.append(make("h3", `${entry.id}: ${entry.title}`), make("p", entry.text));
+  planner.record.append(evidence);
+  if (record.error) planner.record.append(make("p", `${record.error.code || "failed"}: ${record.error.message}`));
+  if (record.human_decision) {
+    const human = record.human_decision;
+    planner.record.append(make("h3", `Human decision: ${human.decision}`), make("p", `${human.decided_by} / ${human.decided_at || ""}`), make("p", human.notes));
+    if (human.accepted_item_ids) planner.record.append(make("p", `Accepted: ${human.accepted_item_ids.join(", ")}`));
+    if (record.final_output) appendWhatIfWork(planner.record, record.final_output, "Accepted commentary");
+  }
+  renderWhatIfDecision();
+}
+
+function showWhatIfWorkflowStatus() {
+  const record = whatIf.record;
+  if (record.status === "failed") setToolStatus(planner.status, `Workflow failed: ${record.error.message}`, "failed");
+  else if (activeWorkflowStatuses.includes(record.status)) setToolStatus(planner.status, `Agent review: ${record.status}.`, "loading", true);
+  else if (record.status === "awaiting_human_review") setToolStatus(planner.status, record.review.degraded ? "Reviewer degraded. Human review required." : "Awaiting your decision.", record.review.degraded ? "degraded" : "review");
+  else setToolStatus(planner.status, `${title(record.status)}. Preview only; no saved budgets changed.`, record.review?.degraded ? "degraded" : "success");
+}
+
+function pauseWhatIf(message = "Polling stopped. Resume status checks when ready.", kind = "paused") {
+  const restore = document.activeElement === planner.stop;
+  whatIf.version++;
+  whatIf.controller?.abort(); whatIf.controller = null;
+  clearTimeout(whatIf.timer); whatIf.timer = null;
+  whatIf.paused = true;
+  planner.stop.hidden = true;
+  planner.retry.hidden = !whatIf.handle;
+  planner.retry.textContent = "Resume status";
+  setToolStatus(planner.status, message, kind);
+  updateWhatIfControls();
+  if (restore) planner.retry.focus();
+}
+
+function scheduleWhatIfPoll() {
+  clearTimeout(whatIf.timer);
+  const active = activeWorkflowStatuses.includes(whatIf.record?.status);
+  planner.stop.hidden = !active || whatIf.paused;
+  planner.retry.hidden = !whatIf.paused || !whatIf.handle;
+  if (!active || whatIf.paused) return;
+  const remaining = pollingWindow - (Date.now() - whatIf.startedAt);
+  if (remaining <= 0) { pauseWhatIf("Polling paused after 20 minutes. Resume to check this workflow."); return; }
+  const version = whatIf.version;
+  whatIf.timer = setTimeout(() => { if (version === whatIf.version) pollWhatIf(); }, Math.min(3000, remaining));
+}
+
+function handleWhatIfFailure(error, operation) {
+  if (error.code === "snapshot_stale") { invalidateWhatIf(error.message); return; }
+  if (error.code === "feature_disabled") {
+    state.capabilities = { ...state.capabilities, multiAgentEnabled: false };
+    pauseWhatIf(error.message, "disabled");
+    return;
+  }
+  whatIf.paused = true;
+  planner.stop.hidden = true;
+  planner.retry.hidden = !whatIf.handle;
+  planner.retry.textContent = "Retry status";
+  setToolStatus(planner.status, `${error.message}${operation === "decision" && whatIf.uncertain ? " Decision outcome unknown; retry status before deciding again." : ""}${operation === "start" && whatIf.startUncertain && !whatIf.handle ? " Start outcome unknown. Check shared workflow history before requesting another review." : ""}`, "error", false, true);
+}
+
+async function startWhatIf() {
+  if (planner.start.disabled || whatIf.controller || whatIf.handle || !whatIf.preview) return;
+  const version = whatIf.version;
+  const controller = new AbortController(); whatIf.controller = controller;
+  whatIf.startUncertain = true;
+  whatIf.startedAt = Date.now();
+  setToolStatus(planner.status, "Starting agent review...", "loading", true);
+  updateWhatIfControls();
+  try {
+    const payload = await api("/what-if/workflows", { method: "POST", body: JSON.stringify({ ...whatIf.proposal, snapshotHash: whatIf.preview.snapshotHash }), signal: controller.signal });
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    requireWhatIf(validWhatIfHandle(payload?.id, payload?.token));
+    whatIf.handle = { id: payload.id, token: payload.token };
+    whatIf.record = validateWhatIfWorkflow(payload);
+    whatIf.startUncertain = false;
+    renderWhatIfWorkflow(); showWhatIfWorkflowStatus();
+    document.querySelector("#what-if-workflow-heading").focus();
+  } catch (error) {
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    if (validWhatIfHandle(error.fields?.id, error.fields?.token)) whatIf.handle = { id: error.fields.id, token: error.fields.token };
+    if (["validation_error", "multi_agent_busy", "feature_disabled", "journey_not_found"].includes(error.code)) whatIf.startUncertain = false;
+    if (whatIf.handle) renderWhatIfWorkflow();
+    handleWhatIfFailure(error, "start");
+  } finally {
+    if (version === whatIf.version) { whatIf.controller = null; updateWhatIfControls(); scheduleWhatIfPoll(); }
+  }
+}
+
+async function pollWhatIf() {
+  if (!whatIf.handle || whatIf.controller || state.capabilities?.multiAgentEnabled !== true) return;
+  const remaining = pollingWindow - (Date.now() - whatIf.startedAt);
+  if (remaining <= 0) { pauseWhatIf("Polling paused after 20 minutes. Resume to check this workflow."); return; }
+  const version = whatIf.version;
+  const controller = new AbortController(); whatIf.controller = controller;
+  whatIf.paused = false;
+  planner.stop.hidden = false;
+  const restore = document.activeElement === planner.retry;
+  updateWhatIfControls();
+  setToolStatus(planner.status, "Checking workflow status...", "loading", true);
+  whatIf.timer = setTimeout(() => pauseWhatIf("Polling paused after 20 minutes. Resume to check this workflow."), remaining);
+  try {
+    const payload = await api(`/what-if/workflows/${encodeURIComponent(whatIf.handle.id)}`, { headers: { "X-WhatIf-Token": whatIf.handle.token }, signal: controller.signal });
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    whatIf.record = validateWhatIfWorkflow(payload);
+    whatIf.uncertain = false; whatIf.startUncertain = false;
+    renderWhatIfWorkflow(); showWhatIfWorkflowStatus();
+    if (restore) document.querySelector("#what-if-workflow-heading").focus();
+  } catch (error) {
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    whatIf.uncertain = true;
+    handleWhatIfFailure(error, "poll");
+  } finally {
+    if (version === whatIf.version) { clearTimeout(whatIf.timer); whatIf.controller = null; updateWhatIfControls(); scheduleWhatIfPoll(); }
+  }
+}
+
+function readWhatIfDecision() {
+  const decision = planner.decision.value;
+  const decidedBy = planner.name.value.trim();
+  const notes = planner.notes.value.trim();
+  if (!["approve", "correct", "partial", "reject"].includes(decision)) { planner.decision.focus(); throw new Error("Choose a human decision."); }
+  if (!decidedBy || decidedBy.length > 60 || !/\p{L}/u.test(decidedBy) || /[\u0000-\u001f\u007f]/.test(decidedBy)
+    || ["human", "frontend", "system", "ai", "assistant", "unknown", "student-4-backend"].includes(decidedBy.toLowerCase())) {
+    planner.name.focus(); throw new Error("Enter your actual name (1 to 60 characters).");
+  }
+  if (planner.notes.value.length > 1000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(notes) || (decision === "reject" && !notes)) {
+    planner.notes.focus(); throw new Error("Notes must be at most 1000 characters; rejection requires notes.");
+  }
+  const payload = { decision, notes, decidedBy };
+  if (decision === "partial") {
+    const ids = [...planner.partial.querySelectorAll("input:checked")].map((input) => input.value);
+    if (!ids.length || new Set(ids).size !== ids.length || ids.some((id) => !whatIf.record.work.items.some((item) => item.id === id))) {
+      planner.partial.querySelector("input")?.focus(); throw new Error("Select at least one known item to accept.");
+    }
+    payload.acceptedItemIds = ids;
+  }
+  if (decision === "correct") {
+    const summary = document.querySelector("#what-if-corrected-summary").value.trim();
+    const items = whatIf.record.work.items.map((item) => ({ id: item.id, subject: item.subject, detail: [...planner.corrections.querySelectorAll("textarea[data-item-id]")].find((input) => input.dataset.itemId === item.id).value.trim(), evidence_ids: [...item.evidence_ids] }));
+    if (!workflowText(summary, 400) || items.some((item) => !workflowText(item.detail, 400))) {
+      document.querySelector("#what-if-corrected-summary").focus(); throw new Error("Correction summary and each detail must contain 1 to 400 characters.");
+    }
+    payload.correctedOutput = { summary, items };
+  }
+  return payload;
+}
+
+async function submitWhatIfDecision(event) {
+  event.preventDefault();
+  if (planner.submit.disabled || whatIf.controller || whatIf.uncertain || whatIf.record?.status !== "awaiting_human_review") return;
+  let payload;
+  try { payload = readWhatIfDecision(); }
+  catch (error) { setToolStatus(planner.status, error.message, "error"); return; }
+  const version = whatIf.version;
+  const controller = new AbortController(); whatIf.controller = controller;
+  whatIf.uncertain = true;
+  planner.stop.hidden = true;
+  updateWhatIfControls();
+  setToolStatus(planner.status, "Recording your decision...", "loading", true);
+  try {
+    const result = await api(`/what-if/workflows/${encodeURIComponent(whatIf.handle.id)}/decision`, { method: "POST", body: JSON.stringify(payload), headers: { "X-WhatIf-Token": whatIf.handle.token }, signal: controller.signal });
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    const record = validateWhatIfWorkflow(result);
+    requireWhatIf(record.status === ({ approve: "approved", correct: "corrected", partial: "partially_accepted", reject: "rejected" })[payload.decision]);
+    whatIf.record = record; whatIf.uncertain = false; whatIf.paused = false;
+    renderWhatIfWorkflow(); showWhatIfWorkflowStatus();
+    document.querySelector("#what-if-workflow-heading").focus();
+  } catch (error) {
+    if (version !== whatIf.version || controller.signal.aborted) return;
+    if (error.status === 400) whatIf.uncertain = false;
+    handleWhatIfFailure(error, "decision");
+  } finally {
+    if (version === whatIf.version) { whatIf.controller = null; updateWhatIfControls(); scheduleWhatIfPoll(); }
+  }
+}
+
+planner.start.addEventListener("click", startWhatIf);
+planner.stop.addEventListener("click", () => pauseWhatIf());
+planner.retry.addEventListener("click", () => { whatIf.startedAt = Date.now(); pollWhatIf(); });
+planner.decision.addEventListener("change", renderWhatIfDecision);
+planner.decisionForm.addEventListener("submit", submitWhatIfDecision);
+window.addEventListener("pagehide", () => { invalidateWhatIf("Planner closed."); state.journeyVersion++; state.journeyController?.abort(); });
 
 function renderBudgetCheck(payload, summary) {
   document.querySelector("#budget-check-tool").textContent = payload.tool;

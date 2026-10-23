@@ -75,6 +75,7 @@ public sealed record CurrencyResponse(string Code);
 public sealed record JourneyResponse(string JourneyLabel, string BaseCurrency, DateOnly StartDate, DateOnly EndDate);
 public sealed record CategoryDashboardResponse(string Category, long PlannedAmountMinor, long ActualAmountMinor, long RemainingAmountMinor, decimal PercentageUsed, string Status);
 public sealed record DashboardResponse(string JourneyLabel, string BaseCurrency, long PlannedAmountMinor, long ActualAmountMinor, long RemainingAmountMinor, decimal PercentageUsed, IReadOnlyList<CategoryDashboardResponse> Categories);
+public sealed record WhatIfLimit(string? Category, long LimitAmountMinor);
 public sealed record InsightRequest(string? JourneyLabel);
 public sealed record AdviceSuggestion(string Category, string Text);
 public sealed record AdviceResponse(string Summary, IReadOnlyList<AdviceSuggestion> Suggestions, string Source);

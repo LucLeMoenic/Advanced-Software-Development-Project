@@ -2,12 +2,13 @@ using Microsoft.Extensions.Configuration;
 
 namespace BudgetTracker.Backend.Services;
 
-public sealed record FeatureModeSettings(bool AiEnabled, bool McpEnabled, bool RagEnabled)
+public sealed record FeatureModeSettings(bool AiEnabled, bool McpEnabled, bool RagEnabled, bool MultiAgentEnabled = false)
 {
     public static FeatureModeSettings FromConfiguration(IConfiguration configuration) => new(
         ReadFlag(configuration, "AI_ENABLED", true),
         ReadFlag(configuration, "MCP_ENABLED", false),
-        ReadFlag(configuration, "RAG_ENABLED", false));
+        ReadFlag(configuration, "RAG_ENABLED", false),
+        ReadFlag(configuration, "MULTI_AGENT_ENABLED", false));
 
     private static bool ReadFlag(IConfiguration configuration, string name, bool defaultValue)
     {
