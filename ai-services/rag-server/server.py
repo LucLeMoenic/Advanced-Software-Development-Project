@@ -102,7 +102,7 @@ INSUFFICIENT_ANSWER = "Not enough information in the knowledge base to answer th
 @app.post("/query", response_model=QueryResponse)
 async def query(request: QueryRequest):
     try:
-        with anyio.fail_after(25):
+        with anyio.fail_after(190 if os.getenv("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 25):
             index = retrieval.get_index(request.feature)
             ranked = []
             length = 0

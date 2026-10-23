@@ -51,9 +51,34 @@ beforeEach(() => {
 afterEach(() => {
   application?.unmount();
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("Itinerary Planner", () => {
+  test.each([false, true])("cloud slow mode=%s gives previews and advice bounded matching deadlines", async (slow) => {
+    vi.stubEnv("VITE_CLOUD_AI_SLOW_MODE", String(slow));
+    const trip = { id: 12, destination: "Tokyo", user: "Alex", startDate: "2026-11-01", endDate: "2026-11-02",
+      budget: 900, stops: [] };
+    vi.stubGlobal("fetch", vi.fn((url) => {
+      if (url.endsWith("/capabilities")) return jsonResponse({ aiEnabled: true, mcpEnabled: true, ragEnabled: true });
+      if (url.endsWith("/edit-preview")) return jsonResponse(reviewResponse());
+      if (url.endsWith("/itinerary-advice")) return jsonResponse(adviceResponse());
+      return jsonResponse(url.endsWith("/trips/12") ? trip : [trip]);
+    }));
+    const timer = vi.spyOn(globalThis, "setTimeout");
+    await loadApplication();
+    await vi.waitFor(() => expect(document.querySelector("[data-trip-id='12']")).not.toBeNull());
+    document.querySelector("[data-trip-id='12']").click();
+    await vi.waitFor(() => expect(document.querySelector("#mcp-summary").disabled).toBe(false));
+    document.querySelector("#mcp-summary").click();
+    await vi.waitFor(() => expect(timer.mock.calls.some(([, ms]) => ms === (slow ? 390000 : 50000))).toBe(true));
+    document.querySelector("#advice-tab").click();
+    await nextTick();
+    setValue("#advice-question", "How should I pace this trip?");
+    document.querySelector("#advice-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(timer.mock.calls.some(([, ms]) => ms === (slow ? 230000 : 55000))).toBe(true));
+  });
+
   test.each(["approve", "reject"])("multi-agent %s gates the exact edit without applying assessment text", async (decision) => {
     const id = "wf-20261020T080000Z-0123abcd";
     const trip = { id: 12, destination: "Tokyo", user: "Alex", startDate: "2026-11-01", endDate: "2026-11-02",

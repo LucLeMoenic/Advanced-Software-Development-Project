@@ -80,6 +80,7 @@ def test_https_calls_use_auth_but_anonymous_probes_do_not(auth, monkeypatch):
 
     class Opener:
         def open(self, request, timeout):
+            assert timeout == 420
             requests.append(request)
             return Response()
 

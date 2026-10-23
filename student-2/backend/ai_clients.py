@@ -1,4 +1,5 @@
 import json
+import os
 import re
 from datetime import date, datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
@@ -240,6 +241,7 @@ class McpClient:
 class RagClient:
     def __init__(self, url):
         self.url = url.rstrip("/")
+        self.timeout = 200 if os.getenv("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 30
 
     def advice(self, question, trip_context=None):
         return anyio.run(self._advice, question, trip_context)
@@ -249,8 +251,8 @@ class RagClient:
             payload = {"feature": "student-2", "question": question}
             if trip_context is not None:
                 payload["tripContext"] = trip_context
-            with anyio.fail_after(30):
-                async with httpx.AsyncClient(timeout=28) as client:
+            with anyio.fail_after(self.timeout):
+                async with httpx.AsyncClient(timeout=self.timeout - 2) as client:
                     async with client.stream("POST", f"{self.url}/query", json=payload) as response:
                         if response.status_code != 200:
                             code = {503: "dependency_unavailable", 504: "dependency_timeout"}.get(response.status_code, "invalid_dependency_response")

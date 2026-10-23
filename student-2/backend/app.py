@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import re
 from datetime import date
@@ -38,6 +39,7 @@ class ItineraryGenerator:
     def __init__(self, ollama_url, model, prompt_path=None):
         self.ollama_url = ollama_url.rstrip("/")
         self.model = model
+        self.timeout = 180 if os.getenv("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 20
         path = prompt_path or Path(__file__).parent / "prompts" / "itinerary-v1.txt"
         self.instructions = Path(path).read_text(encoding="utf-8")
 
@@ -76,12 +78,15 @@ class ItineraryGenerator:
                     "stream": False,
                     "format": self.output_schema(trip, target_day),
                 },
-                timeout=20,
+                timeout=self.timeout,
             )
             response.raise_for_status()
             output = json.loads(response.json()["response"])
             return self.validate(output, trip, target_day), "ai"
-        except (requests.RequestException, ValueError, KeyError, TypeError):
+        except (requests.RequestException, ValueError, KeyError, TypeError) as error:
+            logging.getLogger(__name__).warning(
+                "Itinerary generation failed (%s, model deadline %ss); using deterministic fallback.",
+                type(error).__name__, self.timeout)
             return self.fallback(trip, target_day), "fallback"
 
     @staticmethod

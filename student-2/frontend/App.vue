@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from
 import { Check, ClipboardCheck, Cloud, CloudFog, CloudLightning, CloudRain, CloudSnow, LoaderCircle, PanelRightClose, PanelRightOpen, Sun, Undo2, X } from "@lucide/vue";
 import EditReview from "./EditReview.vue";
 
+const cloudSlowMode = import.meta.env.VITE_CLOUD_AI_SLOW_MODE === "true";
 const trips = ref([]);
 const currentTrip = ref(null);
 const editingTripId = ref(null);
@@ -269,7 +270,7 @@ async function requestEditPreview(endpoint, payload) {
   reviewController = new AbortController();
   const controller = reviewController;
   const requestedAt = Date.now();
-  const timeout = setTimeout(() => controller.abort("timeout"), 50000);
+  const timeout = setTimeout(() => controller.abort("timeout"), cloudSlowMode ? 390000 : 50000);
   try {
     const result = await api(`/trips/${tripId}/${endpoint}`, { method: "POST", body: JSON.stringify(payload), signal: controller.signal });
     if (version !== integrations.summaryVersion || currentTrip.value?.id !== tripId) return;
@@ -345,7 +346,7 @@ async function askAdvice() {
   const tripId = currentTrip.value?.id;
   adviceController = new AbortController();
   const controller = adviceController;
-  const timeout = setTimeout(() => controller.abort("timeout"), 55000);
+  const timeout = setTimeout(() => controller.abort("timeout"), cloudSlowMode ? 230000 : 55000);
   try {
     const result = await api("/itinerary-advice", { method: "POST", body: JSON.stringify({ question, ...(tripId ? { tripId } : {}) }), signal: controller.signal });
     if (version !== integrations.adviceVersion) return;

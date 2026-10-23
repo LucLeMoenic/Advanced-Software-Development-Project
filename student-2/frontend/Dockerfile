@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
+ARG VITE_CLOUD_AI_SLOW_MODE=false
 RUN npm run build
 
 FROM nginx:alpine

@@ -18,7 +18,7 @@ The deploy script (`deploy-vm.sh`) assumes a Linux VM that already exists. Nothi
 
 | Requirement | Why |
 |---|---|
-| Docker with the Compose plugin; the deploy user can run `docker` | `deploy-vm.sh` loads images and runs `docker compose` |
+| Docker with Compose plugin 2.23.1 or newer; the deploy user can run `docker` | `deploy-vm.sh` loads images and runs `docker compose`; AI profiles use inline `configs.content` for nginx |
 | `python3` | `backup-data.sh` and `restore-data.sh` use SQLite's backup API |
 | `/opt/asd`, `/opt/asd/releases`, `/opt/asd/data` writable by the deploy user | `deploy-vm.sh` refuses to run otherwise |
 | A DNS name pointing at the VM's public IP | Caddy obtains the TLS certificate for it |
@@ -48,12 +48,26 @@ scp scripts/deploy/rollback-vm.sh scripts/deploy/backup-data.sh scripts/deploy/r
 The workflow only runs from `main`, and `assert-cloud-ci.ps1` requires all six CI workflows to have succeeded for the exact
 commit being deployed.
 
-Path filters can legitimately skip student CI on a new `main` revision. All six
-required workflows support **Run workflow**: manually run any missing checks on
-`main`, wait for success, then run Cloud Deployment for that same revision. If
-`main` advances, check all six results again for the new revision. Do not bypass
-the gate or use a successful run from an older commit. A gate failure lists every
-missing, incomplete or unsuccessful workflow.
+**Start Cloud Deployment directly; no manual CI preparation is needed.** Path
+filters can legitimately skip student CI on a new `main` revision. The deployment
+uses `assert-cloud-ci.ps1 -RunMissing` to dispatch only missing workflows on
+`main`, reuse passing checks for the same commit and wait for queued/running
+checks. It polls every 15 seconds for up to one hour. Each missing workflow is
+requested at most once per deployment, including while GitHub registers the run.
+
+Failed, cancelled or skipped checks stop deployment with links to the CI runs;
+they are not automatically retried or bypassed. Fix failures (or explicitly rerun
+a transiently failed CI run), then start deployment again. A timeout leaves CI
+running so it can finish; the next deployment can reuse its results. If `main`
+changes while waiting or before dispatch, start a **new Cloud Deployment** run
+on the new revision rather than rerunning an old deployment.
+
+The workflow's built-in `GITHUB_TOKEN` has `contents: read` and `actions: write`
+to dispatch the six existing CI workflows. No personal access token or additional
+secret is needed. Repository/organization policy must permit workflow dispatch.
+Calling the script without `-RunMissing` remains a read-only, immediate gate.
+For protected AI, credential validation runs before CI dispatch to avoid waiting
+for builds only to discover missing gateway secrets.
 
 Set the host, user and domain as Actions **variables**, not secrets; the SSH
 key, known-hosts entry and AI gateway credentials belong in **secrets**. Verify
@@ -70,7 +84,7 @@ fails before producing any evidence files.
 ## 3. Deploy
 
 Actions, then **Cloud Deployment**, then **Run workflow** on `main`, leaving
-**mode** set to **baseline**. The workflow: checks the six CI runs for the commit, runs
+**mode** set to **baseline**. The workflow starts/waits for required CI for the commit, runs
 `prepare_cloud.py` (AI-disabled bundle), builds images, ships them over SSH with pinned host keys and checksums, runs
 `deploy-vm.sh`, waits for public HTTPS readiness, then runs `smoke_cloud.py`
 against `https://$CLOUD_DOMAIN`.
@@ -125,9 +139,10 @@ Both baseline and AI metadata/scripts are covered by bundle checksums.
 
 ### Activate protected cloud AI
 
-1. Merge the feature branch and obtain all six successful CI results on the exact
-   `main` revision. Set `CLOUD_AUTH_USER` and `CLOUD_AUTH_PASSWORD` in the `prod`
-   environment's secrets. Do not put credentials in source, artifacts or commands.
+1. Merge the feature branch. Set `CLOUD_AUTH_USER` and `CLOUD_AUTH_PASSWORD` in
+   the `prod` environment's secrets. Deployment starts missing CI automatically
+   and requires all six checks to pass for its exact revision. Do not put
+   credentials in source, artifacts or commands.
 2. Check free disk space and memory on the VM. Allow space for the roughly 8 GB
    upstream Ollama image, roughly 2 GB model, application images, retained
    releases and databases. Eight GiB RAM is not a measured capacity guarantee.
@@ -161,10 +176,41 @@ rollback target. Baseline redeployment/rollback removes orphaned AI containers
 and **returns to the unprotected, AI-off assessment profile**. Persistent models
 and app data are not removed. Copy the updated rollback script in section 1.
 
+### CPU-only AI request deadlines
+
+AI preparation automatically sets `CLOUD_AI_SLOW_MODE=true` on the backends
+and shared RAG server. The confirmed EC2 failure cancelled itinerary generation
+at 20.02 seconds, despite a successful 8.56-second model warm-up. The cloud
+profile now uses these bounded deadlines:
+
+| Layer | Cloud AI budget |
+|---|---|
+| Synchronous model call, all five features and RAG | 180 seconds per attempt; existing retries are unchanged |
+| Shared RAG generation / whole handler | 182 / 190 seconds |
+| Feature-to-RAG client | 200 seconds (Student 2 HTTP 198, whole call 200) |
+| Student 2 browser advice / edit preview | 230 / 390 seconds |
+| Shared gateway and all five frontend nginx proxies | 400-second read/send inactivity timeout |
+| Public AI smoke HTTP request | 420 seconds; baseline remains 30 seconds |
+
+Two sequential model attempts can consume 360 seconds. Cloud nginx settings
+are inline in the checksummed Compose bundle; original routing, rate limits
+and security headers remain intact. The Student 2 frontend uses build argument
+`VITE_CLOUD_AI_SLOW_MODE=true` and a distinct `<sha>-ai` image tag so switching
+profiles at the same revision cannot overwrite the baseline frontend image.
+Baseline/local deadlines, database/tool/write deadlines, human approvals and
+preview expiry do not change. Multi-Agent keeps its existing 180-second model
+deadline and 900-second smoke polling budget.
+
+Merge the changes and start a **new `ai` deployment**; re-running an old
+revision does not install these fixes. Slower requests still show loading and
+can be cancelled. Fallback is not accepted as successful AI generation: the
+smoke reports actual mode/stop count, and the backend logs the failure class
+and deadline without logging the prompt or model response.
+
 Benchmark sequential real requests on the target. Ollama permits one loaded
-model and one parallel request, but CPU inference can still exceed backend,
-gateway and UI deadlines. Model warm-up removes cold-start overhead, not this
-capacity limit. Longer smoke-client timeouts do not change backend deadlines.
+model and one parallel request, but CPU inference and queued/concurrent calls
+can still exceed these budgets. Model warm-up removes cold-start overhead, not
+this capacity limit. Longer deadlines do not fix invalid model output.
 Retain baseline, backup and rollback evidence; live model accuracy, CPU latency
 and concurrent-user capacity are not established by local regression tests.
 

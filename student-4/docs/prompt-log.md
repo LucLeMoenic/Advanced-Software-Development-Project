@@ -1,5 +1,17 @@
 # Student 4 AI Prompt Log
 
+## 2026-10-23 - Resolve PR 149 Main-Branch Conflict
+
+- **Scope:** merge `origin/main` at `1d4bd7c` into
+  `LZK/R2_What_If_Budget_Planner`, preserving incoming team changes.
+- **Resolution:** the only content conflict was backend startup registration.
+  Kept cloud-mode RAG deadlines and Ollama timeouts alongside the planner's
+  ephemeral data protection, multi-agent client, capabilities and endpoints.
+- **Validation:** merged backend suite passed 324/324 tests; Student 4 cloud
+  smoke tests passed 35/35; editor diagnostics and `git diff --check` passed.
+- **Boundary:** no history rewrite, direct main push, PR merge, live cloud
+  validation or human workflow/release approval is implied by this resolution.
+
 ## 2026-10-23 - Live What-If Evidence Adaptation
 
 - **Observe:** real agents completed, but commentary confused minor-unit money

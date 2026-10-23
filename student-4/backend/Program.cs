@@ -23,11 +23,17 @@ builder.Services.AddSingleton<IExchangeRateProvider>(new FixedExchangeRateProvid
 builder.Services.AddSingleton(new OllamaInsightsSettings(model, prompt));
 builder.Services.AddSingleton(serviceProvider => McpBudgetCheckSettings.FromUrl(
     serviceProvider.GetRequiredService<IConfiguration>()["MCP_SERVER_URL"] ?? "http://localhost:5400/mcp"));
-builder.Services.AddSingleton(RagSettings.FromUrl(ragUrl));
+builder.Services.AddSingleton(services => services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false)
+    ? RagSettings.FromUrl(ragUrl) with { Deadline = TimeSpan.FromSeconds(200) }
+    : RagSettings.FromUrl(ragUrl));
 builder.Services.AddSingleton<IDataProtectionProvider>(new EphemeralDataProtectionProvider());
 builder.Services.AddScoped<IAdviceService, AdviceService>();
 builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => { client.BaseAddress = new Uri(databaseUrl); client.Timeout = TimeSpan.FromSeconds(databaseTimeout); });
-builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>(client => { client.BaseAddress = new Uri(ollamaUrl); client.Timeout = TimeSpan.FromSeconds(ollamaTimeout); });
+builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>((services, client) =>
+{
+    client.BaseAddress = new Uri(ollamaUrl);
+    client.Timeout = TimeSpan.FromSeconds(services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false) ? 180 : ollamaTimeout);
+});
 builder.Services.AddHttpClient<IMcpBudgetCheckClient, McpBudgetCheckClient>(client => client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new BoundedMcpResponseHandler());
 builder.Services.AddHttpClient<IRagClient, RagClient>(client => client.Timeout = Timeout.InfiniteTimeSpan);

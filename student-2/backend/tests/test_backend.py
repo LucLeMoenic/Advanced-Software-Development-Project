@@ -25,8 +25,11 @@ def test_summary_rejects_zero_duration_before_decimal_allocation():
 
 
 @pytest.mark.parametrize("status,expected", [(503, 503), (504, 504), (404, 502), (200, 200)])
-def test_rag_http_client_uses_fixed_feature_and_maps_status(monkeypatch, status, expected):
+@pytest.mark.parametrize("slow", [False, True])
+def test_rag_http_client_uses_fixed_feature_and_maps_status(monkeypatch, status, expected, slow):
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", str(slow).lower())
     def respond(request):
+        assert request.extensions["timeout"]["read"] == (198 if slow else 28)
         assert request.url.path == "/query"
         assert json.loads(request.content) == {"feature": "student-2", "question": "Budget?"}
         return httpx.Response(status, json={"answer": INSUFFICIENT_ANSWER, "citations": [], "confidence": "insufficient"})
@@ -761,10 +764,13 @@ def test_review_accepts_first_weather_location_and_attaches_real_forecast():
 @pytest.mark.parametrize("body,status", [({"done": False, "response": "{}"}, 502),
                                        ({"done": True, "response": "not json"}, 502),
                                        ({"done": True, "response": '{"tools":["itinerary.get_itinerary"]}'}, 200)])
-def test_review_model_validates_complete_json_and_uses_shared_prompt(monkeypatch, body, status):
+@pytest.mark.parametrize("slow", [False, True])
+def test_review_model_validates_complete_json_and_uses_shared_prompt(monkeypatch, body, status, slow):
     from itinerary_review import ReviewModel, ToolPlan
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", str(slow).lower())
 
     def respond(request):
+        assert request.extensions["timeout"]["read"] == (180 if slow else 20)
         payload = json.loads(request.content)
         assert request.url.path == "/api/generate"
         assert payload["model"] == "test-model"
@@ -947,7 +953,9 @@ def test_generator_validation_and_fallback_cover_every_day():
     assert {stop["day"] for stop in fallback} == {1, 2}
 
 
-def test_generator_requests_the_exact_itinerary_array_schema(monkeypatch):
+@pytest.mark.parametrize("slow", [False, True])
+def test_generator_requests_the_exact_itinerary_array_schema(monkeypatch, slow):
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", str(slow).lower())
     class Response:
         def raise_for_status(self):
             pass
@@ -962,6 +970,7 @@ def test_generator_requests_the_exact_itinerary_array_schema(monkeypatch):
     request_payload = {}
 
     def post(url, json, timeout):
+        assert timeout == (180 if slow else 20)
         request_payload.update(json)
         return Response()
 
@@ -973,6 +982,18 @@ def test_generator_requests_the_exact_itinerary_array_schema(monkeypatch):
     assert request_payload["format"]["type"] == "array"
     assert request_payload["format"]["minItems"] == 4
     assert request_payload["format"]["maxItems"] == 4
+
+
+def test_cloud_generation_timeout_logs_reason_without_prompt_and_keeps_fallback(monkeypatch, caplog):
+    from requests import ReadTimeout
+    monkeypatch.setenv("CLOUD_AI_SLOW_MODE", "true")
+    def timeout(*args, **kwargs):
+        raise ReadTimeout("private prompt must not be logged")
+    monkeypatch.setattr("app.requests.post", timeout)
+    stops, mode = ItineraryGenerator("http://ollama", "llama3.2:3b").generate(valid_trip())
+    assert mode == "fallback" and len(stops) == 4
+    assert "ReadTimeout" in caplog.text and "180s" in caplog.text
+    assert "private prompt" not in caplog.text
 
 
 def test_regenerate_one_stop_preserves_its_day_and_identity():

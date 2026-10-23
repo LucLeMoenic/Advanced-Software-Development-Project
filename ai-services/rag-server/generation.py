@@ -120,8 +120,9 @@ async def generate(question, ranked, trip_context=None, *, selection_mode=False)
             schema["$defs"]["Claim"]["properties"]["chunk_ids"]["items"]["enum"] = [
                 chunk.chunk_id for chunk, score in ranked
             ]
-        with anyio.fail_after(20):
-            async with httpx.AsyncClient(timeout=18) as client:
+        timeout = 182 if os.getenv("CLOUD_AI_SLOW_MODE", "false").lower() == "true" else 20
+        with anyio.fail_after(timeout):
+            async with httpx.AsyncClient(timeout=timeout - 2) as client:
                 async with client.stream(
                     "POST", os.getenv("OLLAMA_URL", "http://127.0.0.1:11434").rstrip("/") + "/api/generate",
                     json={"model": os.getenv("RAG_MODEL", "llama3.2:3b"), "stream": False,
