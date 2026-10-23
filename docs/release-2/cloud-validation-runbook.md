@@ -191,6 +191,8 @@ profile now uses these bounded deadlines:
 | Student 2 browser advice / edit preview | 230 / 390 seconds |
 | Shared gateway and all five frontend nginx proxies | 400-second read/send inactivity timeout |
 | Public AI smoke HTTP request | 420 seconds; baseline remains 30 seconds |
+| Asynchronous Multi-Agent model call | 360 seconds per attempt in the cloud profile; native default remains 180 |
+| Multi-Agent smoke polling | 2220 seconds per workflow, covering three stages with one validation retry each |
 
 Two sequential model attempts can consume 360 seconds. Cloud nginx settings
 are inline in the checksummed Compose bundle; original routing, rate limits
@@ -198,8 +200,21 @@ and security headers remain intact. The Student 2 frontend uses build argument
 `VITE_CLOUD_AI_SLOW_MODE=true` and a distinct `<sha>-ai` image tag so switching
 profiles at the same revision cannot overwrite the baseline frontend image.
 Baseline/local deadlines, database/tool/write deadlines, human approvals and
-preview expiry do not change. Multi-Agent keeps its existing 180-second model
-deadline and 900-second smoke polling budget.
+preview expiry do not change. Multi-Agent uses its existing
+`MULTI_AGENT_TIMEOUT` setting rather than the synchronous-service slow-mode
+flag. The all-feature AI smoke step has a 210-minute upper limit for four
+sequential workflows plus the other model/tool/CRUD checks. This is a worst-case
+cap, not an expected duration or a latency guarantee.
+
+The smoke prints each workflow route before polling and includes that route in
+failure messages. Accommodation responses include only stage-history metadata,
+not raw model outputs, so the ordered-stage check remains strict. Both native
+`human_decision` and accommodation `humanDecision` responses are checked; no
+approval or itinerary confirmation is submitted automatically.
+
+An itinerary assessment can outlive its ten-minute signed edit preview on a
+slow host. Generate a fresh preview before saving if it has expired; the
+deployment does not extend expiry or bypass snapshot validation.
 
 Merge the changes and start a **new `ai` deployment**; re-running an old
 revision does not install these fixes. Slower requests still show loading and

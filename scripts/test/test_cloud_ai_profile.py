@@ -282,6 +282,23 @@ def test_the_existing_revision_and_domain_checks_still_apply_with_ai_enabled():
 
 # -- the real profile file --------------------------------------------------------------------------------------------------
 
+def test_cloud_multi_agent_deadline_reaches_bundle_and_fits_smoke_budgets():
+    import yaml
+    import smoke_cloud_ai
+
+    profile = yaml.safe_load((ROOT / "deploy" / "cloud" / "ai.compose.yml").read_text())
+    _, config, _ = module.cloud_config(source(), SHA, DOMAIN, frozenset({"multi-agent"}), profile)
+    deadline = int(config["services"]["multi-agent-server"]["environment"]["MULTI_AGENT_TIMEOUT"])
+    assert deadline == 360
+    assert smoke_cloud_ai.WORKFLOW_TIMEOUT >= 3 * 2 * deadline + 60
+    workflow = yaml.safe_load((ROOT / ".github" / "workflows" / "cloud-deployment.yml").read_text())
+    smoke_step = next(step for step in workflow["jobs"]["deploy"]["steps"]
+                      if step.get("name") == "Verify protected group CRUD and AI integrations")
+    assert smoke_step["timeout-minutes"] * 60 >= 4 * smoke_cloud_ai.WORKFLOW_TIMEOUT + 3600
+    _, baseline, _ = make()
+    assert "multi-agent-server" not in baseline["services"]
+
+
 @pytest.mark.skipif(shutil.which("docker") is None, reason="Docker with Compose is required")
 def test_the_real_ai_compose_file_is_valid_defines_all_four_services_and_publishes_nothing():
     result = subprocess.run(  # noqa: S603 - resolved docker executable, fixed arguments

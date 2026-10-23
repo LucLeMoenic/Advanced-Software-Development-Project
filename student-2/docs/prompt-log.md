@@ -2,6 +2,49 @@
 
 Record meaningful AI-assisted code, infrastructure, test, or design work. Do not log purely conversational help. Do not include secrets or unnecessary source content.
 
+## 2026-10-23 - Cloud Multi-Agent Worker Deadline and Evidence Contract
+
+**Request and evidence:** cloud run `39873301495` at `1d4bd7c` passed all five
+feature CRUD checks and the attractions AI/MCP/RAG/Multi-Agent checks, then
+failed the accommodation workflow's Worker with `dependency_timeout`.
+Inspection of the retained deployment artifact confirmed no
+`MULTI_AGENT_TIMEOUT` override: the shared client still used its native
+180-second default. Created fresh branch `LLM/Student_2_Cloud_Multi_Agent_Fix`
+from latest main rather than reusing either merged follow-up branch.
+
+**Implementation:** reuse the existing environment setting to give cloud
+Multi-Agent calls 360 seconds; native defaults and synchronous feature/RAG
+deadlines remain unchanged. Set the cloud smoke polling budget to 2220 seconds
+for three stages with at most two calls each, plus overhead. The all-feature
+smoke step has a 210-minute cap for four sequential workflows and the other
+checks. These are upper limits, not expected duration or measured capacity.
+Print each workflow route before waiting and include it in failure messages.
+
+Also resolved the known next acceptance blocker on the same accommodation
+workflow: its typed API record now maps only stage-history `stage`/`ok`
+metadata, never raw model outputs. The smoke still requires ordered
+Planner/Worker/Reviewer history and checks both native snake_case and
+accommodation camelCase human-decision fields. No automatic approval,
+validation weakening, model/token change, extra retry or preview-expiry
+extension was introduced. A slow itinerary assessment may require a fresh
+signed preview before saving; this limitation is documented in the runbook.
+
+**Validation:** shared Multi-Agent suite: 71 passed, including default/cloud
+transport deadlines, explicit timeout failure, workflow retries and human
+decisions. Accommodation client/API selection: 37 passed, including actual
+HTTP stage-history output and exclusion of rejected/private model text.
+Cloud config/profile/smoke selection: 137 passed, including a workflow that
+finishes after the former 900-second limit, bounded failure, generated timeout
+wiring, nested CI budgets and camelCase human-decision rejection. Corrected a
+new test's assumption that every workflow step has a name before its passing
+run. Real bundle generation and Compose validation confirmed the private
+service receives the 360-second setting without publishing ports.
+
+No cloud service, model or stored workflow was changed by this work. No real
+inference was run for this timeout/configuration fix; the next AWS smoke is
+still required to establish that the CPU finishes within the larger budget.
+Further model validation errors or capacity failures must remain visible.
+
 ## 2026-10-23 - Bounded CPU Cloud AI Deadlines
 
 **Request and evidence:** protected AI deployment at revision `4da432f` failed

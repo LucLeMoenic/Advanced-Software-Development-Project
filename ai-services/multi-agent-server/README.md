@@ -30,6 +30,15 @@ python -m uvicorn server:app --host 127.0.0.1 --port 5600
 | `MULTI_AGENT_TIMEOUT` | `180` | Seconds per model call |
 | `MULTI_AGENT_DATA_DIR` | `./data` (git-ignored) | Workflow records and `audit.log.jsonl` |
 
+The optional [cloud AI profile](../../deploy/cloud/ai.compose.yml) runs this
+service in a private container and sets `MULTI_AGENT_TIMEOUT=360` for the
+CPU-only VM. This does not change the native 180-second default. The cloud
+smoke allows 2220 seconds per workflow (three stages, up to two model calls
+per stage, plus polling overhead); calls that still time out fail normally.
+See the [cloud runbook](../../docs/release-2/cloud-validation-runbook.md) for
+deployment limits. No timeout setting approves a workflow or extends a signed
+itinerary edit preview.
+
 ## Design decisions
 
 - **The caller supplies the evidence.** The server never reads application data. Every claim the Worker
@@ -69,6 +78,11 @@ python -m uvicorn server:app --host 127.0.0.1 --port 5600
 
 Status lifecycle: `queued -> planning -> working -> reviewing -> awaiting_human_review ->
 approved | corrected | partially_accepted | rejected` (or `failed`).
+
+The accommodation backend exposes stage `history` metadata (`stage`, `ok`)
+through its feature API so cloud checks can verify the three-stage sequence.
+It does not forward history outputs or rejected model text. Its public DTOs
+use camelCase (`humanDecision`); the native server uses `human_decision`.
 
 Errors use the shared shape `{"error": {"code", "message", "fields"}}`: `validation_error` (400),
 `not_found` (404), `not_awaiting_review` (409), `busy` (503), `notes_required`, `invalid_selection`,
