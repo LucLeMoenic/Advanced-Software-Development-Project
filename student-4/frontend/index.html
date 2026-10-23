@@ -20,7 +20,7 @@
   <main class="page-shell">
     <section class="workspace-heading" aria-labelledby="page-title">
       <div>
-        <p class="eyebrow">Student 4 · Release 0</p>
+        <p class="eyebrow">Student 4 · Release 2</p>
         <h1 id="page-title">Planned versus actual spending</h1>
       </div>
       <div class="journey-control">
@@ -100,6 +100,48 @@
         </div>
       </section>
     </div>
+
+    <section id="what-if" class="data-section" aria-labelledby="what-if-heading">
+      <div class="section-heading">
+        <h2 id="what-if-heading">What-If planner</h2>
+        <span class="source-badge">Preview only</span>
+      </div>
+      <form id="what-if-form" novalidate>
+        <fieldset id="what-if-limits" disabled>
+          <legend>Proposed category limits <span id="what-if-currency"></span></legend>
+          <div id="what-if-inputs" class="form-grid"></div>
+        </fieldset>
+        <div class="guidance-actions">
+          <button id="preview-what-if" class="secondary-button" type="submit" disabled>Preview</button>
+          <button id="start-what-if" class="secondary-button" type="button" disabled>Request agent review</button>
+        </div>
+      </form>
+      <p id="what-if-status" class="tool-status" data-state="disabled" role="status" aria-live="polite" aria-busy="false" tabindex="-1">Loading selected journey...</p>
+      <div id="what-if-preview" hidden></div>
+      <div id="what-if-workflow" hidden>
+        <div class="section-heading">
+          <h3 id="what-if-workflow-heading" tabindex="-1">Agent review</h3>
+          <div class="guidance-actions">
+            <button id="stop-what-if" class="text-button" type="button" title="Stop automatic status checks" hidden>Stop polling</button>
+            <button id="retry-what-if" class="secondary-button" type="button" hidden>Retry status</button>
+          </div>
+        </div>
+        <div id="what-if-record"></div>
+        <form id="what-if-decision-form" hidden novalidate>
+          <fieldset id="what-if-decision-fields">
+            <legend>Human review</legend>
+            <div class="form-grid">
+              <label><span id="what-if-decision-label">Decision</span><select id="what-if-decision" aria-labelledby="what-if-decision-label"><option value="">Choose a decision</option><option value="approve">Approve</option><option value="correct">Correct</option><option value="partial">Partially accept</option><option value="reject">Reject</option></select></label>
+              <label>Your name<input id="what-if-name" maxlength="60" autocomplete="name" required></label>
+              <label class="full-field">Notes<textarea id="what-if-notes" maxlength="1000" rows="2"></textarea></label>
+            </div>
+            <div id="what-if-partial" hidden></div>
+            <div id="what-if-corrections" class="form-grid" hidden></div>
+          </fieldset>
+          <div class="guidance-actions"><button id="submit-what-if-decision" class="primary-button" type="submit">Record decision</button></div>
+        </form>
+      </div>
+    </section>
 
     <section class="data-section" aria-labelledby="budgets-heading">
       <div class="section-heading">

@@ -14,6 +14,9 @@ on:
       - "ai-services/agentic-loop/**"
       - "ai-services/mcp-server/**"
       - "ai-services/rag-server/**"
+      - "ai-services/multi-agent-server/**"
+      - "scripts/test/test_cloud_smoke_student4.py"
+      - "scripts/deploy/smoke_cloud.py"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -26,6 +29,9 @@ on:
       - "ai-services/agentic-loop/**"
       - "ai-services/mcp-server/**"
       - "ai-services/rag-server/**"
+      - "ai-services/multi-agent-server/**"
+      - "scripts/test/test_cloud_smoke_student4.py"
+      - "scripts/deploy/smoke_cloud.py"
       - ".env.example"
       - ".github/workflows/student-4.yml"
       - "docker-compose.yml"
@@ -38,9 +44,11 @@ jobs:
       AI_ENABLED: "false"
       MCP_ENABLED: "false"
       RAG_ENABLED: "false"
+      MULTI_AGENT_ENABLED: "false"
       STUDENT4_AI_ENABLED: "false"
       STUDENT4_MCP_ENABLED: "false"
       STUDENT4_RAG_ENABLED: "false"
+      STUDENT4_MULTI_AGENT_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 
@@ -73,6 +81,24 @@ jobs:
       - name: Validate source and tests
         run: pwsh -NoProfile -File scripts/test/student-4.ps1 -Area All
 
+      - name: Release 2 preview and workflow endpoint functions
+        run: >-
+          dotnet test student-4/backend/tests/Backend.Tests.csproj --configuration Release
+          --filter "FullyQualifiedName~EndpointTests.WhatIfPreviewUsesCurrentActualsAndDoesNotMutateSource|FullyQualifiedName~EndpointTests.WhatIfStartPollAndAllHumanDecisionsArePreviewOnly"
+          --logger "trx;LogFileName=student4-release2-endpoints.trx"
+          --results-directory student-4/test-results
+
+      - name: Retain Release 2 endpoint results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student4-release2-endpoints-${{ github.sha }}
+          path: student-4/test-results/*.trx
+          if-no-files-found: warn
+
+      - name: Validate Student 4 cloud baseline checks
+        run: .venv-student4-mcp/bin/python -m pytest scripts/test/test_cloud_smoke_student4.py -q
+
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
@@ -93,7 +119,7 @@ jobs:
           curl --fail --silent http://localhost:5304/api/data/expenses | python3 -c "import json,sys; values=json.load(sys.stdin); assert len(values) >= 10"
           curl --fail --silent 'http://localhost:5204/api/dashboard?journeyLabel=Sydney%20Weekender' | python3 -c "import json,sys; value=json.load(sys.stdin); assert len(value['categories']) >= 1"
           curl --fail --silent --show-error --retry 5 --retry-delay 2 \
-            --retry-all-errors http://localhost:5100/budget/ | grep --quiet 'Budget &amp; Expense Tracker'
+            --retry-all-errors http://localhost:5100/budget/ | grep --fixed-strings 'Budget &amp; Expense Tracker' > /dev/null
 
       - name: Stop services
         if: always()

@@ -1,5 +1,32 @@
 # Budget & Expense Tracker Context
 
+## Current Release 2 Status - 2026-10-23
+
+The authorised Release 2 What-If planner is implemented in the uncommitted
+workspace: deterministic category-aggregate before/after previews and optional
+Planner -> Worker -> Reviewer -> Human Review through the existing shared native
+Multi-Agent Server. Every existing journey category is required; actual spending
+is unchanged. Preview and all four human decisions never save financial data,
+change schema, or add runtime dependencies.
+
+The supplied local evidence covers Student 4's three containers plus the existing
+shared frontend at `http://localhost:5100/budget/`, not all 16 application
+services. Native Ollama uses 11434; the native Multi-Agent Server uses 15600 after
+Windows denied binding 5600. Multi-Agent mode is enabled for this local demo;
+MCP/RAG are currently disabled and have no fresh live acceptance. All four AI
+modes must be off in the required cloud baseline.
+
+The real workflow reached `awaiting_human_review`, with reviewer concerns and
+`human_decision=null`. Human finalisation, the three report-review mode runs,
+remote Release 2 CI, live cloud deployment, group acceptance, showcase and release
+sign-off remain unestablished. No commit or push is claimed. The R0/R1 ownership,
+scope exclusions and dated checkpoints below are historical, not current R2
+exclusions or fresh runtime evidence.
+
+Current demo/API/recovery instructions: [Release 2 runbook](release-2-runbook.md).
+Supplied results, source limitations and pending gates:
+[2026-10-23 validation](evidence/release-2/validation-2026-10-23.md).
+
 ## Ownership
 
 - Owner: Liam Zelmanowski (Student 4)

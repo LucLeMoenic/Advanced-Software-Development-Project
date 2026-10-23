@@ -1,5 +1,30 @@
 # Student 4 Contribution Log
 
+## Release 2 Current Contribution - 2026-10-23
+
+Owner: Liam Zelmanowski (Student 4). Implementation is AI-assisted and remains
+in the uncommitted workspace; no Release 2 commit/PR/publication is asserted.
+The earlier Release 1 PR-status table below is a dated record, not a fresh check.
+
+Completed work supplied by the main implementation session: deterministic
+category-aggregate What-If preview; backend preview/start/poll/decision APIs and
+protected snapshot binding; static UI and existing native shared Multi-Agent
+integration; four human decision paths that never write financial data;
+Student 4 endpoint CI selection/TRX upload and shared cloud-smoke reuse. No new
+schema or runtime package changes. Supplied local results: backend 322 tests
+(including calculator 74), frontend 79/build, cloud tooling 35 Student 4/210
+related, four healthy containers, native workflow and responsive preview captures.
+
+This follow-up changed documentation only within the seven allowed existing
+documents plus the [runbook](release-2-runbook.md) and
+[validation record](evidence/release-2/validation-2026-10-23.md). No terminal
+commands or delegation; focused editor diagnostics reported no errors.
+
+Still required: genuine human decision/history, confirmed awaiting-human browser
+evidence, full-group/R1 replay, remote CI, live cloud, three report-review mode
+runs and human finalisation, identifiable published contributions and group
+report/video/Q&A. No release or showcase sign-off is inferred.
+
 ## Release 1 PR Attribution - 2026-10-02
 
 The following five PRs were published by `Liam-zel` for the Student 4 Release 1

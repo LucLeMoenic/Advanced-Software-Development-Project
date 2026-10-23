@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using BudgetTracker.Backend.Api;
 using BudgetTracker.Backend.Clients;
 using BudgetTracker.Backend.Services;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
 var databaseUrl = builder.Configuration["Services:DatabaseUrl"] ?? "http://localhost:5304";
@@ -25,6 +26,7 @@ builder.Services.AddSingleton(serviceProvider => McpBudgetCheckSettings.FromUrl(
 builder.Services.AddSingleton(services => services.GetRequiredService<IConfiguration>().GetValue("CLOUD_AI_SLOW_MODE", false)
     ? RagSettings.FromUrl(ragUrl) with { Deadline = TimeSpan.FromSeconds(200) }
     : RagSettings.FromUrl(ragUrl));
+builder.Services.AddSingleton<IDataProtectionProvider>(new EphemeralDataProtectionProvider());
 builder.Services.AddScoped<IAdviceService, AdviceService>();
 builder.Services.AddHttpClient<IDatabaseApiClient, DatabaseApiClient>(client => { client.BaseAddress = new Uri(databaseUrl); client.Timeout = TimeSpan.FromSeconds(databaseTimeout); });
 builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>((services, client) =>
@@ -35,6 +37,11 @@ builder.Services.AddHttpClient<IOllamaInsightsClient, OllamaInsightsClient>((ser
 builder.Services.AddHttpClient<IMcpBudgetCheckClient, McpBudgetCheckClient>(client => client.Timeout = Timeout.InfiniteTimeSpan)
     .ConfigurePrimaryHttpMessageHandler(() => new BoundedMcpResponseHandler());
 builder.Services.AddHttpClient<IRagClient, RagClient>(client => client.Timeout = Timeout.InfiniteTimeSpan);
+builder.Services.AddHttpClient<MultiAgentClient>((services, client) =>
+{
+    client.BaseAddress = MultiAgentClient.ServerUri(services.GetRequiredService<IConfiguration>()["MULTI_AGENT_SERVER_URL"] ?? "http://localhost:5600");
+    client.Timeout = TimeSpan.FromSeconds(10);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 var app = builder.Build();
 _ = app.Services.GetRequiredService<FeatureModeSettings>();
@@ -42,6 +49,7 @@ _ = app.Services.GetRequiredService<FeatureModeSettings>();
 app.Use(async (context, next) =>
 {
     try { await next(); }
+    catch (WhatIfFailure exception) when (!context.Response.HasStarted) { await BudgetEndpoints.Error(context, exception.StatusCode, exception.Code, exception.Message, exception.Fields).ExecuteAsync(context); }
     catch (BadHttpRequestException) when (!context.Response.HasStarted) { await BudgetEndpoints.Error(context, 400, "invalid_request", "The request body is invalid.").ExecuteAsync(context); }
     catch (DatabaseRejectedException exception) when (!context.Response.HasStarted) { await BudgetEndpoints.Error(context, exception.StatusCode, exception.Code, exception.Message, exception.Fields).ExecuteAsync(context); }
     catch (DatabaseUnavailableException) when (!context.Response.HasStarted) { await BudgetEndpoints.Error(context, 503, "database_unavailable", "The database service is unavailable.").ExecuteAsync(context); }
@@ -51,10 +59,11 @@ app.Use(async (context, next) =>
 
 app.MapGet("/", () => Results.Ok(new { service = "budget-backend", status = "ready" }));
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "budget-backend" }));
-app.MapGet("/api/capabilities", (FeatureModeSettings modes) => Results.Ok(new { aiEnabled = modes.AiEnabled, mcpEnabled = modes.McpEnabled, ragEnabled = modes.RagEnabled }));
+app.MapGet("/api/capabilities", (FeatureModeSettings modes) => Results.Ok(new { aiEnabled = modes.AiEnabled, mcpEnabled = modes.McpEnabled, ragEnabled = modes.RagEnabled, multiAgentEnabled = modes.MultiAgentEnabled }));
 app.MapBudgetEndpoints();
 app.MapBudgetCheckEndpoints();
 app.MapBudgetGuidanceEndpoints();
+app.MapWhatIfEndpoints();
 app.Run();
 
 public partial class Program;

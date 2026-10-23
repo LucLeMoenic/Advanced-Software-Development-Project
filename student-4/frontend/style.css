@@ -124,6 +124,32 @@ tbody tr:last-child td { border-bottom: 0; }
 .source-badge { flex: none; background: #eaf1f8; color: var(--blue-dark); }
 .rate-disclaimer { display: flex; gap: 0.8rem; margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.78rem; }
 
+#what-if { min-width: 0; border-top: 1px solid var(--line); padding-top: 1.25rem; }
+#what-if fieldset { min-width: 0; margin: 1rem 0; padding: 0; border: 0; }
+#what-if legend { padding: 0; font-size: 0.86rem; font-weight: 750; }
+#what-if .form-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 0.7rem; margin-top: 0.65rem; }
+#what-if [hidden] { display: none; }
+#what-if-workflow { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+#what-if h3 { margin: 0.8rem 0 0.5rem; font-size: 0.95rem; }
+#what-if p, #what-if li, #what-if label { overflow-wrap: anywhere; }
+#what-if-record { white-space: pre-wrap; }
+#what-if-record ul, #what-if-record ol { padding-left: 1.25rem; margin: 0.5rem 0 1rem; }
+#what-if-record li + li { margin-top: 0.4rem; }
+#what-if-partial label { display: flex; align-items: start; gap: 0.5rem; margin: 0.6rem 0; }
+#what-if-partial input { width: 1.15rem; height: 1.15rem; flex: none; }
+.what-if-delta { margin: 1rem 0 0; font-weight: 750; font-variant-numeric: tabular-nums; }
+#what-if .what-if-comparison { display: block; max-width: 100%; overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+#what-if table { display: table; min-width: 64rem; font-size: 0.8rem; }
+#what-if caption { padding: 0.65rem; text-align: left; overflow-wrap: anywhere; }
+#what-if thead { display: table-header-group; position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+#what-if tbody { display: table-row-group; }
+#what-if tfoot { display: table-footer-group; }
+#what-if tr { display: table-row; margin: 0; border: 0; }
+#what-if th, #what-if td { display: table-cell; padding: 0.6rem; }
+#what-if td::before { content: none; }
+.tool-status[data-state="stale"], .tool-status[data-state="degraded"], .tool-status[data-state="paused"] { border-color: var(--amber); background: var(--amber-bg); color: var(--amber); }
+.tool-status[data-state="failed"] { border-color: var(--red); background: var(--red-bg); color: var(--red); }
+
 dialog { width: min(100% - 2rem, 38rem); max-height: calc(100vh - 2rem); border: 0; border-radius: 6px; padding: 0; box-shadow: 0 1.2rem 3.5rem rgba(24,34,48,0.25); }
 dialog::backdrop { background: rgba(24,34,48,0.55); }
 dialog form, #confirm-dialog { padding: 1.25rem; }
