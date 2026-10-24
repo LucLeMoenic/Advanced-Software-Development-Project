@@ -1,6 +1,6 @@
 # Travel Logistics & Advisory Service - Feature Plan
 
-Student 5 (Alex Chen), Release 0 and Release 1. This records the build **as executed**, in the
+Student 5 (Alex Chen), Releases 0-2. This records the build **as executed**, in the
 order it happened, with the status of each deliverable. Requirement IDs refer to
 `requirements.md`.
 
@@ -78,3 +78,53 @@ then CI and the loop fixtures.
 | The RAG client re-validates the server's response | Trust the shared server | A response with a citation the answer never uses, or an "insufficient" answer with citations, is a contract breach the UI should not render as authoritative. |
 | MCP and RAG default to disabled; CI asserts the disabled path | Enable both in CI | CI has no model and no shared servers. Asserting the fail-closed 503s still proves the routes, Compose wiring and the `:5105` proxy without flaky dependencies. |
 | The Smartraveller reminder is part of the tool result and the RAG markup | Rely on the model | Same reason as Release 0's advisory disclaimer: it must appear whatever the model writes. |
+
+## Release 2 - Multi-Agent, testing and deployment
+
+Delivered from [`release-2-plan.md`](release-2-plan.md), one branch and one pull request
+per chunk, each squash-merged into `main` by me. Commit hashes are the work commits on
+each branch; the merge commit is what lands on `main`. Evidence paths are relative to
+`student-5/docs/`.
+
+| # | Deliverable | Requirements | Status | Branch, commits, PR (merge) | Evidence |
+|---|---|---|---|---|---|
+| R2-1 | AI-off guard: `AI_ENABLED` switches the advisory off with `503 ai_disabled` and no network call | TL-FR-18 | **Complete** | `AC/student5-r2-ai-off-guard`: `e0dae03`, `a2ee74b`; PR #129 (`59e5ce4`). The PR is titled "multi-agent integration", but it holds the AI-off guard and the Release 2 plan. | `prompt-log.md` and `review-record.md` (Release 2, Chunk 1); 5 new backend tests |
+| R2-2 | Trip readiness review on the shared Multi-Agent Server: backend client and routes, HTMX panel with polling and the four decisions, Compose flags | TL-FR-16, TL-FR-17, TL-NFR-10 | **Complete** | `AC/student5-r2-multi-agent`: `de8de91`, `ffbc847`, `77f2a82`, `da2edfe`; PR #132 (`7798bc8`) | `backend/tests/test_readiness.py`; `prompt-log.md` (Chunk 2) |
+| R2-3 | Post-commit endpoint tests for `POST` and `PUT /api/destinations` in `student-5.yml`, with JUnit results and a live container check | TL-NFR-11 | **Complete** | `AC/student5-r2-endpoint-ci`: `83a578b`, `01fee2f`, `afb34bb`; PR #133 (`e523738`) | `evidence/release-2/endpoint-testing-report.md`, `endpoint-tests/` (runs 39697590918 and 39698558980 green) |
+| R2-4 | Pre-commit security evidence: hooks run on a real commit; pytest `>=9.0.3`; Student 5 pip-audit exception removed | Brief criterion 3 | **Complete** | `AC/student5-r2-precommit`: `f77c09b`, `3c42f93`, `de85886`; PR #135 (`df5ec56`) | `evidence/release-2/precommit-security-report.md`, `precommit/01`-`04` |
+| R2-5 | Student 5 cloud smoke check: four AI-off bodies, then destination create, read, update, delete and `404` | TL-NFR-10, brief criterion 7 | **Complete**; cloud baseline run owned by the cloud workflow owner | `AC/student5-r2-cloud-smoke`: `87597cb`, `2d66767`; PR #137 (`7aadf5a`) | `evidence/release-2/cloud-deployment-report.md`; 18 offline tests at merge (19 on `main` after PR #143); cloud run 39741981906 |
+| R2-6 | Local deployment with the native Multi-Agent Server; five workflows from UI and terminal with human decisions; three agentic-loop report reviews finalised | Brief criteria 1, 2, 8 | **Complete** | `AC/student5-r2-evidence`: `949bb13`, `06ea17e`, `40a083b`, `05de520`, `d660a8a`; PR #145 (`e146338`) | `evidence/release-2/local-deployment-report.md`, `multi-agent-server-report.md`, `loop/README.md` |
+| R2-7 | Release 2 documentation and report sections (this update) | All | **Complete in the working tree, not yet committed** | `AC/student5-r2-docs` | `architecture.md` (Release 2), `release-2-report-sections.md`, `evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt` |
+
+### Acceptance gates from the plan
+
+| Gate | Status | Evidence |
+|---|---|---|
+| Pushed `student-5.yml` run green with the endpoint-test artefact | **Met** | Run 39698558980 on `main` at `e523738`: `13 passed`, `12/12 checks passed`, artifact `student-5-endpoint-test-results` (`endpoint-tests/07`-`10`) |
+| Planner -> Worker -> Reviewer -> Human Review from the UI and from the terminal, with `GET /audit/verify` | **Met** | Thailand (browser, `partial`), Indonesia (UI, `correct`), Vietnam (terminal, `partial`); final verify `valid: true`, 50 entries (`multi-agent-server/transcripts/audit-verify-final.txt`) |
+| Pre-commit hooks run during an actual commit | **Met** | `precommit/04-blocked-commit.txt` (a real commit rejected); the Chunk 4 commits ran all three hooks |
+| A `cloud-deployment.yml` run that includes the Student 5 smoke check, with the page reachable on the deployed URL | **Met, with a caveat** | Run 39741981906 at `851bdd7`: `PASS: Student 5 cloud profile and CRUD checks.` (`cloud/03`); page and disabled notices in `cloud/04`-`07`. The shared runbook says this run came before the CI-gate fix, and no AI-off baseline run has succeeded since (see `known-issues.md`). |
+
+### Changes to Student 5 files by other team members
+
+`166a4a4` (PR #147, the cloud workflow owner) added an opt-in `CLOUD_AI_SLOW_MODE` to
+`student-5/backend/app.py` (longer Ollama and RAG timeouts for the cloud AI mode) and
+`backend/tests/test_cloud_deadlines.py` (2 tests). It does not turn any AI flag on.
+The backend suite is therefore 201 tests on `main`, not the 199 recorded in Chunks 3-6.
+
+`851bdd7` (PR #143, the cloud workflow owner) gave `check_student5` an `enabled`
+parameter, so the AI-off bodies are skipped for components the protected AI mode turns
+on, and added 1 test to `scripts/test/test_cloud_smoke_student5.py` (19 tests, 18 at
+PR #137). PR #130 (another team member) added the first, read-only Student 5 cloud
+check, which PR #137 replaced. PRs #128 and #141 (other team members) each made a
+one-line change to `student-5.yml` (a build retry wrapper and `workflow_dispatch`).
+
+### Release 2 decisions
+
+| Decision | Alternative rejected | Reason |
+|---|---|---|
+| The backend builds the Multi-Agent evidence from its own database reads | Let the Multi-Agent Server read Student 5 data | Keeps TL-NFR-01: one owner for the data, and the evidence a reviewer sees is exactly what the backend sent. |
+| Human decisions live only on the shared server's audit log | A Student 5 table of decisions | The server already hash-chains them; a second copy could drift and would need its own migration. |
+| AI-Mode defaults on; MCP, RAG and Multi-Agent default off | All four off by default | AI-Mode is the Release 0 core feature. Cloud and CI turn all four off explicitly. |
+| The endpoint tests mock the database, and a separate live check hits the real containers | Only one of the two | The mocked tests prove the backend's own contract; the live check proves the real path. |
+| The cloud check reads the `*_disabled` body, not just `503` | Accept any `503` | A down backend also answers `503` through the gateway. |

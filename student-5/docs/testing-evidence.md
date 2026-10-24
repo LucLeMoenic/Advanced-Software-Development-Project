@@ -1,8 +1,9 @@
 # Testing and Evidence Index
 
-Student 5 (Alex Chen), Release 0 and Release 1. Every artefact in `student-5/docs/evidence/`,
+Student 5 (Alex Chen), Releases 0-2. Every artefact in `student-5/docs/evidence/`,
 what it proves, and the exact commands to reproduce the results. Release 1
-artefacts are indexed in "Release 1 evidence" at the end.
+artefacts are indexed in "Release 1 evidence" and Release 2 artefacts in
+"Release 2 evidence", at the end.
 
 ## Evidence index
 
@@ -338,3 +339,75 @@ three containers with `--wait`, smoke-test them, and always stop them.
 
 Nothing is outstanding. The Release 1 workflow passed on `main`: Student 5 CI run #140
 on `49e5489`, https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/36872202961 (screenshot `ci-run-green.png`).
+
+## Release 2 evidence
+
+Everything below is in `student-5/docs/evidence/release-2/`. Each of the five reports
+lists its own raw files and what each one shows, so this index stays at report and
+folder level. Text captures are UTF-8.
+
+| Report | Folder | Brief criterion | Headline result |
+|---|---|---|---|
+| `precommit-security-report.md` | `precommit/` (4 files) | 3, pre-commit security testing | Ruff `S` (pre-commit 4.7.0, Ruff 0.17.1), detect-secrets 1.5.0 and pip-audit 2.10.1 all **Passed** on Student 5. One real finding fixed: `PYSEC-2026-1845` in pytest, both pins now `>=9.0.3,<10.0`, exception removed. 369 `S101`, 2 `S104` and 5 `S608` accepted with reasons; 4 detect-secrets candidates are hashes. A real insecure commit was blocked (`04-blocked-commit.txt`). |
+| `endpoint-testing-report.md` | `endpoint-tests/` (11 files) | 4, post-commit endpoint testing | `POST /api/destinations` and `PUT /api/destinations/<id>`: 13 mocked tests and 12 live container checks, all four AI flags `false`. Runs 39697590918 and 39698558980 green (`13 passed in 0.16s`, `12/12 checks passed`); JUnit artifact saved as `10-ci-endpoint-tests-junit.xml`. Four mutations caught (`05-mutation-check.txt`). |
+| `local-deployment-report.md` | `local/` (9 files and `terminal-logs/`, 5 files) | 1, integrated local application | Compose plus native Ollama 0.40.8, MCP, RAG and Multi-Agent Server; advisory `200` in 3.4 s, MCP `200` in 0.38 s, RAG `200` in 2.7 s, CRUD `201`/`200`/`200`/`200`/`204`/`404` through `:5100/logistics/`. Logs from four terminals. |
+| `multi-agent-server-report.md` | `multi-agent-server/` (5 workflows, audit log, 6 transcripts, 8 screenshots) | 2, Multi-Agent workflow | Five real workflows; decisions `approve`, `correct`, `partial` (x3); `GET /audit/verify` `valid: true`, 50 entries, re-verified offline. |
+| `cloud-deployment-report.md` | `cloud/` (11 files) | 5-7, cloud deployment | Run 39741981906 at `851bdd7`: `PASS: Student 5 cloud profile and CRUD checks.` with all four AI flags `false`; public URL read-only check and three screenshots. `11-protected-ai-run-39893640923-excerpt.txt` adds the later protected-AI run (bonus, not the baseline); it was captured in Chunk 7, so the report itself does not list it, and the report's "public URL still serves `851bdd7`" is out of date (`known-issues.md`). |
+| `loop/README.md` | `loop/` (12 files) | 8, agentic-loop review modes | `review-testing`, `review-cloud`, `review-multi-agent`: each ACCEPT with 1 suggestion, finalised `rejected`, `changed`, `changed` by Alex Chen. Four failed attempts kept. Records in `docs/agentic-loop-records/20261022T10{2258,2407,5130}Z-*.json`. |
+
+### Release 2 `student-5.yml`
+
+The Release 1 job is kept, with five steps added for the endpoint tests (TL-NFR-11):
+
+| Step | Added in Release 2 |
+|---|---|
+| Test Student 5 services, MCP tools and RAG retrieval | No (`student-5.ps1`; now also runs the new tests) |
+| Post-commit endpoint tests (POST and PUT /api/destinations) | Yes, AI flags `false`, `--junitxml` |
+| Publish endpoint test report | Yes, `junit_summary.py` to the job summary |
+| Upload endpoint test results | Yes, artifact `student-5-endpoint-test-results` |
+| Validate Docker Compose config; Build integrated Student 5 containers | No |
+| Start Student 5 services; Smoke test Student 5 integration | No, but the smoke step now also checks `POST /api/advisory` returns `503 ai_disabled` |
+| Post-commit endpoint tests against running containers (POST and PUT /api/destinations) | Yes, `live_endpoint_check.py`, 12 checks |
+| Show Student 5 container logs on failure | Yes |
+| Stop Student 5 services | No |
+
+### Reproducing Release 2
+
+```bash
+# The four Student 5 suites, each in its own process (repo .venv)
+(cd student-5/database && ../../.venv/Scripts/python.exe -m pytest -q)
+(cd student-5/backend && ../../.venv/Scripts/python.exe -m pytest -q)
+(cd ai-services/mcp-server && ../../.venv/Scripts/python.exe -m pytest -q tests/test_logistics_tools.py)
+(cd ai-services/rag-server && ../../.venv/Scripts/python.exe -m pytest -q tests/test_student5_retrieval.py)
+# The endpoint tests exactly as the workflow runs them, from the repository root
+AI_ENABLED=false MCP_ENABLED=false RAG_ENABLED=false MULTI_AGENT_ENABLED=false \
+  ./.venv/Scripts/python.exe -m pytest student-5/backend/tests/test_endpoints_cicd.py -v --junitxml=student-5/endpoint-tests-junit.xml
+```
+
+Result on `main` at `4c1e71a`, 24 October 2026: database 26, backend 201, MCP logistics 34,
+RAG student-5 retrieval 17 passed. The backend count was 199 in Chunks 3-6; the 2 extra tests
+are `test_cloud_deadlines.py`, added by the cloud workflow owner in PR #147. This run is
+recorded in `prompt-log.md` (Release 2, Chunk 7), not as a separate capture.
+
+The local deployment, Multi-Agent and agentic-loop runs are reproduced with the commands in
+`local-deployment-report.md` ("How to reproduce") and `loop/README.md`.
+
+### Release 2 outstanding items
+
+These are not in the repository and must not be claimed as if they were:
+
+- **No AI-off cloud baseline run since the CI-gate fix.** Run 39741981906 is the only
+  successful baseline. The shared runbook (`docs/release-2/cloud-validation-runbook.md`)
+  says it came before the CI-gate correction, and its gate step printed nothing
+  (`cloud/01`, lines 131-146). The nine dispatches after it failed, and the next
+  success, 39893640923, deployed the protected AI mode (`cloud/10`, `cloud/11`). A new
+  baseline run is for the cloud workflow owner.
+- **The cloud readiness review is still waiting for a human decision.** In run
+  39893640923, Student 5 workflow `wf-20261023T035316Z-6feb1b81` reached human review in
+  the cloud and was left pending (`cloud/11`). Deciding it in the deployed UI, with a
+  screenshot, would complete Student 5's part of bonus B4. There is no screenshot of any
+  protected-AI Student 5 page.
+- **Persistence across redeploy and rollback:** not evidenced by any run
+  (`cloud/03`, `cloud/11`); owned by the cloud workflow owner.
+- **Showcase video URL and the group report PDF:** group deliverables, not yet in the
+  repository.

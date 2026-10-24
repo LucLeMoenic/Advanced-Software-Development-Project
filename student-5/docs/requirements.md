@@ -2,8 +2,8 @@
 
 Student 5 (Alex Chen), Releases 0-2. TL-FR-01..10 and TL-NFR-01..05
 are Release 0; TL-FR-11..15 and TL-NFR-06..09 are Release 1 (MCP, RAG and
-agentic-loop validation); TL-FR-16..18 and TL-NFR-10 are Release 2
-(Multi-Agent Server and the AI-off cloud baseline).
+agentic-loop validation); TL-FR-16..18 and TL-NFR-10..11 are Release 2
+(Multi-Agent Server, the AI-off cloud baseline and post-commit endpoint tests).
 
 ## Scope
 
@@ -11,11 +11,12 @@ agentic-loop validation); TL-FR-16..18 and TL-NFR-10 are Release 2
 Browser -> student5-frontend (nginx) -> student5-backend (Flask) -> student5-database (Flask + SQLite)
                                              |-> ollama -> model tag from APPLICATION_MODEL
                                              |-> shared MCP server :5400/mcp  (logistics.* tools) -> student5-database
-                                             \-> shared RAG server :5500/ask  (feature "student-5") -> ollama
+                                             |-> shared RAG server :5500/ask  (feature "student-5") -> ollama
+                                             \-> shared Multi-Agent Server :5600/workflows (Planner -> Worker -> Reviewer -> human)
 ```
 
-The browser never calls the database service, Ollama, the MCP server or the RAG
-server. The backend never opens a SQLite file, and the MCP tools read Student 5
+The browser never calls the database service, Ollama, the MCP server, the RAG
+server or the Multi-Agent Server. The backend never opens a SQLite file, and the MCP tools read Student 5
 data only through the database service's HTTP API.
 
 ## Functional requirements
@@ -55,6 +56,7 @@ data only through the database service's HTTP API.
 | TL-NFR-08 | Release 1: generated knowledge-base answers are grounded and attributable. | The RAG server's contract (citations, confidence, fixed insufficient sentence) is re-validated by `rag_client.py`, not trusted. The knowledge base is curated, sourced to Smartraveller and official authorities in `official-sources.md`, and states that it is general guidance. `tests/test_student5_retrieval.py` (17 tests) pins which chunk answers each benchmark question and that out-of-scope questions are insufficient. |
 | TL-NFR-09 | Release 1: every Student 5 integration is re-verified on every push. | `scripts/test/student-5.ps1` now also runs `test_logistics_tools.py` and `test_student5_retrieval.py`; `student-5.yml` triggers on those files and the Student 5 knowledge folder, starts the three containers, and runs a smoke test over `:5205` and the `:5105` proxy. Local run of the script: 26 + 125 + 34 + 17 passed. |
 | TL-NFR-10 | Release 2: Multi-Agent, MCP and RAG are off unless explicitly enabled; AI-Mode is on unless `AI_ENABLED=false`. Any of the four switched off answers `503` within 1 s with no network call. | `MULTI_AGENT_ENABLED` (default `false`, via `env_flag`) and `MULTI_AGENT_SERVER_URL` (default `http://host.docker.internal:5600`) in `app.py` and on `student5-backend` in `docker-compose.yml`. Disabled readiness routes return `503 {"error": "multi_agent_disabled", "message": "Multi-Agent is disabled."}` and the panel a "switched off" notice, checked before the database read; `test_readiness.py` asserts all of this under an empty `responses.RequestsMock` and a 1 s bound, alongside the existing MCP/RAG/AI tests. Server calls are bounded at 10 s. |
+| TL-NFR-11 | Release 2: `student-5.yml` runs two endpoint functions of the Student 5 backend on every push, with all four AI flags `false`, and publishes JUnit results. | `backend/tests/test_endpoints_cicd.py` (13 mocked tests for `POST /api/destinations` and `PUT /api/destinations/<id>`) and `backend/tests/live_endpoint_check.py` (12 checks against the running containers) as steps in `student-5.yml`; `junit_summary.py` writes the job summary and the JUnit file is uploaded as `student-5-endpoint-test-results`. Green on `main`: run 39698558980 (`evidence/release-2/endpoint-testing-report.md`). |
 
 ## Data requirements
 
@@ -130,3 +132,19 @@ All under `docs/evidence/release-1/`, indexed in `testing-evidence.md`.
 - TL-NFR-06/09: `ci-smoke-local.txt` (the CI smoke step passes with both flags
   off and correctly fails with them on) and `compose-ps.txt` (all three
   services healthy with MCP and RAG enabled).
+
+## Release 2 evidence
+
+All under `docs/evidence/release-2/`. Each report links its own raw files.
+
+| Requirement | Evidence | Result |
+|---|---|---|
+| TL-FR-16 | `multi-agent-server-report.md`; `multi-agent-server/workflow-data/workflows/*.json`; `screenshots/04`-`08` | Five real workflows on the live Student 5 database: four from the UI (Japan twice, Indonesia, and Thailand fully in Chrome) and one from the terminal (Vietnam); plan, checklist and findings shown in the panel. Thailand reached human review in 22 s. |
+| TL-FR-17 | `multi-agent-server/transcripts/T-decide-audit-verify.txt`, `audit-verify-final.txt`; `screenshots/01`-`03`, `07`-`08` | Decisions `approve`, `correct` and `partial` recorded; `reject` not used on a real review. Final `GET /audit/verify`: `valid: true`, 50 entries. No Student 5 database row changed. |
+| TL-FR-18 | `cloud/04-public-url-readonly-check.txt`, `cloud/06-advisory-disabled.jpg`; `prompt-log.md` (Chunk 1) | `ai_disabled` `503` on the public URL and the "switched off" notice; locally `503` in 0.006 s. |
+| TL-NFR-10 | `cloud-deployment-report.md` (local run and `cloud/04`); `cloud/07-multi-agent-disabled.jpg` | All four `*_disabled` bodies; 6-21 ms locally and 0.14-0.22 s on the public URL, inside the 1 s bound. |
+| TL-NFR-11 | `endpoint-testing-report.md`, `endpoint-tests/06`-`11` | Runs 39697590918 (branch) and 39698558980 (`main`): `13 passed`, `12/12 checks passed`, JUnit artifact present (13 tests, 0 failures). |
+| Pre-commit (brief criterion 3) | `precommit-security-report.md`, `precommit/01`-`04` | Ruff `S` and detect-secrets pass on the 111 Student 5 files and pip-audit on both requirements files; one real vulnerability fixed (`PYSEC-2026-1845`, pytest); a real insecure commit blocked. |
+| Local deployment (criterion 1) | `local-deployment-report.md`, `local/` | Compose stack plus native Ollama, MCP, RAG and Multi-Agent Server; advisory, MCP, RAG and CRUD through the gateway; logs from four terminals. |
+| Cloud deployment (criterion 7) | `cloud-deployment-report.md`, `cloud/` | Run 39741981906: `PASS: Student 5 cloud profile and CRUD checks.` with AI off. Limits and the later protected-AI run are listed in `known-issues.md`. |
+| Agentic-loop reviews (criterion 8) | `loop/README.md`, `loop/*-review-record.json` | `review-testing` (`rejected`), `review-cloud` (`changed`) and `review-multi-agent` (`changed`), each finalised by Alex Chen. |
