@@ -86,7 +86,7 @@ PART B — HTMX fragments (server-rendered HTML for the frontend)
 
 DEFINITION OF DONE: full pytest suite green offline; `docker build` still works.
 
-CLAUDE:
+ASSISTANT:
 I'll start by reading the existing backend code and my memory notes to understand what I'm extending.
 
 Now the existing tests and the seeded data shapes.
@@ -161,7 +161,7 @@ Write it and I'll run the full suite; or say "you write it" and I'll put in a de
 USER:
 fully implement the entire feature aligned with the specifications
 
-CLAUDE:
+ASSISTANT:
 Understood — I'll write `build_prompt` myself and finish the feature.
 
 All 63 pass. Let me add one more test for the no-child-rows case (Fiji, id 12) since the prompt explicitly instructs the model about it.

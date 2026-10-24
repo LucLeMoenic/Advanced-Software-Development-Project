@@ -138,6 +138,9 @@ Limits, stated as found:
   `Set CLOUD_AUTH_USER ...`, an attempt at the optional protected-AI (bonus)
   deployment. These belong to the cloud workflow owner. The run list, failed steps and error
   lines are in `cloud/10-later-cloud-dispatches.txt`.
+  **Update, 23 October 2026:** run 39893640923 at `4c1e71a` has since deployed the
+  protected AI mode, so the public URL no longer serves `851bdd7` and now asks for the
+  gateway password. Student 5's checks passed in that run (`cloud/11`, `known-issues.md`).
 - **Persistence and rollback are not shown here.** `cloud-smoke.txt` itself says
   "Persistence across redeploy and rollback require separate evidence". That belongs
   to the cloud workflow owner.

@@ -79,13 +79,20 @@ real output, not mocks:
 - A `cloud-deployment.yml` run that includes the Student 5 smoke check, with the
   Student 5 page reachable on the deployed URL.
 
+**Status (24 October 2026):** all four gates are met, the cloud gate with a caveat. Evidence
+for each is in [`feature-plan.md`](feature-plan.md), "Acceptance gates from the plan".
+
 ## Open items and dependencies
 
 - **Cloud environment:** status of the VM, GitHub `production` secrets and public URL
   is unconfirmed. Ask the cloud workflow owner for access status and a run link;
-  Student 5 does not provision resources.
+  Student 5 does not provision resources. *Resolved:* AWS VM behind a Caddy TLS gateway at
+  `https://asd-epic-assignment.duckdns.org`; runs 39741981906 (AI off) and 39893640923
+  (protected AI) passed the Student 5 check (`evidence/release-2/cloud-deployment-report.md`).
 - **Cloud gate:** `cloud-deployment.yml` requires every student workflow to be green
   for the same commit; Student 4 has no Release 2 endpoint step yet (owner to confirm).
+  *Resolved:* all five student workflows and Integrated Compose CI were green at `4c1e71a`,
+  the revision run 39893640923 deployed.
 - **Known Release 1 defect (Student 1, flagged only):** RAG source titles render as
   mojibake in Student 1's backend (`Tokyo â€” Where to Stay`); the RAG server output
   is correct UTF-8.
