@@ -626,3 +626,91 @@ and `finalise` commands):
 | Independent AI review | 6 important, 4 minor and 4 nit findings; all acted on. Terminals 1-2 running in the background stays a stated limit. See `review-record.md` (Release 2 - Chunk 6) |
 | Pre-commit hooks on the changed files | Ruff security rules Skipped (no Python files); detect-secrets Passed; pip-audit Skipped (no requirements changed) |
 | Local stack afterwards | `student5-backend` left with `MULTI_AGENT_ENABLED=true` (shell override) for further runs; `.env` unchanged |
+
+### Chunk 7 - Release 2 documentation and report sections, 24 October 2026
+
+**Why:** the brief's technical report needs:
+
+- a Release 2 design flow;
+- the cloud and CI/CD flow;
+- each student's reports, review outputs and contribution log.
+
+The Student 5 planning documents still described Release 0/1 only.
+
+**Prompt (summary):** "Chunk 7 of my plan":
+
+- Read everything under `student-5/docs/` and the brief's report requirements.
+- Add a Release 2 section to `architecture.md` with Mermaid diagrams of:
+  - the design flow, including Planner -> Worker -> Reviewer -> Human Review;
+  - the local vs cloud boundary;
+  - the DevOps flow.
+- Update `feature-plan.md` (PR numbers from `git log`), `requirements.md`,
+  `testing-evidence.md`, `known-issues.md`, `sprint-backlog.md`, `risk-plan.md` and
+  `contribution-log.md`.
+- Check that every path and number matches its source. List anything missing instead of
+  inventing it.
+- Draft `release-2-report-sections.md` at about 400-500 words, with a word count.
+- Docs only.
+
+**AI-assisted work (no application code changed):**
+
+- `architecture.md`:
+  - a Release 2 section with three Mermaid diagrams (design flow, local and cloud boundary,
+    DevOps flow);
+  - a table linking each pipeline stage to its evidence.
+- `feature-plan.md`:
+  - a Release 2 deliverables table (R2-1 to R2-7, with branches, work commits, PRs and
+    evidence);
+  - the plan's acceptance gates;
+  - changes to Student 5 files by other team members;
+  - the Release 2 decisions.
+- `requirements.md`:
+  - the TL-NFR-11 row (it was in the plan but missing here);
+  - the Multi-Agent Server in the scope diagram;
+  - a Release 2 evidence section.
+- `testing-evidence.md`: a Release 2 index, the Release 2 `student-5.yml` steps, the
+  reproduction commands and the outstanding items.
+- `known-issues.md`, `sprint-backlog.md` (TL-26 to TL-32), `risk-plan.md` (TL-R11 to
+  TL-R14) and `contribution-log.md` (a Release 2 record with PR links).
+- New file `release-2-report-sections.md` (498 counted words).
+- New evidence file `evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt`,
+  made with `gh run list` and `gh run view`. It records the protected-AI cloud run at
+  `4c1e71a`, which came after the Chunk 6 evidence.
+
+**Found while checking sources:**
+
+- Cloud run 39893640923 (protected AI mode, 23 October) is now the live deployment. Student 5's
+  CRUD and AI checks passed in it. Readiness review `wf-20261023T035316Z-6feb1b81` is waiting
+  for a human decision.
+- The shared runbook says baseline run 39741981906 deployed before the CI gate was corrected.
+  No baseline run has succeeded since.
+- Another team member changed Student 5 files:
+  - PR #143 added an `enabled` parameter to `check_student5`, so the smoke tests went from
+    18 to 19;
+  - PR #147 added `CLOUD_AI_SLOW_MODE` to the backend, so the backend tests went from 199
+    to 201.
+
+**Corrections during the session:**
+
+- The first draft said "three from the UI" when there were four UI workflows. It also said
+  pip-audit ran on the 111 files, but it runs on the two requirements files.
+- The draft said five dispatches failed after the baseline run. Nine did.
+- The endpoint-test reproduction command did not match the workflow, because it ran from
+  `student-5/backend`. It now runs from the repository root, as `student-5.yml` does, and
+  was re-run: 13 passed.
+- The loop folder holds 12 files, not 14. The CI-gate log range is lines 131-146.
+- Corrections made after the independent review are listed in `review-record.md` (Release 2
+  - Chunk 7).
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| Full Student 5 suites at `4c1e71a` (repo `.venv`, Python 3.13.2) | database `26 passed in 1.70s`, backend `201 passed in 6.26s`, MCP logistics `34 passed in 2.64s`, RAG student-5 retrieval `17 passed in 0.23s` |
+| Endpoint tests with the documented command | `13 passed in 0.47s` |
+| Cloud smoke test collection | `scripts/test/test_cloud_smoke_student5.py`: 19 tests collected |
+| Referenced paths | 77 path references in the new text checked; all exist |
+| Report word count | 498 (whitespace split, headings excluded) |
+| Independent AI review | 1 important, 9 minor and 7 nit findings; all acted on. See `review-record.md` (Release 2 - Chunk 7) |
+| Pre-commit hooks on the changed files | detect-secrets Passed; Ruff security rules and pip-audit Skipped (no Python or requirements files) |
+| Mermaid diagrams | Checked by hand by the reviewer. No Mermaid CLI is installed, so they were not rendered |
