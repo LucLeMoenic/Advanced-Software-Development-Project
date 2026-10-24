@@ -1,0 +1,82 @@
+# cloud-deployment.yml run 39893640923 (protected AI mode), captured 2026-10-24T03:23:11Z with the gh CLI
+# Source: gh run list / gh run view --json / gh run view --log. ANSI codes and runner env lines removed.
+# Credentials are masked as *** by GitHub; CLOUD_HOST, CLOUD_USER and CLOUD_DOMAIN are repository variables.
+
+$ gh run list --workflow cloud-deployment.yml -L 7
+39893640923	4c1e71a	workflow_dispatch	success	2026-10-23T03:11:08Z
+39873301495	1d4bd7c	workflow_dispatch	failure	2026-10-22T23:40:12Z
+39869072831	166a4a4	workflow_dispatch	failure	2026-10-22T23:01:57Z
+39862608083	4da432f	workflow_dispatch	failure	2026-10-22T22:07:36Z
+39862262391	4da432f	workflow_dispatch	failure	2026-10-22T22:04:55Z
+39860759422	e146338	workflow_dispatch	failure	2026-10-22T21:52:56Z
+39747268117	457b247	workflow_dispatch	failure	2026-10-22T08:22:39Z
+
+$ gh run view 39893640923 --json headSha,event,conclusion,createdAt,updatedAt,jobs
+headSha: 4c1e71acd34793ca5a7a2171c64c3d73dbaf137d
+event: workflow_dispatch
+conclusion: success
+created: 2026-10-23T03:11:08Z
+updated: 2026-10-23T04:00:11Z
+steps:
+  1 Set up job: success
+  2 Run actions/checkout@v5: success
+  3 Run actions/setup-python@v6: success
+  4 Require protected AI credentials: success
+  5 Run missing CI and require success for the deployed revision: success
+  6 Prepare and validate cloud configuration: success
+  7 Build immutable application images: success
+  8 Package AI preparation without deployment: skipped
+  9 Retain AI preparation bundle: skipped
+  10 Prepare private gateway credentials: success
+  11 Configure pinned SSH access: success
+  12 Deploy to the approved Azure or AWS Linux VM: success
+  13 Wait for public HTTPS readiness: success
+  14 Verify public gateway and Student 1 to 5 CRUD: skipped
+  15 Verify protected group CRUD and AI integrations: success
+  16 Retain deployment evidence: success
+  17 Remove runner credentials: success
+  33 Post Run actions/setup-python@v6: success
+  34 Post Run actions/checkout@v5: success
+  35 Complete job: success
+
+## deploy mode and CI gate (log excerpt)
+2026-10-23T03:11:13.4279492Z   CLOUD_AI_SERVICES: ai,mcp,rag,multi-agent
+2026-10-23T03:11:20.9709326Z Started Student 5 CI on main for 4c1e71acd34793ca5a7a2171c64c3d73dbaf137d.
+2026-10-23T03:13:27.6537816Z Student 5 CI passed: https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39893659167
+2026-10-23T03:14:54.0391791Z Prepared 22 cloud services (cloud AI components enabled: ai, mcp, multi-agent, rag); no resources were provisioned.
+2026-10-23T03:16:25.0165676Z   DEPLOY_MODE: ai
+
+## step "Verify protected group CRUD and AI integrations" output (smoke_cloud_ai.py --all-features)
+2026-10-23T03:19:56.6605774Z PASS: anonymous access rejected at the gateway for every feature.
+2026-10-23T03:19:56.6606141Z PASS: verified HTTPS gateway is ready.
+2026-10-23T03:20:52.1601807Z PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+2026-10-23T03:22:12.2454002Z PASS: Student 1 cloud profile and CRUD checks.
+2026-10-23T03:22:45.4756714Z PASS: Student 3 cloud profile and CRUD checks.
+2026-10-23T03:23:41.8118274Z PASS: Student 4 cloud profile and CRUD checks.
+2026-10-23T03:23:47.1640311Z PASS: Student 5 cloud profile and CRUD checks.
+2026-10-23T03:23:47.1640688Z Persistence across redeploy and rollback require separate evidence.
+2026-10-23T03:23:47.7150142Z PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag
+2026-10-23T03:23:48.9433896Z PASS: B2 MCP: a tool call through the application returned real catalogue data
+2026-10-23T03:24:18.8116194Z PASS: B1 AI-Mode: the model answered through the application
+2026-10-23T03:24:59.1830873Z PASS: B3 RAG: a grounded answer with citations from retrieved context
+2026-10-23T03:24:59.8003030Z CHECK: waiting for workflow /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f (up to 2220 seconds).
+2026-10-23T03:30:00.3118185Z MANUAL: review workflow /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f in the application; no human approval has been submitted.
+2026-10-23T03:30:00.3119174Z PASS: B4 Multi-Agent: Planner, Worker and Reviewer reached human review; decision pending
+2026-10-23T03:35:01.3191539Z CHECK: waiting for workflow /accommodation/api/reviews/wf-20261023T033501Z-12a0258c (up to 2220 seconds).
+2026-10-23T03:46:20.2075964Z MANUAL: review workflow /accommodation/api/reviews/wf-20261023T033501Z-12a0258c in the application; no human approval has been submitted.
+2026-10-23T03:47:15.5796811Z CHECK: waiting for workflow /itinerary-api/trips/16/multi-agent-workflows/wf-20261023T034715Z-8dfd71ef (up to 2220 seconds).
+2026-10-23T03:53:15.9225119Z MANUAL: review workflow /itinerary-api/trips/16/multi-agent-workflows/wf-20261023T034715Z-8dfd71ef in the application; no human approval has been submitted.
+2026-10-23T03:53:16.4845995Z CHECK: waiting for workflow /logistics/api/readiness-reviews/wf-20261023T035316Z-6feb1b81?destination_id=1 (up to 2220 seconds).
+2026-10-23T04:00:07.0886240Z MANUAL: review workflow /logistics/api/readiness-reviews/wf-20261023T035316Z-6feb1b81?destination_id=1 in the application; no human approval has been submitted.
+2026-10-23T04:00:07.0886856Z INFO: Student 4 has no Multi-Agent integration; no unsupported capability is claimed.
+2026-10-23T04:00:07.0887270Z PASS: enabled AI integrations exercised through Students 1, 2, 4 and 5.
+
+## what the Student 5 lines assert (scripts/deploy/smoke_cloud_ai.py, check_other_features, at 4c1e71a)
+# - "Student 5 cloud profile and CRUD checks": check_student5 in smoke_cloud.py (create, read, update, delete, 404).
+# - B1: POST /logistics/api/advisory returns a non-empty advisory with model "llama3.2:3b".
+# - B2: POST /logistics/api/mcp/invoke logistics.check_visa_requirement returns result.ok true.
+# - B3: POST /logistics/api/rag/ask returns an answer with citations and a low/medium/high confidence.
+# - B4: POST /logistics/api/destinations/<id>/readiness-reviews returns 202; the workflow reaches
+#   awaiting_human_review with plan, work and review and history planner, worker, reviewer in order;
+#   no human decision is submitted by the workflow (the MANUAL line).
+# The aggregate PASS lines cover all features; there is no separate Student 5 line for B1-B4.

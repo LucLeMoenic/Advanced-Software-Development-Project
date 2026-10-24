@@ -1,6 +1,6 @@
 # Contribution Log - Student 5
 
-Alex Chen, feature **Travel Logistics & Advisory Service**, Release 0 and Release 1.
+Alex Chen, feature **Travel Logistics & Advisory Service**, Releases 0-2.
 
 Derived from `git log --all --author="alexanderschen08@gmail.com"` across my
 `AC/*` branches and `main`. 25 commits between 1 and 6 September 2026, of which
@@ -88,3 +88,50 @@ per step, each squash-merged into `main`.
 Three agentic-loop attempts before the successful one produced no artefacts and
 therefore no commits; they are documented in `prompt-log.md` from the working
 session rather than from the repository history.
+
+## Release 2
+
+Repository: https://github.com/LucLeMoenic/Advanced-Software-Development-Project. Derived
+from `git log origin/main..origin/AC/student5-r2-<topic>` for each chunk branch and the
+squash-merge commits on `main`: 19 work commits between 21 and 23 October 2026 (author
+`alexanderschen08@gmail.com`), landed as 6 pull requests merged by me (GitHub `chalex08`).
+Code and documents were written with an AI coding assistant under my direction. I
+reviewed every change, made every human decision in the evidence, and committed, pushed
+and merged every pull request myself (see `prompt-log.md` and `review-record.md`).
+
+### Work completed
+
+| Chunk | PR (merge commit) | Branch and work commits | What it delivered |
+|---|---|---|---|
+| 1 | [#129](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/129) (`59e5ce4`) | `AC/student5-r2-ai-off-guard`: `e0dae03`, `a2ee74b` | **AI-off guard (TL-FR-18).** `AI_ENABLED` in `app.py` and Compose; `OllamaDisabled`; advisory and fragment refuse before any network call; 5 tests; the Release 2 plan. The PR title says "multi-agent integration"; its content is the AI-off guard. `a2ee74b` removed a local `.env` backup committed by mistake in `e0dae03`, so it is not in the merged diff. |
+| 2 | [#132](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/132) (`7798bc8`) | `AC/student5-r2-multi-agent`: `de8de91`, `ffbc847`, `77f2a82`, `da2edfe` | **Trip readiness review (TL-FR-16, TL-FR-17, TL-NFR-10).** `multi_agent_client.py`, `readiness.py`, two templates, the HTMX panel with polling and the four decisions, Compose flags; `test_readiness.py`. 15 files, 1815 insertions. |
+| 3 | [#133](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/133) (`e523738`) | `AC/student5-r2-endpoint-ci`: `83a578b`, `01fee2f`, `afb34bb` | **Post-commit endpoint tests (TL-NFR-11).** `test_endpoints_cicd.py` (13), `live_endpoint_check.py` (12 checks), five new `student-5.yml` steps, endpoint testing report. |
+| 4 | [#135](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/135) (`df5ec56`) | `AC/student5-r2-precommit`: `f77c09b`, `3c42f93`, `de85886` | **Pre-commit security evidence.** pytest `>=9.0.3,<10.0` in both services, Student 5 pip-audit exception removed, reasons on the `S608` suppressions, pre-commit report with a blocked commit. |
+| 5 | [#137](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/137) (`7aadf5a`) | `AC/student5-r2-cloud-smoke`: `87597cb`, `2d66767` | **Cloud smoke coverage.** `check_student5` in the shared `smoke_cloud.py` (four AI-off bodies, then CRUD with cleanup in `finally`) and 18 offline tests; cloud deployment report. |
+| 6 | [#145](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/145) (`e146338`) | `AC/student5-r2-evidence`: `949bb13`, `06ea17e`, `40a083b`, `05de520`, `d660a8a` | **Local, Multi-Agent and loop evidence.** Real CI and cloud runs recorded; multi-terminal local run; five workflows with my decisions and a 50-entry verified audit log; three agentic-loop report reviews finalised. |
+| 7 | (this branch, not yet committed) | `AC/student5-r2-docs` | **Release 2 documentation.** Release 2 design, cloud boundary and DevOps diagrams; this record; `release-2-report-sections.md`; the protected-AI cloud run capture. |
+
+### Release 2 responsibilities (brief, "Individual Responsibilities")
+
+| Responsibility | What I did | Evidence |
+|---|---|---|
+| Assigned microservices | Kept all three Student 5 services working; added the readiness routes, client and panel | PRs #129, #132 |
+| Release 1 integration | AI-Mode, MCP and RAG kept; shown live through the gateway | `local/03`, `local/04`, `local/05` |
+| Multi-Agent integration | Backend and UI integration with the shared server; UI and terminal workflows decided by me | `multi-agent-server-report.md` |
+| Agentic-loop reviews | Ran and finalised all three Release 2 modes on Student 5 evidence | `loop/README.md` |
+| Pre-commit security testing | Ran the hooks on real commits; fixed one vulnerability; documented every accepted finding | `precommit-security-report.md` |
+| Post-commit CI/CD testing and `student-5.yml` | Two endpoint functions tested on every push; green runs | `endpoint-testing-report.md` |
+| Local deployment | Integrated stack with native AI services and the Multi-Agent Server | `local-deployment-report.md` |
+| Cloud deployment | Student 5 smoke check in the group workflow; page and AI-off notices on the public URL | `cloud-deployment-report.md` |
+| Repository contribution | 19 work commits in 6 PRs, each with a prompt-log and review-record entry | this section |
+
+### Shared work owned by others that Student 5 depends on
+
+`ai-services/multi-agent-server/`, `cloud-deployment.yml`, `prepare_cloud.py`,
+`deploy-vm.sh`, the VM and `start-release1.ps1` belong to other team members. Student 5
+changed only its own slice of shared files (`check_student5`, the `student5-backend`
+Compose block, `student-5.yml`, the Student 5 entry in `pip-audit-accepted.json`, and
+audited additions to `.secrets.baseline` plus three records in `docs/agentic-loop-records/`
+in PR #145). Other team members changed Student 5 files in PRs #128, #141, #143 and
+#147; they are listed in `feature-plan.md` ("Changes to Student 5 files by other team
+members") and `known-issues.md`.

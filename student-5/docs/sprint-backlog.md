@@ -1,6 +1,6 @@
 # Travel Logistics & Advisory Service - Sprint Backlog
 
-Student 5 (Alex Chen), Release 0 and Release 1 (TL-20..25). Owner is Alex Chen throughout. Requirement
+Student 5 (Alex Chen), Release 0, Release 1 (TL-20..25) and Release 2 (TL-26..32). Owner is Alex Chen throughout. Requirement
 IDs refer to `requirements.md`. An item is Done only when its requirements hold
 in the integrated Compose stack, not just in isolation.
 
@@ -32,3 +32,10 @@ in the integrated Compose stack, not just in isolation.
 | TL-23 | Frontend live tools and knowledge base section | TL-FR-14 | MCP and RAG forms with provenance, confidence, citations, insufficient state and disclaimer; readable failures; no horizontal overflow at 375px. | **Done (Release 1)** - `release-1/screenshots/` |
 | TL-24 | Compose, test script and CI smoke test | TL-NFR-06, TL-NFR-09 | Compose flags; `student-5.ps1` runs the new suites; `student-5.yml` starts the services and asserts the fail-closed contract; green on GitHub. | **Done (Release 1)** - `ci-smoke-local.txt`; Student 5 CI run #140 green on `main` (`49e5489`), `ci-run-green.png`. |
 | TL-25 | Agentic-loop validation fixtures | TL-FR-15 | `validate-mcp` and `validate-rag` support `--feature student-5`, with tests; one live run of each, finalised with a human decision. | **Done (Release 1)** - `release-1/loop/`; finalised (e) `kept`, (f) `kept` |
+| TL-26 | AI-off guard | TL-FR-18 | `AI_ENABLED=false` makes `POST /api/advisory` and the advisory fragment answer "AI disabled" with no call to Ollama or the database; CRUD unaffected; tests for both states. | **Done (Release 2)** - PR #129; 5 tests; live `503` in 0.006 s |
+| TL-27 | Trip readiness review on the shared Multi-Agent Server | TL-FR-16, TL-FR-17, TL-NFR-10 | Backend client, evidence builder and routes; HTMX panel with polling and the four decisions; compose flags default off; mocked-HTTP tests. | **Done (Release 2)** - PR #132; `test_readiness.py` |
+| TL-28 | Post-commit endpoint tests in `student-5.yml` | TL-NFR-11 | `POST` and `PUT /api/destinations` tested on every push with all four AI flags `false`; JUnit summary and artifact; green on GitHub. | **Done (Release 2)** - PR #133; runs 39697590918 and 39698558980 green |
+| TL-29 | Pre-commit security evidence | brief criterion 3 | Hooks run on a real commit; findings resolved or documented; Student 5 pip-audit exception removed. | **Done (Release 2)** - PR #135; `precommit-security-report.md` |
+| TL-30 | Student 5 cloud smoke check | TL-NFR-10, brief criterion 7 | AI-off bodies and destination CRUD checked through the public gateway in `cloud-deployment.yml`; offline test. | **Done (Release 2)** - PR #137; 18 tests at merge, 19 after PR #143; cloud run 39741981906 `PASS`. A post-gate-fix baseline run is with the cloud workflow owner (`known-issues.md`). |
+| TL-31 | Local deployment, Multi-Agent and agentic-loop review evidence | brief criteria 1, 2, 8 | Multi-terminal local run; workflows from UI and terminal with real human decisions and audit verification; three report reviews finalised. | **Done (Release 2)** - PR #145; `local-deployment-report.md`, `multi-agent-server-report.md`, `loop/README.md` |
+| TL-32 | Release 2 documentation and report sections | all | Architecture design flow and DevOps flow; plan, requirements, evidence index, issues, risks, contribution log; individual report sections with a word count. | **Done (Release 2), not yet committed** - `AC/student5-r2-docs` |

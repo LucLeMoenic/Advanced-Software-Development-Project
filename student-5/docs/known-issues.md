@@ -266,3 +266,34 @@ still to do.
   also contains `multiAgentEnabled`. All services are healthy regardless.
 - The cloud baseline still has no persistence-across-redeploy or rollback evidence
   (`cloud-smoke.txt` says so). This belongs to the cloud workflow owner.
+
+### Found while writing the Release 2 documentation (24 October 2026)
+
+Checked with `gh run list` / `gh run view` and saved in
+`evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt`. None of these is
+a Student 5 code defect, and none was changed here.
+
+- **The only successful AI-off cloud baseline came before the CI-gate fix.** Run
+  39741981906 (`851bdd7`) is still the only successful baseline. The shared runbook
+  (`docs/release-2/cloud-validation-runbook.md`) says it ran before the CI-gate correction
+  and that its green status is not complete acceptance evidence. Its gate step printed
+  nothing (`cloud/01`, lines 131-146). Since then, nine dispatches failed (`cloud/10`, `cloud/11`) and the one
+  success, 39893640923 at `4c1e71a`, deployed the protected AI mode. Student 5's part is
+  green in both runs. A new baseline run belongs to the cloud workflow owner.
+- **The public URL now serves the protected AI mode.** Run 39893640923 is the latest
+  successful deployment, and its smoke output starts with "anonymous access rejected at
+  the gateway for every feature". So the AI-off pages in `cloud/04`-`07` show the
+  deployment as it was on 22 October and can no longer be reproduced anonymously.
+- **A Student 5 readiness review in the cloud is waiting for a human decision.** In the
+  same run, `wf-20261023T035316Z-6feb1b81` (destination 1) reached human review with
+  Planner, Worker and Reviewer in order, about 7 minutes after it started. The smoke test
+  leaves the decision to a person on purpose. Until someone decides it in the deployed UI
+  and captures it, Student 5's bonus B4 evidence stops at "decision pending".
+- **Another team member changed Student 5 backend code.** PR #147 added an opt-in
+  `CLOUD_AI_SLOW_MODE` (Ollama 180 s, RAG 200 s) to `backend/app.py` and 2 tests in
+  `backend/tests/test_cloud_deadlines.py`. It is off by default and turns no AI flag on;
+  the four Student 5 suites pass with it (26, 201, 34, 17). It is recorded here because it
+  is not in the Student 5 prompt log.
+- **The shared runbook's status line is out of date.** It says protected AI "has not been
+  deployed or model-tested on AWS", but run 39893640923 did both. That file belongs to the
+  cloud workflow owner.

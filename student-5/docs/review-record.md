@@ -513,3 +513,59 @@ I accepted the review. Validation after the fixes:
 - pre-commit passed (detect-secrets Passed; Ruff and pip-audit had no files to check).
 
 Details are in `prompt-log.md` (Release 2, Chunk 6).
+
+## Release 2 - Chunk 7 review: Release 2 documentation and report sections
+
+Before handover, the working-tree diff was given to an independent AI review agent with
+read-only access. It checked the new text against these sources:
+
+- section 4 of the brief and the release plan;
+- the five evidence reports and their raw files;
+- `git log` and both workflows;
+- `smoke_cloud_ai.py` and the shared runbook;
+- `gh run list` / `gh run view`, read-only.
+
+It was asked to check:
+
+- every number, run id, hash, PR, count and path;
+- the Mermaid syntax, and whether the diagrams match the real workflows and scripts;
+- honesty about limits;
+- the coverage and word count of the report sections;
+- that the text has no AI-tool branding and no secrets.
+
+| Finding | Severity | Outcome |
+|---|---|---|
+| The docs cited a Chunk 7 prompt-log entry that did not exist yet | Important | Fixed: this entry and the prompt-log entry were written |
+| The record of other members' changes was incomplete: PR #143 changed `check_student5` (the smoke tests are now 19), and #128 and #141 changed `student-5.yml` | Minor | Fixed in `feature-plan.md` and `contribution-log.md` |
+| "18 offline tests" did not say it was the count at merge | Minor | Fixed in the feature plan and the backlog |
+| The list of shared files Student 5 changed left out `.secrets.baseline` and the loop records | Minor | Fixed in `contribution-log.md` |
+| The feature plan and the contribution log gave different Chunk 1 commits | Minor | Fixed: both list `e0dae03`, `a2ee74b` |
+| The index says each report lists its own files, but the cloud report does not list `cloud/11` and still says the URL serves `851bdd7` | Minor | Noted in `testing-evidence.md`. The report is not edited, because the `review-cloud` record stores its hash |
+| The design flow had no step from Human Review back to the UI | Minor | Fixed: an outcome edge, and a sentence in step 5 |
+| The cloud gate node said "every student CI", but the gate requires six workflows and runs any that are missing | Minor | Fixed |
+| The DevOps diagram read as baseline-only and left out the HTTPS readiness wait | Nit | Fixed: "baseline mode", the HTTPS readiness step, and the `ai` mode smoke script are shown |
+| The boundary diagram showed the containers calling the agentic loop | Nit | Fixed: the loop is now a separate host CLI node |
+| The report text said the native services ran "in separate terminals" | Minor | Fixed: the launcher ran in terminal 1 and the Multi-Agent Server in terminal 2 |
+| The cloud paragraph did not say the live URL now runs the protected AI mode, and the CI-gate limit was vague | Minor | Fixed |
+| The report text had no repository URL, and the cloud release decision was not stated | Minor | Fixed |
+| "199 in Chunks 4-6" should be "Chunks 3-6" | Nit | Fixed |
+| The Release 1 integration row left out AI-Mode | Nit | Fixed |
+| The log lines in `cloud/11` were out of time order | Nit | Fixed (content unchanged) |
+| "Passed Student 5's readiness checks" claimed too much, as the log has no Student 5 B1-B4 line | Nit | Fixed: now "a readiness review reached human review; its decision is pending" |
+
+The reviewer confirmed:
+
+- all six PRs, the 19 work commits and who wrote them;
+- every evidence number against its source;
+- the `cloud/11` lines against the live run log;
+- all referenced paths and the file count of each folder;
+- the four suites (26/201/34/17);
+- the Mermaid syntax, checked by hand;
+- that the text has no branding and no secrets.
+
+I accepted the review. Validation after the fixes:
+
+- the report text is 498 words;
+- pre-commit passed on the changed files.
+
+Details are in `prompt-log.md` (Release 2, Chunk 7).
