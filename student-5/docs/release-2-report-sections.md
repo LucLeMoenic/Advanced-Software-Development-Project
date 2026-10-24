@@ -4,7 +4,7 @@ Draft of my individual sections for the group PDF (Release 2 brief, section 4), 
 group to merge. Only "Report text" counts towards the 3000-word limit. "Figures and
 evidence" and "Before submission" are notes for whoever assembles the PDF.
 
-**Word count of "Report text": 498** (headings excluded; counted with a whitespace split
+**Word count of "Report text": 499** (headings excluded; counted with a whitespace split
 of the section's paragraphs, so `PUT /api/destinations/<id>` counts as two words).
 
 ## Report text
@@ -58,7 +58,7 @@ were added and the remaining gaps stated. The multi-agent review was also `chang
 (report corrected). The loop refused four reviewer attempts that echoed
 prompt examples or produced malformed findings; they are kept as evidence.
 
-**Contribution.** 19 commits in 6 pull requests (#129, #132, #133, #135, #137, #145) on
+**Contribution.** 24 commits in 7 pull requests (#129, #132, #133, #135, #137, #145, #151) on
 https://github.com/LucLeMoenic/Advanced-Software-Development-Project, each with
 prompt-log and review-record entries.
 

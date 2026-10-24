@@ -113,8 +113,8 @@ correctly reported that the change touched only the one function.
 
 ### AI-written code for Release 1
 
-The Release 1 implementation was written by **GitHub Copilot CLI** (Claude
-Opus 5.5) in one supervised session, working from the Release 1 brief, the
+The Release 1 implementation was written by an AI coding assistant in one
+supervised session, working from the Release 1 brief, the
 project specifications, this docs folder and the existing Student 1-3 Release 1
 patterns. I directed scope, ran the stack, and reviewed the result (see
 `review-record.md`, "Release 1").
@@ -714,3 +714,40 @@ The Student 5 planning documents still described Release 0/1 only.
 | Independent AI review | 1 important, 9 minor and 7 nit findings; all acted on. See `review-record.md` (Release 2 - Chunk 7) |
 | Pre-commit hooks on the changed files | detect-secrets Passed; Ruff security rules and pip-audit Skipped (no Python or requirements files) |
 | Mermaid diagrams | Checked by hand by the reviewer. No Mermaid CLI is installed, so they were not rendered |
+
+### Final submission-readiness check, 24 October 2026
+
+**Why:** verify, before the 25 October deadline, that nothing would cost marks under the
+Release 2 brief's criteria 1-10 and bonus, and fix only small documentation problems.
+
+**Prompt (summary):** "Final submission-readiness check for my Release 2 work. Verify, do
+not build": repository state, all Student 5 test suites, CI, pre-commit hooks, a full local
+deployment with every AI flag on and then off, read-only cloud checks, Multi-Agent and loop
+evidence, and documentation consistency. Documentation fixes only, on
+`AC/student5-r2-final-check`, uncommitted.
+
+**Documentation changed:**
+
+- Tool names replaced by "an AI coding assistant" in `contribution-log.md` (Release 1) and
+  this log (Release 1); the two speaker labels in
+  `evidence/prompt-engineering-and-context-management-documentation.txt` relabelled
+  `ASSISTANT:`. No other text in the transcript changed.
+- PR #151 (`07eb996`) recorded as merged in `contribution-log.md`, `feature-plan.md` and
+  `sprint-backlog.md`; the Release 2 totals are now 24 work commits in 7 PRs (also in
+  `release-2-report-sections.md`, now 499 words).
+- `cloud-deployment-report.md`: dated note that run 39893640923 replaced `851bdd7` on the
+  public URL.
+- `release-2-plan.md`: acceptance-gate status pointer and resolved open items.
+
+**Validation (main at `07eb996`):**
+
+| Check | Result |
+| --- | --- |
+| Student 5 suites (repo `.venv`) | database `26 passed`, backend `201 passed` (endpoint CI file `13 passed`), MCP logistics `34 passed`, RAG student-5 `17 passed`, cloud smoke student-5 `19 passed` |
+| Shared suites | agentic loop `dotnet test`: `95 passed`; Multi-Agent Server (`venv-rag`, which has its requirements): `71 passed` twice, after one teardown `PermissionError [WinError 5]` on Windows in the first run |
+| CI | `student-5.yml` run 40067116729 at `07eb996` green, POST and PUT tested, artifact `student-5-endpoint-test-results`; all five student workflows and Integrated Compose CI green at `4c1e71a`; `cloud-deployment.yml` 39893640923 success, `PASS: Student 5 cloud profile and CRUD checks.` |
+| Pre-commit | Ruff security rules, detect-secrets and pip-audit Passed over the 184 tracked Student 5 files; no Student 5 entry in `pip-audit-accepted.json` |
+| Local stack, all four AI flags on | 16 containers healthy, Ollama, MCP, RAG and Multi-Agent health OK; CRUD on destinations, weather notes and transit options; advisory 3.2 s; MCP visa tool; cited RAG answer; readiness review `wf-20261024T055638Z-811f76bd` reached `awaiting_human_review` in 12 s (no decision made); `GET /audit/verify` `valid: true`, 137 entries |
+| Local stack, all four AI flags off | each AI route `503` with its `*_disabled` body in 6-19 ms; CRUD unaffected; flags restored afterwards |
+| Cloud, read-only | every path `401` with Basic authentication (protected AI mode); authenticated checks not run (no credentials held locally) |
+| Referenced paths | every path in `student-5/docs` resolves, apart from files that exist only inside CI artifacts |

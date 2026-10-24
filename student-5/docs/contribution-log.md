@@ -33,7 +33,7 @@ the PR number traceable.
 
 ## Release 1
 
-Written with GitHub Copilot CLI under my direction and reviewed by me (see
+Written with an AI coding assistant under my direction and reviewed by me (see
 `prompt-log.md` and `review-record.md`). The assistant prepared each change in the
 working tree only; I committed, pushed and opened every pull request myself, one
 per step, each squash-merged into `main`.
@@ -93,8 +93,8 @@ session rather than from the repository history.
 
 Repository: https://github.com/LucLeMoenic/Advanced-Software-Development-Project. Derived
 from `git log origin/main..origin/AC/student5-r2-<topic>` for each chunk branch and the
-squash-merge commits on `main`: 19 work commits between 21 and 23 October 2026 (author
-`alexanderschen08@gmail.com`), landed as 6 pull requests merged by me (GitHub `chalex08`).
+squash-merge commits on `main`: 24 work commits between 21 and 24 October 2026 (author
+`alexanderschen08@gmail.com`), landed as 7 pull requests merged by me (GitHub `chalex08`).
 Code and documents were written with an AI coding assistant under my direction. I
 reviewed every change, made every human decision in the evidence, and committed, pushed
 and merged every pull request myself (see `prompt-log.md` and `review-record.md`).
@@ -109,7 +109,7 @@ and merged every pull request myself (see `prompt-log.md` and `review-record.md`
 | 4 | [#135](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/135) (`df5ec56`) | `AC/student5-r2-precommit`: `f77c09b`, `3c42f93`, `de85886` | **Pre-commit security evidence.** pytest `>=9.0.3,<10.0` in both services, Student 5 pip-audit exception removed, reasons on the `S608` suppressions, pre-commit report with a blocked commit. |
 | 5 | [#137](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/137) (`7aadf5a`) | `AC/student5-r2-cloud-smoke`: `87597cb`, `2d66767` | **Cloud smoke coverage.** `check_student5` in the shared `smoke_cloud.py` (four AI-off bodies, then CRUD with cleanup in `finally`) and 18 offline tests; cloud deployment report. |
 | 6 | [#145](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/145) (`e146338`) | `AC/student5-r2-evidence`: `949bb13`, `06ea17e`, `40a083b`, `05de520`, `d660a8a` | **Local, Multi-Agent and loop evidence.** Real CI and cloud runs recorded; multi-terminal local run; five workflows with my decisions and a 50-entry verified audit log; three agentic-loop report reviews finalised. |
-| 7 | (this branch, not yet committed) | `AC/student5-r2-docs` | **Release 2 documentation.** Release 2 design, cloud boundary and DevOps diagrams; this record; `release-2-report-sections.md`; the protected-AI cloud run capture. |
+| 7 | [#151](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/pull/151) (`07eb996`) | `AC/student5-r2-docs`: `a0afec6`, `80180f9`, `1732bd3`, `a550afb`, `48a52de` | **Release 2 documentation.** Release 2 design, cloud boundary and DevOps diagrams; this record; `release-2-report-sections.md`; the protected-AI cloud run capture. |
 
 ### Release 2 responsibilities (brief, "Individual Responsibilities")
 
@@ -123,7 +123,7 @@ and merged every pull request myself (see `prompt-log.md` and `review-record.md`
 | Post-commit CI/CD testing and `student-5.yml` | Two endpoint functions tested on every push; green runs | `endpoint-testing-report.md` |
 | Local deployment | Integrated stack with native AI services and the Multi-Agent Server | `local-deployment-report.md` |
 | Cloud deployment | Student 5 smoke check in the group workflow; page and AI-off notices on the public URL | `cloud-deployment-report.md` |
-| Repository contribution | 19 work commits in 6 PRs, each with a prompt-log and review-record entry | this section |
+| Repository contribution | 24 work commits in 7 PRs, each with a prompt-log and review-record entry | this section |
 
 ### Shared work owned by others that Student 5 depends on
 
