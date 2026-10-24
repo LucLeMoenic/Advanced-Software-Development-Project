@@ -1,8 +1,9 @@
 # Travel Logistics & Advisory Service - Architecture
 
 Student 5 (Alex Chen), Release 0, with Release 1 additions in "Release 1: MCP
-and RAG paths". Three containerised services plus the team's
-shared Ollama runtime.
+and RAG paths" and the Release 2 design flow, cloud boundary and DevOps flow in
+"Release 2: design flow, cloud boundary and DevOps flow". Three containerised
+services plus the team's shared AI services.
 
 ## Architecture Diagram
 ```mermaid
@@ -381,3 +382,138 @@ and each such box names the tag that produced it. Green is deterministic code in
 run is in `docs/evidence/agentic-loop-run-part1.png` and `-part2.png`, the
 finalise command in `agentic-loop-finalise.png`, and the resulting record in
 `agentic-loop-run-final-record.json`.
+
+## Release 2: design flow, cloud boundary and DevOps flow
+
+Release 2 keeps every Release 0/1 path and adds one: the trip readiness review
+through the shared Multi-Agent Server (TL-FR-16, TL-FR-17). The Release 0 Compose
+diagrams above are kept as the Release 0 record. Since Release 1, Ollama, MCP and
+RAG run natively on the host, not in Compose, and the Multi-Agent Server and the
+agentic loop are native too (`evidence/release-2/local-deployment-report.md`:
+`docker compose config --services` lists no AI service).
+
+### Design flow
+
+The browser only ever talks to `student5-frontend`. The backend is the only Student 5
+code that knows where the database and the four AI services are, and each AI service
+has its own flag that is checked before any network call (TL-NFR-10).
+
+```mermaid
+flowchart LR
+    ui["Frontend UI<br/>/logistics/ through the shared gateway :5100<br/>student5-frontend, nginx + HTMX"]
+    be["Backend/API<br/>student5-backend, Flask<br/>api, advisory, ui, integrations, readiness"]
+    db[("Database<br/>student5-database, Flask + SQLite")]
+
+    subgraph local["Local host only - native, not in Compose"]
+        ollama["AI-Mode<br/>Ollama :11434, llama3.2:3b"]
+        mcp["MCP Server :5400<br/>logistics.* tools"]
+        rag["RAG Server :5500<br/>knowledge/student-5"]
+        subgraph mas["Multi-Agent Server :5600"]
+            planner["Planner"] --> worker["Worker"] --> checks["Automatic checks<br/>checks.py"] --> reviewer["Reviewer"]
+        end
+        human{"Human Review<br/>approve, correct,<br/>partial, reject"}
+        audit[("Workflow record and<br/>hash-chained audit log")]
+    end
+
+    ui -->|"/ui/* and /api/*"| be
+    be -->|"CRUD over HTTP"| db
+    be -->|"AI_ENABLED<br/>POST /api/generate"| ollama
+    be -->|"MCP_ENABLED<br/>tools/call"| mcp
+    mcp -->|"GET only"| db
+    be -->|"RAG_ENABLED<br/>POST /ask"| rag
+    rag --> ollama
+    be -->|"MULTI_AGENT_ENABLED<br/>POST /workflows with<br/>evidence built from the database"| planner
+    reviewer -->|"awaiting_human_review"| be
+    be -->|"poll every 2 s<br/>plan, checklist, findings"| ui
+    ui -->|"decision form"| be
+    be -->|"POST /workflows/id/decision"| human
+    human --> audit
+    human -->|"outcome, e.g. Corrected by"| ui
+    planner -.-> ollama
+    worker -.-> ollama
+    reviewer -.-> ollama
+```
+
+The Multi-Agent path, step by step:
+
+1. **Frontend UI.** "Start readiness review" posts `/ui/readiness-reviews` for the
+   selected destination.
+2. **Backend/API.** `readiness.py` reads the destination, its weather notes and its
+   transit options through `db_client.py` and builds bounded evidence (one entry item,
+   up to six of each list, 400 characters each, distinct titles). It posts the task and
+   evidence to the Multi-Agent Server and returns `202`.
+3. **Multi-Agent Server.** The Planner writes the plan and the evidence it needs, the
+   Worker writes a checklist that cites evidence ids, `checks.py` checks every subject
+   against its cited evidence, and the Reviewer gives a verdict, findings and
+   recommendations. The workflow stops at `awaiting_human_review`.
+4. **Response to the UI.** The panel polls every 2 s (`204` while nothing has changed)
+   and then shows the plan, the checklist and the Reviewer's findings.
+5. **Human Review.** The traveller approves, corrects, partly accepts or rejects. The
+   decision is posted to the server and stored in the workflow record and the audit log.
+   No Student 5 database row changes. The panel then shows the outcome (for example
+   "Corrected by Alex Chen" with the accepted checklist). The same workflow can be started and decided from
+   the terminal with `cli.py run` and `cli.py decide`.
+
+### Local and cloud boundary
+
+```mermaid
+flowchart TB
+    subgraph localenv["Local - Windows host"]
+        direction LR
+        lc["Docker Compose<br/>student5-frontend, -backend, -database<br/>plus the other students and the shared gateway"]
+        la["Native services<br/>Ollama, MCP, RAG,<br/>Multi-Agent Server"]
+        lc -->|"host.docker.internal<br/>all four flags true"| la
+        loop["Agentic loop<br/>host CLI, reads evidence files"]
+    end
+
+    subgraph cloudenv["Cloud baseline - AWS EC2 Linux VM"]
+        direction LR
+        caddy["Caddy, TLS<br/>public HTTPS URL"] --> gw["shared-frontend<br/>/logistics/*"] --> fe["student5-frontend"] --> cbe["student5-backend<br/>AI_ENABLED, MCP_ENABLED,<br/>RAG_ENABLED, MULTI_AGENT_ENABLED<br/>all false"] --> cdb[("student5-database<br/>/opt/asd/data/student-5")]
+        off["AI, MCP, RAG and Multi-Agent URLs<br/>set to 127.0.0.1:9<br/>routes answer 503 *_disabled"]
+        cbe -.-> off
+    end
+```
+
+- **Local:** the frontend, backend and database run in Compose; Ollama, MCP, RAG, the
+  Multi-Agent Server and the agentic loop run natively. Evidence:
+  `evidence/release-2/local-deployment-report.md`.
+- **Cloud baseline:** `prepare_cloud.py` sets all four flags `false` and points every AI
+  URL at `127.0.0.1:9`. The CRUD path works, and each AI route answers `503` with its
+  `*_disabled` body (`ai_disabled`, `mcp_disabled`, `rag_disabled`,
+  `multi_agent_disabled`). Evidence: `evidence/release-2/cloud-deployment-report.md`.
+- **Cloud with protected AI (optional, bonus):** the cloud workflow owner's `ai` mode
+  turns all four on behind gateway authentication. It is not the baseline. Its one
+  successful run is recorded in `evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt`.
+
+### DevOps flow
+
+```mermaid
+flowchart LR
+    dev["Developer commit<br/>feature branch"]
+    subgraph pre["Local pre-commit hooks"]
+        ruff["Ruff S rules"] --> ds["detect-secrets<br/>.secrets.baseline"] --> pa["pip-audit<br/>requirements files"]
+    end
+    gh["Push and pull request<br/>shared GitHub repository"]
+    subgraph s5["GitHub Actions - student-5.yml"]
+        suites["student-5.ps1<br/>database, backend,<br/>MCP tools, RAG retrieval"] --> ep["Endpoint tests<br/>POST and PUT /api/destinations<br/>AI flags false, JUnit"] --> build["docker compose config<br/>and build"] --> smoke["Start containers,<br/>smoke test, live<br/>endpoint check"]
+    end
+    main["Squash-merge to main"]
+    subgraph cd["GitHub Actions - cloud-deployment.yml, manual dispatch on main"]
+        gate["Run missing CI, require all six<br/>workflows green for the SHA"] --> prep["prepare_cloud.py<br/>baseline mode: AI off"] --> img["Build images"] --> ssh["Copy bundle and<br/>deploy-vm.sh over SSH"] --> ready["Wait for public<br/>HTTPS readiness"] --> csmoke["smoke_cloud.py<br/>incl. check_student5<br/>ai mode: smoke_cloud_ai.py"]
+    end
+    cloud["AWS EC2 VM<br/>public HTTPS URL"]
+
+    dev --> pre -->|"all hooks pass"| gh --> s5 --> main --> cd
+    ssh --> cloud
+    csmoke -->|"HTTPS"| cloud
+```
+
+| Stage | Student 5 part | Evidence |
+|---|---|---|
+| Pre-commit | Hooks run on every Student 5 commit; pytest floor raised to `>=9.0.3` and the Student 5 pip-audit exception removed | `evidence/release-2/precommit-security-report.md` |
+| `student-5.yml` | 13 mocked endpoint tests and 12 live container checks for `POST` and `PUT /api/destinations`, with all four AI flags `false` | `evidence/release-2/endpoint-testing-report.md` |
+| `cloud-deployment.yml` | `check_student5`: four AI-off bodies, then create, read, update, delete and `404` through the public gateway | `evidence/release-2/cloud-deployment-report.md` |
+
+The cloud workflow, `prepare_cloud.py`, `deploy-vm.sh` and the VM belong to the cloud
+workflow owner. Student 5 changed only `check_student5` and its test (PR #137). The
+platform is the shared runbook's AWS EC2 VM (`docs/release-2/cloud-validation-runbook.md`).
