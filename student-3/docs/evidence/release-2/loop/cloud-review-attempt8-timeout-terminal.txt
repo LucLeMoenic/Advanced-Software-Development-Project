@@ -1,0 +1,8 @@
+# review-cloud: terminal output of the real run, attempt 8 (2026-10-26)
+# Two-model setup: IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b. Covers the baseline run AND the real protected AI run 39893640923.
+# Attempts 1 to 7 produced no record: cloud-review-attempt*-terminal.txt (attempt 7 ended after [ACT] with no exit line; free memory was 174 MB).
+START 2026-10-26T08:57:28Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+error: operation timed out or was cancelled
+EXIT=1 END 2026-10-26T09:07:37Z
