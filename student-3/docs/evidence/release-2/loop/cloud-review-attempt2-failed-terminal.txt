@@ -1,0 +1,100 @@
+# review-cloud: terminal output of the real run, attempt 2 (2026-10-22)
+# Attempt 1 failed before producing a record: see cloud-review-attempt1-failed-terminal.txt
+# Run from the repository root with IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b (qwen2.5-coder:7b is not installed here).
+START 2026-10-22T14:40:38Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to review the supplied evidence for the Student 3 cloud deployment in Release 2, identify missing or failed evidence, and recommend actions for the human release decision.
+
+Requirements:
+- The baseline run did not deploy any AI service.
+- The checks for persistence, rollback, and live private boundaries have no cloud evidence.
+- The AI services are optional and must not be prerequisites.
+- The human release decision is required for the final approval.
+
+Files:
+- cloud-deployment.yml
+- cloud/02-cloud-run-39741981906-excerpt.txt
+- cloud/10-public-url-readonly-check.txt
+- cloud/03-cloud-smoke.txt
+- cloud/10-later-cloud-dispatches.txt
+- evidence/release-2/cloud-deployment-evidence.md
+
+Steps:
+1. Review the cloud-deployment.yml file to confirm the baseline run did not deploy any AI service.
+2. Identify the missing or failed evidence for persistence, rollback, and live private boundaries.
+3. Verify the AI services are not prerequisites and are disabled in the baseline.
+4. Recommend actions for the human release decision based on the findings.
+
+Risks:
+- Incorrect identification of missing or failed evidence.
+- Overlooking critical details in the evidence.
+- Recommending actions that may not be feasible or necessary.
+
+Validation:
+- Confirm the identified issues are present in the evidence.
+- Ensure the recommended actions align with the human release decision.
+
+[ACT]
+Proposed change:
+No proposed change is needed as this is a review task. The goal is to identify issues and recommend actions.
+
+Unresolved:
+- The baseline run did not deploy any AI service.
+- Persistence across redeploy and rollback require separate evidence.
+- Backup, restore, and rollback on the VM have not been run.
+- Private backend and database boundaries, live, have not been checked.
+- The deployed Student 3 container environment was not read (no VM access from Student 3).
+- TLS and header hardening live have not been checked.
+- The AI services are optional and must not be prerequisites.
+- The human release decision is required for the final approval.
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+  - The baseline run did not deploy any AI service, which contradicts the requirement that the baseline run should deploy the AI-off baseline.
+  - Persistence across redeploy and rollback require separate evidence, which is missing in the provided evidence.
+  - Backup, restore, and rollback on the VM have not been run, which is a critical aspect of cloud deployment.
+  - Private backend and database boundaries, live, have not been checked, which is a critical aspect of cloud deployment.
+  - The deployed Student 3 container environment was not read (no VM access from Student 3), which is a critical aspect of cloud deployment.
+  - TLS and header hardening live have not been checked, which is a critical aspect of cloud deployment.
+  - The AI services are optional and must not be prerequisites, which is not explicitly stated in the provided evidence.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+  - Evidence: `cloud/10-later-cloud-dispatches.txt` shows that the baseline run failed to deploy the AI service, and the subsequent runs also failed to deploy the AI service.
+  - Failure mode: The deployment of the AI service is critical to the functionality of the system.
+  - Required correction: The deployment of the AI service must be fixed before the system can be released.
+
+- Severity: REQUIRED
+  - Evidence: `cloud/10-public-url-readonly-check.txt` shows that the public URL is not properly secured, and `cloud/03-cloud-smoke.txt` shows that the smoke output contains a placeholder for the `check_student3` assertion.
+  - Failure mode: The public URL is not properly secured, and the smoke output contains a placeholder for the `check_student3` assertion.
+  - Required correction: The public URL must be properly secured, and the smoke output must be updated to reflect the correct assertion.
+
+- Severity: SUGGESTION
+  - Evidence: `cloud/05-persistence-across-redeploy.txt` is labeled as "NOT a cloud run", and `cloud/08` and `cloud/09` scripts exist but have not been run on a VM.
+  - Failure mode: The persistence across redeploy and rollback require separate evidence.
+  - Required correction: The persistence across redeploy and rollback require separate evidence.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+error: REVISE and REJECT findings require severity, evidence, and required correction.
+EXIT=1 END 2026-10-22T14:54:40Z

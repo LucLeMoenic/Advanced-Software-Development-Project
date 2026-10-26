@@ -1,0 +1,50 @@
+# Read-only check of the deployed Student 3 feature on the public URL, 2026-10-22T14:05:26Z
+# Nothing is written: GETs only, plus AI routes that refuse with 503 (or answer from the deterministic fallback) before any database write or model call.
+
+14:05:26Z  GET https://asd-epic-assignment.duckdns.org/health
+    -> HTTP 200 in 0.402610s
+healthy
+
+
+14:05:27Z  GET https://asd-epic-assignment.duckdns.org/attractions/
+    -> HTTP 200 in 0.087153s
+<!doctype html>
+<html lang="en">
+<head>
+
+
+14:05:27Z  GET https://asd-epic-assignment.duckdns.org/attractions-api/capabilities
+    -> HTTP 200 in 0.067263s
+{"aiEnabled":false,"mcpEnabled":false,"multiAgentEnabled":false,"ragEnabled":false}
+
+
+14:05:28Z  GET https://asd-epic-assignment.duckdns.org/attractions-api/attractions
+    -> HTTP 200 in 0.082373s
+[{"category":"sight","description":"Iconic sail-shaped performing arts venue on Sydney Harbour.","id":1,"name":"Sydney Opera House","rating":4.7},{"category":"activity","description":"6km clifftop walking track past Sydney's most famous beaches.","id":2,"name":"Bondi to Coogee Coastal Walk","rating"
+    attractions listed: 12
+
+14:05:28Z  POST https://asd-epic-assignment.duckdns.org/attractions-api/recommend
+    -> HTTP 200 in 0.072666s
+{"attractions_considered":[1,2,3,4,5,6],"recommendation":"Here are a few options that might suit 'street art':\n- Sydney Opera House (sight, rating 4.7): Iconic sail-shaped performing arts venue on Sydney Harbour.\n- Bondi to Coogee Coastal Walk (activity, rating 4.8): 6km clifftop walking track pas
+
+14:05:28Z  GET https://asd-epic-assignment.duckdns.org/attractions-api/mcp/tools
+    -> HTTP 503 in 0.081338s
+{"error":"mcp_disabled","message":"MCP is disabled."}
+
+
+14:05:28Z  POST https://asd-epic-assignment.duckdns.org/attractions-api/mcp/invoke
+    -> HTTP 503 in 0.062558s
+{"error":"mcp_disabled","message":"MCP is disabled."}
+
+
+14:05:29Z  POST https://asd-epic-assignment.duckdns.org/attractions-api/rag/ask
+    -> HTTP 503 in 0.071795s
+{"error":"rag_disabled","message":"RAG is disabled."}
+
+
+14:05:29Z  POST https://asd-epic-assignment.duckdns.org/attractions-api/agents/workflows
+    -> HTTP 503 in 0.078714s
+{"error":"multi_agent_disabled","message":"Multi-Agent is disabled."}
+
+
+# Follow-up: the "source" field of the /recommend answer above: fallback

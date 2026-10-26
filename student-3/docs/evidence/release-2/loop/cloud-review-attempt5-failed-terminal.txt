@@ -1,0 +1,85 @@
+# review-cloud: terminal output of the real run, attempt 5 (2026-10-22)
+# Original two-model setup: IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b (qwen2.5-coder:7b is not installed here).
+# Earlier attempts (no record produced): attempt1-failed (implementer format), attempt2-failed (reviewer format), attempt3-killed-low-memory, attempt4-same-model-rejected; files cloud-review-attempt*-terminal.txt
+START 2026-10-22T23:10:07Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to review the cloud deployment evidence for Student 3 (Local Experience and Attraction Recommender) Release 2, identify missing or failed evidence, and recommend actions for the human release decision.
+
+Requirements:
+- The baseline run did not deploy any AI service.
+- The checks for persistence, rollback, and live private boundaries have no cloud evidence.
+
+Files:
+- cloud-deployment.yml
+- cloud/02-cloud-run-39741981906-excerpt.txt
+- cloud/10-public-url-readonly-check.txt
+- cloud/03-cloud-smoke.txt
+- cloud/10-later-cloud-dispatches.txt
+- cloud/02-ai-flag-mutation-check.txt
+
+Steps:
+1. Review the cloud-deployment.yml workflow to confirm the baseline run did not deploy any AI service.
+2. Verify the persistence, rollback, and live private boundaries checks have no cloud evidence.
+3. Identify the missing or failed evidence and recommend actions for the human release decision.
+
+Risks:
+- The baseline run did not deploy any AI service, which could affect the AI-off baseline.
+- The persistence, rollback, and live private boundaries checks have no cloud evidence, which could affect the integrity of the deployment.
+
+Validation:
+- The baseline run did not deploy any AI service, as confirmed by the cloud-deployment.yml workflow.
+- The persistence, rollback, and live private boundaries checks have no cloud evidence, as confirmed by the cloud/10-later-cloud-dispatches.txt file.
+
+[ACT]
+Proposed change:
+No proposed change is needed as the task is to review the evidence and recommend actions, not to make changes.
+
+Unresolved:
+- The baseline run did not deploy any AI service, which could affect the AI-off baseline.
+- The persistence, rollback, and live private boundaries checks have no cloud evidence, which could affect the integrity of the deployment.
+- The human release decision is required to make the final determination.
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+- Evidence: The baseline run did not deploy any AI service, which could affect the AI-off baseline.
+- Failure Mode: The AI-off baseline may not be fully functional or tested.
+- Required Correction: The baseline run should be re-run with the AI service deployed to ensure a fully functional baseline.
+
+Validation gaps:
+- Severity: SUGGESTION
+- Evidence: The persistence, rollback, and live private boundaries checks have no cloud evidence.
+- Failure Mode: The integrity of the deployment may be affected.
+- Required Correction: The checks should be re-run with cloud evidence to ensure the integrity of the deployment.
+
+Scope check:
+The proposal stays within the requested change.
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+  - Evidence: The baseline run did not deploy any AI service, which could affect the AI-off baseline.
+  - Failure mode: The AI-off baseline may not be fully tested or validated.
+  - Required correction: The human release decision should be made to ensure the AI-off baseline is properly tested and validated.
+
+- Severity: REQUIRED
+  - Evidence: The persistence, rollback, and live private boundaries checks have no cloud evidence.
+  - Failure mode: The integrity of the deployment may be compromised.
+  - Required correction: The human release decision should be made to ensure the persistence, rollback, and live private boundaries checks are properly tested and validated.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+error: REVISE and REJECT findings require severity, evidence, and required correction.
+EXIT=1 END 2026-10-22T23:17:53Z

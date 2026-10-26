@@ -15,10 +15,25 @@ Files here: `testing-review-run-terminal.txt`, `multi-agent-review-run-terminal.
 **Do not edit the evidence files these reviews read.** Each record stores their SHA-256 hashes, so a later edit breaks the
 provenance. They are listed in each record's `evidenceHashes.contextSha256`.
 
-## Why `review-cloud` has no record yet
+## `review-cloud`: attempted, no record yet
 
-The review prompt says never to infer cloud success from a placeholder. The only completed "Cloud Deployment" runs on GitHub
-(2026-10-20, commit `e2ff5e9`) are from the old placeholder workflow that only echoed text. The new `cloud-deployment.yml`
-is manual-dispatch only and has not been run. A meaningful record needs: the deployed URL, the exact revision, the gated
-workflow run, live CRUD checks, evidence that AI-Mode, MCP, RAG and Multi-Agent are disabled, and rollback/persistence
-evidence. Run `review-cloud` on that bundle once it exists.
+A real cloud deployment now exists: `cloud-deployment.yml` run 39741981906 on `main` at `851bdd7` (AWS VM behind a Caddy TLS
+gateway, AI-off baseline), whose smoke output includes `PASS: Student 3 cloud profile and CRUD checks`. Student 3's evidence for it
+is `../cloud-deployment-evidence.md` and `../cloud/10-public-url-readonly-check.txt`, which also list what has no cloud
+evidence (persistence, backup and rollback on the VM, live private boundaries, the optional cloud AI services).
+
+`review-cloud` was run on that evidence six times and **produced no record**. The loop rejected every run, and nothing was
+hand-edited to get past it. The terminal logs are kept:
+
+| Attempt | Models (implementer / reviewer) | Outcome | Log |
+|---|---|---|---|
+| 1 | `qwen2.5:3b` / `llama3.2:3b` | Implementer output lacked exactly one `[PLAN]` and one `[ACT]` | `cloud-review-attempt1-failed-terminal.txt` |
+| 2 | same | Reviewer REJECT without the required severity, evidence and correction fields; also asserted things the evidence does not say | `cloud-review-attempt2-failed-terminal.txt` |
+| 3 | same | Killed by Claude Code for low system memory | `cloud-review-attempt3-killed-low-memory-terminal.txt` |
+| 4 | `llama3.2:3b` for both | Refused at once: the loop requires different models | `cloud-review-attempt4-same-model-rejected-terminal.txt` |
+| 5 | `qwen2.5:3b` / `llama3.2:3b` | Same reviewer failure as attempt 2 | `cloud-review-attempt5-failed-terminal.txt` |
+| 6 | same, task reworded to say the AI-off baseline is required | Reviewer again misread the evidence and failed the format check | `cloud-review-run-terminal.txt` |
+
+The 3B reviewer treats the required AI-off baseline as a defect and cannot produce a well-formed REJECT. A record needs a run that
+completes, then the human `finalise` decision. Run the command in the head of `cloud-review-run-terminal.txt` with a stronger
+implementer or reviewer model (Student 5's record used `qwen2.5-coder:7b`).
