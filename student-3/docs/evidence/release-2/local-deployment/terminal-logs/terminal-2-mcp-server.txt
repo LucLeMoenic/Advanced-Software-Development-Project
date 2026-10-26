@@ -1,0 +1,51 @@
+INFO:     Started server process [1852]
+INFO:     Waiting for application startup.
+StreamableHTTP session manager started
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5400 (Press CTRL+C to quit)
+Created new transport with session ID: b1c7f8496cd649e89e28d2f8f7bd48c3
+INFO:     127.0.0.1:51874 - "GET /mcp HTTP/1.1" 400 Bad Request
+Terminating session: b1c7f8496cd649e89e28d2f8f7bd48c3
+Created new transport with session ID: 09828f832f804915856cde66695888ec
+INFO:     127.0.0.1:20614 - "GET /mcp HTTP/1.1" 406 Not Acceptable
+Terminating session: 09828f832f804915856cde66695888ec
+Created new transport with session ID: 971a5842f8aa466eb19903ca7caf141a
+INFO:     127.0.0.1:20632 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20633 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20634 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:20635 - "POST /mcp HTTP/1.1" 200 OK
+Terminating session: 971a5842f8aa466eb19903ca7caf141a
+INFO:     127.0.0.1:20636 - "DELETE /mcp HTTP/1.1" 200 OK
+Created new transport with session ID: 3b00fb0e6ff9419f837b695da3e063a8
+INFO:     127.0.0.1:20638 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20639 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:20640 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20641 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20643 - "POST /mcp HTTP/1.1" 200 OK
+Terminating session: 3b00fb0e6ff9419f837b695da3e063a8
+INFO:     127.0.0.1:20644 - "DELETE /mcp HTTP/1.1" 200 OK
+Created new transport with session ID: 969cb564504443c6910535c6c60de469
+INFO:     127.0.0.1:2661 - "GET /mcp HTTP/1.1" 406 Not Acceptable
+Terminating session: 969cb564504443c6910535c6c60de469
+Created new transport with session ID: faf6cfdd0c88467c94d8d0aeffd40202
+INFO:     127.0.0.1:2679 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2681 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2680 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:2682 - "POST /mcp HTTP/1.1" 200 OK
+Terminating session: faf6cfdd0c88467c94d8d0aeffd40202
+INFO:     127.0.0.1:2683 - "DELETE /mcp HTTP/1.1" 200 OK
+Created new transport with session ID: 4d0145a437644f3a8cabe7e2ca29e6a9
+INFO:     127.0.0.1:2685 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2686 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:2687 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2688 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2690 - "POST /mcp HTTP/1.1" 200 OK
+Terminating session: 4d0145a437644f3a8cabe7e2ca29e6a9
+INFO:     127.0.0.1:2691 - "DELETE /mcp HTTP/1.1" 200 OK
+Created new transport with session ID: d1e37008e93c4f959032a25faeebe687
+INFO:     127.0.0.1:12253 - "POST /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12254 - "GET /mcp HTTP/1.1" 200 OK
+INFO:     127.0.0.1:12255 - "POST /mcp HTTP/1.1" 202 Accepted
+INFO:     127.0.0.1:12256 - "POST /mcp HTTP/1.1" 200 OK
+Terminating session: d1e37008e93c4f959032a25faeebe687
+INFO:     127.0.0.1:12257 - "DELETE /mcp HTTP/1.1" 200 OK

@@ -1,0 +1,85 @@
+# review-cloud: terminal output of the real run, attempt 6 (2026-10-22)
+# Two-model setup: IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b.
+# Attempts 1, 2, 5 (format failures), 3 (killed for low memory) and 4 (same model refused) produced no record: cloud-review-attempt*-terminal.txt.
+# Attempts 2 and 5 failed because the reviewer treated 'no AI service deployed' as a defect. The brief REQUIRES the AI-off baseline, so this attempt's task says so explicitly.
+START 2026-10-22T23:18:22Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to review the supplied evidence for the Student 3 cloud deployment in Release 2 of the Local Experience and Attraction Recommender project. The evidence includes the cloud deployment run, smoke check, and public URL read-only check. The goal is to identify any missing or failed evidence, particularly those related to persistence across redeploy, backup and rollback on the VM, live private boundaries, and the deployed container environment. The bounded goal is to ensure that the AI-Mode, MCP, RAG, and Multi-Agent are disabled without outbound calls or dependencies in the baseline.
+
+Requirements:
+- The baseline run must have AI-Mode, MCP, RAG, and Multi-Agent disabled.
+- Persistence across redeploy, backup, and rollback on the VM must be evidenced.
+- Live private boundaries must be established.
+- The deployed container environment must be read.
+
+Files:
+- cloud-deployment.yml
+- cloud/02-cloud-run-39741981906-excerpt.txt
+- cloud/03-cloud-smoke.txt
+- cloud/10-public-url-readonly-check.txt
+- cloud/05-persistence-across-redeploy.txt
+- cloud/08-persistence-across-redeploy.txt
+- cloud/09-persistence-across-redeploy.txt
+- cloud/10-later-cloud-dispatches.txt
+
+Steps:
+1. Review the cloud-deployment.yml workflow to confirm the revision and domain.
+2. Verify the smoke check in cloud/03-cloud-smoke.txt.
+3. Check the public URL read-only check in cloud/10-public-url-readonly-check.txt.
+4. Examine the persistence across redeploy evidence in cloud/05-persistence-across-redeploy.txt.
+5. Check the persistence across rollback evidence in cloud/08-persistence-across-redeploy.txt.
+6. Verify the private backend and database boundaries in the public URL check in cloud/10-public-url-readonly-check.txt.
+7. Check the deployed container environment in the public URL check in cloud/10-public-url-readonly-check.txt.
+
+Risks:
+- Missing or failed evidence may lead to deployment defects.
+- Incorrectly identifying evidence may result in premature deployment.
+- Misinterpretation of the baseline run may cause issues with AI-Mode, MCP, RAG, and Multi-Agent.
+
+Validation:
+- Confirm that the AI-Mode, MCP, RAG, and Multi-Agent are disabled in the baseline run.
+- Ensure that the persistence across redeploy, rollback, and private boundaries are correctly established.
+- Verify that the public URL check confirms the presence of the AI-Mode, MCP, RAG, and Multi-Agent disabled state.
+- Confirm that the public URL check also verifies the presence of the deployed container environment.
+
+[ACT]
+Proposed change:
+No proposed change is needed as the task is to review the evidence and identify any missing or failed evidence. The human release decision will be based on the findings and recommendations provided in the review.
+
+Unresolved:
+The proposed change is to review the evidence and identify any missing or failed evidence. No changes are needed as the task is to review the evidence and provide recommendations for the human release decision.
+```
+[OBSERVE] Reviewer model assessing proposal.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+- Evidence: The public URL read-only check in cloud/10-public-url-readonly-check.txt does not verify the presence of the deployed container environment, which is required by the task. The check only verifies the presence of the AI-Mode, MCP, RAG, and Multi-Agent disabled state.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+[OBSERVE] Reviewer output was malformed; requesting one format correction.
+[OBSERVE]
+Verdict: REJECT
+
+Findings:
+- Severity: BLOCKING
+  - Evidence: The baseline run does not have AI-Mode, MCP, RAG, and Multi-Agent disabled, which is a required condition.
+  - Failure mode: Deployment of AI services without proper configuration.
+  - Required correction: Ensure that AI-Mode, MCP, RAG, and Multi-Agent are disabled in the baseline run.
+
+Validation gaps:
+- None
+
+Scope check:
+The proposal stays within the requested change.
+error: REVISE and REJECT findings require severity, evidence, and required correction.
+EXIT=1 END 2026-10-22T23:29:00Z

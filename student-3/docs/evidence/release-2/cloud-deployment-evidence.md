@@ -39,11 +39,44 @@ Offline tests for it exist (`scripts/test/test_cloud_smoke_student3.py`), and it
 `/recommend` 200 with `"source": "fallback"`; `/mcp/tools` and `/mcp/invoke` 503 `mcp_disabled`; `/rag/ask` 503 `rag_disabled`;
 `/agents/workflows` 503 `multi_agent_disabled`. This check wrote nothing.
 
-## Later dispatches (after the successful run)
+## Dispatches between the two successful runs
 
-Four later runs of `cloud-deployment.yml` failed, three at "Require all CI for the deployed revision" and one at "Require protected AI
-credentials" (`CLOUD_AUTH_USER` invalid); see `student-5/docs/evidence/release-2/cloud/10-later-cloud-dispatches.txt`.
-Cloud AI services (the optional bonus) therefore have **no successful cloud run**.
+`cloud-deployment.yml` was dispatched nine more times after the baseline run and failed each time before the AI run succeeded:
+four runs listed in `student-5/docs/evidence/release-2/cloud/10-later-cloud-dispatches.txt` (three stopped at "Require all CI for the
+deployed revision", one at "Require protected AI credentials" because `CLOUD_AUTH_USER` was invalid) and five more
+(39860759422, 39862262391, 39862608083, 39869072831, 39873301495) listed in `11-protected-ai-run-39893640923-excerpt.txt`, whose
+failure causes are not in the evidence files reviewed here.
+
+## The protected AI run (optional bonus B1 to B4)
+
+| Item | Value | Source |
+|---|---|---|
+| Run | 39893640923, `workflow_dispatch`, conclusion **success**, created 2026-10-23T03:11:08Z | `student-5/docs/evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt` |
+| Revision | `4c1e71acd34793ca5a7a2171c64c3d73dbaf137d` | same |
+| Run URL | https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39893640923 | same (the run number is listed there; the URL follows the baseline run's pattern) |
+| Mode | `DEPLOY_MODE: ai`, `CLOUD_AI_SERVICES: ai,mcp,rag,multi-agent`; "Prepared 22 cloud services" | same |
+| CI gate | Student 5 CI on main for that revision passed before deployment | same |
+| Gateway | "PASS: anonymous access rejected at the gateway for every feature" | same |
+
+Steps that succeeded include "Require protected AI credentials", the CI gate, "Deploy to the approved Azure or AWS Linux VM", "Wait
+for public HTTPS readiness" and "Verify protected group CRUD and AI integrations". "Verify public gateway and Student 1 to 5 CRUD" was
+skipped in this mode, and its checks ran inside the protected step instead.
+
+Output of the protected step that concerns Student 3 and the shared AI services, from that excerpt:
+
+- `PASS: Student 3 cloud profile and CRUD checks.` (the same `check_student3`, run with the AI components enabled)
+- `PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag`
+- `PASS: B2 MCP: a tool call through the application returned real catalogue data`
+- `PASS: B1 AI-Mode: the model answered through the application`
+- `PASS: B3 RAG: a grounded answer with citations from retrieved context`
+- `PASS: B4 Multi-Agent: Planner, Worker and Reviewer reached human review; decision pending`, for the Student 3 workflow
+  `wf-20261023T032459Z-f1ad495f`, with the line `MANUAL: ... no human approval has been submitted.`
+
+So the optional cloud AI bonus has one successful cloud run. **The Student 3 cloud workflow is still waiting for a human decision**;
+the workflow does not submit one. The excerpt shows the same pending-decision pattern for Students 1, 2 and 5.
+
+The read-only public check above was made on 2026-10-22, before this run. Since then the gateway rejects anonymous requests, so that
+check cannot be repeated without credentials, and it describes the AI-off baseline.
 
 ## Not evidenced
 

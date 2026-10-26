@@ -1,0 +1,23 @@
+2026-10-22T01:08:21Z == 1. native services (one terminal each)
+2026-10-22T01:08:21Z PASS native ollama: http://127.0.0.1:11434/api/tags -> 200
+2026-10-22T01:08:21Z PASS native mcp: http://127.0.0.1:5400/mcp -> 406
+2026-10-22T01:08:21Z PASS native rag: http://127.0.0.1:5500/health -> 200
+2026-10-22T01:08:21Z PASS native multi-agent: http://127.0.0.1:5600/health -> 200
+2026-10-22T01:08:21Z == 2. gateway and every student's front end
+2026-10-22T01:08:22Z PASS gateway /health
+2026-10-22T01:08:22Z PASS gateway /accommodation/
+2026-10-22T01:08:22Z PASS gateway /itinerary/
+2026-10-22T01:08:22Z PASS gateway /attractions/
+2026-10-22T01:08:22Z PASS gateway /budget/
+2026-10-22T01:08:22Z PASS gateway /logistics/
+2026-10-22T01:08:22Z == 3. Student 3 attraction CRUD through the gateway
+2026-10-22T01:08:22Z PASS Student 3 create, read, update and list (id 21)
+2026-10-22T01:08:22Z PASS Student 3 delete: the row is gone and reads as 404
+2026-10-22T01:08:22Z == 4. AI-Mode, MCP, RAG and Multi-Agent through Student 3's backend
+2026-10-22T01:08:22Z NOTE the workflow is approved by this script as an automated test decision, not by a human reviewer
+PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag
+PASS: B2 MCP: a tool call through the application returned real catalogue data
+PASS: B1 AI-Mode: the model answered through the application
+PASS: B3 RAG: a grounded answer with citations from retrieved context
+PASS: B4 Multi-Agent: Planner, Worker, Reviewer and human approval completed
+2026-10-22T01:13:35Z ALL SYSTEM CHECKS PASSED

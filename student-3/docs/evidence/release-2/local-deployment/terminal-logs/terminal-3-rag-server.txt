@@ -1,0 +1,11 @@
+INFO:     Started server process [27408]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:5500 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51867 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51871 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:20615 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2643 - "POST /query HTTP/1.1" 504 Gateway Timeout
+INFO:     127.0.0.1:2652 - "POST /query HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2662 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:2700 - "POST /query HTTP/1.1" 200 OK

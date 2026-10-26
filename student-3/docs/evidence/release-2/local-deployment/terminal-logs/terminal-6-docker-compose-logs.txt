@@ -1,0 +1,64 @@
+2026-10-22T01:16:36Z
+# student3-backend (Flask) log: requests from the system test, including the calls to the native services
+OBSERVE: usable=True (ok)
+172.18.0.17 - - [22/Oct/2026 01:08:46] "POST /api/recommend HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:01] "POST /api/rag/ask HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:04] "[35m[1mPOST /api/agents/workflows HTTP/1.1[0m" 202 -
+172.18.0.17 - - [22/Oct/2026 01:09:04] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:09] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:15] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:21] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:26] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:31] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:43] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:48] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:53] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:09:58] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:03] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:09] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:14] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:20] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:26] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:31] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:39] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:46] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:10:51] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:11:10] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:11:17] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:11:33] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:11:39] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:11:51] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:12:00] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:12:12] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:12:36] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:12:45] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:13:19] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:13:34] "GET /api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 -
+172.18.0.17 - - [22/Oct/2026 01:13:35] "POST /api/agents/workflows/wf-20261022T010902Z-c07d3acd/decision HTTP/1.1" 200 -
+
+# shared-frontend (gateway) log tail
+172.18.0.1 - - [22/Oct/2026:01:09:43 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 1265 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:09:48 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 1265 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:09:53 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 1265 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:09:58 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 1265 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:03 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:09 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:14 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:20 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:26 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:31 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:40 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:46 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:10:51 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:11:10 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:11:17 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 2774 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:11:33 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:11:39 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:11:51 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:12:00 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:12:12 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:12:36 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:12:45 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:13:19 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 4424 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:13:34 +0000] "GET /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd HTTP/1.1" 200 8929 "-" "Python-urllib/3.14" "-"
+172.18.0.1 - - [22/Oct/2026:01:13:35 +0000] "POST /attractions-api/agents/workflows/wf-20261022T010902Z-c07d3acd/decision HTTP/1.1" 200 9755 "-" "Python-urllib/3.14" "-"
