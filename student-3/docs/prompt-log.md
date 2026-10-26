@@ -76,3 +76,14 @@ default implementer) is not installed here, so `qwen2.5:3b` was used, as in Rele
   a RAG model deadline (502); the fix is a single logged retry, not a longer deadline, so a real second failure still fails. The 32
   offline tests and 11 injected mutations (cleanup, retry scope, status codes, origin check) were reviewed and all mutants are killed.
 - The human review decision for the showcase remains mine; the script's approval is labelled as an automated test decision.
+
+## Release 2: cloud evidence and the `review-cloud` runs (AI-assisted, 2026-10-26)
+
+- **Cloud evidence.** The assistant wrote the evidence digest and the new readiness-report section from the group's stored run logs, made GET-only checks of the deployed
+  Student 3, and took the screenshot. Its first screenshot showed "MCP service is offline" and "The Multi-Agent Server is offline", although the API answered 200. Chrome's
+  network log showed the page never sent those requests: `fetch()` with a relative URL throws when the page URL contains credentials. The screenshot was retaken through a
+  GET-only local proxy and the false result is described in the digest, not used as evidence.
+- **Human decision.** The cloud workflow was approved as is on my explicit choice; the assistant submitted it and read it back. It did not choose the decision.
+- **`review-cloud`, ten runs, no record.** Failure causes were different each time (implementer format, reviewer format, the loop's default 600 s per-call limit, and four kills
+  for low memory on this 8 GB host), so repeating one change was not the fix. One diagnosed cause was wording in my own task text: telling the 3B reviewer to "say plainly that no AI
+  service was deployed" made it treat the required AI-off baseline as a defect. Nothing was hand-edited to produce a record.

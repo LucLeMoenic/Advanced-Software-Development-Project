@@ -1,0 +1,41 @@
+# Authenticated read-only check of the deployed Student 3 feature, 2026-10-26T09:34:20Z
+# The deployment is in protected AI mode (run 39893640923). Requests use the gateway's Basic authentication, supplied by the project owner; the credentials are not recorded here.
+# GET only: nothing is written and no model call or workflow is started.
+
+09:34:20Z  GET /attractions/ without credentials
+    -> HTTP 401
+
+09:34:20Z  GET /health
+    -> HTTP 200 in 0.073539s
+healthy
+
+
+09:34:21Z  GET /attractions/
+    -> HTTP 200 in 0.099262s
+<!doctype html>
+<html lang="en">
+<head>
+
+
+09:34:21Z  GET /attractions-api/capabilities
+    -> HTTP 200 in 0.080535s
+{"aiEnabled":true,"mcpEnabled":true,"multiAgentEnabled":true,"ragEnabled":true}
+
+
+09:34:21Z  GET /attractions-api/agents/status
+    -> HTTP 200 in 0.093171s
+{"busy":true,"status":"ok"}
+
+
+09:34:22Z  GET /attractions-api/mcp/tools
+    -> HTTP 200 in 0.194117s
+{"tools":["attractions.search","attractions.get_reviews"]}
+
+
+attractions listed: 10   (the baseline check on 2026-10-22 listed 12; the cause of the difference is not established)
+
+09:34:22Z  GET /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f
+    status: awaiting_human_review | human_decision: None | final_output: None
+    history: ['planner', 'worker', 'reviewer'] | reviewer verdict: pass | degraded: False
+    task: Suggest a relaxed afternoon of food | created 2026-10-23T03:24:59.707Z | submitted_by student-3-ui
+    items: ['Mr. Wong', 'Chin Chin Melbourne', 'Chat Thai Sydney CBD', 'Queen Victoria Market']

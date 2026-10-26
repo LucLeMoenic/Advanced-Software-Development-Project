@@ -75,8 +75,24 @@ Output of the protected step that concerns Student 3 and the shared AI services,
 So the optional cloud AI bonus has one successful cloud run. **The Student 3 cloud workflow is still waiting for a human decision**;
 the workflow does not submit one. The excerpt shows the same pending-decision pattern for Students 1, 2 and 5.
 
-The read-only public check above was made on 2026-10-22, before this run. Since then the gateway rejects anonymous requests, so that
-check cannot be repeated without credentials, and it describes the AI-off baseline.
+## Student 3 on the AI deployment, checked with credentials (2026-10-26)
+
+The read-only check of 2026-10-22 above describes the AI-off baseline, and the gateway has required authentication since the AI run.
+`cloud/11-authenticated-readonly-check.txt` repeats it with the gateway credentials supplied by the project owner (not recorded), using GETs only:
+anonymous `/attractions/` -> 401; with credentials `/health` 200 and `/attractions/` 200; `/attractions-api/capabilities`
+`{"aiEnabled":true,"mcpEnabled":true,"multiAgentEnabled":true,"ragEnabled":true}`; `/mcp/tools` lists `attractions.search` and
+`attractions.get_reviews`; `/agents/status` `ok` with `busy: true`; the Student 3 workflow `wf-20261023T032459Z-f1ad495f` is still
+`awaiting_human_review`, `human_decision` empty, history planner, worker, reviewer, reviewer verdict `pass`, four items
+(Mr. Wong, Chin Chin Melbourne, Chat Thai Sydney CBD, Queen Victoria Market).
+
+Observation, cause not established: the deployed list now has **10** attractions, where the 2026-10-22 baseline check listed 12
+(the page no longer shows Bondi to Coogee Coastal Walk or Federation Square). The cloud smoke test only requires at least ten.
+
+`cloud/12-deployed-student3-page.png` is a screenshot of the deployed `/attractions/` page: the catalogue, the MCP tool selector
+populated, and the Multi-Agent form enabled. It was taken through a local, GET-only proxy that adds the Basic-auth header. A first
+attempt with the credentials in the URL showed "MCP service is offline" and "The Multi-Agent Server is offline"; that was an artefact of the
+method, not the site: a browser's `fetch()` refuses relative URLs from a page whose address contains credentials, so those requests were
+never sent (Chrome's network log showed no request for them). Through the proxy every request returned 200.
 
 ## Not evidenced
 

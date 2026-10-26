@@ -73,7 +73,15 @@ Where the evidence is:
 - `../../../../student-5/docs/evidence/release-2/cloud/` (shared): the baseline run's full log, excerpt and smoke output (`01` to `03`), the dispatches in
   between (`10`) and the AI run's excerpt (`11`).
 
-Still not evidenced in the cloud for Student 3: persistence across a redeploy, backup, restore and rollback on the VM, live private-network boundaries,
-live TLS and header hardening, and the human decision on the cloud workflow. There is no Student 3 screenshot of the deployed page: the gateway now
-asks for credentials, and I was not given them. The Multi-Agent review panel still has no per-user authentication of its own; only the gateway's
-shared credentials protect it.
+With the gateway credentials from the project owner I repeated the check on 2026-10-26 (`cloud/11-authenticated-readonly-check.txt`, GETs only, credentials not
+recorded): the deployed Student 3 reports all four capability flags `true`, MCP lists its tools, and its cloud workflow `wf-20261023T032459Z-f1ad495f` was still
+`awaiting_human_review` with an empty decision. `cloud/12-deployed-student3-page.png` is a screenshot of the deployed page (taken through a local GET-only proxy; see the
+digest for why a URL with credentials shows false "offline" messages). The deployed list shows 10 attractions where the baseline check showed 12; the cause is not established.
+
+**Human decision, 2026-10-26T09:37Z:** the Student 3 owner chose *Approve as is* for that workflow and it was submitted through the deployed gateway
+(`cloud/13-human-decision-cloud-workflow.txt`). The read-back shows `status: approved`, `decision: approve`, `decided_by: student-3-ui`, and a final output of the four
+items. This is the first human decision on a Student 3 workflow in the cloud; the earlier recorded decisions are labelled `dev-test-run`. `cloud-deployment-evidence.md`
+was frozen before this decision for the `review-cloud` run, so it still describes the workflow as awaiting a decision.
+
+Still not evidenced in the cloud for Student 3: persistence across a redeploy, backup, restore and rollback on the VM, live private-network boundaries, and live TLS and
+header hardening. The Multi-Agent review panel still has no per-user authentication of its own; only the gateway's shared credentials protect it.
