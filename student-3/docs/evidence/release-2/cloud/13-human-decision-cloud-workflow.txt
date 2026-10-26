@@ -1,0 +1,14 @@
+# Human decision on the Student 3 cloud workflow wf-20261023T032459Z-f1ad495f, 2026-10-26T09:37:21Z
+# The decision (approve as is) was made by the Student 3 owner and submitted on their instruction through the deployed gateway; credentials are not recorded.
+
+POST /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f/decision
+body: {"decision":"approve","notes":"Approved as is by the Student 3 owner on 2026-10-26 after reading the plan, the four recommendations (Mr. Wong, Chin Chin Melbourne, Chat Thai Sydney CBD, Queen Victoria Market) and the Reviewer verdict (pass, no automatic findings)."}
+
+-> HTTP 200 in 0.453534s
+status: approved
+human_decision: {"decision": "approve", "decided_by": "student-3-ui", "decided_at": "2026-10-26T09:37:22.872Z", "notes": "Approved as is by the Student 3 owner on 2026-10-26 after reading the plan, the four recommendations (Mr. Wong, Chin Chin Melbourne, Chat Thai Sydney CBD, Queen Victoria Market) and the Reviewer verdict (pass, no automatic findings)."}
+final_output items: ['Mr. Wong', 'Chin Chin Melbourne', 'Chat Thai Sydney CBD', 'Queen Victoria Market']
+history stages: ['planner', 'worker', 'reviewer']
+
+Read back (GET):
+status: approved | decision: approve | decided_by: student-3-ui

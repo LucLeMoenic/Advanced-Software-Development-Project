@@ -1,0 +1,61 @@
+# review-cloud: terminal output of the real run, attempt 10 (2026-10-26)
+# Two-model setup: IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b, with --timeout-seconds 1800. Covers the baseline run 39741981906 AND the real protected AI run 39893640923; the digest now includes the authenticated 2026-10-26 check.
+# Attempts 1 to 9 produced no record: cloud-review-attempt*-terminal.txt.
+START 2026-10-26T09:36:39Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to review the cloud deployment evidence for the Student 3 feature in Release 2 of the Local Experience and Attraction Recommender project. The review requires identifying missing or failed evidence, particularly related to persistence across redeploy, backup and rollback on the VM, live private boundaries, and the deployed Student 3 container environment. The review also needs to identify the missing or failed checks related to AI-Mode, MCP, RAG, and Multi-Agent, which are disabled in the baseline run but enabled in the protected AI run. The human release decision is required for any missing or failed evidence.
+
+Requirements:
+- The review must be conducted using the provided evidence files and review-cloud-v1.txt.
+- The review must identify any missing or failed evidence related to persistence across redeploy, backup and rollback, private backend and database boundaries, and the deployed Student 3 container environment.
+- The review must identify the missing or failed checks related to AI-Mode, MCP, RAG, and Multi-Agent, which are enabled in the protected AI run.
+- The review must distinguish configuration/source inspection from a successful cloud execution and flag any missing URLs, revisions, workflow runs, logs, or live checks.
+- The review must flag any failed declared checks and recommend bounded release actions for the human release decision.
+
+Files:
+- student-3/docs/evidence/release-2/cloud-deployment-evidence.md
+- student-5/docs/evidence/release-2/cloud/02-cloud-run-39741981906-excerpt.txt
+- student-5/docs/evidence/release-2/cloud/03-cloud-smoke.txt
+- student-5/docs/evidence/release-2/cloud/10-later-cloud-dispatches.txt
+- student-5/docs/evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt
+- student-3/docs/evidence/release-2/cloud/10-public-url-readonly-check.txt
+- student-3/docs/evidence/release-2/cloud/12-deployed-student3-page.png
+- student-3/docs/evidence/release-2/cloud/11-authenticated-readonly-check.txt
+- student-3/docs/evidence/release-2/cloud/02-cloud-run-39741981906-excerpt.txt
+- student-3/docs/evidence/release-2/cloud/03-cloud-smoke.txt
+- student-3/docs/evidence/release-2/cloud/11-protected-ai-run-39893640923-excerpt.txt
+- student-3/docs/evidence/release-2/cloud/12-deployed-student3-page.png
+- student-3/docs/evidence/release-2/cloud/11-authenticated-readonly-check.txt
+- review-cloud-v1.txt
+
+Steps:
+1. Review the evidence files for any missing or failed evidence related to persistence across redeploy, backup and rollback, private backend and database boundaries, and the deployed Student 3 container environment.
+2. Identify any missing or failed checks related to AI-Mode, MCP, RAG, and Multi-Agent, which are enabled in the protected AI run.
+3. Flag any missing URLs, revisions, workflow runs, logs, or live checks.
+4. Flag any failed declared checks and recommend bounded release actions for the human release decision.
+5. Document the findings and recommendations in the review-cloud-v1.txt file.
+
+Risks:
+- Misinterpretation of the evidence files could lead to incorrect recommendations.
+- Omission of critical evidence could result in a flawed release decision.
+- Incorrectly flagged evidence could lead to unnecessary or premature release decisions.
+
+Validation:
+- The findings and recommendations should be validated by a human release decision.
+- The validation process should include a review of the findings and recommendations by a human expert in the domain.
+- The validation process should ensure that the recommendations are aligned with the project's requirements and goals.
+```
+
+
+```text
+[ACT]
+Proposed change:
+No proposed change is needed as the review is a static analysis of the provided evidence files. The human release decision is required for any missing or failed evidence.
+Unresolved:
+The review findings and recommendations should be documented in the review-cloud-v1.txt file for the human release decision.
+```
+[OBSERVE] Reviewer model assessing proposal.

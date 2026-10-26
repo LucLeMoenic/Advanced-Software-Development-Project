@@ -1,0 +1,6 @@
+# review-cloud: terminal output of the real run, attempt 7 (2026-10-26)
+# Two-model setup: IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b. Now covers the baseline run AND the real protected AI run 39893640923.
+# Attempts 1 to 6 produced no record: cloud-review-attempt*-terminal.txt.
+START 2026-10-26T08:46:21Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.

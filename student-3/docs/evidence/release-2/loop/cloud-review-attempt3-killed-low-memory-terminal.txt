@@ -1,0 +1,52 @@
+# review-cloud: terminal output of the real run, attempt 3 (2026-10-22)
+# Attempt 1 failed (implementer format) and attempt 2 failed (reviewer format) before producing a record: see cloud-review-attempt1-failed-terminal.txt and cloud-review-attempt2-failed-terminal.txt
+# Run from the repository root with IMPLEMENTER_MODEL=qwen2.5:3b REVIEWER_MODEL=llama3.2:3b (qwen2.5-coder:7b is not installed here).
+START 2026-10-22T14:55:06Z
+[PLAN] Implementer model analysing task.
+[ACT] Implementer model producing proposal.
+```text
+[PLAN]
+Goal:
+The goal is to review the supplied evidence for the Student 3 cloud deployment in Release 2 of the Local Experience and Attraction Recommender project, and identify any missing or failed evidence. The focus is on persistence across redeploy, rollback, live private boundaries, and the absence of AI services in the baseline deployment.
+
+Requirements:
+- The baseline run did not deploy any AI service.
+- The persistence across redeploy and rollback have not been evidenced.
+- The private backend and database boundaries have not been verified.
+- The AI services are optional and should not be prerequisites.
+- The MCP, RAG, and Multi-Agent services are disabled without outbound calls or dependencies.
+
+Files:
+- cloud-deployment.yml
+- cloud/02-cloud-run-39741981906-excerpt.txt
+- cloud/10-public-url-readonly-check.txt
+- cloud/03-cloud-smoke.txt
+- cloud/10-later-cloud-dispatches.txt
+- evidence/release-2/cloud-deployment-evidence.md
+
+Steps:
+1. Review the cloud-deployment.yml file to confirm the baseline run did not deploy any AI service.
+2. Check the persistence across redeploy and rollback by looking for evidence in the cloud/05-persistence-across-redeploy.txt file.
+3. Verify the private backend and database boundaries by checking the cloud/08 and cloud/09 files for Linux tests.
+4. Confirm the absence of AI services by reviewing the cloud/10-later-cloud-dispatches.txt file for failed runs.
+5. Ensure the MCP, RAG, and Multi-Agent services are disabled without outbound calls or dependencies by examining the cloud/03-cloud-smoke.txt and cloud/10-later-cloud-dispatches.txt files.
+
+Risks:
+- Missing or failed evidence could lead to a deployment that does not meet the required standards.
+- Incorrectly identifying evidence could result in a deployment that is not secure or functional.
+
+Validation:
+- The evidence should be reviewed for completeness and correctness.
+- The persistence across redeploy and rollback should be confirmed by the presence of evidence in the cloud/05-persistence-across-redeploy.txt file.
+- The private backend and database boundaries should be confirmed by the presence of Linux tests in the cloud/08 and cloud/09 files.
+- The absence of AI services should be confirmed by the presence of failed runs in the cloud/10-later-cloud-dispatches.txt file.
+- The MCP, RAG, and Multi-Agent services should be confirmed as disabled without outbound calls or dependencies by the presence of failed runs in the cloud/03-cloud-smoke.txt and cloud/10-later-cloud-dispatches.txt files.
+
+[ACT]
+Proposed change:
+No proposed change is needed as this is a review task. The goal is to identify missing or failed evidence and recommend actions for the human release decision.
+
+Unresolved:
+The persistence across redeploy and rollback, private backend and database boundaries, and the absence of AI services are not evidenced. The MCP, RAG, and Multi-Agent services are confirmed as disabled without outbound calls or dependencies.
+```
+[OBSERVE] Reviewer model assessing proposal.

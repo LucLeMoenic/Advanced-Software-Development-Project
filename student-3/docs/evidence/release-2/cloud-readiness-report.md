@@ -2,7 +2,7 @@
 
 Scope: Student 3's part of the group's cloud deployment. The deployment pipeline itself (`cloud-deployment.yml`,
 `scripts/deploy/prepare_cloud.py`, `deploy-vm.sh`, `assert-cloud-ci.ps1`, the Caddy gateway) was built by teammates and is reused,
-not rebuilt. **Nothing here is a real cloud deployment**: no Azure or AWS resource was created or contacted. Everything marked
+not rebuilt. **Nothing here is a real cloud deployment**: no Azure or AWS resource was created or contacted. *(This describes the Chunk 6 work. Real cloud runs followed on 22 and 23 October 2026; see "Real cloud deployment" at the end.)* Everything marked
 "proven" was run locally against the real services with the exact environment the cloud bundle applies.
 
 ## What the audit of the existing pipeline found
@@ -42,8 +42,46 @@ Gaps for Student 3 (fixed in this chunk):
 
 These are outside Student 3's files and I have not been able to verify them:
 
-1. **No real deployment has run.** `cloud-deployment.yml` is manual-dispatch only; the only completed "Cloud Deployment" runs on GitHub are from the old placeholder. Whether the repository variables and secrets it needs (`CLOUD_HOST`, `CLOUD_USER`, `CLOUD_DOMAIN`, `CLOUD_SSH_KEY`, `CLOUD_KNOWN_HOSTS`) are set cannot be seen from outside.
+1. **No real deployment has run.** *(Superseded: see "Real cloud deployment" below. This was true when Chunk 6 was written.)* `cloud-deployment.yml` is manual-dispatch only; the only completed "Cloud Deployment" runs on GitHub are from the old placeholder. Whether the repository variables and secrets it needs (`CLOUD_HOST`, `CLOUD_USER`, `CLOUD_DOMAIN`, `CLOUD_SSH_KEY`, `CLOUD_KNOWN_HOSTS`) are set cannot be seen from outside.
 2. **Target platform.** The pipeline deploys over SSH to a pre-provisioned Linux VM ("approved Azure or AWS Linux VM"). Nothing in the repository provisions that VM. The brief lists Azure Container Apps / App Service or AWS ECS Fargate; confirm a VM-based deployment is acceptable, and consider adding infrastructure as code for the VM, network rules and Docker setup.
 3. **Smoke coverage was extended to Students 4 and 5 (Chunk 7).** `check_student4` runs full budget and expense CRUD with cleanup and asserts every AI mode is off; `check_student5` is read-only plus AI-off assertions, because Student 5's API has no update or delete (a created row could never be cleaned up from the deployed database) and no explicit AI switch (its advisory endpoint answers `503` only because the bundle points the model URL at an unreachable address). Both were run against the real services behind the real gateway with the bundle's environment.
 4. **Rollback, backup and restore now exist** (`rollback-vm.sh`, `backup-data.sh`, `restore-data.sh`) with 23 Linux tests and 15 mutation checks, but they have **not been run on a VM**, and `deploy-vm.sh` does not ship them (see `docs/release-2/cloud-validation-runbook.md`).
 5. **The review step in the Multi-Agent panel has no authentication**, which matters if the Multi-Agent bonus is enabled in the cloud.
+
+## Real cloud deployment (added 26 October 2026)
+
+Two real runs of `.github/workflows/cloud-deployment.yml` (`workflow_dispatch` on `main`) deployed the group application to an AWS Linux
+VM behind a Caddy TLS gateway at https://asd-epic-assignment.duckdns.org. Student 3 did not run them. The evidence is the group's stored
+run logs plus my own read-only check, and every line below is quoted from those files.
+
+| Run | Revision | Mode | Conclusion | Student 3 line in the run's smoke output |
+|---|---|---|---|---|
+| [39741981906](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39741981906) | `851bdd7f4a7bc455e751b020c05a977608989e3a` | Baseline, all AI services disabled | success (2026-10-22) | `PASS: Student 3 cloud profile and CRUD checks.` |
+| [39893640923](https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39893640923) | `4c1e71acd34793ca5a7a2171c64c3d73dbaf137d` | Protected AI mode: `ai,mcp,rag,multi-agent`, gateway authentication | success (2026-10-23) | `PASS: Student 3 cloud profile and CRUD checks.` |
+
+The AI run's protected step also printed `PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag`, `PASS: B1 AI-Mode`,
+`PASS: B2 MCP`, `PASS: B3 RAG` and `PASS: B4 Multi-Agent: Planner, Worker and Reviewer reached human review; decision pending` for the Student 3
+workflow `wf-20261023T032459Z-f1ad495f`. The run did not submit a human decision (`MANUAL: ... no human approval has been submitted.`), so that
+workflow is still waiting for one.
+
+Where the evidence is:
+
+- `cloud-deployment-evidence.md`, the digest of both runs with what is not evidenced.
+- `cloud/10-public-url-readonly-check.txt`, my read-only check of the baseline on 2026-10-22: all four capability flags `false`, 12 attractions, the
+  recommendation answered from the deterministic fallback, and MCP, RAG and Multi-Agent refused with 503. It was made before the gateway required
+  authentication; anonymous requests now receive 401 (checked 2026-10-26), so it cannot be repeated without credentials.
+- `../../../../student-5/docs/evidence/release-2/cloud/` (shared): the baseline run's full log, excerpt and smoke output (`01` to `03`), the dispatches in
+  between (`10`) and the AI run's excerpt (`11`).
+
+With the gateway credentials from the project owner I repeated the check on 2026-10-26 (`cloud/11-authenticated-readonly-check.txt`, GETs only, credentials not
+recorded): the deployed Student 3 reports all four capability flags `true`, MCP lists its tools, and its cloud workflow `wf-20261023T032459Z-f1ad495f` was still
+`awaiting_human_review` with an empty decision. `cloud/12-deployed-student3-page.png` is a screenshot of the deployed page (taken through a local GET-only proxy; see the
+digest for why a URL with credentials shows false "offline" messages). The deployed list shows 10 attractions where the baseline check showed 12; the cause is not established.
+
+**Human decision, 2026-10-26T09:37Z:** the Student 3 owner chose *Approve as is* for that workflow and it was submitted through the deployed gateway
+(`cloud/13-human-decision-cloud-workflow.txt`). The read-back shows `status: approved`, `decision: approve`, `decided_by: student-3-ui`, and a final output of the four
+items. This is the first human decision on a Student 3 workflow in the cloud; the earlier recorded decisions are labelled `dev-test-run`. `cloud-deployment-evidence.md`
+was frozen before this decision for the `review-cloud` run, so it still describes the workflow as awaiting a decision.
+
+Still not evidenced in the cloud for Student 3: persistence across a redeploy, backup, restore and rollback on the VM, live private-network boundaries, and live TLS and
+header hardening. The Multi-Agent review panel still has no per-user authentication of its own; only the gateway's shared credentials protect it.

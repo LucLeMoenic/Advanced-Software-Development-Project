@@ -10,12 +10,12 @@ Run on 22 Oct 2026, Windows 11, 8 GB RAM, CPU-only Ollama, Docker Desktop. Evide
 
 | Terminal | Process | Port | Containerised? | Log |
 |---|---|---|---|---|
-| 1 | Ollama (`llama3.2:3b`, model preloaded, `keep_alive` 30m) | 11434 | No (host install) | `terminal-logs/terminal-1-ollama-preload.log`, `02-native-services.txt` |
-| 2 | MCP server (`ai-services/mcp-server/server.py`) | 5400 | No | `terminal-logs/terminal-2-mcp-server.log` |
-| 3 | RAG server (`uvicorn server:app`) | 5500 | No | `terminal-logs/terminal-3-rag-server.log` |
-| 4 | Multi-Agent Server (`uvicorn server:app --workers 1`) | 5600 | No | `terminal-logs/terminal-4-multi-agent-server.log` |
-| 5 | System test (`scripts/deploy/system_test_local.py`) | n/a | No | `terminal-logs/terminal-5-system-test.log` |
-| 6 | Docker Compose: 5 students' frontend, backend and database, plus the shared gateway (16 services) | 5100 | Yes | `terminal-logs/terminal-6-docker-compose-logs.log`, `01-compose-ps.txt` |
+| 1 | Ollama (`llama3.2:3b`, model preloaded, `keep_alive` 30m) | 11434 | No (host install) | `terminal-logs/terminal-1-ollama-preload.txt`, `02-native-services.txt` |
+| 2 | MCP server (`ai-services/mcp-server/server.py`) | 5400 | No | `terminal-logs/terminal-2-mcp-server.txt` |
+| 3 | RAG server (`uvicorn server:app`) | 5500 | No | `terminal-logs/terminal-3-rag-server.txt` |
+| 4 | Multi-Agent Server (`uvicorn server:app --workers 1`) | 5600 | No | `terminal-logs/terminal-4-multi-agent-server.txt` |
+| 5 | System test (`scripts/deploy/system_test_local.py`) | n/a | No | `terminal-logs/terminal-5-system-test.txt` |
+| 6 | Docker Compose: 5 students' frontend, backend and database, plus the shared gateway (16 services) | 5100 | Yes | `terminal-logs/terminal-6-docker-compose-logs.txt`, `01-compose-ps.txt` |
 
 No AI service is a Compose service (`01-compose-ps.txt` ends with `none` for any AI-named service). The containers reach the native
 services through `host.docker.internal`, and `02-native-services.txt` shows the environment Student 3's backend
@@ -43,7 +43,7 @@ python scripts/deploy/system_test_local.py http://localhost:5100
 
 ## Results
 
-`terminal-5-system-test.log` (exit 0, `ALL SYSTEM CHECKS PASSED`):
+`terminal-5-system-test.txt` (exit 0, `ALL SYSTEM CHECKS PASSED`):
 
 1. **Native services**: Ollama has `llama3.2:3b`; MCP listens (a bare GET is refused with 406, which proves the transport is up);
    RAG and Multi-Agent `/health` are `ok`.

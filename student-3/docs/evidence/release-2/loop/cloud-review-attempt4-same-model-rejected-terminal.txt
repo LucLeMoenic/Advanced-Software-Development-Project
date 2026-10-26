@@ -1,0 +1,6 @@
+# review-cloud: terminal output of the real run, attempt 4 (2026-10-22)
+# Single-model run by the human's decision: IMPLEMENTER_MODEL=REVIEWER_MODEL=llama3.2:3b, because the two-model setup (qwen2.5:3b + llama3.2:3b) was killed for low memory on this 8 GB host.
+# Earlier attempts (no record produced): cloud-review-attempt1-failed-terminal.txt, cloud-review-attempt2-failed-terminal.txt, cloud-review-attempt3-killed-low-memory-terminal.txt
+START 2026-10-22T23:06:59Z
+error: Implementer and reviewer models must be different.
+EXIT=1 END 2026-10-22T23:07:03Z
