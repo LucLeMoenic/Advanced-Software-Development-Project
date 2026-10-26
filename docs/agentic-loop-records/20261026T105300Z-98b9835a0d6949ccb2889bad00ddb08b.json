@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-26T10:53:00.4159796+00:00",
+  "task": "Review Student 2 and group cloud deployment evidence for report section 10.3. Use the actual successful protected-AI run and same-revision Student 2 CI artifact. Distinguish the older baseline run from the later AI deployment. Check the cloud smoke outputs, Student 2 manual review state, baseline/AI-off evidence, report sections 4-6 completeness, and persistence/rollback gaps. Recommend report actions only; make no source edits or release decision.\n\nReview the supplied evidence using review-cloud-v1.txt. Propose report findings and corrective actions, not source edits. Missing or failed evidence must remain explicit; only a human can make the release decision.",
+  "contextFiles": [
+    "student-2/docs/evidence/release-2/cloud/cloud-review-context.md",
+    "student-2/docs/evidence/release-2/cloud/cloud-smoke-39893640923.txt",
+    "student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml",
+    "student-2/docs/release-2-runbook.md",
+    "ai-services/agentic-loop/prompts/review-cloud-v1.txt"
+  ],
+  "models": {
+    "implementer": "qwen2.5-coder:7b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "/home/quib/git/Advanced-Software-Development-Project/ai-services/agentic-loop/prompts/implementer.md",
+    "reviewer": "/home/quib/git/Advanced-Software-Development-Project/ai-services/agentic-loop/prompts/reviewer.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "shared-reviewer-v1"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "student-2/docs/evidence/release-2/cloud/cloud-review-context.md": "7CEB70E6280305B4DA5328075189129CBA860B910BD0060A867EFFCC12BDF729",
+      "student-2/docs/evidence/release-2/cloud/cloud-smoke-39893640923.txt": "D1BD2854C3BFFDC51EA31A906A06F9A1B7D359B53A70626E4F8A7AA9C2010AAB",
+      "student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml": "1A5DEF8FFBE64B7D7EB09AD0839A8AEFEB6EF2B0E41DAC27F935374C3EA40E66",
+      "student-2/docs/release-2-runbook.md": "96C1B99618F6293D64D0061C94730A4037423057BEAED7D8FB0D712E0C545029",
+      "ai-services/agentic-loop/prompts/review-cloud-v1.txt": "9720B4FABFB34276965B98F16A549426F5DB0218C1F30DA32D978C9A7DE20FEB"
+    },
+    "implementerPromptSha256": "7F54EA5E108A9662B965A922E8DB594F2D95768FE886E24543884B0A4CD2B878",
+    "reviewerPromptSha256": "EAD16B70F50D6BE150CA2CF13E4B8921A903A5A7690E3815E3AD861735DB7C29"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.33.2",
+  "preTest": {
+    "command": "review-cloud",
+    "result": "Reviewing supplied context files, not executing tests or deployment. Validate their provenance and results before human finalisation."
+  },
+  "planAct": "\u0060\u0060\u0060text\n[PLAN]\nGoal: Review Student 2 and group cloud deployment evidence for report section 10.3, focusing on the protected-AI run and same-revision Student 2 CI artifact. Distinguish the older baseline run from the later AI deployment. Check cloud smoke outputs, Student 2 manual review state, baseline/AI-off evidence, report sections 4-6 completeness, and persistence/rollback gaps. Recommend report actions only; make no source edits or release decision.\nRequirements: \n- Access to the provided evidence files.\n- Ensure the evidence is from the protected-AI run and same-revision Student 2 CI artifact.\n- Verify the baseline and AI-off evidence.\n- Check the completeness of report sections 4-6.\n- Identify persistence and rollback gaps.\nFiles:\n- student-2/docs/evidence/release-2/cloud/cloud-review-context.md\n- student-2/docs/evidence/release-2/cloud/cloud-smoke-39893640923.txt\n- student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml\n- student-2/docs/release-2-runbook.md\n- ai-services/agentic-loop/prompts/review-cloud-v1.txt\nSteps:\n1. Review the cloud-smoke-39893640923.txt for the protected-AI run.\n2. Check the Student 2 manual review state in the cloud-smoke-39893640923.txt.\n3. Verify the baseline and AI-off evidence in the cloud-review-context.md.\n4. Ensure report sections 4-6 are complete.\n5. Identify persistence and rollback gaps.\nRisks:\n- Incorrectly identifying baseline or AI-off evidence.\n- Missing or incomplete evidence affecting the release decision.\nValidation:\n- Cross-reference the evidence with the provided run numbers and commit hashes.\n- Ensure all required checks are performed as outlined in the steps.\n\n[ACT]\nProposed change:\nNo changes to the provided evidence files. Review the evidence as per the steps outlined in the plan.\n\nUnresolved:\n- Confirm the evidence is from the protected-AI run and same-revision Student 2 CI artifact.\n- Verify the baseline and AI-off evidence.\n- Ensure report sections 4-6 are complete.\n- Identify persistence and rollback gaps.\n\u0060\u0060\u0060",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n  - Evidence is from the protected-AI run and same-revision Student 2 CI artifact, but the exact-revision CI gate, preparation, build, deploy, HTTPS readiness, protected AI smoke, and evidence-upload steps are not explicitly mentioned in the provided context files.\n  - Failure mode: Missing or incomplete evidence could lead to incorrect release decisions.\n  - Required correction: Clarify the CI process and its relation to the provided evidence files.\n\nValidation gaps:\n- None\n\nScope check:\nThe proposal stays within the requested change.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": "changed",
+  "humanNotes": "Following the user\u0027s delegation to choose, clarified in Section 10.3 that the protected-AI deployment and Student 2 CI passed on the same SHA and named the successful exact-revision CI gate, build, deploy, HTTPS, smoke and artifact steps. Kept the pending itinerary human decision, outdated baseline gate, and missing redeploy persistence/rollback evidence explicit; this is not release approval.",
+  "postTest": {
+    "command": "git diff --check -- report and Student 2 prompt log",
+    "result": "Passed; documentation changes only, no deployment or source changes."
+  },
+  "finalisedAt": "2026-10-26T10:54:30.2379609+00:00",
+  "validationMode": "cloud"
+}

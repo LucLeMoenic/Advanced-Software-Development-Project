@@ -1,0 +1,27 @@
+Source: Cloud Deployment run 39893640923
+URL: https://github.com/LucLeMoenic/Advanced-Software-Development-Project/actions/runs/39893640923
+Mode: ai (protected)
+Commit: 4c1e71acd34793ca5a7a2171c64c3d73dbaf137d
+Artifact: cloud-ai-evidence-4c1e71acd34793ca5a7a2171c64c3d73dbaf137d
+
+PASS: six gateway pages; Student 2 capability/generation mode and trip/stop CRUD.
+PASS: Student 1 cloud profile and CRUD checks.
+PASS: Student 3 cloud profile and CRUD checks.
+PASS: Student 4 cloud profile and CRUD checks.
+PASS: Student 5 cloud profile and CRUD checks.
+Persistence across redeploy and rollback require separate evidence.
+PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag
+PASS: B2 MCP: a tool call through the application returned real catalogue data
+PASS: B1 AI-Mode: the model answered through the application
+PASS: B3 RAG: a grounded answer with citations from retrieved context
+CHECK: waiting for workflow /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f (up to 2220 seconds).
+MANUAL: review workflow /attractions-api/agents/workflows/wf-20261023T032459Z-f1ad495f in the application; no human approval has been submitted.
+PASS: B4 Multi-Agent: Planner, Worker and Reviewer reached human review; decision pending
+CHECK: waiting for workflow /accommodation/api/reviews/wf-20261023T033501Z-12a0258c (up to 2220 seconds).
+MANUAL: review workflow /accommodation/api/reviews/wf-20261023T033501Z-12a0258c in the application; no human approval has been submitted.
+CHECK: waiting for workflow /itinerary-api/trips/16/multi-agent-workflows/wf-20261023T034715Z-8dfd71ef (up to 2220 seconds).
+MANUAL: review workflow /itinerary-api/trips/16/multi-agent-workflows/wf-20261023T034715Z-8dfd71ef in the application; no human approval has been submitted.
+CHECK: waiting for workflow /logistics/api/readiness-reviews/wf-20261023T035316Z-6feb1b81?destination_id=1 (up to 2220 seconds).
+MANUAL: review workflow /logistics/api/readiness-reviews/wf-20261023T035316Z-6feb1b81?destination_id=1 in the application; no human approval has been submitted.
+INFO: Student 4 has no Multi-Agent integration; no unsupported capability is claimed.
+PASS: enabled AI integrations exercised through Students 1, 2, 4 and 5.
