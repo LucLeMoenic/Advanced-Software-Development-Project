@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<testsuites name="pytest tests">
+  <testsuite name="pytest" errors="0" failures="0" skipped="0" tests="7" time="3.778" timestamp="2026-10-23T03:12:01.812291+00:00" hostname="runnervm8k3b6">
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_create_endpoint_persists_complete_disabled_ai_itinerary" time="0.525" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_create_endpoint_rejects_invalid_input_without_write" time="0.530" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_update_endpoint_persists_changes_and_preserves_stops" time="0.532" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_update_endpoint_invalid_and_missing_records" time="0.724" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_cloud_smoke_uses_current_disabled_routes_and_cleans_up" time="0.750" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_endpoint_dependency_outage_is_explicit[post-/api/trips]" time="0.007" />
+    <testcase classname="student-2.backend.tests.test_release2_endpoints" name="test_endpoint_dependency_outage_is_explicit[put-/api/trips/1]" time="0.007" />
+  </testsuite>
+</testsuites>

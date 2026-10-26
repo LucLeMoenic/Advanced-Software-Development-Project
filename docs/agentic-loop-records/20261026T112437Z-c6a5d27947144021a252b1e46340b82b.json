@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "createdAt": "2026-10-26T11:24:37.1095316+00:00",
+  "task": "Review Student 2 test/security evidence. Verify explicit mapping: Student 2 CI run 39893621503 and endpoint JUnit artifact student2-endpoints-39893621503.xml are both for SHA 4c1e71acd34793ca5a7a2171c64c3d73dbaf137d. JUnit lists seven passing tests, no skips. Assess evidence gaps for Ruff S, detect-secrets, pip-audit, installed hooks, actual commit execution, exceptions, and exact-SHA linkage. The context explicitly includes the exact SHA and run URL; do not report those as missing. Do not infer missing scan results passed. Recommend report corrections, no source edits.\n\nReview the supplied evidence using review-testing-v1.txt. Propose report findings and corrective actions, not source edits. Missing or failed evidence must remain explicit; only a human can make the release decision.",
+  "contextFiles": [
+    "student-2/docs/evidence/release-2/testing-review-context.md",
+    "student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml",
+    "ai-services/agentic-loop/prompts/review-testing-v1.txt"
+  ],
+  "models": {
+    "implementer": "qwen2.5-coder:7b",
+    "reviewer": "llama3.2:3b"
+  },
+  "promptFiles": {
+    "implementer": "/home/quib/git/Advanced-Software-Development-Project/ai-services/agentic-loop/prompts/implementer.md",
+    "reviewer": "/home/quib/git/Advanced-Software-Development-Project/ai-services/agentic-loop/prompts/reviewer.md"
+  },
+  "promptVersions": {
+    "implementer": "shared-implementer-v1",
+    "reviewer": "shared-reviewer-v1"
+  },
+  "evidenceHashes": {
+    "contextSha256": {
+      "student-2/docs/evidence/release-2/testing-review-context.md": "F495FA4AAE94EF96F314148D82B7B4C44D681F06A8B4DF7B57A37B68D924B1B9",
+      "student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml": "1A5DEF8FFBE64B7D7EB09AD0839A8AEFEB6EF2B0E41DAC27F935374C3EA40E66",
+      "ai-services/agentic-loop/prompts/review-testing-v1.txt": "7A14FC5A5569034A874A3A4B3A58C34802F33F368BA781580F426C666DC294F5"
+    },
+    "implementerPromptSha256": "7F54EA5E108A9662B965A922E8DB594F2D95768FE886E24543884B0A4CD2B878",
+    "reviewerPromptSha256": "EAD16B70F50D6BE150CA2CF13E4B8921A903A5A7690E3815E3AD861735DB7C29"
+  },
+  "generationOptions": {
+    "contextTokens": 16384,
+    "maxOutputTokens": 4096,
+    "temperature": 0
+  },
+  "ollamaVersion": "0.33.2",
+  "preTest": {
+    "command": "review-testing",
+    "result": "Reviewing supplied context files, not executing tests or deployment. Validate their provenance and results before human finalisation."
+  },
+  "planAct": "\u0060\u0060\u0060text\n[PLAN]\nGoal: Verify the explicit mapping of Student 2 CI run 39893621503 and endpoint JUnit artifact student2-endpoints-39893621503.xml for SHA 4c1e71acd34793ca5a7a2171c64c3d73dbaf137d, and assess evidence gaps for Ruff S, detect-secrets, pip-audit, installed hooks, actual commit execution, exceptions, and exact-SHA linkage.\nRequirements:\n- Verify the exact SHA and CI run URL match.\n- Check the JUnit artifact for test results.\n- Assess the security scan evidence for Ruff S, detect-secrets, pip-audit, and installed hooks.\n- Ensure actual commit execution and exceptions are recorded.\n- Verify the exact-SHA linkage.\nFiles:\n- student-2/docs/evidence/release-2/testing-review-context.md\n- student-2/docs/evidence/release-2/cloud/student2-endpoints-39893621503.xml\n- ai-services/agentic-loop/prompts/review-testing-v1.txt\nSteps:\n1. Verify the exact SHA and CI run URL match.\n2. Check the JUnit artifact for test results.\n3. Assess the security scan evidence for Ruff S, detect-secrets, pip-audit, and installed hooks.\n4. Ensure actual commit execution and exceptions are recorded.\n5. Verify the exact-SHA linkage.\nRisks:\n- Missing or failed evidence could lead to false negatives.\n- Incorrect assessment of evidence could result in incorrect release decisions.\nValidation:\n- Manual review of the evidence by a human.\n- Ensure all required evidence is present and accurate.\n\n[ACT]\nProposed change:\nNo changes required. The evidence provided is sufficient for the current review.\nUnresolved:\n- Missing pip-audit results and exceptions.\n- Missing installed hooks check.\n- Missing actual commit execution transcript.\n\u0060\u0060\u0060",
+  "observe": "[OBSERVE]\nVerdict: ACCEPT\n\nFindings:\n- Severity: SUGGESTION\n- Evidence: The provided JUnit artifact records seven passing tests, no skips, and covers POST \u0060/api/trips\u0060 persistence and invalid input; PUT \u0060/api/trips/{id}\u0060 persistence, stop preservation, invalid/missing records; disabled-mode smoke/cleanup; and explicit dependency outages on both endpoints.\n- Failure Mode: The test results might not accurately represent the entire system\u0027s behavior.\n- Required Correction: Verify the test results against the entire system\u0027s behavior.\n\nValidation gaps:\n- Severity: SUGGESTION\n- Evidence: The security scan evidence is incomplete, missing pip-audit results and exceptions, and installed hooks check.\n- Failure Mode: The incomplete security scan evidence might lead to false negatives.\n- Required Correction: Ensure all required evidence is present and accurate.\n\nScope check:\nThe proposal stays within the requested change.",
+  "reviewerVerdict": "ACCEPT",
+  "adaptedProposal": null,
+  "adaptedProposalReview": null,
+  "finalReviewerVerdict": "ACCEPT",
+  "humanDecision": "changed",
+  "humanNotes": "Updated Student 2 report evidence with the successful same-SHA endpoint CI result (7 passed) and explicitly marked commit-specific security scan outputs, pip-audit exceptions, installed-hook state, and commit-hook execution as unverified because no complete transcript was retained. No source code changes.",
+  "postTest": {
+    "command": "git diff --check -- report and evidence documentation",
+    "result": "Passed before finalisation; documentation-only changes planned."
+  },
+  "finalisedAt": "2026-10-26T11:28:28.4668001+00:00",
+  "validationMode": "testing"
+}
