@@ -52,9 +52,12 @@
   "adaptedProposal": null,
   "adaptedProposalReview": null,
   "finalReviewerVerdict": "ACCEPT",
-  "humanDecision": null,
-  "humanNotes": null,
-  "postTest": null,
-  "finalisedAt": null,
+  "humanDecision": "changed",
+  "humanNotes": "Human review (Khushi, Student 3): the loop ACCEPTed a no-change proposal with no recommended actions; its five SUGGESTION findings only restate the digest\u0027s Not evidenced list. Its two REQUIRED validation gaps are wrong: baseline run 39741981906 correctly had AI-Mode, MCP, RAG and Multi-Agent disabled (the brief requires it), and AI run 39893640923 printed \u0027capabilities match the enabled components: ai, mcp, multi-agent, rag\u0027. The plan also named two files that do not exist under student-3/ and omitted the digest and 03-cloud-smoke.txt. Added by the human: (1) persistence across redeploy and backup, restore and rollback are not evidenced on the VM; (2) private-network boundaries and live TLS and header hardening are not verified against the deployed site; (3) the optional cloud AI bonus rests on one successful run (39893640923), preceded by five dispatch failures whose cause is not recorded; (4) the deployed catalogue listed 10 attractions on 2026-10-26 against 12 in the 2026-10-22 baseline check, cause not established, while the smoke test only requires at least ten; (5) the Student 3 cloud workflow wf-20261023T032459Z-f1ad495f was approved by the owner on 2026-10-26 (cloud/13), although the frozen digest, hashed into this record, still says it is awaiting a decision. Run on another machine: qwen2.5-coder:7b implemented and llama3.1:8b reviewed, because llama3.2:3b twice returned an invalid verdict (attempts 11-12); attempts 1-13 produced no record (logs kept).",
+  "postTest": {
+    "command": "python -m pytest student-3/tests -q; python -m pytest -q (ai-services/multi-agent-server); dotnet test ai-services/agentic-loop/tests",
+    "result": "student-3: 148 passed; multi-agent-server: 71 passed; agentic-loop: Passed! Failed: 0, Passed: 95, Total: 95"
+  },
+  "finalisedAt": "2026-10-27T10:45:03.6390477+00:00",
   "validationMode": "cloud"
 }

@@ -1,0 +1,6 @@
+# finalise: review-cloud record, decision `changed` (2026-10-27)
+# Decision chosen by the human (Khushi) from the options Changed / Kept / Rejected, with the notes shown below, stored verbatim in the record's humanNotes field.
+
+$ dotnet run --project ai-services/agentic-loop -- finalise --record docs/agentic-loop-records/20261027T071604Z-5d3ef36790834a07a8fd8ac8d79033da.json --decision changed --notes <cloud review notes> --post-test-command <...> --post-test-result <...>
+Finalised agentic-loop record: C:\Users\khush\sources\Repos\Advanced-Software-Development-Project\docs\agentic-loop-records\20261027T071604Z-5d3ef36790834a07a8fd8ac8d79033da.json
+exit code 0
