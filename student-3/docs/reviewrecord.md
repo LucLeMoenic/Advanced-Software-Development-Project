@@ -389,4 +389,47 @@ For the live evidence the stage actually needs (student-3's cases exercised agai
 
 - Post-test results: `loop/post-test-results.txt`. Transcripts: `loop/multi-agent-review-run-terminal.txt`, `loop/finalise-terminal.txt`. Record copy: `loop/multi-agent-review-record.json`.
 
-**Verdict (as of 2026-10-21):** The record is complete and finalised as `changed`. The mode works end to end; as with the testing review, the model's analysis was shallow and the human findings carry the value. A third record, `review-cloud`, is blocked until a real cloud deployment exists (see `loop/README.md`).
+**Verdict (as of 2026-10-21):** The record is complete and finalised as `changed`. The mode works end to end; as with the testing review, the model's analysis was shallow and the human findings carry the value. A third record, `review-cloud`, is blocked until a real cloud deployment exists (see `loop/README.md`). *(Update 2026-10-27: the third record was completed; see the entry below.)*
+
+
+## 2026-10-27 — Agentic Loop Record Review (record `20261027T071604Z`, Release 2 `review-cloud`, changed)
+
+**Scope:** The finalised record `docs/agentic-loop-records/20261027T071604Z-5d3ef36790834a07a8fd8ac8d79033da.json`, the first run of the shared `review-cloud` mode on Student 3's cloud deployment evidence. It reviewed the two real `cloud-deployment.yml` runs: the AI-off baseline 39741981906 at `851bdd7` and the protected AI run 39893640923 at `4c1e71a`.
+
+### Run configuration
+
+| Field | Value |
+|---|---|
+| Created / finalised | 2026-10-27T07:16:04Z / 2026-10-27T10:45:03Z |
+| Task | Review Student 3's cloud deployment evidence for the two real runs and the Student 3 lines of their smoke output; the brief requires the baseline to have all four AI services disabled; identify missing or failed evidence and recommend actions for the human release decision |
+| Context files (all SHA-256 hashed, all matching the repository at finalisation) | `cloud-deployment-evidence.md`, `cloud/10-public-url-readonly-check.txt`, and `student-5/docs/evidence/release-2/cloud/` `02-cloud-run-39741981906-excerpt.txt`, `03-cloud-smoke.txt`, `10-later-cloud-dispatches.txt`, `11-protected-ai-run-39893640923-excerpt.txt`, plus `review-cloud-v1.txt` |
+| Implementer / reviewer | `qwen2.5-coder:7b` / `llama3.1:8b`, Ollama 0.40.11, run on another machine (not the documented `llama3.2:3b` reviewer: it returned an invalid verdict on both runs there, and ten earlier attempts on the 8 GB laptop failed or were killed for low memory) |
+| Attempts | 14 in total; attempt 14 produced the record. Every failed log is kept (`loop/README.md`) |
+| Post-test | `student-3` `pytest` 148 passed; `multi-agent-server` `pytest` 71 passed; `agentic-loop` `dotnet test` 95 passed |
+
+### Phase-by-phase
+
+| Phase | What the model produced | Assessment |
+|---|---|---|
+| Plan | A plan that restated the task. Its file list **named two files that do not exist** (`student-3/docs/evidence/release-2/cloud/02-cloud-run-39741981906-excerpt.txt` and `.../11-protected-ai-run-39893640923-excerpt.txt`; both live under `student-5/`) and omitted the evidence digest and `03-cloud-smoke.txt`. | Hallucinated paths; no harm because the real files were loaded. |
+| Act | "No changes required." | Correct for a review, but the task asked for recommended actions and it gave none. |
+| Observe | `ACCEPT`. Five findings, all SUGGESTION: persistence across redeploy, backup/restore/rollback, private boundaries, the deployed container environment and live TLS/header hardening are not evidenced. Two "validation gaps", both REQUIRED: the baseline "does not have AI-Mode, MCP, RAG, and Multi-Agent disabled" and the AI run "does not have them enabled". | The five findings are correct but only repeat the digest's own "Not evidenced" list, downgraded to suggestions. **Both REQUIRED gaps are false and the first gets the baseline backwards:** the baseline skipped every AI step and the 2026-10-22 check shows all four flags `false`; the AI run printed `PASS: capabilities match the enabled components: ai, mcp, multi-agent, rag`. It accepted despite REQUIRED items because the loop only blocks an ACCEPT when the Findings section has BLOCKING or REQUIRED items. |
+| Adapt (human) | Decision `changed`: wrote notes correcting the two false gaps and adding what the loop missed. | Correct. |
+
+### Findings
+
+| Severity | Finding | Status |
+|---|---|---|
+| Wrong in loop | Two REQUIRED validation gaps contradict the evidence (the AI-off baseline is the required state and was done correctly) | Corrected in the record's `humanNotes` |
+| Understated by loop | Real gaps were SUGGESTIONs and the verdict was ACCEPT with no recommended actions | Corrected in the notes |
+| Missed by loop | Persistence across redeploy, backup, restore and rollback are not evidenced on the VM | Open |
+| Missed by loop | Private-network boundaries and live TLS and header hardening are not verified against the deployed site | Open |
+| Missed by loop | The cloud AI bonus rests on one successful run (39893640923); five earlier dispatches failed with no recorded cause | Open |
+| Missed by loop | The deployed catalogue listed 10 attractions on 2026-10-26, against 12 in the 2026-10-22 baseline check (Bondi to Coogee Coastal Walk and Federation Square are gone); the smoke test only requires at least ten | Open: cause not established |
+| Missed by loop | The Student 3 cloud workflow `wf-20261023T032459Z-f1ad495f` was approved by the owner on 2026-10-26 (`cloud/13`), but the digest hashed into this record still says it is awaiting a decision | Noted; the digest is frozen |
+
+### Automated Evidence
+
+- Post-test results: in the record's `postTest` field. Transcripts: `loop/cloud-review-run-terminal.txt`, `loop/cloud-review-finalise-terminal.txt`, failed attempts `loop/cloud-review-attempt*-terminal.txt`. Record copy: `loop/cloud-review-record.json`.
+
+**Verdict (as of 2026-10-27):** The record is complete and finalised as `changed`, with all three Release 2 review modes now recorded for Student 3. The mode works end to end, but it needed 14 attempts and a larger reviewer model, and the models' analysis was shallow and partly wrong, so the human findings carry the value. The cloud evidence itself is only as strong as the open gaps above.

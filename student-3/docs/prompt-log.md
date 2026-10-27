@@ -87,3 +87,6 @@ default implementer) is not installed here, so `qwen2.5:3b` was used, as in Rele
 - **`review-cloud`, ten runs, no record.** Failure causes were different each time (implementer format, reviewer format, the loop's default 600 s per-call limit, and four kills
   for low memory on this 8 GB host), so repeating one change was not the fix. One diagnosed cause was wording in my own task text: telling the 3B reviewer to "say plainly that no AI
   service was deployed" made it treat the required AI-off baseline as a defect. Nothing was hand-edited to produce a record.
+- **`review-cloud` completed on another machine (2026-10-27).** Four more attempts there (11 to 14) gave the record: `qwen2.5-coder:7b` implemented and `llama3.1:8b` reviewed, because `llama3.2:3b`
+  returned `Verdict: BLOCKING` (not a valid verdict) twice. The loop ACCEPTed with no recommendations and two false REQUIRED gaps (it again treated the AI-off baseline as a defect), and I
+  checked the record against the evidence before finalising it as `changed`. The decision and notes are mine; the assistant ran the post-tests and the `finalise` command at my instruction.
